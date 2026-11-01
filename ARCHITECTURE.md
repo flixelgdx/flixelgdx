@@ -20,7 +20,7 @@ The project is split into several modules, each serving a specific purpose.
 - **`flixelgdx-basisu-plugin`**: Bundles Basis Universal binaries for each OS and applies `.ktx2` compression for every `.png` asset on mobile.
 - **`flixelgdx-html5-plugin`**: Automates the workflow for web games. This includes copying assets and generating the HTML index file that boots the WebAssembly or JavaScript bundle, and more.
 - **`flixelgdx-packagr-plugin`**: Automates deployment and packaging for desktop games, with default options for Windows, macOS and Linux on all architectures.
-- **`flixelgdx-shader-plugin`**: Build-time shader tooling. Games load WGSL shaders directly at run time, so the plugin is no longer needed to make a shader run on the desktop.
+- **`flixelgdx-shader-plugin`**: Build-time shader validation. Compiles a game's `.wgsl` shaders with Dawn (a Null backend device in a forked Java 25 process, no GPU needed), fails the build with `file:line:column` errors, and copies the shaders to `build/generated/flixelgdx/shaders/shaders/<name>.wgsl`, which is added to the `main` resources.
 
 ### Rendering and shaders
 
@@ -38,6 +38,8 @@ Shaders are written in **WGSL** only. A shader is one `.wgsl` file, and the fram
 | Entry points | `fs_main` (required), `vs_main` (optional) | Without `vs_main` the preamble's `flixel_vs` is used. |
 
 The renderer lays out the shader's uniform struct once, when the shader is created, with a small WGSL layout parser (`FlixelWgslLayout`), so `setUniform("name", value)` writes into a CPU copy at the right byte offset and the copy is uploaded at most once per change.
+
+The shader plugin reads the same preamble and the constants of `FlixelWgsl` at its own build time (nothing is copied by hand), assembles preamble plus shader exactly like `FlixelWgsl.assemble(...)`, and validates with a trial pipeline built from the framework's bind group layouts. Its task `processShaders` exposes the output directory as a resource root, so other plugins (such as the HTML5 plugin) can consume it as a task output. See the [plugin README](flixelgdx-plugins/flixelgdx-shader-plugin/README.md).
 
 ### Misc.
 
