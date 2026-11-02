@@ -200,8 +200,8 @@ public class Html5Plugin implements Plugin<Project> {
    * classpath resources, so those files are copied into the web assets tree, where they preload like any
    * other asset and the web backend reads them from its warm cache when a shader is loaded by name.
    *
-   * <p>The renderer's built-in shaders are not copied here: the web backend embeds them into the program
-   * itself when TeaVM translates the game.
+   * <p>The renderer's built-in shaders are not copied here: the framework build compiles them into the
+   * program as string constants, so they need no files at all.
    */
   private void registerShaderTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("copyShaders", Copy.class, task -> {

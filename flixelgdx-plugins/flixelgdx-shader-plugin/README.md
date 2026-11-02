@@ -31,8 +31,8 @@ shader. Run `./gradlew processShaders` to check shaders on their own.
 
 A shader file does not declare the camera matrix, the texture or the sampler. The framework puts a *preamble* in
 front of every shader before compiling it. The preamble is the file
-`flixelgdx-core/src/main/resources/org/flixelgdx/shaders/flixel_preamble.wgsl` (the single source of truth, and the
-plugin bundles that very file at its own build time), so these names are always available:
+`flixelgdx-core/src/main/wgsl/flixel_preamble.wgsl` (the single source of truth: the framework build compiles it into
+the program as a string constant, and the plugin bundles that very file at its own build time), so these names are always available:
 
 | What | Where | Notes |
 |------|-------|-------|
