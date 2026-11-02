@@ -79,6 +79,7 @@ import io.github.stringdotjar.jwebgpu.ffm.JWebGpuFfm;
  */
 public final class FlixelDesktopLauncher {
 
+  private static final String LWJGL_MEMORY_BACKEND = "org.lwjgl.system.memoryBackend";
   private static final FlixelLogger LOG = Flixel.log.tagged("Desktop");
 
   private static boolean loggingInstalled;
@@ -140,6 +141,22 @@ public final class FlixelDesktopLauncher {
   }
 
   /**
+   * Makes LWJGL use Java's foreign memory API instead of {@code sun.misc.Unsafe}.
+   *
+   * <p>LWJGL picks how it reads and writes native memory once, the first time it is used. Its default is
+   * {@code sun.misc.Unsafe}, which Java 25 warns about on every start and is removing. Its foreign memory backend
+   * does the same job through the supported API, so the launcher selects it before anything touches LWJGL. A game
+   * that sets {@code org.lwjgl.system.memoryBackend} itself keeps its choice, and a GraalVM native image keeps
+   * LWJGL's default.
+   */
+  private static void useForeignMemoryForLwjgl() {
+    if (System.getProperty(LWJGL_MEMORY_BACKEND) == null
+        && System.getProperty("org.graalvm.nativeimage.imagecode") == null) {
+      System.setProperty(LWJGL_MEMORY_BACKEND, "ffm");
+    }
+  }
+
+  /**
    * Launches the game with full control over the runtime mode.
    *
    * @param game The game instance to run.
@@ -166,6 +183,7 @@ public final class FlixelDesktopLauncher {
    */
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode,
       @Nullable String... icons) {
+    useForeignMemoryForLwjgl();
     // Install logging before anything else.
     if (loggingInstalled) {
       return;
@@ -174,6 +192,11 @@ public final class FlixelDesktopLauncher {
     Flixel.log.setSiteResolver(new FlixelJvmLogSiteResolver());
     Flixel.log.setConsoleSink(new FlixelAnsiConsoleSink());
     Flixel.log.setFileSink(new FlixelJvmLogFileSink());
+    if (!FlixelDesktopLauncher.class.getModule().isNativeAccessEnabled()) {
+      LOG.warn("Native access is not enabled, so Java warns about the restricted methods WebGPU and SDL use, and"
+          + " a future Java release will block them. Start the game with --enable-native-access=ALL-UNNAMED (the"
+          + " game jar's manifest and packaged builds already do).");
+    }
     if (icons != null) {
       for (String path : icons) {
         if (FlixelDesktopLauncher.class.getResource("/" + path) == null) {
