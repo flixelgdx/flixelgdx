@@ -7,6 +7,7 @@ graalvm = "24.2.0"
 imgui = "1.90.0"
 jansi = "2.4.2"
 jetbrainsAnnotations = "26.1.0"
+jwebgpu = "0.1.0"
 junit = "5.10.0"
 kotlin = "2.2.20"
 lwjgl = "3.4.2"
@@ -27,16 +28,16 @@ imgui-natives-macos = { module = "io.github.spair:imgui-java-natives-macos", ver
 imgui-natives-windows = { module = "io.github.spair:imgui-java-natives-windows", version.ref = "imgui" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotations" }
-jwebgpu-api = { module = "io.github.stringdotjar:jwebgpu-api" }
-jwebgpu-ffm = { module = "io.github.stringdotjar:jwebgpu-ffm" }
-jwebgpu-teavm = { module = "io.github.stringdotjar:jwebgpu-teavm" }
-jwebgpu-jni = { module = "io.github.stringdotjar:jwebgpu-jni" }
-jwebgpu-natives-linux-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-linux-aarch64" }
-jwebgpu-natives-linux-x64 = { module = "io.github.stringdotjar:jwebgpu-natives-linux-x86_64" }
-jwebgpu-natives-macos-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-macos-aarch64" }
-jwebgpu-natives-macos-x64 = { module = "io.github.stringdotjar:jwebgpu-natives-macos-x86_64" }
-jwebgpu-natives-windows-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-windows-aarch64" }
-jwebgpu-natives-windows-x64 = { module = "io.github.stringdotjar:jwebgpu-natives-windows-x86_64" }
+jwebgpu-api = { module = "io.github.stringdotjar:jwebgpu-api", version.ref = "jwebgpu" }
+jwebgpu-ffm = { module = "io.github.stringdotjar:jwebgpu-ffm", version.ref = "jwebgpu" }
+jwebgpu-teavm = { module = "io.github.stringdotjar:jwebgpu-teavm", version.ref = "jwebgpu" }
+jwebgpu-jni = { module = "io.github.stringdotjar:jwebgpu-jni", version.ref = "jwebgpu" }
+jwebgpu-natives-linux-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-linux-aarch64", version.ref = "jwebgpu" }
+jwebgpu-natives-linux-x64 = { module = "io.github.stringdotjar:jwebgpu-natives-linux-x86_64", version.ref = "jwebgpu" }
+jwebgpu-natives-macos-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-macos-aarch64", version.ref = "jwebgpu" }
+jwebgpu-natives-macos-x64 = { module = "io.github.stringdotjar:jwebgpu-natives-macos-x86_64", version.ref = "jwebgpu" }
+jwebgpu-natives-windows-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-windows-aarch64", version.ref = "jwebgpu" }
+jwebgpu-natives-windows-x64 = { module = "io.github.stringdotjar:jwebgpu-natives-windows-x86_64", version.ref = "jwebgpu" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
