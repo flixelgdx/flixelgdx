@@ -37,13 +37,19 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.github.stringdotjar.jwebgpu.GpuBackendType;
+import io.github.stringdotjar.jwebgpu.GpuCallbackMode;
+import io.github.stringdotjar.jwebgpu.GpuErrorFilter;
+import io.github.stringdotjar.jwebgpu.GpuErrorType;
 import io.github.stringdotjar.jwebgpu.GpuInstance;
 import io.github.stringdotjar.jwebgpu.JWebGpu;
 import io.github.stringdotjar.jwebgpu.ffm.JWebGpuFfm;
 
+import java.nio.ByteBuffer;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -114,6 +120,24 @@ class FlixelGpuSmokeTest {
     FlixelImage image = new FlixelImage(size, size);
     image.fill(0xFFFFFFFF);
     return graphics.createTexture(image);
+  }
+
+  /** Pops the validation error scope and returns the error it caught, or {@code null} for none. */
+  private static String popValidationError() {
+    String[] error = new String[1];
+    boolean[] done = new boolean[1];
+    graphics.getDevice().popErrorScope(GpuCallbackMode.ALLOW_PROCESS_EVENTS, (status, type, message) -> {
+      if (type != null && type != GpuErrorType.NO_ERROR) {
+        error[0] = type + ": " + message;
+      }
+      done[0] = true;
+    });
+    long deadline = System.nanoTime() + 5_000_000_000L;
+    while (!done[0] && System.nanoTime() < deadline) {
+      instance.processEvents();
+    }
+    assertTrue(done[0], "the error scope never reported back");
+    return error[0];
   }
 
   private static FlixelMatrix ortho() {
@@ -244,5 +268,50 @@ class FlixelGpuSmokeTest {
     assertTrue(graphics.getTexture(t.getHandle()) != null);
     t.destroy();
     assertEquals(null, graphics.getTexture(t.getHandle()));
+  }
+
+  @Test
+  void compressedTexturesUploadAndDrawInEverySupportedFormat() {
+    assertTrue(graphics.isBlockFormatSupported(FlixelGpuBlockFormat.RGBA8));
+    int tested = 0;
+    for (FlixelGpuBlockFormat format : FlixelGpuBlockFormat.values()) {
+      if (!graphics.isBlockFormatSupported(format)) {
+        continue;
+      }
+      // 50x37 is not a whole number of blocks, and 6 levels is more than a padded compressed chain can keep.
+      ByteBuffer file = FlixelKtx2Files.raw(format, 50, 37, 6, 0);
+      graphics.getDevice().pushErrorScope(GpuErrorFilter.VALIDATION);
+      FlixelTexture texture = graphics.createCompressedTexture(file);
+      assertNotNull(texture, format.name());
+      texture.update(0, 0, new FlixelImage(2, 2));
+      graphics.beginFrame();
+      FlixelGpuBatch batch = (FlixelGpuBatch) graphics.getBatch();
+      batch.setProjection(ortho());
+      batch.begin();
+      batch.draw(texture, 0, 0, 50, 37);
+      texture.setSmooth(true);
+      batch.draw(texture, 60, 0, 25, 18);
+      batch.end();
+      graphics.endFrame();
+      assertNull(popValidationError(), format.name());
+
+      FlixelGpuTexture gpu = (FlixelGpuTexture) texture;
+      assertEquals(50, gpu.getWidth());
+      assertEquals(37, gpu.getHeight());
+      assertEquals(format.padded(50), gpu.getGpuWidth());
+      assertEquals(format.padded(37), gpu.getGpuHeight());
+      assertEquals(50f / format.padded(50), gpu.getUScale(), 1e-6f);
+      assertEquals(format.isCompressed(), gpu.isCompressed());
+      texture.destroy();
+      tested++;
+    }
+    assertTrue(tested >= 1);
+  }
+
+  @Test
+  void anUnusableCompressedTextureReturnsNull() {
+    ByteBuffer basis = FlixelKtx2Files.fixture("etc1s_alpha.ktx2");
+    assertNull(graphics.createCompressedTexture(basis), "there is no transcoder in this test");
+    assertNull(graphics.createCompressedTexture(ByteBuffer.allocateDirect(16)));
   }
 }
