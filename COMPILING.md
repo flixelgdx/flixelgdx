@@ -430,7 +430,7 @@ FlixelGDX on Android renders with WebGPU (Dawn, through jwebgpu's JNI backend), 
 - **64-bit only**: `arm64-v8a` and `x86_64`. The 32-bit ABIs are not supported, and the backend restricts its ABI filters accordingly.
 - The `jwebgpu-jni` library is an Android library from the jwebgpu checkout. jwebgpu includes it whenever the build that includes jwebgpu enables Android (`-PincludeAndroid=true` or `includeAndroid=true` in that build's `local.properties`), so nothing extra is needed in the jwebgpu checkout.
 - The AAR carries `libwebgpu_dawn.so`, `libjwebgpu_jni.so` and `META-INF/jwebgpu/dawn-licenses.txt`; a game picks them up through its normal dependency on `flixelgdx-android`.
-- Shaders are WGSL only, the same files as on desktop. The built-in `flixel_preamble.wgsl` and `sprite.wgsl` are compiled into the framework as string constants, so they need no resources.
+- Shaders are WGSL only, the same files as on desktop. The built-in preamble and sprite shader are Java text blocks in the framework's source, so they need no resources.
 
 ### Why you need the Android SDK
 

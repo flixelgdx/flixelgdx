@@ -26,7 +26,7 @@ The project is split into several modules, each serving a specific purpose.
 
 Everything is drawn with [WebGPU](https://www.w3.org/TR/webgpu/) through [jwebgpu](https://github.com/stringdotjar/jwebgpu), the project's Java WebGPU bindings. jwebgpu is consumed as a Gradle composite build until it is published, so a checkout of it must sit next to FlixelGDX (see [COMPILING.md](COMPILING.md)).
 
-Shaders are written in **WGSL** only. A shader is one `.wgsl` file, and the framework puts a *preamble* (`flixelgdx-core/src/main/wgsl/flixel_preamble.wgsl`, the single source of truth for the contract, which the build compiles into the program as a string constant so no platform reads it from the classpath) in front of it:
+Shaders are written in **WGSL** only. A shader is one `.wgsl` file, and the framework puts a *preamble* (the `FlixelWgsl.PREAMBLE` text block in `flixelgdx-core`, the single source of truth for the contract; it is a constant, so no platform reads it from a classpath) in front of it:
 
 | What | Where | Notes |
 |------|-------|-------|

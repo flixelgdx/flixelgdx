@@ -31,8 +31,8 @@ shader. Run `./gradlew processShaders` to check shaders on their own.
 
 A shader file does not declare the camera matrix, the texture or the sampler. The framework puts a *preamble* in
 front of every shader before compiling it. The preamble is the file
-`flixelgdx-core/src/main/wgsl/flixel_preamble.wgsl` (the single source of truth: the framework build compiles it into
-the program as a string constant, and the plugin bundles that very file at its own build time), so these names are always available:
+the `PREAMBLE` text block of `FlixelWgsl` in `flixelgdx-core` (the single source of truth, which the plugin copies out at
+its own build time), so these names are always available:
 
 | What | Where | Notes |
 |------|-------|-------|
@@ -137,8 +137,10 @@ Other plugins may rely on this.
 
 ## Developing the plugin
 
-The plugin's build copies `flixel_preamble.wgsl` and turns the constants of `FlixelWgsl` (entry point names, bind
-group numbers, the globals size) into a small properties file, both bundled as plugin resources. This keeps one source
+The plugin's build copies the `FlixelWgsl.PREAMBLE` text block into `flixel_preamble.wgsl` and turns the other
+constants of `FlixelWgsl` (entry point names, bind group numbers, the globals size) into a small properties file, both
+bundled as plugin resources. The text block must not use backslash escapes, and its closing quotes must line up with
+the text, so the copy matches the Java string exactly; the task fails if either rule is broken. This keeps one source
 of truth: change the contract in `flixelgdx-core` and the plugin follows on its next build. If a constant is renamed
 there, the plugin's `generateShaderContract` task fails and says so.
 
