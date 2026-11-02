@@ -83,6 +83,9 @@ public class FlixelGpuBatch implements FlixelBatch {
   private int quadCount;
   private int renderCalls;
   private int totalRenderCalls;
+  // Texture coordinate scale of the current texture: below 1 when a compressed texture was padded to whole blocks.
+  private float uScale = 1f;
+  private float vScale = 1f;
 
   private boolean drawing;
   // True on non-OpenGL backends (Vulkan, Metal, D3D) where the color attribute uses BGRA memory order.
@@ -98,6 +101,8 @@ public class FlixelGpuBatch implements FlixelBatch {
     renderCalls = 0;
     quadCount = 0;
     currentTexture = null;
+    uScale = 1f;
+    vScale = 1f;
   }
 
   @Override
@@ -194,6 +199,13 @@ public class FlixelGpuBatch implements FlixelBatch {
       switchTexture(texture);
       int base = quadCount * floatsPerQuad;
       System.arraycopy(vertices, i, this.vertices, base, floatsPerQuad);
+      if (uScale != 1f || vScale != 1f) {
+        for (int v = 0; v < VERTICES_PER_QUAD; v++) {
+          int at = base + v * FLOATS_PER_VERTEX;
+          this.vertices[at + 2] *= uScale;
+          this.vertices[at + 3] *= vScale;
+        }
+      }
       quadCount++;
     }
   }
@@ -203,6 +215,8 @@ public class FlixelGpuBatch implements FlixelBatch {
     if (gpuTexture != currentTexture) {
       flush();
       currentTexture = gpuTexture;
+      uScale = gpuTexture != null ? gpuTexture.getUScale() : 1f;
+      vScale = gpuTexture != null ? gpuTexture.getVScale() : 1f;
     }
     if (quadCount >= MAX_QUADS) {
       flush();
@@ -230,8 +244,8 @@ public class FlixelGpuBatch implements FlixelBatch {
   private void set(int i, float x, float y, float u, float v, float packed) {
     vertices[i] = x;
     vertices[i + 1] = y;
-    vertices[i + 2] = u;
-    vertices[i + 3] = v;
+    vertices[i + 2] = u * uScale;
+    vertices[i + 3] = v * vScale;
     vertices[i + 4] = packed;
   }
 

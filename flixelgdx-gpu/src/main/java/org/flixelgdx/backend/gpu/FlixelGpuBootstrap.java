@@ -34,6 +34,7 @@ import io.github.stringdotjar.jwebgpu.GpuCallbackMode;
 import io.github.stringdotjar.jwebgpu.GpuDevice;
 import io.github.stringdotjar.jwebgpu.GpuDeviceDescriptor;
 import io.github.stringdotjar.jwebgpu.GpuDeviceLostCallback;
+import io.github.stringdotjar.jwebgpu.GpuFeatureName;
 import io.github.stringdotjar.jwebgpu.GpuInstance;
 import io.github.stringdotjar.jwebgpu.GpuPowerPreference;
 import io.github.stringdotjar.jwebgpu.GpuRequestAdapterOptions;
@@ -55,10 +56,18 @@ import io.github.stringdotjar.jwebgpu.GpuSurface;
  * }
  * GpuDevice device = boot.getDevice(); // null when boot.getError() is set
  * }</pre>
+ *
+ * <p>The device is created with every texture compression feature (BC, ETC2 and ASTC) the adapter offers, so
+ * compressed KTX2 textures can use them. Turning a feature on costs nothing when it goes unused.
  */
 public final class FlixelGpuBootstrap {
 
   private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
+  private static final GpuFeatureName[] COMPRESSION_FEATURES = {
+      GpuFeatureName.TEXTURE_COMPRESSION_BC,
+      GpuFeatureName.TEXTURE_COMPRESSION_ETC2,
+      GpuFeatureName.TEXTURE_COMPRESSION_ASTC
+  };
 
   private final GpuInstance instance;
   private final GpuSurface surface;
@@ -72,6 +81,8 @@ public final class FlixelGpuBootstrap {
   private GpuBackendType backendType = GpuBackendType.UNDEFINED;
 
   private volatile boolean done;
+
+  private boolean compressionRequested = true;
 
   /**
    * Creates a bootstrap for an instance.
@@ -101,8 +112,15 @@ public final class FlixelGpuBootstrap {
   }
 
   private void requestDevice(GpuAdapter chosen) {
-    GpuDeviceDescriptor descriptor = new GpuDeviceDescriptor();
+    GpuDeviceDescriptor descriptor = new GpuDeviceDescriptor(COMPRESSION_FEATURES.length);
     descriptor.label = "FlixelGDX device";
+    if (compressionRequested) {
+      for (int i = 0; i < COMPRESSION_FEATURES.length; i++) {
+        if (chosen.hasFeature(COMPRESSION_FEATURES[i])) {
+          descriptor.requiredFeatures[descriptor.requiredFeatureCount++] = COMPRESSION_FEATURES[i];
+        }
+      }
+    }
     descriptor.uncapturedErrorCallback = (dev, type, message) -> LOG.error("WebGPU error ({}): {}", type, message);
     if (lostCallback != null) {
       descriptor.deviceLostCallback = lostCallback;
@@ -199,6 +217,25 @@ public final class FlixelGpuBootstrap {
    */
   public void setBackendType(@NotNull GpuBackendType backendType) {
     this.backendType = backendType;
+  }
+
+  /**
+   * Returns whether the device asks for the adapter's texture compression features.
+   *
+   * @return {@code true} by default.
+   */
+  public boolean isCompressionRequested() {
+    return compressionRequested;
+  }
+
+  /**
+   * Sets whether the device asks for the adapter's texture compression features (BC, ETC2 and ASTC). Without them,
+   * compressed KTX2 textures fall back to RGBA8 or fail to load. Takes effect only if called before {@link #start()}.
+   *
+   * @param compressionRequested Whether to request the features.
+   */
+  public void setCompressionRequested(boolean compressionRequested) {
+    this.compressionRequested = compressionRequested;
   }
 
   /**

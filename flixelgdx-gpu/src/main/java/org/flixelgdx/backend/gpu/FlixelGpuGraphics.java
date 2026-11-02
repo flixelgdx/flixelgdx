@@ -57,6 +57,7 @@ import io.github.stringdotjar.jwebgpu.GpuCommandEncoder;
 import io.github.stringdotjar.jwebgpu.GpuCompositeAlphaMode;
 import io.github.stringdotjar.jwebgpu.GpuDevice;
 import io.github.stringdotjar.jwebgpu.GpuExtent3D;
+import io.github.stringdotjar.jwebgpu.GpuFeatureName;
 import io.github.stringdotjar.jwebgpu.GpuIndexFormat;
 import io.github.stringdotjar.jwebgpu.GpuLimits;
 import io.github.stringdotjar.jwebgpu.GpuLoadOp;
@@ -204,6 +205,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private FlixelGpuTexture opaqueTexture;
   private FlixelGpuRenderTarget sceneTarget;
   private FlixelImageDecoder decoder;
+  private volatile FlixelBasisTranscoder basisTranscoder;
   private Runnable eventPump;
   private GpuRenderPipeline lastPipeline;
 
@@ -223,6 +225,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private float compositeOffsetY;
 
   private volatile int targetFps;
+  private volatile int blockFormats = FlixelGpuBlockFormat.RGBA8.bit();
 
   private boolean transparentFramebuffer;
   private boolean vsync = true;
@@ -276,6 +279,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
       uniformAlignment = Math.max(limits.minUniformBufferOffsetAlignment, 16);
     }
     LOG.info("GPU: {} ({}), {} backend.", adapterInfo.device, adapterInfo.description, adapterInfo.backendType);
+    blockFormats = queryBlockFormats(device);
 
     pipelines = new FlixelGpuPipelines(device);
     vertexRing = new FlixelGpuRing(device, GpuBufferUsage.VERTEX, VERTEX_RING_BYTES, "flixel vertices");
@@ -291,6 +295,18 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     opaqueTexture = createOpaqueTexture();
     configureSurface();
     surfaceDirty = false;
+  }
+
+  private static int queryBlockFormats(GpuDevice device) {
+    int mask = 0;
+    FlixelGpuBlockFormat[] all = FlixelGpuBlockFormat.values();
+    for (int i = 0; i < all.length; i++) {
+      GpuFeatureName feature = all[i].getFeature();
+      if (feature == null || device.hasFeature(feature)) {
+        mask |= all[i].bit();
+      }
+    }
+    return mask;
   }
 
   private GpuBuffer createQuadIndexBuffer() {
@@ -344,7 +360,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
         headlessView.release();
         headlessTexture.release();
       }
-      headlessTexture = createRawTexture(backBufferWidth, backBufferHeight,
+      headlessTexture = createRawTexture(backBufferWidth, backBufferHeight, GpuTextureFormat.RGBA8_UNORM, 1,
           GpuTextureUsage.RENDER_ATTACHMENT | GpuTextureUsage.COPY_SRC);
       headlessView = headlessTexture.createView(null);
       return;
@@ -752,13 +768,85 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     return decoder != null ? decoder.decode(encoded) : null;
   }
 
+  /**
+   * Uploads a KTX2 file, keeping it compressed on the GPU.
+   *
+   * <p>This is {@link #prepareCompressedTexture(ByteBuffer)} followed by
+   * {@link #createTexture(FlixelGpuCompressedImage)} on the calling thread. When the file cannot be used, the reason
+   * is logged and {@code null} is returned.
+   *
+   * @param container The whole KTX2 file.
+   * @return The texture, or {@code null} when the file is invalid or needs something this device or platform lacks.
+   */
+  @Nullable
+  @Override
+  public FlixelTexture createCompressedTexture(@NotNull ByteBuffer container) {
+    FlixelGpuCompressedImage image;
+    try {
+      image = prepareCompressedTexture(container);
+    } catch (IllegalArgumentException e) {
+      LOG.warn("Could not use a compressed texture: {}", e.getMessage());
+      return null;
+    }
+    return createTexture(image);
+  }
+
+  /**
+   * Reads a KTX2 file into an image that is ready to upload, transcoding Basis Universal data for this GPU.
+   *
+   * <p>This is the slow half of loading a compressed texture, and it only uses the CPU, so an asset loader runs it
+   * on a background thread and then calls {@link #createTexture(FlixelGpuCompressedImage)} on the render thread.
+   * The target format depends on what the current device supports (see {@link #isBlockFormatSupported}); see
+   * {@link FlixelKtx2} for the files that can be read.
+   *
+   * <pre>{@code
+   * // On a loading thread:
+   * FlixelGpuCompressedImage image = graphics.prepareCompressedTexture(fileBytes);
+   * // Later, on the render thread:
+   * FlixelTexture texture = graphics.createTexture(image);
+   * }</pre>
+   *
+   * @param container The whole KTX2 file. A file in a GPU format is uploaded straight from this buffer, so it must
+   *     stay unchanged until {@link #createTexture(FlixelGpuCompressedImage)} runs.
+   * @return The prepared image.
+   * @throws IllegalArgumentException When the file cannot be used. The message says why.
+   */
+  @NotNull
+  public FlixelGpuCompressedImage prepareCompressedTexture(@NotNull ByteBuffer container) {
+    return FlixelKtx2.decode(container, blockFormats, basisTranscoder);
+  }
+
+  /**
+   * Uploads a prepared image, with all of its mip levels.
+   *
+   * @param image An image from {@link #prepareCompressedTexture(ByteBuffer)}.
+   * @return The texture. Drawing it works like any other texture; see {@link FlixelGpuTexture} for how its size is
+   *     reported.
+   */
+  @NotNull
+  public FlixelTexture createTexture(@NotNull FlixelGpuCompressedImage image) {
+    return new FlixelGpuTexture(this, image);
+  }
+
+  /**
+   * Returns whether the current device can sample textures in a format.
+   *
+   * <p>The answer can change after a device loss, because the new device may come from another adapter.
+   *
+   * @param format The format.
+   * @return {@code true} if textures in that format can be created and drawn.
+   */
+  public boolean isBlockFormatSupported(@NotNull FlixelGpuBlockFormat format) {
+    return (blockFormats & format.bit()) != 0;
+  }
+
   @NotNull
   @Override
   public FlixelRenderTarget createRenderTarget(int width, int height) {
     return new FlixelGpuRenderTarget(this, width, height);
   }
 
-  GpuTexture createRawTexture(int width, int height, long extraUsage) {
+  GpuTexture createRawTexture(int width, int height, GpuTextureFormat format, int levels, long extraUsage) {
     synchronized (gpuLock) {
       textureDescriptor.reset();
       textureDescriptor.label = "flixel texture";
@@ -767,8 +855,32 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
       textureDescriptor.size.width = width;
       textureDescriptor.size.height = height;
       textureDescriptor.size.depthOrArrayLayers = 1;
-      textureDescriptor.format = GpuTextureFormat.RGBA8_UNORM;
+      textureDescriptor.format = format;
+      textureDescriptor.mipLevelCount = levels;
       return device.createTexture(textureDescriptor);
+    }
+  }
+
+  void writeLevel(GpuTexture target, FlixelGpuCompressedImage image, int level) {
+    FlixelGpuBlockFormat format = image.getFormat();
+    // Every level is copied as whole blocks, so the copy covers the level's padded size.
+    int blocksWide = format.blocks(image.getWidth() >> level);
+    int blocksHigh = format.blocks(image.getHeight() >> level);
+    ByteBuffer data = image.getData();
+    synchronized (gpuLock) {
+      data.limit(image.getOffset(level) + image.getSize(level)).position(image.getOffset(level));
+      copyDestination.reset();
+      copyDestination.texture = target;
+      copyDestination.mipLevel = level;
+      copyDestination.aspect = GpuTextureAspect.ALL;
+      copyLayout.reset();
+      copyLayout.bytesPerRow = blocksWide * format.getBlockBytes();
+      copyLayout.rowsPerImage = blocksHigh;
+      copyExtent.width = blocksWide * format.getBlockSize();
+      copyExtent.height = blocksHigh * format.getBlockSize();
+      copyExtent.depthOrArrayLayers = 1;
+      queue.writeTexture(copyDestination, data, copyLayout, copyExtent);
+      data.clear();
     }
   }
 
@@ -800,7 +912,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     synchronized (gpuLock) {
       long id = nextTextureId++;
       textures.put(id, texture);
-      stats.textureBytes += (long) texture.getWidth() * texture.getHeight() * 4L;
+      stats.textureBytes += texture.getByteSize();
       return id;
     }
   }
@@ -808,7 +920,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   void unregisterTexture(FlixelGpuTexture texture) {
     synchronized (gpuLock) {
       textures.remove(texture.getId());
-      stats.textureBytes -= (long) texture.getWidth() * texture.getHeight() * 4L;
+      stats.textureBytes -= texture.getByteSize();
     }
   }
 
@@ -1172,10 +1284,10 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     combined.set(projection);
     combined.mul(transform);
     System.arraycopy(combined.val, 0, globals, 0, 16);
-    globals[16] = texture.getWidth();
-    globals[17] = texture.getHeight();
-    globals[18] = 1f / Math.max(1, texture.getWidth());
-    globals[19] = 1f / Math.max(1, texture.getHeight());
+    globals[16] = texture.getGpuWidth();
+    globals[17] = texture.getGpuHeight();
+    globals[18] = 1f / Math.max(1, texture.getGpuWidth());
+    globals[19] = 1f / Math.max(1, texture.getGpuHeight());
 
     int floatCount = quadCount * FlixelGpuBatch.floatsPerQuad();
     long vertexOffset = -1L;
@@ -1331,10 +1443,10 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
       return;
     }
     System.arraycopy(projection.val, 0, globals, 0, 16);
-    globals[16] = texture.getWidth();
-    globals[17] = texture.getHeight();
-    globals[18] = 1f / Math.max(1, texture.getWidth());
-    globals[19] = 1f / Math.max(1, texture.getHeight());
+    globals[16] = texture.getGpuWidth();
+    globals[17] = texture.getGpuHeight();
+    globals[18] = 1f / Math.max(1, texture.getGpuWidth());
+    globals[19] = 1f / Math.max(1, texture.getGpuHeight());
     long globalsOffset = uniformRing.write(queue, globals, GLOBALS_FLOATS, uniformAlignment);
     if (globalsOffset < 0L) {
       return;
@@ -1613,6 +1725,28 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
    */
   public void setImageDecoder(@Nullable FlixelImageDecoder decoder) {
     this.decoder = decoder;
+  }
+
+  /**
+   * Returns the Basis Universal transcoder used for supercompressed KTX2 files.
+   *
+   * @return The transcoder, or {@code null} when the platform has none.
+   */
+  @Nullable
+  public FlixelBasisTranscoder getBasisTranscoder() {
+    return basisTranscoder;
+  }
+
+  /**
+   * Sets the Basis Universal transcoder used for supercompressed KTX2 files.
+   *
+   * <p>A platform that ships the native transcoder installs it here once, before any asset loads. Without one,
+   * KTX2 files in a GPU format still load, but Basis Universal files are rejected.
+   *
+   * @param basisTranscoder The transcoder, or {@code null} for none.
+   */
+  public void setBasisTranscoder(@Nullable FlixelBasisTranscoder basisTranscoder) {
+    this.basisTranscoder = basisTranscoder;
   }
 
   /**

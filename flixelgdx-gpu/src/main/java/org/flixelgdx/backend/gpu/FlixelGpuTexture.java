@@ -23,16 +23,19 @@
  */
 package org.flixelgdx.backend.gpu;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 
 import io.github.stringdotjar.jwebgpu.GpuBindGroup;
 import io.github.stringdotjar.jwebgpu.GpuTexture;
+import io.github.stringdotjar.jwebgpu.GpuTextureFormat;
 import io.github.stringdotjar.jwebgpu.GpuTextureView;
 
 /**
- * An RGBA8 texture on the GPU.
+ * A texture on the GPU, either RGBA8 or block-compressed.
  *
  * <p>The texture owns its {@code GpuTexture}, a view of it, and up to two bind groups (one that samples with
  * nearest-neighbor filtering and one that samples smoothly). The bind groups are created the first time the
@@ -41,13 +44,25 @@ import io.github.stringdotjar.jwebgpu.GpuTextureView;
  * <p>Pixel uploads go through the queue, which makes them visible to every draw recorded in the same frame, even
  * draws recorded before the upload. A texture that is replaced several times in one frame therefore shows only the
  * last version.
+ *
+ * <p>A compressed texture (from a KTX2 file) is rounded up to whole 4x4 blocks on the GPU, so a 50x37 image is a
+ * 52x40 texture. {@link #getWidth()} and {@link #getHeight()} still report 50x37, so frames and regions measured in
+ * pixels keep working, and the batch scales texture coordinates by {@link #getUScale()} and {@link #getVScale()} to
+ * match. A compressed texture cannot be changed with {@link #update(int, int, FlixelImage)}.
  */
 public class FlixelGpuTexture implements FlixelTexture {
 
+  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
+
   private final long id;
   private final long extraUsage;
+  private final long byteSize;
   private final int width;
   private final int height;
+  private final int gpuWidth;
+  private final int gpuHeight;
+  private final float uScale;
+  private final float vScale;
 
   private final FlixelGpuGraphics graphics;
   private GpuTexture texture;
@@ -59,6 +74,7 @@ public class FlixelGpuTexture implements FlixelTexture {
 
   private boolean smooth;
   private boolean destroyed;
+  private boolean compressed;
 
   /**
    * Creates an empty (transparent) texture.
@@ -73,8 +89,13 @@ public class FlixelGpuTexture implements FlixelTexture {
     this.width = width;
     this.height = height;
     this.extraUsage = extraUsage;
+    this.gpuWidth = width;
+    this.gpuHeight = height;
+    this.uScale = 1f;
+    this.vScale = 1f;
+    this.byteSize = (long) width * height * 4L;
     this.epoch = graphics.getDeviceEpoch();
-    this.texture = graphics.createRawTexture(width, height, extraUsage);
+    this.texture = graphics.createRawTexture(width, height, GpuTextureFormat.RGBA8_UNORM, 1, extraUsage);
     this.view = texture.createView(null);
     this.id = graphics.registerTexture(this);
   }
@@ -90,12 +111,43 @@ public class FlixelGpuTexture implements FlixelTexture {
     graphics.writePixels(texture, 0, 0, width, height, image.getPixels());
   }
 
+  /**
+   * Creates a texture from a prepared image, uploading every mip level.
+   *
+   * @param graphics The renderer that owns the texture.
+   * @param image The image, in a format the device supports.
+   */
+  FlixelGpuTexture(@NotNull FlixelGpuGraphics graphics, @NotNull FlixelGpuCompressedImage image) {
+    this.graphics = graphics;
+    this.width = image.getWidth();
+    this.height = image.getHeight();
+    this.gpuWidth = image.getGpuWidth();
+    this.gpuHeight = image.getGpuHeight();
+    this.uScale = (float) width / gpuWidth;
+    this.vScale = (float) height / gpuHeight;
+    this.extraUsage = 0L;
+    this.byteSize = image.getByteSize();
+    this.compressed = image.getFormat().isCompressed();
+    this.epoch = graphics.getDeviceEpoch();
+    this.texture = graphics.createRawTexture(gpuWidth, gpuHeight, image.getFormat().getGpuFormat(), image.getLevels(),
+        0L);
+    this.view = texture.createView(null);
+    this.id = graphics.registerTexture(this);
+    for (int level = 0; level < image.getLevels(); level++) {
+      graphics.writeLevel(texture, image, level);
+    }
+  }
+
   @Override
   public void update(int x, int y, @NotNull FlixelImage image) {
     if (destroyed) {
       return;
     }
     refresh();
+    if (compressed) {
+      LOG.warn("A compressed texture cannot be updated with new pixels; the update was ignored.");
+      return;
+    }
     graphics.writePixels(texture, x, y, image.getWidth(), image.getHeight(), image.getPixels());
   }
 
@@ -124,7 +176,8 @@ public class FlixelGpuTexture implements FlixelTexture {
    *
    * <p>After a device loss every object of the old device is dead, and the pixels were never kept in memory. The
    * texture therefore comes back transparent, with the same size and id, so drawing stays valid and the game can
-   * upload the pixels again. It costs one integer comparison when nothing was lost.
+   * upload the pixels again. A compressed texture comes back as a transparent RGBA8 texture of the same size, which
+   * {@link #update(int, int, FlixelImage)} can then fill. It costs one integer comparison when nothing was lost.
    */
   private void refresh() {
     int current = graphics.getDeviceEpoch();
@@ -143,8 +196,9 @@ public class FlixelGpuTexture implements FlixelTexture {
     }
     view.release();
     texture.release();
-    texture = graphics.createRawTexture(width, height, extraUsage);
+    texture = graphics.createRawTexture(gpuWidth, gpuHeight, GpuTextureFormat.RGBA8_UNORM, 1, extraUsage);
     view = texture.createView(null);
+    compressed = false;
   }
 
   /**
@@ -193,6 +247,64 @@ public class FlixelGpuTexture implements FlixelTexture {
   @Override
   public long getHandle() {
     return id;
+  }
+
+  /**
+   * Returns how many bytes of GPU memory the texture's pixels take, counting every mip level.
+   *
+   * @return The size in bytes.
+   */
+  public long getByteSize() {
+    return byteSize;
+  }
+
+  /**
+   * Returns the width of the texture on the GPU, which is {@link #getWidth()} rounded up to whole blocks for a
+   * compressed texture.
+   *
+   * @return The GPU width in pixels.
+   */
+  public int getGpuWidth() {
+    return gpuWidth;
+  }
+
+  /**
+   * Returns the height of the texture on the GPU, which is {@link #getHeight()} rounded up to whole blocks for a
+   * compressed texture.
+   *
+   * @return The GPU height in pixels.
+   */
+  public int getGpuHeight() {
+    return gpuHeight;
+  }
+
+  /**
+   * Returns the factor that turns a horizontal texture coordinate measured against {@link #getWidth()} into one
+   * measured against {@link #getGpuWidth()}.
+   *
+   * @return {@code getWidth() / getGpuWidth()}, which is 1 unless the texture was rounded up to whole blocks.
+   */
+  public float getUScale() {
+    return uScale;
+  }
+
+  /**
+   * Returns the factor that turns a vertical texture coordinate measured against {@link #getHeight()} into one
+   * measured against {@link #getGpuHeight()}.
+   *
+   * @return {@code getHeight() / getGpuHeight()}, which is 1 unless the texture was rounded up to whole blocks.
+   */
+  public float getVScale() {
+    return vScale;
+  }
+
+  /**
+   * Returns whether the pixels are stored in a block-compressed format.
+   *
+   * @return {@code true} for a texture loaded from a compressed KTX2 file, until a device loss replaces it.
+   */
+  public boolean isCompressed() {
+    return compressed;
   }
 
   @Override

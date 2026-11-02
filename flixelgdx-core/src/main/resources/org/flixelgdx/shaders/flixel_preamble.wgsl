@@ -18,7 +18,8 @@
 struct FlixelGlobals {
   // Maps world pixels to clip space (view-projection times the batch transform). Column-major.
   proj: mat4x4f,
-  // Size in pixels of the texture bound at binding 1.
+  // Size in pixels of the texture bound at binding 1. A compressed texture is rounded up to whole 4x4 blocks, and
+  // texture coordinates are scaled to match, so this is always the size the coordinates are measured against.
   texSize: vec2f,
   // One over texSize, so shaders can step by exactly one texel.
   texelSize: vec2f,
