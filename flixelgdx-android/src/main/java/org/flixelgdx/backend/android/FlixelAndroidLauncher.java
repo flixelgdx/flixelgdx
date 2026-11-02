@@ -30,6 +30,7 @@ import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.android.asset.FlixelAndroidAssetManager;
 import org.flixelgdx.backend.android.file.FlixelAndroidFiles;
+import org.flixelgdx.backend.android.graphics.FlixelAndroidBasisTranscoder;
 import org.flixelgdx.backend.android.graphics.FlixelAndroidGraphics;
 import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
 import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileSink;
@@ -37,6 +38,7 @@ import org.flixelgdx.backend.android.logging.FlixelAndroidLogSiteResolver;
 import org.flixelgdx.backend.android.logging.FlixelLogcatSink;
 import org.flixelgdx.backend.android.runtime.FlixelAndroidRuntimeDevice;
 import org.flixelgdx.backend.android.text.FlixelAndroidFontRasterizer;
+import org.flixelgdx.backend.gpu.FlixelGpuKtx2Loader;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.graphics.FlixelViewport;
@@ -119,6 +121,11 @@ public final class FlixelAndroidLauncher {
 
     FlixelAndroidGraphics graphics = new FlixelAndroidGraphics(activity);
     Flixel.graphics = graphics;
+
+    // Supercompressed .ktx2 textures (from the Basis Universal Gradle plugin) replace their PNGs automatically:
+    // the loader transcodes them to ASTC or ETC2 on a loading thread, so they stay compressed in GPU memory.
+    graphics.setBasisTranscoder(new FlixelAndroidBasisTranscoder());
+    Flixel.assets.registerLoader(".ktx2", new FlixelGpuKtx2Loader());
 
     Flixel.haptics = new FlixelAndroidHaptics(activity);
 
