@@ -30,7 +30,7 @@ shader. Run `./gradlew processShaders` to check shaders on their own.
 ## The WGSL contract
 
 A shader file does not declare the camera matrix, the texture or the sampler. The framework puts a *preamble* in
-front of every shader before compiling it. The preamble is the file
+front of every shader before compiling it. The preamble is
 the `PREAMBLE` text block of `FlixelWgsl` in `flixelgdx-core` (the single source of truth, which the plugin copies out at
 its own build time), so these names are always available:
 
@@ -42,6 +42,11 @@ its own build time), so these names are always available:
 | Your uniform struct | `@group(1) @binding(0)` | Optional. Set its members from Java with `setUniform(...)`. |
 | `FlixelVertexInput`, `FlixelVertexOutput` | | The vertex and the vertex-to-fragment structs. |
 | Entry points | | `fs_main` is required. `vs_main` is optional (the default `flixel_vs` is used otherwise). |
+
+`fs_main` returns straight (non-premultiplied) color, like the texture it samples. The framework premultiplies the
+result itself before blending, so every blend mode treats transparent pixels correctly. For that to work, declare it
+in the usual form, `@fragment fn fs_main(...) -> @location(0) vec4f`; a fragment stage that returns a struct is still
+allowed, but its output is blended as straight color and the game logs a warning.
 
 A complete shader that mixes the sprite toward a color, driven by a group 1 uniform struct:
 
