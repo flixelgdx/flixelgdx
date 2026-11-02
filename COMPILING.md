@@ -114,14 +114,7 @@ sudo pacman -S jdk25-openjdk
    git fetch upstream
    git checkout master
   ```
-3. **Clone jwebgpu next to FlixelGDX.** Every FlixelGDX renderer is written against [jwebgpu](https://github.com/stringdotjar/jwebgpu), the WebGPU bindings for Java. jwebgpu is not published to Maven yet, so FlixelGDX pulls it in as a Gradle composite build and the build **fails to start** when it cannot find a checkout. Put it in the same parent folder as FlixelGDX:
-  ```bash
-   cd ..
-   git clone https://github.com/stringdotjar/jwebgpu.git
-   cd flixelgdx
-  ```
-   The build looks for `../jwebgpu` by default. To keep the checkout somewhere else, pass `-Pjwebgpu.dir=/path/to/jwebgpu`, add `jwebgpu.dir=/path/to/jwebgpu` to `local.properties` (or `gradle.properties`), or set the `JWEBGPU_DIR` environment variable. GitHub Actions checks it out into the workspace and sets `JWEBGPU_DIR` for every job.
-4. **Branch off `master`** for development and PRs (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+3. **Branch off `master`** for development and PRs (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ---
 
@@ -287,9 +280,6 @@ The generated project targets Maven Central by default, pulling the last stable 
 > [!WARNING]
 > The published artifact version is derived from your most recent git tag using `git describe`. If git is not installed or your clone has no tags, the version will be `unspecified`, and the test project will fail to resolve the dependency. Use [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) to avoid version concerns entirely.
 
-> [!IMPORTANT]
-> FlixelGDX depends on jwebgpu, which is not published yet, so a game that consumes FlixelGDX from `mavenLocal()` also needs the jwebgpu artifacts there. Run `./gradlew publishToMavenLocal` in your jwebgpu checkout too, or use [Method 2](#method-2-composite-build) and include both builds.
-
 > [!NOTE]
 > You must re-run `publishToMavenLocal` each time you change the framework and want the test project to pick up those changes. Use [Method 2](#method-2-composite-build) to avoid this.
 
@@ -305,11 +295,6 @@ Composite build lets the test project use your local FlixelGDX source so changes
    Replace `/path/to/flixelgdx` with the path to your FlixelGDX clone.
   - **Windows**: use forward slashes, e.g. `C:/Users/You/flixelgdx`.
   - **macOS/Linux**: e.g. `/home/you/projects/flixelgdx`.
-   Until jwebgpu is published, the game's `settings.gradle` must include **jwebgpu** as well, because FlixelGDX's `flixelgdx-gpu` and `flixelgdx-desktop` modules depend on it by coordinates (`io.github.stringdotjar:jwebgpu-api`, `jwebgpu-ffm` and the `jwebgpu-natives-<os>-<arch>` modules):
-  ```gradle
-   includeBuild '/path/to/flixelgdx'
-   includeBuild '/path/to/jwebgpu'
-  ```
 3. **Your existing dependency declaration stays as-is**; the composite build substitutes it automatically:
   ```gradle
    dependencies {
@@ -340,9 +325,7 @@ The web backend draws with **WebGPU** (through `flixelgdx-gpu` and jwebgpu's bro
 fallback**. To run a web game you need a browser with WebGPU: Chrome or Edge 113 or newer, Safari 26 or newer, or
 Firefox 141 or newer on Windows. On some systems (for example Linux) WebGPU may still need to be switched on in the
 browser's settings. The page must be served over HTTPS or from `localhost`; the dev server started by `run` uses
-`localhost`. A browser without WebGPU shows a message in the page instead of the game. Shaders are WGSL. Because the
-web backend depends on jwebgpu, the jwebgpu checkout described under [Getting the source](#getting-the-source) is
-needed to build it as well.
+`localhost`. A browser without WebGPU shows a message in the page instead of the game. Shaders are WGSL.
 
 ### Run the game in the browser
 
@@ -428,7 +411,7 @@ FlixelGDX on Android renders with WebGPU (Dawn, through jwebgpu's JNI backend), 
 
 - **minSdk 26** (Android 8.0) and a device with **Vulkan 1.1**. The backend's manifest declares `android.hardware.vulkan.version` 0x401000 as required, so Google Play only offers the game to devices that can run it. Emulators need a Vulkan-capable GPU configuration.
 - **64-bit only**: `arm64-v8a` and `x86_64`. The 32-bit ABIs are not supported, and the backend restricts its ABI filters accordingly.
-- The `jwebgpu-jni` library is an Android library from the jwebgpu checkout. jwebgpu includes it whenever the build that includes jwebgpu enables Android (`-PincludeAndroid=true` or `includeAndroid=true` in that build's `local.properties`), so nothing extra is needed in the jwebgpu checkout.
+- The `jwebgpu-jni` library is an Android library (AAR) from Maven Central. When you build against a local jwebgpu checkout, jwebgpu includes it whenever FlixelGDX enables Android, so nothing extra is needed in the checkout.
 - The AAR carries `libwebgpu_dawn.so`, `libjwebgpu_jni.so` and `META-INF/jwebgpu/dawn-licenses.txt`; a game picks them up through its normal dependency on `flixelgdx-android`.
 - Shaders are WGSL only, the same files as on desktop. The built-in preamble and sprite shader are Java text blocks in the framework's source, so they need no resources.
 
@@ -509,10 +492,9 @@ Then run your Gradle command again.
 - **Symptom**: “Project directory does not exist” or path not found in `includeBuild`.
 - **Fix**: Use an absolute path with forward slashes, e.g. `C:/Users/You/flixelgdx`, or escaped backslashes. Avoid trailing backslash.
 
-### jwebgpu checkout not found
+### Testing FlixelGDX against a local jwebgpu checkout
 
-- **Symptom**: Gradle stops right away with "FlixelGDX needs the jwebgpu checkout".
-- **Fix**: Clone `https://github.com/stringdotjar/jwebgpu.git` next to the FlixelGDX folder, or point the build at your checkout with `-Pjwebgpu.dir=...`, `jwebgpu.dir` in `local.properties`, or `JWEBGPU_DIR`.
+FlixelGDX gets [jwebgpu](https://github.com/stringdotjar/jwebgpu) from Maven Central, at the version in `gradle/libs.versions.toml`, so no checkout is needed. To try an unreleased jwebgpu change, point the build at your checkout with `-Pjwebgpu.dir=/path/to/jwebgpu`, `jwebgpu.dir=/path/to/jwebgpu` in `local.properties`, or the `JWEBGPU_DIR` environment variable. Gradle then uses the checkout in place of the published jars. If the path is not a jwebgpu checkout, the build stops and says so.
 
 ### Native access warning or `IllegalCallerException` on the desktop
 

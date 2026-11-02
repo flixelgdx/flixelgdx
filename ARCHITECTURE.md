@@ -24,7 +24,7 @@ The project is split into several modules, each serving a specific purpose.
 
 ### Rendering and shaders
 
-Everything is drawn with [WebGPU](https://www.w3.org/TR/webgpu/) through [jwebgpu](https://github.com/stringdotjar/jwebgpu), the project's Java WebGPU bindings. jwebgpu is consumed as a Gradle composite build until it is published, so a checkout of it must sit next to FlixelGDX (see [COMPILING.md](COMPILING.md)).
+Everything is drawn with [WebGPU](https://www.w3.org/TR/webgpu/) through [jwebgpu](https://github.com/stringdotjar/jwebgpu), the project's Java WebGPU bindings. jwebgpu comes from Maven Central (`io.github.stringdotjar:jwebgpu-*`), at the version in `gradle/libs.versions.toml`.
 
 Shaders are written in **WGSL** only. A shader is one `.wgsl` file, and the framework puts a *preamble* (the `FlixelWgsl.PREAMBLE` text block in `flixelgdx-core`, the single source of truth for the contract; it is a constant, so no platform reads it from a classpath) in front of it:
 
@@ -54,7 +54,7 @@ FlixelGDX uses **Gradle** with **Kotlin DSL** as its build system.
 ### Key Files and Folders
 
 - **`build.gradle.kts`**: The root aggregator where the build system enters. It only registers the `javadocsAll` task, nothing else.
-- **`settings.gradle.kts`**: Defines all the modules included in the project and includes the **jwebgpu** checkout as a composite build (`../jwebgpu` by default; override it with `-Pjwebgpu.dir=...`, `jwebgpu.dir` in `local.properties`, or the `JWEBGPU_DIR` environment variable). Note that `flixelgdx-android` is excluded by default unless
+- **`settings.gradle.kts`**: Defines all the modules included in the project and, only when `-Pjwebgpu.dir=...`, `jwebgpu.dir` in `local.properties` or the `JWEBGPU_DIR` environment variable points at one, includes a local **jwebgpu** checkout as a composite build in place of the published jars. Note that `flixelgdx-android` is excluded by default unless
   `includeAndroid` is set to true in a `local.properties` file or passed as a command argument in the terminal via `PincludeAndroid=true`.
   Refer to the [COMPILING.md](COMPILING.md) file for more information.
 - **`gradle.properties`**: Contains JVM settings for the build process, Maven publishing details and various other properties.
