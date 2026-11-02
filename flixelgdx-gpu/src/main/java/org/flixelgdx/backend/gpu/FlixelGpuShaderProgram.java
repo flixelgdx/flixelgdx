@@ -25,6 +25,7 @@ package org.flixelgdx.backend.gpu;
 
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.wgsl.FlixelUniformBuffer;
+import org.flixelgdx.graphics.wgsl.FlixelWgsl;
 import org.flixelgdx.graphics.wgsl.FlixelWgslLayout;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
@@ -51,6 +52,7 @@ public final class FlixelGpuShaderProgram implements FlixelShaderProgram {
   private final int id;
   private final int epoch;
   private final String vertexEntry;
+  private final String fragmentEntry;
   private final FlixelUniformBuffer uniforms;
   private final FlixelGpuGraphics graphics;
   private GpuShaderModule module;
@@ -63,12 +65,13 @@ public final class FlixelGpuShaderProgram implements FlixelShaderProgram {
   private boolean valid = true;
 
   FlixelGpuShaderProgram(@NotNull FlixelGpuGraphics graphics, int id, @NotNull GpuShaderModule module,
-      @NotNull String vertexEntry, @NotNull FlixelWgslLayout layout) {
+      @NotNull String vertexEntry, @NotNull String fragmentEntry, @NotNull FlixelWgslLayout layout) {
     this.graphics = graphics;
     this.epoch = graphics.getDeviceEpoch();
     this.id = id;
     this.module = module;
     this.vertexEntry = vertexEntry;
+    this.fragmentEntry = fragmentEntry;
     this.uniforms = layout.isEmpty() ? null : new FlixelUniformBuffer(layout);
   }
 
@@ -219,6 +222,25 @@ public final class FlixelGpuShaderProgram implements FlixelShaderProgram {
   @NotNull
   public String getVertexEntry() {
     return vertexEntry;
+  }
+
+  /**
+   * Returns the name of the fragment entry point to use.
+   *
+   * @return The premultiplying entry point the framework adds, or {@code fs_main} for a shader it could not wrap.
+   */
+  @NotNull
+  public String getFragmentEntry() {
+    return fragmentEntry;
+  }
+
+  /**
+   * Returns whether the fragment output is premultiplied, which decides the blend factors.
+   *
+   * @return {@code true} when the framework's premultiplying entry point is used.
+   */
+  public boolean isPremultiplied() {
+    return fragmentEntry.equals(FlixelWgsl.PREMULTIPLIED_FRAGMENT_ENTRY);
   }
 
   /**

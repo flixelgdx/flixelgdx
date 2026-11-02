@@ -89,8 +89,6 @@ public final class FlixelGpuPipelines {
 
   private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
 
-  private static final String ENTRY_FRAGMENT = FlixelWgsl.FRAGMENT_ENTRY;
-
   private final FlixelLongMap<GpuRenderPipeline> cache = new FlixelLongMap<>();
   private final GpuDevice device;
 
@@ -101,7 +99,7 @@ public final class FlixelGpuPipelines {
   private final GpuShaderModuleDescriptor moduleDescriptor = new GpuShaderModuleDescriptor();
   private final GpuShaderSourceWGSL wgsl = new GpuShaderSourceWGSL();
   private final GpuRenderPipelineDescriptor pipelineDescriptor = new GpuRenderPipelineDescriptor();
-  private final GpuFragmentState fragment = new GpuFragmentState(0, 1);
+  private final GpuFragmentState fragment = new GpuFragmentState(1, 1);
   private final GpuVertexBufferLayout vertexLayout = new GpuVertexBufferLayout(3);
   private final GpuBlendState blendState = new GpuBlendState();
   private final GpuBindGroupLayout globalsLayout;
@@ -140,8 +138,8 @@ public final class FlixelGpuPipelines {
     pipelineDescriptor.primitive.topology = GpuPrimitiveTopology.TRIANGLE_LIST;
     pipelineDescriptor.primitive.frontFace = GpuFrontFace.CCW;
     pipelineDescriptor.primitive.cullMode = GpuCullMode.NONE;
-    fragment.entryPoint = ENTRY_FRAGMENT;
     fragment.targetCount = 1;
+    fragment.constants[0].key = FlixelWgsl.DARKEN_CONSTANT;
     fragment.targets[0].writeMask = GpuColorWriteMask.ALL;
     pipelineDescriptor.fragment = fragment;
 
@@ -249,9 +247,16 @@ public final class FlixelGpuPipelines {
       return null;
     }
     String vertexEntry = FlixelWgsl.vertexEntryOf(source);
+    String fragmentEntry = FlixelWgsl.fragmentEntryOf(source);
+    if (!fragmentEntry.equals(FlixelWgsl.PREMULTIPLIED_FRAGMENT_ENTRY)) {
+      LOG.warn("Shader '{}' does not have a plain '@fragment fn {}(...) -> @location(0) vec4f', so its output is"
+          + " blended as straight color and some blend modes may show the color of transparent pixels.", label,
+          FlixelWgsl.FRAGMENT_ENTRY);
+    }
     device.pushErrorScope(GpuErrorFilter.VALIDATION);
     GpuShaderModule module = createModule(fullSource, label);
-    FlixelGpuShaderProgram program = new FlixelGpuShaderProgram(graphics, id, module, vertexEntry, layout);
+    FlixelGpuShaderProgram program = new FlixelGpuShaderProgram(graphics, id, module, vertexEntry, fragmentEntry,
+        layout);
     GpuBindGroupLayout groupLayout = null;
     GpuBindGroup group = null;
     GpuPipelineLayout pipelineLayout = globalsPipelineLayout;
@@ -325,7 +330,7 @@ public final class FlixelGpuPipelines {
   public FlixelGpuShaderProgram createSpriteProgram(@NotNull String source, @NotNull FlixelGpuGraphics graphics) {
     GpuShaderModule module = createModule(FlixelWgsl.assemble(source), "flixel sprite");
     FlixelGpuShaderProgram program = new FlixelGpuShaderProgram(graphics, 0, module, FlixelWgsl.DEFAULT_VERTEX_ENTRY,
-        FlixelWgslLayout.EMPTY);
+        FlixelWgsl.fragmentEntryOf(source), FlixelWgslLayout.EMPTY);
     globalsPipelineLayout.addRef();
     program.attach(globalsPipelineLayout, null, null);
     return program;
@@ -356,8 +361,13 @@ public final class FlixelGpuPipelines {
     pipelineDescriptor.vertex.module = module;
     pipelineDescriptor.vertex.entryPoint = program.getVertexEntry();
     fragment.module = module;
+    fragment.entryPoint = program.getFragmentEntry();
+    boolean premultiplied = program.isPremultiplied();
+    // The darken switch only exists in the framework's premultiplying entry point.
+    fragment.constantCount = premultiplied ? 1 : 0;
+    fragment.constants[0].value = blend == FlixelGpuBlend.DARKEN ? 1.0 : 0.0;
     fragment.targets[0].format = format;
-    fragment.targets[0].blend = FlixelGpuBlend.fill(blend, blendState) ? blendState : null;
+    fragment.targets[0].blend = FlixelGpuBlend.fill(blend, premultiplied, blendState) ? blendState : null;
     GpuRenderPipeline pipeline = device.createRenderPipeline(pipelineDescriptor);
     cache.put(key, pipeline);
     return pipeline;

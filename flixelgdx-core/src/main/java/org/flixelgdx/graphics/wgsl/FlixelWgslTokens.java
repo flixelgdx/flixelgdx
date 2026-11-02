@@ -29,22 +29,26 @@ import org.jetbrains.annotations.NotNull;
  * A minimal WGSL tokenizer used by the layout parser: it drops comments and splits the text into identifiers,
  * numbers and single-character punctuation.
  *
- * <p>It exists only to find struct declarations and uniform bindings, so it does not understand expressions.
+ * <p>It exists only to find struct declarations, uniform bindings and the fragment entry point, so it does not
+ * understand expressions. Each token remembers where it sits in the source, so a caller can rewrite exact characters.
  * Instances are built once when a shader is created, never per frame.
  */
 final class FlixelWgslTokens {
 
   private final String[] text;
+  private final int[] starts;
   private final int count;
 
-  private FlixelWgslTokens(String[] text, int count) {
+  private FlixelWgslTokens(String[] text, int[] starts, int count) {
     this.text = text;
+    this.starts = starts;
     this.count = count;
   }
 
   @NotNull
   static FlixelWgslTokens of(@NotNull String source) {
     String[] out = new String[Math.max(16, source.length() / 3)];
+    int[] at = new int[out.length];
     int n = 0;
     int i = 0;
     int len = source.length();
@@ -75,6 +79,8 @@ final class FlixelWgslTokens {
         while (i < len && isIdentPart(source.charAt(i))) {
           i++;
         }
+        at = ensure(at, n);
+        at[n] = start;
         out = ensure(out, n);
         out[n++] = source.substring(start, i);
       } else if (c >= '0' && c <= '9') {
@@ -82,15 +88,19 @@ final class FlixelWgslTokens {
         while (i < len && (isIdentPart(source.charAt(i)) || source.charAt(i) == '.')) {
           i++;
         }
+        at = ensure(at, n);
+        at[n] = start;
         out = ensure(out, n);
         out[n++] = source.substring(start, i);
       } else {
+        at = ensure(at, n);
+        at[n] = i;
         out = ensure(out, n);
         out[n++] = String.valueOf(c);
         i++;
       }
     }
-    return new FlixelWgslTokens(out, n);
+    return new FlixelWgslTokens(out, at, n);
   }
 
   int size() {
@@ -104,6 +114,35 @@ final class FlixelWgslTokens {
 
   boolean is(int index, @NotNull String value) {
     return index >= 0 && index < count && text[index].equals(value);
+  }
+
+  /**
+   * Returns where a token starts in the source.
+   *
+   * @param index The token index.
+   * @return The offset of its first character.
+   */
+  int start(int index) {
+    return starts[index];
+  }
+
+  /**
+   * Returns where a token ends in the source.
+   *
+   * @param index The token index.
+   * @return The offset just past its last character.
+   */
+  int end(int index) {
+    return starts[index] + text[index].length();
+  }
+
+  private static int[] ensure(int[] array, int used) {
+    if (used < array.length) {
+      return array;
+    }
+    int[] bigger = new int[array.length * 2];
+    System.arraycopy(array, 0, bigger, 0, used);
+    return bigger;
   }
 
   private static String[] ensure(String[] array, int used) {

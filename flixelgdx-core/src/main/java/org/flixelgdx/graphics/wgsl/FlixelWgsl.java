@@ -25,6 +25,7 @@ package org.flixelgdx.graphics.wgsl;
 
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The shader contract every FlixelGDX renderer shares: how a user's WGSL file becomes a full shader module.
@@ -68,6 +69,23 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>The preamble is a constant rather than a file, so it is part of the program on every platform and nothing
  * has to read it from a classpath at run time (a browser has none).
+ *
+ * <h2>Straight in, premultiplied out</h2>
+ *
+ * <p>Textures hold straight (non-premultiplied) color, and {@value #FRAGMENT_ENTRY} returns straight color too, so
+ * shader code never has to think about premultiplication. Blending, however, is only correct for every blend mode
+ * when the color reaching the GPU's blender is premultiplied: with straight color, the hidden color of fully
+ * transparent pixels leaks into modes such as multiply and screen. So {@link #assemble(String)} turns
+ * {@value #FRAGMENT_ENTRY} into a plain function and adds its own entry point, {@value #PREMULTIPLIED_FRAGMENT_ENTRY},
+ * which calls it and premultiplies the result. The rewrite only replaces the {@code @fragment} and {@code @location}
+ * attributes with spaces, so every line and column of the shader stays where it was and error messages still point
+ * at the right place.
+ *
+ * <p>Darken needs transparent pixels to count as white rather than black. The generated entry point reads the
+ * pipeline constant {@value #DARKEN_CONSTANT}, which the renderer sets for darken pipelines only.
+ *
+ * <p>A fragment entry point that does not return a plain {@code vec4f} is left alone and its output is blended as
+ * straight color, as before; see {@link #fragmentEntryOf(String)}.
  */
 public final class FlixelWgsl {
 
@@ -143,6 +161,12 @@ public final class FlixelWgsl {
   /** The vertex entry point the preamble provides, used when a shader file defines no {@code vs_main}. */
   public static final String DEFAULT_VERTEX_ENTRY = "flixel_vs";
 
+  /** The fragment entry point {@link #assemble(String)} adds, which premultiplies what the shader returns. */
+  public static final String PREMULTIPLIED_FRAGMENT_ENTRY = "flixel_fs";
+
+  /** The pipeline-overridable constant that makes {@value #PREMULTIPLIED_FRAGMENT_ENTRY} output darken's color. */
+  public static final String DARKEN_CONSTANT = "flixel_darken";
+
   /** The bind group the framework owns (matrix, texture and sampler). */
   public static final int FRAMEWORK_GROUP = 0;
 
@@ -158,14 +182,146 @@ public final class FlixelWgsl {
   private FlixelWgsl() {}
 
   /**
-   * Returns the full shader module text for a user's shader file: the preamble followed by the file.
+   * Returns the full shader module text for a user's shader file: the preamble followed by the file, with the
+   * premultiplying fragment entry point added when the file allows it (see the class description).
    *
    * @param userSource The text of the {@code .wgsl} file.
    * @return The source to compile as one WGSL module.
    */
   @NotNull
   public static String assemble(@NotNull String userSource) {
-    return PREAMBLE + '\n' + userSource;
+    String wrapped = premultiply(userSource);
+    return PREAMBLE + '\n' + (wrapped != null ? wrapped : userSource);
+  }
+
+  /**
+   * Returns the name of the fragment entry point to use for a shader file.
+   *
+   * @param userSource The text of the {@code .wgsl} file.
+   * @return {@value #PREMULTIPLIED_FRAGMENT_ENTRY} when {@link #assemble(String)} adds it, which is the case for any
+   *     {@value #FRAGMENT_ENTRY} returning a plain {@code vec4f}; otherwise {@value #FRAGMENT_ENTRY}, whose output
+   *     must then be blended as straight color.
+   */
+  @NotNull
+  public static String fragmentEntryOf(@NotNull String userSource) {
+    return premultiply(userSource) != null ? PREMULTIPLIED_FRAGMENT_ENTRY : FRAGMENT_ENTRY;
+  }
+
+  /**
+   * Rewrites a shader file so {@value #FRAGMENT_ENTRY} becomes a plain function called by a premultiplying entry
+   * point.
+   *
+   * @param source The text of the {@code .wgsl} file.
+   * @return The rewritten text, or {@code null} when the file has no {@code @fragment fn fs_main(...) -> vec4f}.
+   */
+  @Nullable
+  static String premultiply(@NotNull String source) {
+    FlixelWgslTokens t = FlixelWgslTokens.of(source);
+    int fn = -1;
+    for (int i = 0; i + 1 < t.size(); i++) {
+      if (t.is(i, "fn") && t.is(i + 1, FRAGMENT_ENTRY)) {
+        fn = i;
+        break;
+      }
+    }
+    // Only the usual form, a lone @fragment right before fn, is rewritten.
+    if (fn < 2 || !t.is(fn - 2, "@") || !t.is(fn - 1, "fragment") || !t.is(fn + 2, "(")) {
+      return null;
+    }
+    char[] out = source.toCharArray();
+    blank(out, t.start(fn - 2), t.end(fn - 1));
+
+    // The parameters: attributes are only allowed on entry points, so they are blanked here and kept, as written,
+    // on the generated entry point, which passes every parameter on by name.
+    int open = fn + 2;
+    int close = -1;
+    int depth = 0;
+    StringBuilder names = new StringBuilder();
+    for (int i = open; i < t.size(); i++) {
+      if (t.is(i, "(")) {
+        depth++;
+      } else if (t.is(i, ")")) {
+        depth--;
+        if (depth == 0) {
+          close = i;
+          break;
+        }
+      } else if (depth == 1 && t.is(i, "@")) {
+        int end = attributeEnd(t, i);
+        blank(out, t.start(i), t.end(end));
+        i = end;
+      } else if (depth == 1 && t.is(i + 1, ":") && isIdentifier(t.get(i))) {
+        if (names.length() > 0) {
+          names.append(", ");
+        }
+        names.append(t.get(i));
+      }
+    }
+    if (close < 0 || !t.is(close + 1, "-") || !t.is(close + 2, ">")) {
+      return null;
+    }
+
+    // The return type: its @location attribute is blanked, and it must be a plain vec4f.
+    int j = close + 3;
+    while (t.is(j, "@")) {
+      int end = attributeEnd(t, j);
+      blank(out, t.start(j), t.end(end));
+      j = end + 1;
+    }
+    StringBuilder type = new StringBuilder();
+    while (j < t.size() && !t.is(j, "{")) {
+      type.append(t.get(j));
+      j++;
+    }
+    String returned = type.toString();
+    if (!returned.equals("vec4f") && !returned.equals("vec4<f32>")) {
+      return null;
+    }
+
+    String params = source.substring(t.end(open), t.start(close));
+    return new StringBuilder(out.length + 400).append(out)
+        .append("\n\n// Added by FlixelGDX: premultiplies what ").append(FRAGMENT_ENTRY).append(" returns.\n")
+        .append("override ").append(DARKEN_CONSTANT).append(": bool = false;\n\n")
+        .append("@fragment\n")
+        .append("fn ").append(PREMULTIPLIED_FRAGMENT_ENTRY).append('(').append(params)
+        .append(") -> @location(0) vec4f {\n")
+        .append("  let color = ").append(FRAGMENT_ENTRY).append('(').append(names).append(");\n")
+        .append("  if (").append(DARKEN_CONSTANT).append(") {\n")
+        .append("    return vec4f(color.rgb * color.a + (1.0 - color.a), color.a);\n")
+        .append("  }\n")
+        .append("  return vec4f(color.rgb * color.a, color.a);\n")
+        .append("}\n")
+        .toString();
+  }
+
+  // Returns the index of the last token of the attribute that starts at the "@" token at index at.
+  private static int attributeEnd(FlixelWgslTokens t, int at) {
+    if (!t.is(at + 2, "(")) {
+      return at + 1;
+    }
+    int depth = 0;
+    for (int i = at + 2; i < t.size(); i++) {
+      if (t.is(i, "(")) {
+        depth++;
+      } else if (t.is(i, ")") && --depth == 0) {
+        return i;
+      }
+    }
+    return t.size() - 1;
+  }
+
+  // Replaces a range with spaces, keeping line breaks so every later line keeps its number.
+  private static void blank(char[] text, int from, int to) {
+    for (int i = from; i < to; i++) {
+      if (text[i] != '\n' && text[i] != '\r') {
+        text[i] = ' ';
+      }
+    }
+  }
+
+  private static boolean isIdentifier(String token) {
+    char c = token.isEmpty() ? '0' : token.charAt(0);
+    return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
   }
 
   /**
