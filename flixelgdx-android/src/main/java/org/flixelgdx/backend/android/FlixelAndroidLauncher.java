@@ -101,8 +101,6 @@ public final class FlixelAndroidLauncher {
    */
   public static void launch(@NotNull Activity activity, @NotNull FlixelGame game,
       @NotNull FlixelRuntimeMode runtimeMode) {
-    // Game developers never call this: the launcher loads the WebGPU native library (Dawn) and registers the JNI
-    // backend, so everything after this point only talks to the platform-neutral WebGPU API.
     JWebGpuJni.install();
 
     FlixelAndroidRuntimeDevice runtime = new FlixelAndroidRuntimeDevice(activity);

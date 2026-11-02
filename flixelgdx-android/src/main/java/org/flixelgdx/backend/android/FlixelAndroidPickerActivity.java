@@ -124,9 +124,12 @@ public class FlixelAndroidPickerActivity extends ComponentActivity {
 
   private void finishWith(@Nullable Uri[] uris) {
     if (uris != null) {
-      for (int i = 0; i < uris.length; i++) {
+      for (Uri uri : uris) {
+        if (uri == null) {
+          continue;
+        }
         try {
-          getContentResolver().takePersistableUriPermission(uris[i], Intent.FLAG_GRANT_READ_URI_PERMISSION);
+          getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         } catch (RuntimeException ignored) {
           // Not every provider offers persistable grants; the temporary grant is enough to read now.
         }

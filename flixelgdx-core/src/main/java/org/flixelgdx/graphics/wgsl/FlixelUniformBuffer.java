@@ -223,8 +223,7 @@ public final class FlixelUniformBuffer {
    *
    * @return The uniform bytes.
    */
-  @NotNull
-  public byte[] getData() {
+  public byte @NotNull [] getData() {
     return data;
   }
 

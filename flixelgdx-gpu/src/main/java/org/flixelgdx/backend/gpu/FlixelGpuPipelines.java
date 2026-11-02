@@ -100,7 +100,6 @@ public final class FlixelGpuPipelines {
   private final GpuShaderSourceWGSL wgsl = new GpuShaderSourceWGSL();
   private final GpuRenderPipelineDescriptor pipelineDescriptor = new GpuRenderPipelineDescriptor();
   private final GpuFragmentState fragment = new GpuFragmentState(1, 1);
-  private final GpuVertexBufferLayout vertexLayout = new GpuVertexBufferLayout(3);
   private final GpuBlendState blendState = new GpuBlendState();
   private final GpuBindGroupLayout globalsLayout;
   private final GpuPipelineLayout globalsPipelineLayout;
@@ -117,6 +116,7 @@ public final class FlixelGpuPipelines {
   public FlixelGpuPipelines(@NotNull GpuDevice device) {
     this.device = device;
 
+    GpuVertexBufferLayout vertexLayout = new GpuVertexBufferLayout(3);
     GpuVertexAttribute position = vertexLayout.attributes[0];
     position.format = GpuVertexFormat.FLOAT32X2;
     position.offset = 0L;

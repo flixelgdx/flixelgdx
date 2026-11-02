@@ -299,10 +299,10 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private static int queryBlockFormats(GpuDevice device) {
     int mask = 0;
     FlixelGpuBlockFormat[] all = FlixelGpuBlockFormat.values();
-    for (int i = 0; i < all.length; i++) {
-      GpuFeatureName feature = all[i].getFeature();
+    for (FlixelGpuBlockFormat flixelGpuBlockFormat : all) {
+      GpuFeatureName feature = flixelGpuBlockFormat.getFeature();
       if (feature == null || device.hasFeature(feature)) {
-        mask |= all[i].bit();
+        mask |= flixelGpuBlockFormat.bit();
       }
     }
     return mask;
@@ -330,7 +330,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     return buffer;
   }
 
-  @Nullable
   private FlixelGpuTexture createOpaqueTexture() {
     FlixelImage pixel = new FlixelImage(1, 1);
     pixel.fill(0xFFFFFFFF);
@@ -1797,6 +1796,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
     private long nextLog;
 
+    @SuppressWarnings("DefaultLocale")
     void tick(long now, FlixelGpuStats stats, FlixelGraphicsApi api) {
       if (now < nextLog) {
         return;

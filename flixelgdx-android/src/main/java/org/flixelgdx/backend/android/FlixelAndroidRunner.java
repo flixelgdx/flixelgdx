@@ -608,7 +608,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
       if (!drawn) {
         // The surface could not give a texture (it is being replaced); do not spin while waiting.
         LockSupport.parkNanos(IDLE_FRAME_NANOS);
-      } else if (!graphics.isVSyncEnabled()) {
+      } else if (!graphics.isVSync()) {
         limitFrameRate();
       }
     } catch (Throwable t) {
@@ -656,7 +656,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
       return;
     }
     try {
-      int fps = graphics.isVSyncEnabled() ? graphics.getTargetFps() : 0;
+      int fps = graphics.isVSync() ? graphics.getTargetFps() : 0;
       s.setFrameRate(fps, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
     } catch (RuntimeException e) {
       LOG.warn("The frame rate hint was rejected: {}", e.getMessage());
