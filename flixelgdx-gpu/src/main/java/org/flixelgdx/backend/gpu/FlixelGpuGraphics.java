@@ -115,12 +115,6 @@ import java.nio.ByteBuffer;
  */
 public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
-  /**
-   * The classpath location of the built-in sprite shader. A platform that has to bundle its resources by name
-   * (for example the web) can use this to include the file.
-   */
-  public static final String SPRITE_SHADER = "org/flixelgdx/shaders/sprite.wgsl";
-
   private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
 
   private static final long VERTEX_RING_BYTES = 4L << 20;
@@ -287,11 +281,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     indexRing = new FlixelGpuRing(device, GpuBufferUsage.INDEX, INDEX_RING_BYTES, "flixel overlay indices");
     quadIndices = createQuadIndexBuffer();
 
-    String sprite = FlixelWgsl.readResource(SPRITE_SHADER);
-    if (sprite == null) {
-      throw new IllegalStateException("The sprite shader " + SPRITE_SHADER + " is missing from the classpath.");
-    }
-    spriteProgram = pipelines.createSpriteProgram(sprite, this);
+    spriteProgram = pipelines.createSpriteProgram(FlixelGpuShaders.SPRITE, this);
     opaqueTexture = createOpaqueTexture();
     configureSurface();
     surfaceDirty = false;
@@ -1477,8 +1467,10 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   @Override
   public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
     String path = "shaders/" + name + ".wgsl";
-    String source = FlixelWgsl.readResource(path);
-    if (source == null && Flixel.assets != null) {
+    // Read through the asset system, which knows where each platform keeps the game's files: the assets folder or
+    // the packaged resources on desktop and Android, and the preloaded assets on the web.
+    String source = null;
+    if (Flixel.assets != null) {
       FlixelFile file = Flixel.assets.resolveFile(path);
       if (file != null && file.exists()) {
         source = file.readString();
@@ -1557,7 +1549,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   }
 
   @Override
-  public boolean isVSyncEnabled() {
+  public boolean isVSync() {
     return vsync;
   }
 

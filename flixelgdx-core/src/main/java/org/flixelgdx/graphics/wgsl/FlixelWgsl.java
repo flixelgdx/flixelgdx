@@ -25,19 +25,13 @@ package org.flixelgdx.graphics.wgsl;
 
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 /**
  * The shader contract every FlixelGDX renderer shares: how a user's WGSL file becomes a full shader module.
  *
  * <p>A FlixelGDX shader is one {@code .wgsl} file. It does not declare the camera matrix, the texture or the
- * sampler. The framework puts a <em>preamble</em> (the file {@value #PREAMBLE_PATH}, stored in this module as the
- * single source of truth) in front of it, so every shader sees the same names:
+ * sampler. The framework puts a <em>preamble</em> (the file {@code src/main/wgsl/flixel_preamble.wgsl} of this
+ * module, the single source of truth) in front of it, so every shader sees the same names:
  *
  * <ul>
  *   <li>{@code FlixelVertexInput} and {@code FlixelVertexOutput}, the structs that carry a vertex through the
@@ -71,11 +65,12 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>Think of the preamble as the stage and the shader file as the act: the stage (lights, floor, curtains) is
  * always built the same way, and each act only describes what happens on it.
+ *
+ * <p>The preamble is not read from the classpath at run time, since not every platform has one (a browser does
+ * not). The build turns the file into the constant {@link FlixelBuiltinWgsl#PREAMBLE}, so it is part of the
+ * program on every platform.
  */
 public final class FlixelWgsl {
-
-  /** The classpath location of the preamble file. */
-  public static final String PREAMBLE_PATH = "org/flixelgdx/shaders/flixel_preamble.wgsl";
 
   /** The name of the fragment entry point every shader file must define. */
   public static final String FRAGMENT_ENTRY = "fs_main";
@@ -98,9 +93,6 @@ public final class FlixelWgsl {
   /** The byte size of the {@code FlixelGlobals} uniform in bind group 0. */
   public static final int GLOBALS_SIZE = 80;
 
-  @Nullable
-  private static String preamble;
-
   private FlixelWgsl() {}
 
   /**
@@ -111,9 +103,7 @@ public final class FlixelWgsl {
    */
   @NotNull
   public static String assemble(@NotNull String userSource) {
-    String pre = getPreamble();
-    return new StringBuilder(pre.length() + userSource.length() + 2)
-        .append(pre).append('\n').append(userSource).toString();
+    return FlixelBuiltinWgsl.PREAMBLE + '\n' + userSource;
   }
 
   /**
@@ -147,58 +137,12 @@ public final class FlixelWgsl {
   }
 
   /**
-   * Returns the preamble text, loading it from the classpath on first use.
+   * Returns the preamble text that {@link #assemble(String)} puts in front of every shader file.
    *
-   * @return The contents of {@value #PREAMBLE_PATH}.
-   * @throws IllegalStateException if the file is missing from the classpath.
+   * @return The contents of {@code flixel_preamble.wgsl}.
    */
   @NotNull
   public static String getPreamble() {
-    String text = preamble;
-    if (text == null) {
-      text = readResource(PREAMBLE_PATH);
-      if (text == null) {
-        throw new IllegalStateException("The WGSL preamble " + PREAMBLE_PATH + " is missing from the classpath.");
-      }
-      preamble = text;
-    }
-    return text;
-  }
-
-  /**
-   * Overrides the preamble text.
-   *
-   * <p>Platforms that cannot read classpath resources at run time (for example because resources are bundled
-   * differently) can hand the text in here before any shader is created.
-   *
-   * @param text The preamble text, or {@code null} to load it from the classpath again.
-   */
-  public static void setPreamble(@Nullable String text) {
-    preamble = text;
-  }
-
-  /**
-   * Reads a UTF-8 text resource from the classpath.
-   *
-   * @param path The resource path without a leading slash.
-   * @return The text, or {@code null} when the resource does not exist or cannot be read.
-   */
-  @Nullable
-  public static String readResource(@NotNull String path) {
-    try (InputStream in = FlixelWgsl.class.getResourceAsStream("/" + path)) {
-      if (in == null) {
-        return null;
-      }
-      // InputStream.readAllBytes() is missing on Android before API 33, so read in chunks instead.
-      ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
-      byte[] chunk = new byte[4096];
-      int read;
-      while ((read = in.read(chunk)) != -1) {
-        out.write(chunk, 0, read);
-      }
-      return new String(out.toByteArray(), StandardCharsets.UTF_8);
-    } catch (IOException e) {
-      return null;
-    }
+    return FlixelBuiltinWgsl.PREAMBLE;
   }
 }

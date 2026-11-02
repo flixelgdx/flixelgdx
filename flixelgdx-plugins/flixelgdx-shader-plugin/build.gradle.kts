@@ -19,7 +19,7 @@ gradlePlugin {
 // validates against the same contract the renderer compiles. Nothing is typed twice, and a renamed constant
 // fails this task instead of silently drifting.
 val wgslDir = rootProject.layout.projectDirectory.dir("flixelgdx-core/src/main")
-val preambleFile = wgslDir.file("resources/org/flixelgdx/shaders/flixel_preamble.wgsl")
+val preambleFile = wgslDir.file("wgsl/flixel_preamble.wgsl")
 val wgslJavaFile = wgslDir.file("java/org/flixelgdx/graphics/wgsl/FlixelWgsl.java")
 val contractDir = layout.buildDirectory.dir("generated/resources/contract")
 
