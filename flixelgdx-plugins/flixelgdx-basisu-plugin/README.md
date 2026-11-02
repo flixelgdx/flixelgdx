@@ -62,7 +62,7 @@ basisu {
   // Where .ktx2 files are written, mirroring the source layout (default: build/generated/basisuAssets).
   outputDir = file('build/compressedAssets')
 
-  // Generate a full mipmap chain for each texture (default: true).
+  // Generate a full mipmap chain for each texture (default: false).
   generateMipmaps = true
 
   // Use higher-quality UASTC instead of the default smaller ETC1S mode (default: false).
@@ -112,9 +112,12 @@ A few details are worth knowing:
 - **Sizes that are not a multiple of 4.** Compressed formats store 4x4 pixel blocks, so a 50x37 image
   becomes a 52x40 texture on the GPU. The texture still reports 50x37 and texture coordinates are scaled
   to match, so frames, animations and atlases keep working unchanged.
-- **Mipmaps.** The mipmaps from `generateMipmaps` are uploaded too, which keeps scaled-down sprites
-  smooth. When the size is not a multiple of 4, only the levels that line up with the rounded-up size are
-  kept (often the first two or three).
+- **Mipmaps.** Off by default, so compressed textures look the same as the PNGs that desktop and web
+  load. With `generateMipmaps = true` the mipmaps are uploaded too, which keeps sprites drawn much smaller
+  than their size smooth. When the size is not a multiple of 4, only the levels that line up with the
+  rounded-up size are kept (often the first two or three).
+- **Quality.** The default ETC1S mode is lossy, so colors can shift slightly compared with the PNG. Use
+  `useUastc = true` for art where exact color matters.
 - **No pixel updates.** A compressed texture cannot be changed with `FlixelTexture.update(...)`. Exclude
   any image the game draws into at runtime.
 

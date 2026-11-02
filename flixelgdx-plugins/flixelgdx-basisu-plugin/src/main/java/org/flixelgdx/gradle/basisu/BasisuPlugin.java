@@ -100,7 +100,7 @@ public class BasisuPlugin implements Plugin<Project> {
     ext.getEnabled().convention(enabledByProperty);
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
     ext.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/basisuAssets"));
-    ext.getGenerateMipmaps().convention(true);
+    ext.getGenerateMipmaps().convention(false);
     ext.getUseUastc().convention(false);
     ext.getEtc1sQuality().convention(128);
     ext.getUastcLevel().convention(2);
