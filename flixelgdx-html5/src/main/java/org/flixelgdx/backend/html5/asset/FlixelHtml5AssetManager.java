@@ -38,7 +38,6 @@ import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
-import org.teavm.jso.file.Blob;
 import org.teavm.jso.typedarrays.Int8Array;
 
 import java.nio.ByteBuffer;
@@ -141,7 +140,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
     if (activeDecodeCount < MAX_CONCURRENT_DECODES) {
       activeDecodes.put(key, key);
       activeDecodeCount++;
-      startImageDecodeJs(key);
+      startImageDecode(key);
     } else {
       queuedDecodes.put(key, key);
     }
@@ -185,7 +184,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
         it.remove();
         activeDecodes.put(entry.key, entry.key);
         activeDecodeCount++;
-        startImageDecodeJs(entry.key);
+        startImageDecode(entry.key);
       }
     }
     boolean parentDone = super.update(millis);
@@ -287,7 +286,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
         it.remove();
         activeDecodes.put(next.key, next.key);
         activeDecodeCount++;
-        startImageDecodeJs(next.key);
+        startImageDecode(next.key);
       }
     }
   }
@@ -311,8 +310,8 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
    *
    * <p>Because image files are not preloaded into {@code window.__flixelAssets} (to avoid enormous
    * up-front memory consumption), this method fetches the image bytes on demand via
-   * {@code fetch("assets/" + path)}, creates a {@link Blob} with the correct MIME type so that
-   * {@code createImageBitmap} can decode it regardless of the server's {@code Content-Type} header,
+   * {@code fetch("assets/" + path)}, decodes it with the exact decoder of {@link FlixelHtml5ImageBytes}
+   * (with the correct MIME type, so the server's {@code Content-Type} header does not matter),
    * and stores the decoded RGBA pixels as a compact FLXI-encoded {@code Uint8Array} in
    * {@code window.__flixelDecodedImages[path]}.
    *
@@ -321,6 +320,11 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
    *
    * @param path Normalized asset path of the image to fetch and decode.
    */
+  private static void startImageDecode(String path) {
+    FlixelHtml5ImageBytes.install();
+    startImageDecodeJs(path);
+  }
+
   @JSBody(params = "path", script = """
       if (!window.__flixelDecodedImages) { window.__flixelDecodedImages = {}; }
       var exts = { 'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
@@ -333,20 +337,9 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
           return res.arrayBuffer();
         })
         .then(function(buffer) {
-          return createImageBitmap(new Blob([buffer], { type: mime }));
+          return window.__flixelDecodeImage(buffer, mime);
         })
-        .then(function(bitmap) {
-          var canvas = document.createElement('canvas');
-          canvas.width = bitmap.width; canvas.height = bitmap.height;
-          var ctx = canvas.getContext('2d');
-          ctx.drawImage(bitmap, 0, 0);
-          var pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
-          var out = new Uint8Array(12 + pixels.length);
-          out[0] = 70; out[1] = 76; out[2] = 88; out[3] = 73;
-          var view = new DataView(out.buffer);
-          view.setUint32(4, bitmap.width, true); view.setUint32(8, bitmap.height, true);
-          out.set(pixels, 12);
-          if (bitmap.close) { bitmap.close(); }
+        .then(function(out) {
           window.__flixelDecodedImages[path] = out;
         })
         .catch(function(e) {
