@@ -14,27 +14,40 @@ gradlePlugin {
   }
 }
 
-// The shader contract (the preamble text and the bind group numbers) has exactly one home: flixelgdx-core. This
-// task copies the preamble and turns the constants of FlixelWgsl.java into a properties file, so the plugin
-// validates against the same contract the renderer compiles. Nothing is typed twice, and a renamed constant
-// fails this task instead of silently drifting.
+// The shader contract (the preamble text and the bind group numbers) has exactly one home: FlixelWgsl.java in
+// flixelgdx-core. This task copies the PREAMBLE text block into a file and turns the other constants into a
+// properties file, so the plugin validates against the same contract the renderer compiles. Nothing is typed
+// twice, and a renamed or reshaped constant fails this task instead of silently drifting.
 val wgslDir = rootProject.layout.projectDirectory.dir("flixelgdx-core/src/main")
-val preambleFile = wgslDir.file("wgsl/flixel_preamble.wgsl")
 val wgslJavaFile = wgslDir.file("java/org/flixelgdx/graphics/wgsl/FlixelWgsl.java")
 val contractDir = layout.buildDirectory.dir("generated/resources/contract")
 
 val generateContract = tasks.register("generateShaderContract") {
   group = "build"
   description = "Bundles the WGSL preamble and the shader contract constants of flixelgdx-core into the plugin."
-  inputs.file(preambleFile)
   inputs.file(wgslJavaFile)
   outputs.dir(contractDir)
-  val preamble = preambleFile.asFile
   val javaSource = wgslJavaFile.asFile
   val out = contractDir.get().dir("org/flixelgdx/gradle/shader").asFile
   doLast {
     out.mkdirs()
-    preamble.copyTo(File(out, "flixel_preamble.wgsl"), overwrite = true)
+    val text = javaSource.readText()
+    // Rebuild the string Java makes from the text block: each line minus the closing quotes' indentation, trailing
+    // spaces dropped, and a final line break because the closing quotes sit on their own line. That is exact as long
+    // as the block has no escapes and nothing is indented less than the closing quotes, which is checked below.
+    val block = Regex("""public static final String PREAMBLE = ""\"\n(.*?)\n( *)""\";""", RegexOption.DOT_MATCHES_ALL)
+      .find(text) ?: throw GradleException("FlixelWgsl.java no longer declares PREAMBLE as a text block.")
+    val body = block.groupValues[1]
+    if ('\\' in body) {
+      throw GradleException("FlixelWgsl.PREAMBLE must not use backslash escapes; generateShaderContract copies it as-is.")
+    }
+    val closingIndent = block.groupValues[2].length
+    val lines = body.split('\n')
+    if (lines.any { it.isNotBlank() && it.length - it.trimStart().length < closingIndent }) {
+      throw GradleException("FlixelWgsl.PREAMBLE's closing quotes must line up with its text.")
+    }
+    val preamble = lines.joinToString("\n", postfix = "\n") { if (it.isBlank()) "" else it.substring(closingIndent).trimEnd() }
+    File(out, "flixel_preamble.wgsl").writeText(preamble)
 
     val wanted = listOf(
       "FRAGMENT_ENTRY", "VERTEX_ENTRY", "DEFAULT_VERTEX_ENTRY",

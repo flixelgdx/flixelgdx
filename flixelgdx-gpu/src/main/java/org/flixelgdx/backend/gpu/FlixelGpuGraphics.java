@@ -116,6 +116,15 @@ import java.nio.ByteBuffer;
 public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
   private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
+  // The built-in sprite shader. The preamble from FlixelWgsl is put in front of it like any other shader.
+  private static final String SPRITE_SHADER = """
+      // The built-in sprite shader: the texel times the vertex tint. Premultiplication is left to the blend mode.
+
+      @fragment
+      fn fs_main(in: FlixelVertexOutput) -> @location(0) vec4f {
+        return textureSample(flixelTexture, flixelSampler, in.uv) * in.color;
+      }
+      """;
 
   private static final long VERTEX_RING_BYTES = 4L << 20;
   private static final long UNIFORM_RING_BYTES = 1L << 20;
@@ -281,7 +290,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     indexRing = new FlixelGpuRing(device, GpuBufferUsage.INDEX, INDEX_RING_BYTES, "flixel overlay indices");
     quadIndices = createQuadIndexBuffer();
 
-    spriteProgram = pipelines.createSpriteProgram(FlixelGpuShaders.SPRITE, this);
+    spriteProgram = pipelines.createSpriteProgram(SPRITE_SHADER, this);
     opaqueTexture = createOpaqueTexture();
     configureSurface();
     surfaceDirty = false;
