@@ -29,7 +29,6 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.functional.FlixelDrawable;
-import org.flixelgdx.graphics.wgsl.FlixelWgsl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -524,7 +523,7 @@ public interface FlixelGraphicsManager {
    *
    * <p>The shader is the file {@code shaders/<name>.wgsl}, read through the asset manager (the assets folder, or
    * the game's packaged resources on platforms that have them). The framework puts its shader preamble in front of the file, as
-   * described in {@link FlixelWgsl}. Game code uses {@link FlixelShader#load} rather
+   * described in the renderer's {@code FlixelWgsl} class. Game code uses {@link FlixelShader#load} rather
    * than calling this directly.
    *
    * <p>The default returns {@link FlixelUnsupportedShader} so headless and pre-startup sessions degrade
@@ -544,7 +543,7 @@ public interface FlixelGraphicsManager {
    * <p>The source is one WGSL file with a fragment entry point named {@code fs_main}, an optional vertex entry
    * point named {@code vs_main}, and optionally a uniform struct at {@code @group(1) @binding(0)}. The framework
    * prepends its preamble, so the source must not declare the framework names itself. See
-   * {@link FlixelWgsl} for the full contract.
+   * the renderer's {@code FlixelWgsl} class for the full contract.
    *
    * <p>When the backend cannot compile shaders (a headless session, or a platform that has not adopted WGSL yet),
    * this returns {@link FlixelUnsupportedShader}, whose {@link FlixelShaderProgram#isValid()} is always

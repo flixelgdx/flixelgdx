@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.graphics;
 
-import org.flixelgdx.graphics.wgsl.FlixelWgslLayout;
+import org.flixelgdx.backend.gpu.wgsl.FlixelWgslLayout;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

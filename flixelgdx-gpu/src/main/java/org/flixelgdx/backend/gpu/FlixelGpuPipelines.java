@@ -24,9 +24,9 @@
 package org.flixelgdx.backend.gpu;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.backend.gpu.wgsl.FlixelWgsl;
+import org.flixelgdx.backend.gpu.wgsl.FlixelWgslLayout;
 import org.flixelgdx.collections.FlixelLongMap;
-import org.flixelgdx.graphics.wgsl.FlixelWgsl;
-import org.flixelgdx.graphics.wgsl.FlixelWgslLayout;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

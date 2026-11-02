@@ -21,9 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.graphics.wgsl;
+package org.flixelgdx.backend.gpu.wgsl;
 
 import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.graphics.FlixelUniformBuffer;
+import org.flixelgdx.graphics.FlixelUniformLayout;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -47,16 +49,7 @@ import java.util.Arrays;
  * <p>Uniform address space adds extra validity rules that this parser does not check, such as array elements
  * needing a 16 byte stride. The GPU rejects an invalid shader when it compiles it, with a clear message.
  */
-public final class FlixelWgslLayout {
-
-  /** The 32-bit float scalar kind. */
-  public static final int F32 = 0;
-
-  /** The 32-bit signed integer scalar kind. */
-  public static final int I32 = 1;
-
-  /** The 32-bit unsigned integer scalar kind. */
-  public static final int U32 = 2;
+public final class FlixelWgslLayout implements FlixelUniformLayout {
 
   /** A layout with no members, used by shaders that declare no uniform struct. */
   public static final FlixelWgslLayout EMPTY = new FlixelWgslLayout(new String[0], new int[0], new int[0],
@@ -144,6 +137,7 @@ public final class FlixelWgslLayout {
    * @param name The member name, such as {@code tint}, {@code light.color} or {@code weights[2]}.
    * @return The member index, or {@code -1} when the shader has no such uniform.
    */
+  @Override
   public int find(@NotNull String name) {
     Integer found = index.get(name);
     return found != null ? found : -1;
@@ -154,6 +148,7 @@ public final class FlixelWgslLayout {
    *
    * @return The member count.
    */
+  @Override
   public int getFieldCount() {
     return names.length;
   }
@@ -164,6 +159,7 @@ public final class FlixelWgslLayout {
    * @param field The member index.
    * @return The flattened name.
    */
+  @Override
   @NotNull
   public String getName(int field) {
     return names[field];
@@ -175,6 +171,7 @@ public final class FlixelWgslLayout {
    * @param field The member index.
    * @return The offset in bytes.
    */
+  @Override
   public int getOffset(int field) {
     return offsets[field];
   }
@@ -185,6 +182,7 @@ public final class FlixelWgslLayout {
    * @param field The member index.
    * @return The scalar kind.
    */
+  @Override
   public int getScalar(int field) {
     return scalars[field];
   }
@@ -195,6 +193,7 @@ public final class FlixelWgslLayout {
    * @param field The member index.
    * @return The column count.
    */
+  @Override
   public int getColumns(int field) {
     return columns[field];
   }
@@ -206,6 +205,7 @@ public final class FlixelWgslLayout {
    * @param field The member index.
    * @return The row count.
    */
+  @Override
   public int getRows(int field) {
     return rows[field];
   }
@@ -216,6 +216,7 @@ public final class FlixelWgslLayout {
    * @param field The member index.
    * @return The column stride, or {@code 0} for scalars and vectors.
    */
+  @Override
   public int getColumnStride(int field) {
     return columnStrides[field];
   }
@@ -225,6 +226,7 @@ public final class FlixelWgslLayout {
    *
    * @return The byte size, or {@code 0} when there are no uniforms.
    */
+  @Override
   public int getSize() {
     return size;
   }
@@ -234,6 +236,7 @@ public final class FlixelWgslLayout {
    *
    * @return {@code true} when {@link #getSize()} is zero.
    */
+  @Override
   public boolean isEmpty() {
     return size == 0;
   }

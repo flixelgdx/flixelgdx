@@ -26,7 +26,6 @@ package org.flixelgdx.graphics;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.graphics.wgsl.FlixelWgsl;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
@@ -45,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  * A shader is one {@code .wgsl} file with a fragment entry point named {@code fs_main}; the framework supplies
  * the camera matrix, the texture, the sampler and a default vertex stage. The file's own settings live in one
  * uniform struct at {@code @group(1) @binding(0)} and are set from Java by member name. The full contract is in
- * {@link FlixelWgsl}.
+ * the renderer's {@code FlixelWgsl} class.
  *
  * <p>Camera-level post-processing is the primary use case: assign a shader to a
  * {@link FlixelCamera} via {@link FlixelCamera#setShader(FlixelShader)} and the camera will

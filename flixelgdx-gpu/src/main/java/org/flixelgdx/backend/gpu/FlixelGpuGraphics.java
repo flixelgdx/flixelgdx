@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.gpu;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.backend.gpu.wgsl.FlixelWgsl;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.collections.FlixelLongMap;
@@ -39,7 +40,6 @@ import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.graphics.FlixelUnsupportedShader;
-import org.flixelgdx.graphics.wgsl.FlixelWgsl;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;

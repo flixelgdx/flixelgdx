@@ -23,10 +23,10 @@
  */
 package org.flixelgdx.backend.gpu;
 
+import org.flixelgdx.backend.gpu.wgsl.FlixelWgsl;
+import org.flixelgdx.backend.gpu.wgsl.FlixelWgslLayout;
 import org.flixelgdx.graphics.FlixelShaderProgram;
-import org.flixelgdx.graphics.wgsl.FlixelUniformBuffer;
-import org.flixelgdx.graphics.wgsl.FlixelWgsl;
-import org.flixelgdx.graphics.wgsl.FlixelWgslLayout;
+import org.flixelgdx.graphics.FlixelUniformBuffer;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;

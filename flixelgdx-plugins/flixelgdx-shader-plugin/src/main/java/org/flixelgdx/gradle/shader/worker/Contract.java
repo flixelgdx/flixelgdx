@@ -33,7 +33,7 @@ import java.util.Properties;
 /**
  * The shader contract of the framework as the plugin sees it: the preamble text and the numbers that go with it.
  *
- * <p>Both come from flixelgdx-core. The plugin's build copies the preamble file and extracts the constants of
+ * <p>Both come from flixelgdx-gpu. The plugin's build copies the preamble file and extracts the constants of
  * {@code FlixelWgsl} into a properties file, and this class reads those two resources, so nothing about the contract
  * is written down a second time.
  */

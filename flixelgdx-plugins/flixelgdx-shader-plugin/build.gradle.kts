@@ -15,11 +15,11 @@ gradlePlugin {
 }
 
 // The shader contract (the preamble text and the bind group numbers) has exactly one home: FlixelWgsl.java in
-// flixelgdx-core. This task copies the PREAMBLE text block into a file and turns the other constants into a
+// flixelgdx-gpu. This task copies the PREAMBLE text block into a file and turns the other constants into a
 // properties file, so the plugin validates against the same contract the renderer compiles. Nothing is typed
 // twice, and a renamed or reshaped constant fails this task instead of silently drifting.
-val wgslDir = rootProject.layout.projectDirectory.dir("flixelgdx-core/src/main")
-val wgslJavaFile = wgslDir.file("java/org/flixelgdx/graphics/wgsl/FlixelWgsl.java")
+val wgslDir = rootProject.layout.projectDirectory.dir("flixelgdx-gpu/src/main")
+val wgslJavaFile = wgslDir.file("java/org/flixelgdx/backend/gpu/wgsl/FlixelWgsl.java")
 val contractDir = layout.buildDirectory.dir("generated/resources/contract")
 
 // The jwebgpu version the framework is built with. The plugin runs its validator with the same version by default.

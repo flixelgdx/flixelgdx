@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.graphics.wgsl;
+package org.flixelgdx.graphics;
 
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A CPU-side copy of a shader's uniform struct, written to by name and uploaded to the GPU when it changes.
  *
- * <p>The bytes follow the {@link FlixelWgslLayout} of the shader's WGSL uniform struct exactly, so the renderer can
+ * <p>The bytes follow the {@link FlixelUniformLayout} of the shader's uniform struct exactly, so the renderer can
  * copy {@link #getData()} straight into a GPU buffer. Setting a value is a hash lookup plus a few byte writes and
  * never allocates. Every setter marks the buffer dirty only when a value actually changes, so a renderer that
  * checks {@link #isDirty()} uploads once per change instead of once per draw.
@@ -40,14 +40,14 @@ import org.jetbrains.annotations.NotNull;
  * shaders that each use a different subset of uniforms. Use {@link #has(String)} to check.
  *
  * <pre>{@code
- * FlixelUniformBuffer uniforms = new FlixelUniformBuffer(FlixelWgslLayout.parse(source));
+ * FlixelUniformBuffer uniforms = new FlixelUniformBuffer(layout);
  * uniforms.setFloat("amount", 0.5f);
  * uniforms.setColor("tint", FlixelColor.RED);
  * }</pre>
  */
 public final class FlixelUniformBuffer {
 
-  private final FlixelWgslLayout layout;
+  private final FlixelUniformLayout layout;
   private final byte[] data;
 
   private boolean dirty = true;
@@ -57,7 +57,7 @@ public final class FlixelUniformBuffer {
    *
    * @param layout The layout of the shader's uniform struct.
    */
-  public FlixelUniformBuffer(@NotNull FlixelWgslLayout layout) {
+  public FlixelUniformBuffer(@NotNull FlixelUniformLayout layout) {
     this.layout = layout;
     this.data = new byte[layout.getSize()];
   }
@@ -102,7 +102,7 @@ public final class FlixelUniformBuffer {
       return;
     }
     int at = layout.getOffset(f);
-    if (layout.getScalar(f) == FlixelWgslLayout.F32) {
+    if (layout.getScalar(f) == FlixelUniformLayout.F32) {
       putInt(at, Float.floatToRawIntBits((float) value));
     } else {
       putInt(at, value);
@@ -218,7 +218,7 @@ public final class FlixelUniformBuffer {
   }
 
   /**
-   * Returns the bytes in the exact layout of the WGSL struct. The array is the live backing store, so do not
+   * Returns the bytes in the exact layout of the shader's uniform struct. The array is the live backing store, so do not
    * modify it directly.
    *
    * @return The uniform bytes.
@@ -242,7 +242,7 @@ public final class FlixelUniformBuffer {
    * @return The parsed layout.
    */
   @NotNull
-  public FlixelWgslLayout getLayout() {
+  public FlixelUniformLayout getLayout() {
     return layout;
   }
 
@@ -253,7 +253,7 @@ public final class FlixelUniformBuffer {
     int n = Math.min(rows, provided);
     for (int i = 0; i < n; i++) {
       float v = i == 0 ? x : i == 1 ? y : i == 2 ? z : w;
-      if (scalar == FlixelWgslLayout.F32) {
+      if (scalar == FlixelUniformLayout.F32) {
         putFloat(at + i * 4, v);
       } else {
         putInt(at + i * 4, (int) v);
@@ -262,7 +262,7 @@ public final class FlixelUniformBuffer {
   }
 
   private void writeScalar(int field, int at, float value) {
-    if (layout.getScalar(field) == FlixelWgslLayout.F32) {
+    if (layout.getScalar(field) == FlixelUniformLayout.F32) {
       putFloat(at, value);
     } else {
       putInt(at, (int) value);

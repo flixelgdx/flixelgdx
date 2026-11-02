@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.graphics;
 
-import org.flixelgdx.graphics.wgsl.FlixelUniformBuffer;
-import org.flixelgdx.graphics.wgsl.FlixelWgslLayout;
+import org.flixelgdx.backend.gpu.wgsl.FlixelWgslLayout;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;

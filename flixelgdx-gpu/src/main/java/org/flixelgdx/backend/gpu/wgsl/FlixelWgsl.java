@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.graphics.wgsl;
+package org.flixelgdx.backend.gpu.wgsl;
 
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.jetbrains.annotations.NotNull;

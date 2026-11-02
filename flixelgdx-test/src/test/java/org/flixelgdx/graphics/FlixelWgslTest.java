@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.graphics;
 
-import org.flixelgdx.graphics.wgsl.FlixelWgsl;
+import org.flixelgdx.backend.gpu.wgsl.FlixelWgsl;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,7 +48,7 @@ class FlixelWgslTest {
   void theGlobalsSizeMatchesTheWgslLayout() {
     String pre = FlixelWgsl.getPreamble();
     assertEquals(FlixelWgsl.GLOBALS_SIZE,
-        org.flixelgdx.graphics.wgsl.FlixelWgslLayout.parseStruct(pre, "FlixelGlobals").getSize());
+        org.flixelgdx.backend.gpu.wgsl.FlixelWgslLayout.parseStruct(pre, "FlixelGlobals").getSize());
   }
 
   @Test

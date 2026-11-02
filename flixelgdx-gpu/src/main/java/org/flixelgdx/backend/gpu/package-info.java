@@ -7,6 +7,6 @@
  * the device to {@link org.flixelgdx.backend.gpu.FlixelGpuGraphics#initialize}.
  *
  * <p>The shader contract (the preamble, bind group 0 and the shader's own uniform struct at group 1) is described
- * in {@link org.flixelgdx.graphics.wgsl.FlixelWgsl}.
+ * in {@link org.flixelgdx.backend.gpu.wgsl.FlixelWgsl}.
  */
 package org.flixelgdx.backend.gpu;
