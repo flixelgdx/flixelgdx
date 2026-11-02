@@ -104,8 +104,8 @@ shaders of a run.
 
 The jwebgpu libraries it needs (`jwebgpu-api`, `jwebgpu-ffm` and the `jwebgpu-natives-<os>-<arch>` jar of the
 machine running the build) come from a dedicated `shaderValidator` configuration of the plugin, so they never reach
-your game's own class path. While jwebgpu is consumed as a Gradle composite build (see COMPILING.md in the
-framework), `includeBuild` it in your `settings.gradle` and leave `jwebgpuVersion` unset.
+your game's own class path. They are resolved from Maven Central, so the build needs `mavenCentral()` in its
+repositories, and their version defaults to the one the framework is built with.
 
 ## Settings
 
@@ -115,7 +115,7 @@ All optional:
 shaders {
   sourceDir = layout.projectDirectory.dir('assets/shaders')  // default: src/main/shaders
   validate = true                                            // false only copies the files
-  jwebgpuVersion = '0.1.0'                                   // default: unset (composite build)
+  jwebgpuVersion = '0.1.0'                                   // default: the framework's jwebgpu version
 }
 ```
 
@@ -145,4 +145,4 @@ of truth: change the contract in `flixelgdx-core` and the plugin follows on its 
 there, the plugin's `generateShaderContract` task fails and says so.
 
 `./gradlew :flixelgdx-plugins:flixelgdx-shader-plugin:test` runs the helper tests and the Gradle TestKit builds. The
-TestKit builds need the jwebgpu checkout and its desktop library; they are skipped when those are missing.
+TestKit builds download jwebgpu from Maven Central; they are skipped on a machine jwebgpu has no Dawn library for.

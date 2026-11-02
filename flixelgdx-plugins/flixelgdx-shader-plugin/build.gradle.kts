@@ -22,10 +22,14 @@ val wgslDir = rootProject.layout.projectDirectory.dir("flixelgdx-core/src/main")
 val wgslJavaFile = wgslDir.file("java/org/flixelgdx/graphics/wgsl/FlixelWgsl.java")
 val contractDir = layout.buildDirectory.dir("generated/resources/contract")
 
+// The jwebgpu version the framework is built with. The plugin runs its validator with the same version by default.
+val jwebgpuVersion = libs.versions.jwebgpu.get()
+
 val generateContract = tasks.register("generateShaderContract") {
   group = "build"
-  description = "Bundles the WGSL preamble and the shader contract constants of flixelgdx-core into the plugin."
+  description = "Bundles the WGSL preamble, the shader contract constants and the jwebgpu version into the plugin."
   inputs.file(wgslJavaFile)
+  inputs.property("jwebgpuVersion", jwebgpuVersion)
   outputs.dir(contractDir)
   val javaSource = wgslJavaFile.asFile
   val out = contractDir.get().dir("org/flixelgdx/gradle/shader").asFile
@@ -63,6 +67,9 @@ val generateContract = tasks.register("generateShaderContract") {
       "# Generated from FlixelWgsl.java by the plugin build. Do not edit.\n" +
         wanted.joinToString("\n", postfix = "\n") { "$it=${found.getValue(it).trim('"')}" }
     )
+    File(out, "jwebgpu.properties").writeText(
+      "# Generated from gradle/libs.versions.toml by the plugin build. Do not edit.\nversion=$jwebgpuVersion\n"
+    )
   }
 }
 
@@ -83,14 +90,10 @@ dependencies {
   testImplementation(libs.junit.jupiter)
 }
 
-// The functional tests run real Gradle builds that include the same jwebgpu checkout as this build, so they need
-// to know where it is, which Gradle user home holds the dependency cache, and where the JDKs are.
+// The functional tests run real Gradle builds that resolve jwebgpu from Maven Central, so they need to know which
+// Gradle user home holds the dependency cache and where the JDKs are.
 tasks.named<Test>("test") {
   useJUnitPlatform()
-  val jwebgpu = gradle.includedBuilds.firstOrNull { File(it.projectDir, "jwebgpu-api").isDirectory }
-  if (jwebgpu != null) {
-    systemProperty("flixel.test.jwebgpuDir", jwebgpu.projectDir.absolutePath)
-  }
   systemProperty("flixel.test.gradleUserHome", gradle.gradleUserHomeDir.absolutePath)
   providers.gradleProperty("org.gradle.java.installations.paths").orNull?.let {
     systemProperty("flixel.test.jdkPaths", it)

@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.gradle.shader;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -33,6 +34,10 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * Gradle plugin that checks a game's WGSL shaders with Dawn at build time and bundles them as resources.
@@ -82,6 +87,7 @@ public class ShaderPlugin implements Plugin<Project> {
     ShaderExtension ext = project.getExtensions().create(ShaderExtension.NAME, ShaderExtension.class);
     ext.getSourceDir().convention(project.getLayout().getProjectDirectory().dir(ShaderExtension.DEFAULT_SOURCE_DIR));
     ext.getValidate().convention(true);
+    ext.getJwebgpuVersion().convention(bundledJwebgpuVersion());
 
     Configuration validator = project.getConfigurations().create(CONFIGURATION_NAME, config -> {
       config.setCanBeConsumed(false);
@@ -122,5 +128,24 @@ public class ShaderPlugin implements Plugin<Project> {
       Provider<Directory> out = process.flatMap(ProcessShadersTask::getOutputDir);
       sourceSets.getByName("main").getResources().srcDir(out);
     });
+  }
+
+  /**
+   * Reads the jwebgpu version the framework was built with, which the plugin's build bundles as a resource.
+   *
+   * @return The version, for example {@code 0.1.0}.
+   * @throws GradleException if the resource is missing, which means the plugin jar is broken.
+   */
+  private static String bundledJwebgpuVersion() {
+    try (InputStream in = ShaderPlugin.class.getResourceAsStream("/org/flixelgdx/gradle/shader/jwebgpu.properties")) {
+      if (in == null) {
+        throw new GradleException("The FlixelGDX shader plugin is missing jwebgpu.properties.");
+      }
+      Properties props = new Properties();
+      props.load(in);
+      return props.getProperty("version");
+    } catch (IOException e) {
+      throw new GradleException("Could not read the jwebgpu version bundled with the shader plugin.", e);
+    }
   }
 }

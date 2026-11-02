@@ -44,8 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Runs real Gradle builds with the plugin applied, to check the whole path from a {@code .wgsl} file to the
  * resources folder.
  *
- * <p>The builds validate with Dawn, so they need the jwebgpu checkout and its desktop library for this machine. When
- * either is missing the tests are skipped instead of failed, so a plain checkout still passes.
+ * <p>The builds validate with Dawn, using the jwebgpu jars from Maven Central at the version the plugin bundles. On a
+ * machine jwebgpu has no Dawn library for, the tests are skipped instead of failed.
  */
 class ShaderPluginFunctionalTest {
 
@@ -63,22 +63,22 @@ class ShaderPluginFunctionalTest {
       }
       """;
 
-  private static Path jwebgpuDir;
-
   @TempDir
   Path dir;
 
   @BeforeAll
-  static void findJwebgpu() {
-    String property = System.getProperty("flixel.test.jwebgpuDir");
-    Assumptions.assumeTrue(property != null, "no jwebgpu checkout is included in this build");
-    jwebgpuDir = Path.of(property);
-    String target = HostTarget.of(System.getProperty("os.name"), System.getProperty("os.arch"));
-    String library = target.startsWith("windows") ? "webgpu_dawn.dll"
-        : target.startsWith("macos") ? "libwebgpu_dawn.dylib" : "libwebgpu_dawn.so";
-    Path natives = jwebgpuDir.resolve("jwebgpu-natives/" + target + "/src/main/resources/natives/" + target
-        + "/" + library);
-    Assumptions.assumeTrue(Files.isRegularFile(natives), "no Dawn library for " + target + " at " + natives);
+  static void checkHost() {
+    // The validator needs a Dawn library for this machine; jwebgpu ships one for each supported desktop target.
+    Assumptions.assumeTrue(isSupportedHost(), "jwebgpu has no Dawn library for this machine");
+  }
+
+  private static boolean isSupportedHost() {
+    try {
+      HostTarget.of(System.getProperty("os.name"), System.getProperty("os.arch"));
+      return true;
+    } catch (IllegalStateException e) {
+      return false;
+    }
   }
 
   @Test
@@ -236,8 +236,7 @@ class ShaderPluginFunctionalTest {
   }
 
   private void setUp(String extra) throws IOException {
-    write("settings.gradle", "rootProject.name = 'game'\nincludeBuild('" + jwebgpuDir.toString().replace("\\", "/")
-        + "')\n");
+    write("settings.gradle", "rootProject.name = 'game'\n");
     write("build.gradle", """
         plugins {
           id 'java'

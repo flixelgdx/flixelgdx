@@ -69,10 +69,11 @@ public interface ShaderExtension {
   /**
    * The version of the jwebgpu libraries the validator is run with.
    *
-   * <p>Leave it unset while jwebgpu is consumed through a Gradle composite build, which supplies the libraries
-   * without a version. Set it once jwebgpu is resolved from a repository.
+   * <p>It defaults to the version the framework itself is built with, so it rarely needs setting. The libraries
+   * come from Maven Central (add {@code mavenCentral()} to the repositories). A build that swaps in a local jwebgpu
+   * checkout with a composite build uses that checkout whatever this says.
    *
-   * @return The version property, empty by default.
+   * @return The version property.
    */
   Property<String> getJwebgpuVersion();
 }
