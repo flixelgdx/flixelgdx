@@ -1,6 +1,6 @@
 # FlixelGDX Basis Universal Plugin
 
-Compress textures once at build time. Load them faster everywhere at runtime.
+Compress textures once at build time. Load them faster and keep them small on Android at runtime.
 
 This Gradle plugin encodes a game's PNG assets into KTX2/Basis Universal supercompressed textures
 automatically, so the images stay compressed on the GPU instead of being decoded into raw RGBA8888
@@ -11,22 +11,24 @@ external installation is needed: compression is a single Gradle property away.
 
 A PNG decoded into an `RGBA8888` texture consumes roughly four bytes per pixel on the GPU. A 1024x1024
 sprite sheet that looks like 1 MB on disk becomes 4 MB of video memory, and that cost is paid every
-time the texture is used. Basis Universal keeps the texture compressed on the GPU and transcodes it to
-the best format each device supports (ETC1S on mobile, BCn on desktop, ASTC on newer hardware).
+time the texture is used. Basis Universal stores the texture in a "supercompressed" form that is even
+smaller than the GPU formats, and the game transcodes it at load time to the best compressed format the
+device's GPU supports (ASTC or ETC2 on Android), so it stays compressed in video memory too.
 
 Without this plugin, encoding requires installing the `basisu` command line tool, finding a version
 that matches what the framework expects, and running it by hand for every asset update. The plugin
 removes all of that: it wires a `compressBasisuTextures` task into the build, picks the right bundled
 binary for the host OS and architecture, and makes the compressed output available to Android's asset
-merge and the desktop `jar` task automatically.
+merge automatically.
 
-The runtime side is transparent. `FlixelGame.create()` enables the matching loader on every backend,
-so game code keeps requesting `.png` paths and gets the compressed texture back without any changes.
+The runtime side is transparent. The Android backend registers a `.ktx2` loader at launch and
+`FlixelGame.create()` turns compressed texture lookup on, so game code keeps requesting `.png` paths
+and gets the compressed texture back without any changes. Desktop and web builds are not affected and
+keep loading the plain PNGs, since only the Android backend ships the Basis Universal transcoder.
 
 ## Applying the plugin
 
-In the platform module's `build.gradle` alongside `com.android.application`, `com.android.library`,
-or the desktop `application` plugin:
+In the Android module's `build.gradle` alongside `com.android.application` or `com.android.library`:
 
 ```groovy
 plugins {
@@ -89,19 +91,39 @@ basisu {
 picks up the `.ktx2` files alongside the source assets. Once the merge finishes, any plain PNG that has
 a compressed sibling in the merged output is deleted so both formats do not ship.
 
-**Desktop (JVM).** The `jar` task gains a dependency on `compressBasisuTextures` and is configured to
-include the compressed output. Any plain PNG that has a compressed sibling in the output directory is
-excluded from the JAR, so only the `.ktx2` variant is packaged.
+**Desktop and web.** Nothing changes: those builds package and load the plain PNGs.
 
-**Development runs.** Running the game via `./gradlew :lwjgl3:run` skips compression: the task reads
-PNGs straight from the source assets directory so the development loop stays fast.
+## What happens at runtime
+
+When a game asks for `images/player.png` and `images/player.ktx2` exists, the Android backend loads
+the `.ktx2` file instead. On an asset loading thread, it transcodes the file to the best format the
+GPU supports, then uploads it on the render thread:
+
+| Source mode | First choice                     | Then           | Last resort |
+|-------------|----------------------------------|----------------|-------------|
+| ETC1S       | ETC2 (8 bpp, or 4 bpp if opaque) | ASTC 4x4, BC7  | RGBA8       |
+| UASTC       | ASTC 4x4 (8 bpp)                 | BC7, ETC2      | RGBA8       |
+
+Each first choice is lossless for its source mode. RGBA8 (32 bpp) is only used on a GPU without any
+compressed format; the file is still smaller in the APK.
+
+A few details are worth knowing:
+
+- **Sizes that are not a multiple of 4.** Compressed formats store 4x4 pixel blocks, so a 50x37 image
+  becomes a 52x40 texture on the GPU. The texture still reports 50x37 and texture coordinates are scaled
+  to match, so frames, animations and atlases keep working unchanged.
+- **Mipmaps.** The mipmaps from `generateMipmaps` are uploaded too, which keeps scaled-down sprites
+  smooth. When the size is not a multiple of 4, only the levels that line up with the rounded-up size are
+  kept (often the first two or three).
+- **No pixel updates.** A compressed texture cannot be changed with `FlixelTexture.update(...)`. Exclude
+  any image the game draws into at runtime.
 
 ## Compression modes
 
-| Mode  | Flag              | Size     | Quality   | Best for                           |
-|-------|-------------------|----------|-----------|------------------------------------|
-| ETC1S | (default)         | Smallest | Good      | Most 2D sprites and backgrounds    |
-| UASTC | `useUastc = true` | Larger   | Excellent | Highly detailed textures or UI art |
+| Mode  | Flag              | Size on disk | Quality   | Best for                           |
+|-------|-------------------|--------------|-----------|------------------------------------|
+| ETC1S | (default)         | Smallest     | Good      | Most 2D sprites and backgrounds    |
+| UASTC | `useUastc = true` | Larger       | Excellent | Highly detailed textures or UI art |
 
 ETC1S is adequate for most 2D sprite work. UASTC produces noticeably larger output but preserves
 fine detail that ETC1S's block compression can lose.
