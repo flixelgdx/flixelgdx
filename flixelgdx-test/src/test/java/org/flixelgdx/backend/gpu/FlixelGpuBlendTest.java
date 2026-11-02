@@ -54,10 +54,10 @@ class FlixelGpuBlendTest {
   }
 
   @Test
-  void normalIsStraightAlphaOver() {
+  void normalIsPremultipliedOver() {
     GpuBlendState s = new GpuBlendState();
     assertTrue(FlixelGpuBlend.fill(FlixelGpuBlend.NORMAL, s));
-    assertEquals(GpuBlendFactor.SRC_ALPHA, s.color.srcFactor);
+    assertEquals(GpuBlendFactor.ONE, s.color.srcFactor);
     assertEquals(GpuBlendFactor.ONE_MINUS_SRC_ALPHA, s.color.dstFactor);
     assertEquals(GpuBlendOperation.ADD, s.color.operation);
     assertEquals(GpuBlendFactor.ONE, s.alpha.srcFactor);
@@ -65,13 +65,27 @@ class FlixelGpuBlendTest {
   }
 
   @Test
+  void straightOutputKeepsTheStraightAlphaFactors() {
+    GpuBlendState s = new GpuBlendState();
+    assertTrue(FlixelGpuBlend.fill(FlixelGpuBlend.NORMAL, false, s));
+    assertEquals(GpuBlendFactor.SRC_ALPHA, s.color.srcFactor);
+    assertEquals(GpuBlendFactor.ONE_MINUS_SRC_ALPHA, s.color.dstFactor);
+    FlixelGpuBlend.fill(FlixelGpuBlend.ADD, false, s);
+    assertEquals(GpuBlendFactor.SRC_ALPHA, s.color.srcFactor);
+    assertEquals(GpuBlendFactor.ONE, s.color.dstFactor);
+    assertFalse(FlixelGpuBlend.fill(FlixelGpuBlend.NONE, false, s));
+  }
+
+  @Test
   void theAlphaChannelAlwaysAccumulatesOverForEveryRealMode() {
     GpuBlendState s = new GpuBlendState();
-    for (int id = FlixelGpuBlend.NORMAL; id <= FlixelGpuBlend.DARKEN; id++) {
-      assertTrue(FlixelGpuBlend.fill(id, s));
-      assertEquals(GpuBlendFactor.ONE, s.alpha.srcFactor, "mode " + id);
-      assertEquals(GpuBlendFactor.ONE_MINUS_SRC_ALPHA, s.alpha.dstFactor, "mode " + id);
-      assertEquals(GpuBlendOperation.ADD, s.alpha.operation, "mode " + id);
+    for (boolean premultiplied : new boolean[] { true, false }) {
+      for (int id = FlixelGpuBlend.NORMAL; id <= FlixelGpuBlend.DARKEN; id++) {
+        assertTrue(FlixelGpuBlend.fill(id, premultiplied, s));
+        assertEquals(GpuBlendFactor.ONE, s.alpha.srcFactor, "mode " + id);
+        assertEquals(GpuBlendFactor.ONE_MINUS_SRC_ALPHA, s.alpha.dstFactor, "mode " + id);
+        assertEquals(GpuBlendOperation.ADD, s.alpha.operation, "mode " + id);
+      }
     }
   }
 
@@ -84,16 +98,19 @@ class FlixelGpuBlendTest {
     assertEquals(GpuBlendFactor.ONE, s.color.dstFactor);
     FlixelGpuBlend.fill(FlixelGpuBlend.DARKEN, s);
     assertEquals(GpuBlendOperation.MIN, s.color.operation);
+    assertEquals(GpuBlendFactor.ONE, s.color.srcFactor);
+    assertEquals(GpuBlendFactor.ONE, s.color.dstFactor);
   }
 
   @Test
-  void additiveSubtractiveMultiplyAndScreenMatchTheirFormulas() {
+  void additiveSubtractiveMultiplyAndScreenMatchTheirPremultipliedFormulas() {
     GpuBlendState s = new GpuBlendState();
     FlixelGpuBlend.fill(FlixelGpuBlend.ADD, s);
-    assertEquals(GpuBlendFactor.SRC_ALPHA, s.color.srcFactor);
+    assertEquals(GpuBlendFactor.ONE, s.color.srcFactor);
     assertEquals(GpuBlendFactor.ONE, s.color.dstFactor);
     FlixelGpuBlend.fill(FlixelGpuBlend.SUBTRACT, s);
     assertEquals(GpuBlendOperation.REVERSE_SUBTRACT, s.color.operation);
+    assertEquals(GpuBlendFactor.ONE, s.color.srcFactor);
     FlixelGpuBlend.fill(FlixelGpuBlend.MULTIPLY, s);
     assertEquals(GpuBlendFactor.DST, s.color.srcFactor);
     assertEquals(GpuBlendFactor.ONE_MINUS_SRC_ALPHA, s.color.dstFactor);
