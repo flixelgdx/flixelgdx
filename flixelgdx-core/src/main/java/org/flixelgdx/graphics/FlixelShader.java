@@ -132,8 +132,8 @@ public class FlixelShader extends FlixelBasic {
   /**
    * Loads the shader file {@code shaders/<name>.wgsl}.
    *
-   * <p>The file is read from the game's resources (a {@code shaders} folder on the classpath) or, when it is not
-   * there, from the assets folder. It is compiled the same way as {@link #FlixelShader(String)}, so a plain text
+   * <p>The file is read through the asset manager, so it can live in the assets folder or in the game's resources
+   * (a {@code shaders} folder, which is where the shader plugin puts it). It is compiled the same way as {@link #FlixelShader(String)}, so a plain text
    * file is all a shader needs; there is no build step.
    *
    * <p>If the file is missing or does not compile, the returned shader reports {@link #isCompiled()} as

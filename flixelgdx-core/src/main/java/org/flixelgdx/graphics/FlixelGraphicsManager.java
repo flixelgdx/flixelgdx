@@ -522,8 +522,8 @@ public interface FlixelGraphicsManager {
   /**
    * Loads a WGSL shader by name and compiles it.
    *
-   * <p>The shader is the file {@code shaders/<name>.wgsl}, read from the game's classpath resources (and from the
-   * assets folder when it is not found there). The framework puts its shader preamble in front of the file, as
+   * <p>The shader is the file {@code shaders/<name>.wgsl}, read through the asset manager (the assets folder, or
+   * the game's packaged resources on platforms that have them). The framework puts its shader preamble in front of the file, as
    * described in {@link FlixelWgsl}. Game code uses {@link FlixelShader#load} rather
    * than calling this directly.
    *
@@ -589,7 +589,7 @@ public interface FlixelGraphicsManager {
    *
    * @return {@code true} when vertical sync is active.
    */
-  default boolean isVSyncEnabled() {
+  default boolean isVSync() {
     return false;
   }
 

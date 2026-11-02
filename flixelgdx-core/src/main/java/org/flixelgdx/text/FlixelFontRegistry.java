@@ -32,8 +32,6 @@ import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -306,30 +304,13 @@ public final class FlixelFontRegistry {
   }
 
   /**
-   * Reads a packaged resource, first through the file seam's classpath root and then through
-   * the class loader, so the font loads both in development and from inside a JAR.
+   * Reads a packaged resource through the file seam's classpath root.
+   *
+   * <p>Each platform decides what "classpath" means: the JAR or APK on desktop and Android, and the preloaded
+   * downloads on the web, which has no classpath. Core never reads the class loader itself.
    */
   private static byte @NotNull [] readPackagedResource(@NotNull String path) {
-    FlixelFile viaSeam = Flixel.files.classpath(path);
-    if (viaSeam.exists()) {
-      byte[] bytes = viaSeam.readBytes();
-      if (bytes.length > 0) {
-        return bytes;
-      }
-    }
-    try (InputStream in = FlixelFontRegistry.class.getResourceAsStream("/" + path)) {
-      if (in == null) {
-        return new byte[0];
-      }
-      ByteArrayOutputStream out = new ByteArrayOutputStream(16384);
-      byte[] chunk = new byte[8192];
-      int read;
-      while ((read = in.read(chunk)) > 0) {
-        out.write(chunk, 0, read);
-      }
-      return out.toByteArray();
-    } catch (Exception e) {
-      return new byte[0];
-    }
+    FlixelFile file = Flixel.files.classpath(path);
+    return file.exists() ? file.readBytes() : new byte[0];
   }
 }
