@@ -41,11 +41,13 @@ import org.flixelgdx.backend.desktop.logging.FlixelAnsiConsoleSink;
 import org.flixelgdx.backend.desktop.logging.FlixelJvmLogFileSink;
 import org.flixelgdx.backend.desktop.logging.FlixelJvmLogSiteResolver;
 import org.flixelgdx.backend.desktop.runtime.FlixelJvmRuntimeDevice;
+import org.flixelgdx.backend.desktop.save.FlixelJvmSaveHandler;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
 import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.logging.FlixelLogger;
+import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
@@ -205,10 +207,9 @@ public final class FlixelDesktopLauncher {
       }
     }
 
-    FlixelConfig config = Flixel.config;
-    // Game developers never call this: the launcher loads the WebGPU native library for the current platform
-    // and registers the FFM backend, so everything after this point only talks to the platform-neutral API.
     JWebGpuFfm.install();
+
+    FlixelConfig config = Flixel.config;
     Flixel.runtime = new FlixelJvmRuntimeDevice();
     if (Flixel.runtime.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
@@ -232,13 +233,13 @@ public final class FlixelDesktopLauncher {
     Flixel.files = new FlixelJvmFiles();
     Flixel.input = input;
     Flixel.graphics = graphics;
+    FlixelSave.defaultHandler = new FlixelJvmSaveHandler();
     FlixelMiniAudio.setLoader(new FlixelDesktopMiniAudioLoader());
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads,
         iconManager, host, width, height, icons);
 
-    FlixelJvmAssetManager assets = new FlixelJvmAssetManager();
-    Flixel.assets = assets;
+    Flixel.assets = new FlixelJvmAssetManager();
 
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
 

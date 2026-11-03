@@ -35,17 +35,12 @@
  *   <li>{@link org.flixelgdx.file.FlixelFiles#classpath(String) classpath} - resources embedded on
  *       the Java classpath. Used as a fallback on desktop when assets are packaged inside a JAR.</li>
  *   <li>{@link org.flixelgdx.file.FlixelFiles#external(String) external} - files under the user's
- *       home directory. Use this for save data that must survive game reinstalls.</li>
+ *       home directory, for files that must survive game reinstalls. Game save data has its own
+ *       storage seam instead; see {@link org.flixelgdx.save.FlixelSaveHandler FlixelSaveHandler}.</li>
  *   <li>{@link org.flixelgdx.file.FlixelFiles#local(String) local} - files relative to the working
  *       directory where the application was started. Handy for developer tooling and debug output.</li>
  *   <li>{@link org.flixelgdx.file.FlixelFiles#absolute(String) absolute} - a file named by its
  *       full OS path. Use sparingly; prefer the other roots when the location is predictable.</li>
- *   <li>{@link org.flixelgdx.file.FlixelFiles#pref(String, String, String) pref} - resolves a path
- *       inside the OS-appropriate preferences directory for a given organization and application name
- *       ({@code %APPDATA%} on Windows, {@code ~/Library/Application Support} on macOS,
- *       {@code $XDG_DATA_HOME} on Linux). Use this for persistent save data in
- *       production-shipping games instead of {@code external}. This is rarely used in game code, as the
- *       {@link org.flixelgdx.save.FlixelSave FlixelSave} system uses this under the hood.</li>
  * </ul>
  *
  * <h2>Reading a file</h2>

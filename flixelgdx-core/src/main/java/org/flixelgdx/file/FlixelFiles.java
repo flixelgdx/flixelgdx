@@ -41,8 +41,8 @@ import org.jetbrains.annotations.NotNull;
  *       is what most game code wants for images, sounds, fonts, and data files.</li>
  *   <li>{@link #classpath(String)} - resources packaged on the Java classpath. Used as a fallback on
  *       desktop, where running from a JAR embeds assets as classpath resources.</li>
- *   <li>{@link #external(String)} - files under the user's home directory, for save data and other
- *       content that outlives a single run.</li>
+ *   <li>{@link #external(String)} - files under the user's home directory, for content that
+ *       outlives a single run. Save data has its own seam; see {@code FlixelSave.defaultHandler}.</li>
  *   <li>{@link #local(String)} - files relative to where the application was started.</li>
  *   <li>{@link #absolute(String)} - a file named by its full path on the underlying file system.</li>
  * </ul>
@@ -88,7 +88,7 @@ public interface FlixelFiles {
   }
 
   /**
-   * Opens a handle to a file under the user's home directory, used for save data.
+   * Opens a handle to a file under the user's home directory.
    *
    * @param path Path relative to the external root, using forward slashes.
    * @return A handle to the file; never {@code null}.
@@ -117,31 +117,6 @@ public interface FlixelFiles {
    */
   @NotNull
   default FlixelFile absolute(@NotNull String path) {
-    return FlixelNoopFile.INSTANCE;
-  }
-
-  /**
-   * Opens a handle to a file under the OS-specific application preferences directory for the
-   * given organization and application name.
-   *
-   * <p>The resolved root directory is platform-dependent:
-   * <ul>
-   *   <li><b>Windows</b>: {@code %APPDATA%\org\app\}</li>
-   *   <li><b>macOS</b>: {@code ~/Library/Application Support/org/app/}</li>
-   *   <li><b>Linux / Unix</b>: {@code $XDG_DATA_HOME/org/app/} (defaults to {@code ~/.local/share/org/app/}
-   *       when {@code XDG_DATA_HOME} is not set)</li>
-   * </ul>
-   *
-   * <p>This is the correct root for persistent user data such as save files. The no-op default
-   * returns an empty handle; backends that support preference paths override this method.
-   *
-   * @param org The organization or company name (for example {@code "My Studio"}).
-   * @param app The application name (for example {@code "My Game"}).
-   * @param path The relative path within the preferences directory.
-   * @return A handle under the platform-appropriate preferences directory; never {@code null}.
-   */
-  @NotNull
-  default FlixelFile pref(@NotNull String org, @NotNull String app, @NotNull String path) {
     return FlixelNoopFile.INSTANCE;
   }
 }

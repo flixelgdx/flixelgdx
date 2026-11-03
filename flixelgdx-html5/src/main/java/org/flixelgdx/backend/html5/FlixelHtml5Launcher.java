@@ -37,8 +37,10 @@ import org.flixelgdx.backend.html5.graphics.FlixelHtml5ImageDecoder;
 import org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
 import org.flixelgdx.backend.html5.logging.FlixelHtml5ConsoleSink;
+import org.flixelgdx.backend.html5.save.FlixelHtml5SaveHandler;
 import org.flixelgdx.backend.html5.text.FlixelHtml5FontRasterizer;
 import org.flixelgdx.logging.FlixelLogSiteMarker;
+import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.teavm.jso.JSBody;
 
@@ -119,6 +121,7 @@ public final class FlixelHtml5Launcher {
     Flixel.input = input;
     Flixel.graphics = graphics;
     Flixel.assets = new FlixelHtml5AssetManager();
+    FlixelSave.defaultHandler = new FlixelHtml5SaveHandler();
     FlixelSoundManager.defaultFactory = FlixelWebAudioFactory.create();
     FlixelFontRegistry.setRasterizer(new FlixelHtml5FontRasterizer());
 

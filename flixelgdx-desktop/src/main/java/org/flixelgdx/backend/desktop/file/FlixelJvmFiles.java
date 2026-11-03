@@ -28,7 +28,6 @@ import org.flixelgdx.file.FlixelFiles;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.Locale;
 
 /**
  * The desktop file system.
@@ -39,7 +38,7 @@ import java.util.Locale;
  *     the standard place bundled game assets live during development. Falls back to the classpath
  *     when the on-disk file is missing, so a packaged JAR still finds its assets.</li>
  *   <li>{@link #classpath(String)} - resources on the Java classpath.</li>
- *   <li>{@link #external(String)} - the user's home directory, for save data.</li>
+ *   <li>{@link #external(String)} - the user's home directory.</li>
  *   <li>{@link #local(String)} - the working directory.</li>
  *   <li>{@link #absolute(String)} - an absolute filesystem path.</li>
  * </ul>
@@ -89,33 +88,5 @@ public class FlixelJvmFiles implements FlixelFiles {
   @Override
   public FlixelFile absolute(@NotNull String path) {
     return new FlixelJvmFile(path, new File(path), false);
-  }
-
-  @NotNull
-  @Override
-  public FlixelFile pref(@NotNull String org, @NotNull String app, @NotNull String path) {
-    File root = new File(resolvePrefRoot(org, app));
-    return new FlixelJvmFile(path, new File(root, path), false);
-  }
-
-  @NotNull
-  private static String resolvePrefRoot(@NotNull String org, @NotNull String app) {
-    String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-    if (os.contains("win")) {
-      String appData = System.getenv("APPDATA");
-      if (appData == null || appData.isEmpty()) {
-        appData = System.getProperty("user.home") + File.separator + "AppData" + File.separator + "Roaming";
-      }
-      return appData + File.separator + org + File.separator + app + File.separator;
-    }
-    if (os.contains("mac")) {
-      return System.getProperty("user.home") + "/Library/Application Support/" + org + "/" + app + "/";
-    }
-    // Linux / Unix: respect XDG_DATA_HOME per the XDG base directory spec.
-    String xdgDataHome = System.getenv("XDG_DATA_HOME");
-    if (xdgDataHome == null || xdgDataHome.isEmpty()) {
-      xdgDataHome = System.getProperty("user.home") + "/.local/share";
-    }
-    return xdgDataHome + "/" + org + "/" + app + "/";
   }
 }

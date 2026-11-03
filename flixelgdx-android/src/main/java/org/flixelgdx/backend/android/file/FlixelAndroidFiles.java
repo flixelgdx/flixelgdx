@@ -43,7 +43,6 @@ import android.content.res.AssetManager;
  *   <li>{@link #local(String)} - {@code Context.getFilesDir()} for private app storage.</li>
  *   <li>{@link #external(String)} - {@code Context.getExternalFilesDir(null)} when available,
  *     falls back to internal storage.</li>
- *   <li>{@link #pref(String, String, String)} - a named sub-directory of {@code getFilesDir()}.</li>
  *   <li>{@link #absolute(String)} - an absolute path on the device file system.</li>
  * </ul>
  */
@@ -98,13 +97,6 @@ public class FlixelAndroidFiles implements FlixelFiles {
   @Override
   public FlixelFile absolute(@NotNull String path) {
     return new FlixelAndroidFile(null, path, new File(path), false, false);
-  }
-
-  @NotNull
-  @Override
-  public FlixelFile pref(@NotNull String org, @NotNull String app, @NotNull String path) {
-    File root = new File(localRoot, org + "/" + app);
-    return new FlixelAndroidFile(null, path, new File(root, path), false, false);
   }
 
   public AssetManager getAssets() {

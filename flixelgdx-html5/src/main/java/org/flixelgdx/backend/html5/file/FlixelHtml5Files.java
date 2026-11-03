@@ -38,9 +38,9 @@ import org.jetbrains.annotations.NotNull;
  * <ul>
  *   <li>{@link #internal(String)} and {@link #classpath(String)} become downloads from the
  *       {@code assets/} folder the build plugin publishes next to the page.</li>
- *   <li>{@link #external(String)}, {@link #local(String)}, and {@link #pref(String, String, String)}
+ *   <li>{@link #external(String)} and {@link #local(String)}
  *       become {@code localStorage} entries, which persist between sessions on the same origin and
- *       are the browser's closest equivalent to a save file.</li>
+ *       are the browser's closest equivalent to a writable file.</li>
  *   <li>{@link #absolute(String)} is treated as a full URL download, since the browser has no
  *       absolute file system path.</li>
  * </ul>
@@ -84,12 +84,6 @@ public class FlixelHtml5Files implements FlixelFiles {
   @NotNull
   public FlixelFile absolute(@NotNull String path) {
     return new FlixelHtml5File(path, path, Kind.ASSET);
-  }
-
-  @Override
-  @NotNull
-  public FlixelFile pref(@NotNull String org, @NotNull String app, @NotNull String path) {
-    return new FlixelHtml5File(path, STORAGE_PREFIX + org + ":" + app + ":" + path, Kind.STORAGE);
   }
 
   /**

@@ -27,8 +27,6 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
-import org.flixelgdx.file.FlixelFile;
-import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.json.FlixelJson;
 import org.flixelgdx.json.FlixelJsonValue;
@@ -43,14 +41,24 @@ import java.util.Objects;
  * A bound, named key-value save store that persists between sessions.
  *
  * <p>Bind to a uniquely identified save slot, manipulate the structured {@link #data} map, and
- * flush changes to disk. Saves serialize to a JSON file through the
- * {@link FlixelFiles Flixel.files} seam's {@code pref} root, so the same
- * code works on every platform that can write files: desktop saves to the computers local app data
- * folder, web backends map the root to browser storage, etc.
+ * flush changes to storage. Saves serialize to JSON text and hand it to a
+ * {@link FlixelSaveHandler}, which decides where the text actually lives. Every platform installs
+ * its own handler on {@link #defaultHandler}, so the same code works everywhere: desktop saves
+ * to the computer's app data folder, Android saves to the app's private storage, and the web saves
+ * to the browser's {@code localStorage}.
+ *
+ * <p>Each save object takes {@link #defaultHandler} when it is created. To keep one save somewhere
+ * else (for example a cloud-sync service or an in-memory store in tests), pass a handler to
+ * {@link #FlixelSave(FlixelSaveHandler)} or call {@link #setHandler(FlixelSaveHandler)}. Only that
+ * save object changes; every other save keeps its own handler.
  *
  * <p>Supported value types are {@link String}, {@link Number}, {@link Boolean}, nested
  * {@link FlixelMap}{@code <String, Object>} objects, and {@link FlixelArray}{@code <Object>}
  * lists. Anything else is stored via {@code toString()}.
+ *
+ * <p>Browsers and phones rarely let a game shut down cleanly; they simply stop it in the
+ * background. Flush important data as soon as it changes, or listen to
+ * {@link Flixel.Signals#gameSuspended}, instead of relying on {@link Flixel.Signals#preGameClose}.
  *
  * <p>Example:
  *
@@ -61,9 +69,27 @@ import java.util.Objects;
  *   Flixel.save.data.put("highScore", score);
  *   Flixel.save.flush();
  * }
+ *
+ * // A second save that lives in your own storage instead of the platform default.
+ * FlixelSave cloud = new FlixelSave(new MyCloudSaveHandler());
+ * cloud.bind("MyGame", "slot1");
  * }</pre>
  */
 public class FlixelSave implements FlixelDestroyable {
+
+  /**
+   * The handler every new save object starts with.
+   *
+   * <p>Each platform's launcher installs its own handler here before the game starts: a folder in
+   * the OS app data directory on desktop, the app's private storage on Android, and
+   * {@code localStorage} on web. Until then, and on headless sessions, it is the
+   * {@link FlixelNoopSaveHandler}, which keeps nothing, so save calls are always safe.
+   *
+   * <p>Changing this only affects save objects created afterward; existing ones keep the handler
+   * they already have. A {@code null} value here is treated as the no-op handler.
+   */
+  @NotNull
+  public static FlixelSaveHandler defaultHandler = FlixelNoopSaveHandler.INSTANCE;
 
   private static final FlixelLogger LOG = Flixel.log.tagged("Save");
 
@@ -79,33 +105,54 @@ public class FlixelSave implements FlixelDestroyable {
   @Nullable
   private String boundSlot;
 
+  /** The storage this save reads from and writes to. Never {@code null}. */
+  @NotNull
+  private FlixelSaveHandler handler;
+
   @NotNull
   private FlixelSaveStatus status = FlixelSaveStatus.EMPTY;
 
-  /**
-   * When non-null, save files are written into this directory instead of the OS-specific
-   * preferences directory. Set by {@link #bind(String, String, FlixelFile)}.
-   */
-  @Nullable
-  private FlixelFile customDirectory;
-
   private boolean bound;
 
+  /** Creates a save object that uses the current {@link #defaultHandler}. */
+  public FlixelSave() {
+    this(defaultHandler);
+  }
+
   /**
-   * Binds this save object to a named file (and optional slot), then loads any existing data.
+   * Creates a save object that uses a specific handler instead of {@link #defaultHandler}.
    *
-   * <p>On desktop, Save files are written to the OS-specific application preferences directory,
-   * determined by the company name and game title set in {@link FlixelConfig}:
+   * <p>Use this when one save should live somewhere other than the platform's default storage,
+   * for example a cloud-sync service, a custom folder, or an in-memory store in tests. A
+   * {@code null} handler is rejected and the no-op handler is used instead.
+   *
+   * @param handler The storage this save reads from and writes to.
+   */
+  public FlixelSave(@Nullable FlixelSaveHandler handler) {
+    if (Objects.nonNull(handler)) {
+      this.handler = handler;
+    } else {
+      LOG.warn("A null save handler was given to the constructor; using the no-op handler instead.");
+      this.handler = FlixelNoopSaveHandler.INSTANCE;
+    }
+  }
+
+  /**
+   * Binds this save object to a named save (and optional slot), then loads any existing data.
+   *
+   * <p>This object's handler (see {@link #getHandler()}) decides where the save lives. With the
+   * platform's default handler on desktop, save files are written to the OS-specific application
+   * data directory, determined by the company name and game title set in {@link FlixelConfig}:
    * <ul>
    *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
    *   <li><b>macOS</b>: {@code ~/Library/Application Support/Company/Title/saves/}</li>
    *   <li><b>Linux</b>: {@code $XDG_DATA_HOME/Company/Title/saves/}</li>
    * </ul>
    *
-   * <p>A company name <b>must</b> be set via {@link FlixelConfig.Builder#company(String)}
-   * before calling this method. If it is missing, this method logs an error and returns
-   * {@code false}. Use {@link #bind(String, String, FlixelFile)} to supply a custom directory as
-   * an alternative.
+   * <p>When this object uses {@link #defaultHandler}, a company name <b>must</b> be set via
+   * {@link FlixelConfig.Builder#company(String)} before calling this method. If it is missing,
+   * this method logs an error and returns {@code false}. Save objects with their own handler skip
+   * this check, since their handler decides where the data goes.
    *
    * @param name The save name, typically your game's name or the player's profile identifier.
    * @param slot An optional slot discriminator (for example {@code "slot1"}), or {@code null}.
@@ -115,40 +162,15 @@ public class FlixelSave implements FlixelDestroyable {
     if (name.isEmpty()) {
       return false;
     }
+    // Only the platform default needs the company name to find its folder; the no-op handler has none.
     FlixelConfig config = Flixel.config;
-    if (config.getCompany().isEmpty()) {
-      LOG.error("bind() requires a company name to resolve the correct save directory. "
+    boolean needsCompany = handler == defaultHandler && handler != FlixelNoopSaveHandler.INSTANCE;
+    if (needsCompany && (config == null || config.getCompany().isEmpty())) {
+      LOG.error("bind() requires a company name to resolve the correct save location. "
           + "Set it via FlixelConfig.Builder.company(...) in your FlixelGame subclass constructor, "
-          + "or use bind(name, slot, directory) to supply a custom save path instead.");
+          + "or give this save its own handler with setHandler(...) instead.");
       return false;
     }
-    customDirectory = null;
-    return bindInternal(name, slot);
-  }
-
-  /**
-   * Binds this save object to a named file inside a specific directory, then loads any existing
-   * data. Use this when you want saves to land somewhere other than the OS-specific preferences
-   * directory (for example a cloud-sync folder or a temporary test path).
-   *
-   * <p>No company name check is performed when a custom directory is provided. The save file is
-   * written as {@code <directory>/<name>.<slot>.json} (or {@code <directory>/<name>.json} when
-   * {@code slot} is {@code null}).
-   *
-   * @param name The save name, typically your game's name or the player's profile identifier.
-   * @param slot An optional slot discriminator (for example {@code "slot1"}), or {@code null}.
-   * @param directory The directory where the save file should be written. Must not be {@code null}.
-   * @return {@code true} when the bind succeeded.
-   */
-  public boolean bind(@NotNull String name, @Nullable String slot, @NotNull FlixelFile directory) {
-    if (name.isEmpty()) {
-      return false;
-    }
-    customDirectory = Objects.requireNonNull(directory, "directory cannot be null");
-    return bindInternal(name, slot);
-  }
-
-  private boolean bindInternal(@NotNull String name, @Nullable String slot) {
     boundName = name;
     boundSlot = slot;
     bound = true;
@@ -156,36 +178,8 @@ public class FlixelSave implements FlixelDestroyable {
     return true;
   }
 
-  public boolean isBound() {
-    return bound;
-  }
-
   /**
-   * Returns whether this save object is bound to a file.
-   *
-   * @return {@code true} if this save is bound to a file, {@code false} otherwise.
-   */
-  public boolean getBound() {
-    return bound;
-  }
-
-  @NotNull
-  public String getName() {
-    return boundName;
-  }
-
-  @Nullable
-  public String getSlot() {
-    return boundSlot;
-  }
-
-  @NotNull
-  public FlixelSaveStatus getStatus() {
-    return status;
-  }
-
-  /**
-   * Reloads {@link #data} from disk, replacing any unsaved changes.
+   * Reloads {@link #data} from storage, replacing any unsaved changes.
    */
   public void load() {
     data.clear();
@@ -193,23 +187,24 @@ public class FlixelSave implements FlixelDestroyable {
       status = FlixelSaveStatus.EMPTY;
       return;
     }
-    FlixelFile file = resolveFile();
-    if (!file.exists()) {
+    String key = getKey();
+    String text = handler.read(key);
+    if (text == null || text.isEmpty()) {
       status = FlixelSaveStatus.EMPTY;
       return;
     }
     try {
-      FlixelJsonValue root = FlixelJson.parse(file.readString());
+      FlixelJsonValue root = FlixelJson.parse(text);
       readObjectInto(root, data);
       status = data.isEmpty() ? FlixelSaveStatus.EMPTY : FlixelSaveStatus.OK;
     } catch (Exception e) {
-      LOG.error("Could not parse save file '{}'.", file.getPath(), e);
+      LOG.error("Could not parse save '{}'.", key, e);
       status = FlixelSaveStatus.ERROR;
     }
   }
 
   /**
-   * Writes {@link #data} to disk.
+   * Writes {@link #data} to storage.
    *
    * @return {@code true} when the write succeeded.
    */
@@ -219,38 +214,27 @@ public class FlixelSave implements FlixelDestroyable {
     }
     FlixelString out = new FlixelString(256);
     writeValue(out, data);
-    boolean ok = resolveFile().writeString(out.toString());
+    boolean ok = handler.write(getKey(), out.toString());
+    if (!ok) {
+      LOG.error("Could not write save '{}'.", getKey());
+    }
     status = ok ? FlixelSaveStatus.OK : FlixelSaveStatus.ERROR;
     return ok;
   }
 
   /**
-   * Clears {@link #data} and deletes the save file.
+   * Clears {@link #data} and deletes the stored save.
    *
-   * @return {@code true} when the file was removed (or never existed).
+   * @return {@code true} when the save was removed (or never existed).
    */
   public boolean erase() {
     data.clear();
     if (!bound) {
       return false;
     }
-    FlixelFile file = resolveFile();
-    boolean ok = !file.exists() || file.delete();
+    boolean ok = handler.delete(getKey());
     status = FlixelSaveStatus.EMPTY;
     return ok;
-  }
-
-  public boolean isEmpty() {
-    return data.isEmpty();
-  }
-
-  /**
-   * Returns whether the bound save currently holds no data.
-   *
-   * @return {@code true} if the save holds no data, {@code false} otherwise.
-   */
-  public boolean getEmpty() {
-    return data.isEmpty();
   }
 
   /**
@@ -324,20 +308,18 @@ public class FlixelSave implements FlixelDestroyable {
     bound = false;
     boundName = "";
     boundSlot = null;
-    customDirectory = null;
     status = FlixelSaveStatus.EMPTY;
   }
 
+  /**
+   * Returns the save name handed to the {@link FlixelSaveHandler}: the bound name, plus
+   * {@code "." + slot} when a slot is set.
+   *
+   * @return The handler key, or an empty string when this save is not bound.
+   */
   @NotNull
-  private FlixelFile resolveFile() {
-    String fileName = boundSlot != null && !boundSlot.isEmpty()
-        ? boundName + "." + boundSlot
-        : boundName;
-    if (customDirectory != null) {
-      return Flixel.files.absolute(customDirectory.getAbsolutePath() + "/" + fileName + ".json");
-    }
-    FlixelConfig config = Flixel.config;
-    return Flixel.files.pref(config.getCompany(), config.getTitle(), "saves/" + fileName + ".json");
+  public String getKey() {
+    return boundSlot != null && !boundSlot.isEmpty() ? boundName + "." + boundSlot : boundName;
   }
 
   /** Converts a parsed JSON object node into plain map entries. */
@@ -376,44 +358,44 @@ public class FlixelSave implements FlixelDestroyable {
 
   /** Serializes one supported value into JSON text. */
   private static void writeValue(@NotNull FlixelString out, @Nullable Object value) {
-    if (value == null) {
-      out.concat("null");
-    } else if (value instanceof String string) {
-      writeString(out, string);
-    } else if (value instanceof Boolean bool) {
-      out.concat(bool.booleanValue());
-    } else if (value instanceof Number number) {
-      double d = number.doubleValue();
-      // Integers write without a decimal point so they read back naturally.
-      if (d == Math.floor(d) && !Double.isInfinite(d) && Math.abs(d) < 1e15) {
-        out.concat((long) d);
-      } else {
-        out.concat(String.valueOf(d));
-      }
-    } else if (value instanceof FlixelMap<?, ?> map) {
-      out.concat('{');
-      boolean first = true;
-      for (FlixelMap.Entry<?, ?> e : map.entries()) {
-        if (!first) {
-          out.concat(',');
+    switch (value) {
+      case null -> out.concat("null");
+      case String string -> writeString(out, string);
+      case Boolean bool -> out.concat(bool.booleanValue());
+      case Number number -> {
+        double d = number.doubleValue();
+        // Integers write without a decimal point so they read back naturally.
+        if (d == Math.floor(d) && !Double.isInfinite(d) && Math.abs(d) < 1e15) {
+          out.concat((long) d);
+        } else {
+          out.concat(String.valueOf(d));
         }
-        first = false;
-        writeString(out, String.valueOf(e.key));
-        out.concat(':');
-        writeValue(out, e.value);
       }
-      out.concat('}');
-    } else if (value instanceof FlixelArray<?> list) {
-      out.concat('[');
-      for (int i = 0; i < list.getSize(); i++) {
-        if (i > 0) {
-          out.concat(',');
+      case FlixelMap<?, ?> map -> {
+        out.concat('{');
+        boolean first = true;
+        for (FlixelMap.Entry<?, ?> e : map.entries()) {
+          if (!first) {
+            out.concat(',');
+          }
+          first = false;
+          writeString(out, String.valueOf(e.key));
+          out.concat(':');
+          writeValue(out, e.value);
         }
-        writeValue(out, list.get(i));
+        out.concat('}');
       }
-      out.concat(']');
-    } else {
-      writeString(out, String.valueOf(value));
+      case FlixelArray<?> list -> {
+        out.concat('[');
+        for (int i = 0; i < list.getSize(); i++) {
+          if (i > 0) {
+            out.concat(',');
+          }
+          writeValue(out, list.get(i));
+        }
+        out.concat(']');
+      }
+      default -> writeString(out, String.valueOf(value));
     }
   }
 
@@ -438,5 +420,64 @@ public class FlixelSave implements FlixelDestroyable {
       }
     }
     out.concat('"');
+  }
+
+  public boolean isBound() {
+    return bound;
+  }
+
+  /**
+   * Returns whether this save object is bound to a save.
+   *
+   * @return {@code true} if this save is bound, {@code false} otherwise.
+   */
+  public boolean getBound() {
+    return bound;
+  }
+
+  @NotNull
+  public String getName() {
+    return boundName;
+  }
+
+  @Nullable
+  public String getSlot() {
+    return boundSlot;
+  }
+
+  @NotNull
+  public FlixelSaveHandler getHandler() {
+    return handler;
+  }
+
+  /**
+   * Gives this save object its own handler, replacing the one it had.
+   *
+   * <p>Only this save object changes. The {@link #data} already in memory is kept, so the next
+   * {@link #flush()} writes it to the new handler; call {@link #load()} to read from the new handler
+   * instead. A {@code null} handler is rejected and the current handler is kept.
+   *
+   * @param handler The storage this save should read from and write to.
+   */
+  public void setHandler(@Nullable FlixelSaveHandler handler) {
+    this.handler = Objects.requireNonNull(handler, "The provided handler cannot be null.");
+  }
+
+  @NotNull
+  public FlixelSaveStatus getStatus() {
+    return status;
+  }
+
+  public boolean isEmpty() {
+    return data.isEmpty();
+  }
+
+  /**
+   * Returns whether the bound save currently holds no data.
+   *
+   * @return {@code true} if the save holds no data, {@code false} otherwise.
+   */
+  public boolean getEmpty() {
+    return data.isEmpty();
   }
 }

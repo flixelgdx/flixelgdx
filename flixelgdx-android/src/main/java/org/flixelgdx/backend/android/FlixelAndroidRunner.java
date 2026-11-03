@@ -403,6 +403,8 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
         g.onFocusGained();
       } else {
         g.onFocusLost();
+        // Android may stop the process any time after a pause without destroying the game first.
+        g.onSuspended();
       }
     } catch (Throwable t) {
       dispatchCrash(Thread.currentThread(), t);

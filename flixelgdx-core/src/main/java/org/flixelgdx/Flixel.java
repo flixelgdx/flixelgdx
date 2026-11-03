@@ -589,8 +589,8 @@ public final class Flixel {
    * The preferences-based save data helper for the game.
    *
    * <p>{@link FlixelSave} is a simple key-value store that persists between sessions. It is
-   * backed by platform-native storage through the file seam: a save file on desktop, browser
-   * {@code localStorage} on web, and the equivalent on mobile.
+   * backed by the platform's {@link FlixelSave#defaultHandler}: a save file on desktop, the app's private
+   * storage on Android, and browser {@code localStorage} on web.
    *
    * <p>Call {@link FlixelSave#bind(String, String)} once before using any other method to open (or
    * create) the named preferences file. After that, read and write values directly through the
@@ -1802,6 +1802,8 @@ public final class Flixel {
     public static final FlixelSignal<Void> preGameClose = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> postGameClose = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
+    public static final FlixelSignal<Void> gameSuspended = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowFocused = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
