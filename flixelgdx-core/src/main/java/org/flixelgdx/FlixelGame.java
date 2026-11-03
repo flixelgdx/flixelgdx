@@ -111,6 +111,8 @@ import java.util.function.Supplier;
  *       when the window gains or loses focus.</li>
  *   <li>{@link Flixel.Signals#preGameClose} / {@link Flixel.Signals#postGameClose} - fired at
  *       the start and end of {@link #destroy()}.</li>
+ *   <li>{@link Flixel.Signals#gameSuspended} - fired from {@link #onSuspended()} when the
+ *       platform may stop the game without a clean shutdown. Save important data here.</li>
  * </ul>
  *
  * <h2>Global shaders</h2>
@@ -242,6 +244,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   private boolean shouldUpdate = true;
 
   /**
+   * When {@code true}, {@link Flixel.Signals#gameSuspended} was already dispatched and the game has
+   * not come back to the foreground since. Used so one trip to the background only fires it once.
+   */
+  private boolean suspended;
+
+  /**
    * Creates a new game instance with a default 640x360 window, 60 fps, and VSync enabled.
    *
    * @param title The title of the game's window.
@@ -301,6 +309,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.assets.setCompressedTexturesEnabled(true);
 
     stateLifecyclePauseDispatched = false;
+    suspended = false;
 
     // Apply the configured render scale and resolution now that the graphics backend is running.
     // The resolution is on by default at the design size, which is also the starting window size.
@@ -698,6 +707,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @see Flixel.Signals#windowFocused
    */
   public void onFocusGained() {
+    suspended = false;
     if (!stateLifecyclePauseDispatched) {
       return;
     }
@@ -714,6 +724,25 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       }
     }
     Flixel.Signals.windowFocused.dispatch();
+  }
+
+  /**
+   * Called when the platform may stop the game soon without a clean shutdown, so data should be
+   * saved now.
+   *
+   * <p>Backends call this when the Android activity pauses, when the browser tab is hidden or the
+   * page unloads, and from {@link #destroy()} on every platform. The default implementation
+   * dispatches {@link Flixel.Signals#gameSuspended}. Repeat calls are ignored until the game comes
+   * back to the foreground through {@link #onFocusGained()}.
+   *
+   * @see Flixel.Signals#gameSuspended
+   */
+  public void onSuspended() {
+    if (suspended) {
+      return;
+    }
+    suspended = true;
+    Flixel.Signals.gameSuspended.dispatch();
   }
 
   /**
@@ -748,6 +777,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   public void destroy() {
     Flixel.setDrawCamera(null);
 
+    onSuspended();
     Flixel.Signals.preGameClose.dispatch();
 
     Flixel.log.removeSink(Flixel.debug.overlay.getLogSink());
@@ -796,6 +826,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     debugPauseCameraZoom = null;
     gamePaused = false;
     stateLifecyclePauseDispatched = false;
+    suspended = false;
 
     FlixelFontRegistry.dispose();
 

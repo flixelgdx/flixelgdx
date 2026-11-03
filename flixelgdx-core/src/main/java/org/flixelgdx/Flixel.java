@@ -1819,6 +1819,24 @@ public final class Flixel {
     public static final FlixelSignal<Void> preGameClose = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> postGameClose = new FlixelLifecycleSignal<>();
+
+    /**
+     * Fired when the game may be stopped soon without a clean shutdown, so data should be saved now.
+     *
+     * <p>Browsers and phones often stop a game in the background without ever running
+     * {@link #preGameClose}. This signal fires at the last moment the platform reliably gives the
+     * game: when the Android activity pauses, when the browser tab is hidden or the page unloads,
+     * and right before the game closes on desktop. It fires at most once until the game comes back
+     * to the foreground.
+     *
+     * <p>Example:
+     *
+     * <pre>{@code
+     * Flixel.Signals.gameSuspended.add(data -> Flixel.save.flush());
+     * }</pre>
+     */
+    @SuppressWarnings("checkstyle:ConstantName")
+    public static final FlixelSignal<Void> gameSuspended = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowFocused = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")

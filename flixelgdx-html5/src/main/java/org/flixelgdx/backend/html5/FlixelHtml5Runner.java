@@ -346,8 +346,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   }
 
   /**
-   * Wires the browser resize, fullscreen-change, and visibility events to the framework so the
-   * canvas drawing buffer tracks the page and the game pauses when its tab is hidden.
+   * Wires the browser resize, fullscreen-change, visibility, and page-hide events to the framework so
+   * the canvas drawing buffer tracks the page, the game pauses when its tab is hidden, and the game
+   * is told to save (through {@link FlixelGame#onSuspended()}) before the browser may discard it.
    *
    * <p>Both the {@code resize} and {@code fullscreenchange} events call {@link #onViewportChanged}
    * because the browser does not guarantee that {@code resize} fires around every fullscreen
@@ -359,12 +360,19 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private void registerLifecycleListeners(HTMLDocument document) {
     Window.current().addEventListener("resize", event -> onViewportChanged());
     document.addEventListener("fullscreenchange", event -> onViewportChanged());
+    Window.current().addEventListener("pagehide", event -> {
+      if (running) {
+        game.onSuspended();
+      }
+    });
     document.addEventListener("visibilitychange", event -> {
       if (!running) {
         return;
       }
       if (isDocumentHidden()) {
         game.onFocusLost();
+        // A hidden tab can be closed or discarded without any further events.
+        game.onSuspended();
       } else {
         // Reset the delta so the first frame back does not report the whole hidden duration.
         lastTimestamp = -1.0;
