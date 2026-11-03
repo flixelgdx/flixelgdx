@@ -9,11 +9,11 @@ The project is split into several modules, each serving a specific purpose.
 ### Base (Core + Platform Backends)
 
 - **`flixelgdx-core`**: The heart of FlixelGDX. It contains the base framework classes (`FlixelGame`, `FlixelSprite`, `FlixelState`, etc.) and logic that is platform-independent. Every platform in the entire framework depends on this.
-- **`flixelgdx-gpu`**: The one WebGPU renderer every platform shares. It implements core's graphics abstractions (sprite batch, textures, render targets, shaders, the global shader chain) on top of `jwebgpu-api` only, so it contains no desktop, Android or web types. Each platform supplies a jwebgpu backend, a surface for its window and a device, and hands them to `FlixelGpuGraphics`.
 - **`flixelgdx-desktop`**: The desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)** (SDL3 for windows and input, miniaudio for sound) and `flixelgdx-gpu` for drawing. It installs jwebgpu's FFM backend, which loads the Dawn library of the current platform, and creates the WebGPU surface from the SDL3 window's native handles (X11, Wayland, Win32 or a Metal layer).
 - **`flixelgdx-html5`**: The backend for the web using [TeaVM](https://teavm.org) to transpile Java bytecode to JavaScript or WebAssembly, allowing games to run seamlessly in a browser. It draws with `flixelgdx-gpu` through jwebgpu's browser backend, so the browser needs WebGPU; there is no WebGL fallback.
-- **`flixelgdx-android`**: The backend for Android mobile devices. It draws through `flixelgdx-gpu` and jwebgpu's JNI backend (Dawn on Vulkan), so a device needs **Android 8.0 (API 26) and Vulkan 1.1**, and the app must target the 64-bit ABIs `arm64-v8a` and `x86_64`. The game runs on a dedicated render thread (`flixel-render`) that owns the GPU; the UI thread only forwards surface and activity lifecycle callbacks to it. When Android destroys the surface (the app goes to the background) the WebGPU surface is released while the device, textures and game state stay alive, and a new surface is attached when the app returns. If the GPU device itself is lost, the renderer is rebuilt on a new device and textures come back empty until the game loads them again. The launcher also installs the Basis Universal transcoder (`libflixel_basisu.so`) and a `.ktx2` asset loader, so supercompressed textures replace their PNGs automatically. Game developers call `FlixelAndroidLauncher.launch(activity, game)` and nothing else; the launcher installs the JNI backend.
+- **`flixelgdx-android`**: The backend for Android mobile devices. It draws through `flixelgdx-gpu` and jwebgpu's JNI backend (Dawn on Vulkan), so a device needs **Android 8.0 (API 26) and Vulkan 1.1**, and the app must target the 64-bit ABIs `arm64-v8a` and `x86_64`. The game runs on a dedicated render thread (`flixel-render`) that owns the GPU; the UI thread only forwards surface and activity lifecycle callbacks to it.
 - **`flixelgdx-ios`**: Planned backend for iOS mobile devices. Not supported yet. Currently only fail-fasts when attempted to be used.
+- **`flixelgdx-gpu`**: The one WebGPU renderer every platform shares. It implements core's graphics abstractions (sprite batch, textures, render targets, shaders, the global shader chain) on top of `jwebgpu-api` only, so it contains no desktop, Android or web types. Each platform supplies a jwebgpu backend, a surface for its window and a device, and hands them to `FlixelGpuGraphics`.
 
 ### Plugins (inside [`flixelgdx-plugins`](flixelgdx-plugins/))
 
@@ -28,14 +28,14 @@ Everything is drawn with [WebGPU](https://www.w3.org/TR/webgpu/) through [jwebgp
 
 Shaders are written in **WGSL** only. A shader is one `.wgsl` file, and the framework puts a *preamble* (the `FlixelWgsl.PREAMBLE` text block in `flixelgdx-core`, the single source of truth for the contract; it is a constant, so no platform reads it from a classpath) in front of it:
 
-| What | Where | Notes |
-|------|-------|-------|
-| `FlixelGlobals` uniform `flixel` | `@group(0) @binding(0)` | `proj` (`mat4x4f`, world pixels to clip space), `texSize` and `texelSize` (`vec2f`). Bound with a dynamic offset. |
-| Texture `flixelTexture` | `@group(0) @binding(1)` | `texture_2d<f32>` of the sprite or render target being drawn. |
-| Sampler `flixelSampler` | `@group(0) @binding(2)` | Nearest or linear, following the texture's smooth setting. |
-| The shader's own uniform struct | `@group(1) @binding(0)` | Optional. Members are set from Java by name with `FlixelShader.setUniform(...)`. |
-| Vertex structs | `FlixelVertexInput`, `FlixelVertexOutput` | A vertex is a `vec2f` position (world pixels), a `vec2f` uv and a `vec4f` color. |
-| Entry points | `fs_main` (required), `vs_main` (optional) | Without `vs_main` the preamble's `flixel_vs` is used. |
+| What                             | Where                                      | Notes                                                                                                             |
+|----------------------------------|--------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `FlixelGlobals` uniform `flixel` | `@group(0) @binding(0)`                    | `proj` (`mat4x4f`, world pixels to clip space), `texSize` and `texelSize` (`vec2f`). Bound with a dynamic offset. |
+| Texture `flixelTexture`          | `@group(0) @binding(1)`                    | `texture_2d<f32>` of the sprite or render target being drawn.                                                     |
+| Sampler `flixelSampler`          | `@group(0) @binding(2)`                    | Nearest or linear, following the texture's smooth setting.                                                        |
+| The shader's own uniform struct  | `@group(1) @binding(0)`                    | Optional. Members are set from Java by name with `FlixelShader.setUniform(...)`.                                  |
+| Vertex structs                   | `FlixelVertexInput`, `FlixelVertexOutput`  | A vertex is a `vec2f` position (world pixels), a `vec2f` uv and a `vec4f` color.                                  |
+| Entry points                     | `fs_main` (required), `vs_main` (optional) | Without `vs_main` the preamble's `flixel_vs` is used.                                                             |
 
 Textures hold straight (non-premultiplied) color and `fs_main` returns straight color, but blending only respects alpha in every blend mode when the color reaching the blender is premultiplied. So `FlixelWgsl.assemble(...)` turns `fs_main` into a plain function (blanking its `@fragment` and `@location` attributes, so lines and columns do not move) and adds the entry point `flixel_fs`, which calls it and premultiplies the result; `FlixelGpuBlend` uses the premultiplied formulas. Darken also needs transparent pixels to count as white, which `flixel_fs` does when the renderer sets the pipeline constant `flixel_darken`. The image decoders of every platform deliver the exact straight bytes of the file (the web decodes through a small WebGPU device of its own, since a 2D canvas premultiplies), so the same image blends the same everywhere.
 
