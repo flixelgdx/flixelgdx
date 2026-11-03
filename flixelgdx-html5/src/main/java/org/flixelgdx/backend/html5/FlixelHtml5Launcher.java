@@ -118,10 +118,10 @@ public final class FlixelHtml5Launcher {
     Flixel.host = host;
     Flixel.runtime = new FlixelHtml5RuntimeDevice();
     Flixel.files = new FlixelHtml5Files();
-    FlixelSave.defaultHandler = new FlixelHtml5SaveHandler();
     Flixel.input = input;
     Flixel.graphics = graphics;
     Flixel.assets = new FlixelHtml5AssetManager();
+    FlixelSave.defaultHandler = new FlixelHtml5SaveHandler();
     FlixelSoundManager.defaultFactory = FlixelWebAudioFactory.create();
     FlixelFontRegistry.setRasterizer(new FlixelHtml5FontRasterizer());
 
