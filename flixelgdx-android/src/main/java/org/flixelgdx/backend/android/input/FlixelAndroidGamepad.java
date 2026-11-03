@@ -90,6 +90,13 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
   /** Half-threshold for hat-switch synthesized d-pad button detection. */
   private static final float HAT_THRESHOLD = 0.5f;
 
+  // Linux BTN_DPAD_* scan codes. Some drivers (such as the one for Nintendo Switch controllers)
+  // send the d-pad as these buttons, which many Android key layout files leave unmapped.
+  private static final int SCAN_DPAD_UP = 0x220;
+  private static final int SCAN_DPAD_DOWN = 0x221;
+  private static final int SCAN_DPAD_LEFT = 0x222;
+  private static final int SCAN_DPAD_RIGHT = 0x223;
+
   private final int deviceId;
   private final int vendorId;
   private final int productId;
@@ -117,6 +124,12 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
   private volatile int axisL2;
   private volatile int axisR2;
 
+  /** Whether the device reports its d-pad as hat axes rather than key events. */
+  private final boolean hasHat;
+
+  /** Whether the device has analog triggers; digital ones only send key events. */
+  private final boolean hasAnalogTriggers;
+
   /**
    * Creates a gamepad backed by the given Android input device.
    *
@@ -129,6 +142,11 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
     String n = device.getName();
     this.name = (n != null && !n.isEmpty()) ? n : "Gamepad";
     this.vibrator = device.getVibrator();
+    this.hasHat = device.getMotionRange(MotionEvent.AXIS_HAT_X) != null;
+    this.hasAnalogTriggers = device.getMotionRange(MotionEvent.AXIS_LTRIGGER) != null
+        || device.getMotionRange(MotionEvent.AXIS_BRAKE) != null
+        || device.getMotionRange(MotionEvent.AXIS_RTRIGGER) != null
+        || device.getMotionRange(MotionEvent.AXIS_GAS) != null;
   }
 
   /**
@@ -220,6 +238,26 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
       case KeyEvent.KEYCODE_DPAD_DOWN -> BUTTON_DPAD_DOWN;
       case KeyEvent.KEYCODE_DPAD_LEFT -> BUTTON_DPAD_LEFT;
       case KeyEvent.KEYCODE_DPAD_RIGHT -> BUTTON_DPAD_RIGHT;
+      default -> -1;
+    };
+  }
+
+  /**
+   * Maps a raw Linux scan code to the compact button index, for buttons the device's key layout
+   * file left unmapped (they arrive as {@link KeyEvent#KEYCODE_UNKNOWN}).
+   *
+   * <p>Only the d-pad is handled here, since that is the gap seen in practice: Nintendo Switch
+   * controllers send it as {@code BTN_DPAD_*} buttons that Android's layout for them does not list.
+   *
+   * @param scanCode The value from {@link KeyEvent#getScanCode()}.
+   * @return The compact button index, or {@code -1} when the scan code is not recognized.
+   */
+  static int scanCodeToButtonIndex(int scanCode) {
+    return switch (scanCode) {
+      case SCAN_DPAD_UP -> BUTTON_DPAD_UP;
+      case SCAN_DPAD_DOWN -> BUTTON_DPAD_DOWN;
+      case SCAN_DPAD_LEFT -> BUTTON_DPAD_LEFT;
+      case SCAN_DPAD_RIGHT -> BUTTON_DPAD_RIGHT;
       default -> -1;
     };
   }
@@ -321,5 +359,23 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
       return 0f;
     }
     return Math.min(v, 1f);
+  }
+
+  /**
+   * Returns whether the d-pad arrives as hat axes on motion events.
+   *
+   * @return {@code true} if the device has {@link MotionEvent#AXIS_HAT_X}.
+   */
+  public boolean hasHat() {
+    return hasHat;
+  }
+
+  /**
+   * Returns whether the triggers are analog axes. Digital triggers only send key events.
+   *
+   * @return {@code true} if the device has any analog trigger axis.
+   */
+  public boolean hasAnalogTriggers() {
+    return hasAnalogTriggers;
   }
 }

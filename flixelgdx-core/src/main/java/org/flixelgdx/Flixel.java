@@ -708,7 +708,7 @@ public final class Flixel {
   public static FlixelGamepadInputManager gamepads;
 
   /**
-   * Desktop window integration for transparency helpers, opacity control, and OS-level window tweaks.
+   * Game display integration for transparency helpers, opacity control, and OS-level window tweaks.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a real implementation before
    * {@link Flixel#start(FlixelGame, FlixelGameRunner)} runs. On an unknown platform it falls back to
@@ -764,8 +764,7 @@ public final class Flixel {
    *
    * <p>Notifications can differ depending on the platform. For web, you need to request
    * permission first before sending one, otherwise {@link FlixelHostIntegration#supportsNotifications()}
-   * will return false and sending a notification will do nothing. On mobile platforms like
-   * Android, you typically need to add a permission to a config before you can send one.
+   * will return false and sending a notification will do nothing.
    *
    * <p>Example:
    * <pre>{@code

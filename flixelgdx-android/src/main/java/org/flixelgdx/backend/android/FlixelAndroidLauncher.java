@@ -168,6 +168,10 @@ public final class FlixelAndroidLauncher {
     activity.setContentView(view);
     window.install(view);
 
+    // Key and joystick events only reach the focused view, and Android gives no view focus on its
+    // own while the screen is in touch mode. Without this, gamepads and hardware keyboards do nothing.
+    view.requestFocus();
+
     activity.getApplication().registerActivityLifecycleCallbacks(
         new ActivityLifecycleHandler(activity, runner, gamepadProvider));
 
