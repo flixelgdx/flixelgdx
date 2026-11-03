@@ -92,4 +92,34 @@ class FlixelFilePickerTest {
     host.pickFiles(listener, "png", "jpg");
     assertEquals(4, calls[0]);
   }
+
+  @Test
+  void withExtensionAddsFirstExtensionOnlyWhenMissing() {
+    String[] exts = { "json", "txt" };
+    assertEquals("level.json", FlixelFilePicker.withExtension("level", exts));
+    assertEquals("/home/me/level.json", FlixelFilePicker.withExtension("/home/me/level", exts));
+    assertEquals("C:\\saves.d\\level.json", FlixelFilePicker.withExtension("C:\\saves.d\\level", exts));
+    assertEquals("level.txt", FlixelFilePicker.withExtension("level.txt", exts));
+    assertEquals("level.png", FlixelFilePicker.withExtension("level.png", exts));
+    assertEquals("level", FlixelFilePicker.withExtension("level", FlixelFilePicker.NO_FILTER));
+  }
+
+  @Test
+  void unsupportedHostReportsSaveFailureImmediately() {
+    FlixelHostIntegration host = FlixelNoopHostIntegration.INSTANCE;
+    byte[] data = { 1, 2, 3 };
+
+    int[] calls = new int[1];
+    FlixelFileSaveListener listener = saved -> {
+      assertFalse(saved);
+      calls[0]++;
+    };
+    host.saveFile(data, "level.json");
+    host.saveFile(data, "level.json", listener);
+    host.saveFile(data, "level.json", listener, "json");
+    host.saveFile("{}", "level.json");
+    host.saveFile("{}", "level.json", listener);
+    host.saveFile("{}", "level.json", listener, "json");
+    assertEquals(4, calls[0]);
+  }
 }
