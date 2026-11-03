@@ -23,19 +23,23 @@
  */
 package org.flixelgdx.util.save;
 
-import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelHeadlessExtension;
+import org.flixelgdx.backend.desktop.save.FlixelJvmSaveHandler;
 import org.flixelgdx.collections.FlixelMap;
-import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.save.FlixelNoopSaveHandler;
 import org.flixelgdx.save.FlixelSave;
+import org.flixelgdx.save.FlixelSaveHandler;
+import org.flixelgdx.save.FlixelSaveStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(FlixelHeadlessExtension.class)
@@ -43,25 +47,62 @@ class FlixelSaveTest {
 
   @Test
   void bindFlushRoundTrip(@TempDir Path tempDir) {
-    FlixelFile dir = Flixel.files.absolute(tempDir.toString());
+    FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
     String name = "flixelgdx_junit_save_" + System.nanoTime();
     FlixelSave a = new FlixelSave();
-    assertTrue(a.bind(name, null, dir));
+    assertTrue(a.bind(name, null, handler));
     a.data.put("score", 42);
     assertTrue(a.flush());
 
     FlixelSave b = new FlixelSave();
-    assertTrue(b.bind(name, null, dir));
+    assertTrue(b.bind(name, null, handler));
+    assertEquals(FlixelSaveStatus.OK, b.getStatus());
     Object v = b.data.get("score");
     Assertions.assertNotNull(v);
     assertEquals(42.0, ((Number) v).doubleValue(), 1e-6);
   }
 
   @Test
-  void mergeDataRespectsOverwrite(@TempDir Path tempDir) {
-    FlixelFile dir = Flixel.files.absolute(tempDir.toString());
+  void nestedJsonStringRoundTrips(@TempDir Path tempDir) {
+    FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
+    String json = "{\"startFullscreen\":true,\"masterVolume\":0.5}";
+    FlixelSave a = new FlixelSave();
+    assertTrue(a.bind("MIC", "settings", handler));
+    a.data.put("settings", json);
+    assertTrue(a.flush());
+    assertTrue(Files.isRegularFile(tempDir.resolve("MIC.settings.json")));
+
+    FlixelSave b = new FlixelSave();
+    assertTrue(b.bind("MIC", "settings", handler));
+    assertEquals(json, b.getString("settings", null));
+  }
+
+  @Test
+  void eraseRemovesStoredSave(@TempDir Path tempDir) {
+    FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
     FlixelSave s = new FlixelSave();
-    assertTrue(s.bind("flixelgdx_junit_merge_" + System.nanoTime(), null, dir));
+    assertTrue(s.bind("flixelgdx_junit_erase", null, handler));
+    s.data.put("k", 1);
+    assertTrue(s.flush());
+    assertTrue(handler.exists(s.getKey()));
+    assertTrue(s.erase());
+    assertFalse(handler.exists(s.getKey()));
+    assertEquals(FlixelSaveStatus.EMPTY, s.getStatus());
+  }
+
+  @Test
+  void noopHandlerStoresNothing() {
+    FlixelSave s = new FlixelSave();
+    assertTrue(s.bind("flixelgdx_junit_noop", null, FlixelNoopSaveHandler.INSTANCE));
+    s.data.put("k", 1);
+    assertFalse(s.flush());
+    assertEquals(FlixelSaveStatus.ERROR, s.getStatus());
+  }
+
+  @Test
+  void mergeDataRespectsOverwrite(@TempDir Path tempDir) {
+    FlixelSave s = new FlixelSave();
+    assertTrue(s.bind("flixelgdx_junit_merge_" + System.nanoTime(), null, new FlixelJvmSaveHandler(tempDir)));
     s.data.put("k", "a");
     FlixelMap<String, Object> in = new FlixelMap<>();
     in.put("k", "b");

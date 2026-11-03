@@ -37,6 +37,7 @@ import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileSink;
 import org.flixelgdx.backend.android.logging.FlixelAndroidLogSiteResolver;
 import org.flixelgdx.backend.android.logging.FlixelLogcatSink;
 import org.flixelgdx.backend.android.runtime.FlixelAndroidRuntimeDevice;
+import org.flixelgdx.backend.android.save.FlixelAndroidSaveHandler;
 import org.flixelgdx.backend.android.text.FlixelAndroidFontRasterizer;
 import org.flixelgdx.backend.gpu.FlixelGpuKtx2Loader;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
@@ -107,6 +108,7 @@ public final class FlixelAndroidLauncher {
     Flixel.runtime = runtime;
     Flixel.alert = new FlixelAndroidAlerter(activity);
     Flixel.files = new FlixelAndroidFiles(activity);
+    Flixel.saveHandler = new FlixelAndroidSaveHandler(activity);
     Flixel.assets = new FlixelAndroidAssetManager();
     Flixel.host = new FlixelAndroidHostIntegration(activity);
 
