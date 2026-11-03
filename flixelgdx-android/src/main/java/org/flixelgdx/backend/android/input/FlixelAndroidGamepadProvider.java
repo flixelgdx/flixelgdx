@@ -126,11 +126,27 @@ public class FlixelAndroidGamepadProvider implements FlixelGamepadProvider, Flix
     if (pad == null) {
       return;
     }
+    boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+
+    // Digital triggers (such as ZL and ZR on Nintendo controllers) only send key events. Report
+    // them on the trigger axes as 0 or 1, the same way desktop does, so the L2 and R2 buttons and
+    // axes both work. Pads with analog triggers get their values from onMotionEvent(...) instead.
+    if (keyCode == KeyEvent.KEYCODE_BUTTON_L2 || keyCode == KeyEvent.KEYCODE_BUTTON_R2) {
+      if (!pad.hasAnalogTriggers()) {
+        int axis = keyCode == KeyEvent.KEYCODE_BUTTON_L2 ? FlixelAndroidGamepad.AXIS_L2 : FlixelAndroidGamepad.AXIS_R2;
+        pad.setAxis(axis, down ? 1f : 0f);
+      }
+      return;
+    }
+
     int compactIndex = FlixelAndroidGamepad.keyCodeToButtonIndex(keyCode);
+    if (compactIndex < 0) {
+      compactIndex = FlixelAndroidGamepad.scanCodeToButtonIndex(event.getScanCode());
+    }
     if (compactIndex < 0) {
       return;
     }
-    pad.setButton(compactIndex, event.getAction() == KeyEvent.ACTION_DOWN);
+    pad.setButton(compactIndex, down);
   }
 
   /**
@@ -154,22 +170,27 @@ public class FlixelAndroidGamepadProvider implements FlixelGamepadProvider, Flix
     pad.setAxis(FlixelAndroidGamepad.AXIS_RIGHT_Y,
         clampAxis(event.getAxisValue(MotionEvent.AXIS_RZ)));
 
+    // The trigger and hat values below are 0 on pads that lack those axes, so writing them would
+    // wipe out trigger and d-pad presses that came in as key events whenever a stick moves.
+
     // Triggers: prefer AXIS_LTRIGGER/RTRIGGER, fall back to AXIS_BRAKE/GAS.
-    float lt = event.getAxisValue(MotionEvent.AXIS_LTRIGGER);
-    if (lt == 0f) {
-      lt = event.getAxisValue(MotionEvent.AXIS_BRAKE);
+    if (pad.hasAnalogTriggers()) {
+      float lt = event.getAxisValue(MotionEvent.AXIS_LTRIGGER);
+      if (lt == 0f) {
+        lt = event.getAxisValue(MotionEvent.AXIS_BRAKE);
+      }
+      float rt = event.getAxisValue(MotionEvent.AXIS_RTRIGGER);
+      if (rt == 0f) {
+        rt = event.getAxisValue(MotionEvent.AXIS_GAS);
+      }
+      pad.setAxis(FlixelAndroidGamepad.AXIS_L2, clamp01(lt));
+      pad.setAxis(FlixelAndroidGamepad.AXIS_R2, clamp01(rt));
     }
-    float rt = event.getAxisValue(MotionEvent.AXIS_RTRIGGER);
-    if (rt == 0f) {
-      rt = event.getAxisValue(MotionEvent.AXIS_GAS);
-    }
-    pad.setAxis(FlixelAndroidGamepad.AXIS_L2, clamp01(lt));
-    pad.setAxis(FlixelAndroidGamepad.AXIS_R2, clamp01(rt));
 
     // D-pad hat switch: some controllers report the d-pad as AXIS_HAT_X/Y.
-    float hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X);
-    float hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y);
-    pad.applyHatAxes(hatX, hatY);
+    if (pad.hasHat()) {
+      pad.applyHatAxes(event.getAxisValue(MotionEvent.AXIS_HAT_X), event.getAxisValue(MotionEvent.AXIS_HAT_Y));
+    }
   }
 
   @Override
