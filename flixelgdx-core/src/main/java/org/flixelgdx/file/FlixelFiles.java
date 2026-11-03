@@ -42,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
  *   <li>{@link #classpath(String)} - resources packaged on the Java classpath. Used as a fallback on
  *       desktop, where running from a JAR embeds assets as classpath resources.</li>
  *   <li>{@link #external(String)} - files under the user's home directory, for content that
- *       outlives a single run. Save data has its own seam; see {@code Flixel.saveHandler}.</li>
+ *       outlives a single run. Save data has its own seam; see {@code FlixelSave.defaultHandler}.</li>
  *   <li>{@link #local(String)} - files relative to where the application was started.</li>
  *   <li>{@link #absolute(String)} - a file named by its full path on the underlying file system.</li>
  * </ul>

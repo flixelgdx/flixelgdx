@@ -23,14 +23,13 @@
  */
 package org.flixelgdx.save;
 
-import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * A {@link FlixelSaveHandler} that stores nothing.
  *
- * <p>This is the safe default on {@link Flixel#saveHandler} before a backend installs real storage,
+ * <p>This is the safe default on {@link FlixelSave#defaultHandler} before a backend installs real storage,
  * and on headless sessions. Reads find nothing and writes report failure, so save code never
  * crashes; it simply has nowhere to keep its data.
  */

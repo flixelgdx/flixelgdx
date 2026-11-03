@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.save;
 
-import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,10 +35,11 @@ import org.jetbrains.annotations.Nullable;
  * four things: give me the text stored under this name, store this text under this name, throw
  * this name away, and is anything stored under this name at all.
  *
- * <p>Every platform installs its own handler on {@link Flixel#saveHandler} before the game starts,
- * so {@code Flixel.save.bind(name, slot)} works the same everywhere. Games can also write their own
- * handler (for example one that syncs to a cloud service) and pass it to
- * {@link FlixelSave#bind(String, String, FlixelSaveHandler)}.
+ * <p>Every platform installs its own handler on {@link FlixelSave#defaultHandler} before the game
+ * starts, so {@code Flixel.save.bind(name, slot)} works the same everywhere. Games can also write
+ * their own handler (for example one that syncs to a cloud service) and give it to a single save
+ * object through {@link FlixelSave#FlixelSave(FlixelSaveHandler)} or
+ * {@link FlixelSave#setHandler(FlixelSaveHandler)}.
  *
  * <p>A save name is a plain identifier such as {@code "MyGame.slot1"}. It never contains a folder
  * or a file extension; each handler decides how to turn it into a real location. Handlers must
@@ -68,7 +68,8 @@ import org.jetbrains.annotations.Nullable;
  *   }
  * }
  *
- * Flixel.save.bind("MyGame", "slot1", new MemorySaveHandler());
+ * FlixelSave save = new FlixelSave(new MemorySaveHandler());
+ * save.bind("MyGame", "slot1");
  * }</pre>
  *
  * @see FlixelSave

@@ -47,6 +47,7 @@ import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.logging.FlixelLogger;
+import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
@@ -231,7 +232,7 @@ public final class FlixelDesktopLauncher {
     Flixel.window = window;
     Flixel.host = host;
     Flixel.files = new FlixelJvmFiles();
-    Flixel.saveHandler = new FlixelJvmSaveHandler();
+    FlixelSave.defaultHandler = new FlixelJvmSaveHandler();
     Flixel.input = input;
     Flixel.graphics = graphics;
     FlixelMiniAudio.setLoader(new FlixelDesktopMiniAudioLoader());

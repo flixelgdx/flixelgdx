@@ -43,9 +43,14 @@ import java.util.Objects;
  * <p>Bind to a uniquely identified save slot, manipulate the structured {@link #data} map, and
  * flush changes to storage. Saves serialize to JSON text and hand it to a
  * {@link FlixelSaveHandler}, which decides where the text actually lives. Every platform installs
- * its own handler on {@link Flixel#saveHandler}, so the same code works everywhere: desktop saves
+ * its own handler on {@link #defaultHandler}, so the same code works everywhere: desktop saves
  * to the computer's app data folder, Android saves to the app's private storage, and the web saves
  * to the browser's {@code localStorage}.
+ *
+ * <p>Each save object takes {@link #defaultHandler} when it is created. To keep one save somewhere
+ * else (for example a cloud-sync service or an in-memory store in tests), pass a handler to
+ * {@link #FlixelSave(FlixelSaveHandler)} or call {@link #setHandler(FlixelSaveHandler)}. Only that
+ * save object changes; every other save keeps its own handler.
  *
  * <p>Supported value types are {@link String}, {@link Number}, {@link Boolean}, nested
  * {@link FlixelMap}{@code <String, Object>} objects, and {@link FlixelArray}{@code <Object>}
@@ -64,9 +69,27 @@ import java.util.Objects;
  *   Flixel.save.data.put("highScore", score);
  *   Flixel.save.flush();
  * }
+ *
+ * // A second save that lives in your own storage instead of the platform default.
+ * FlixelSave cloud = new FlixelSave(new MyCloudSaveHandler());
+ * cloud.bind("MyGame", "slot1");
  * }</pre>
  */
 public class FlixelSave implements FlixelDestroyable {
+
+  /**
+   * The handler every new save object starts with.
+   *
+   * <p>Each platform's launcher installs its own handler here before the game starts: a folder in
+   * the OS app data directory on desktop, the app's private storage on Android, and
+   * {@code localStorage} on web. Until then, and on headless sessions, it is the
+   * {@link FlixelNoopSaveHandler}, which keeps nothing, so save calls are always safe.
+   *
+   * <p>Changing this only affects save objects created afterward; existing ones keep the handler
+   * they already have. A {@code null} value here is treated as the no-op handler.
+   */
+  @NotNull
+  public static FlixelSaveHandler defaultHandler = FlixelNoopSaveHandler.INSTANCE;
 
   private static final FlixelLogger LOG = Flixel.log.tagged("Save");
 
@@ -82,32 +105,54 @@ public class FlixelSave implements FlixelDestroyable {
   @Nullable
   private String boundSlot;
 
-  /** The storage this save reads from and writes to. Set by the {@code bind(...)} methods. */
+  /** The storage this save reads from and writes to. Never {@code null}. */
   @NotNull
-  private FlixelSaveHandler handler = FlixelNoopSaveHandler.INSTANCE;
+  private FlixelSaveHandler handler;
 
   @NotNull
   private FlixelSaveStatus status = FlixelSaveStatus.EMPTY;
 
   private boolean bound;
 
+  /** Creates a save object that uses the current {@link #defaultHandler}. */
+  public FlixelSave() {
+    this(defaultHandler);
+  }
+
   /**
-   * Binds this save object to a named save (and optional slot) in the platform's default storage,
-   * then loads any existing data.
+   * Creates a save object that uses a specific handler instead of {@link #defaultHandler}.
    *
-   * <p>The platform's {@link Flixel#saveHandler} decides where the save lives. On desktop, save
-   * files are written to the OS-specific application data directory, determined by the company
-   * name and game title set in {@link FlixelConfig}:
+   * <p>Use this when one save should live somewhere other than the platform's default storage,
+   * for example a cloud-sync service, a custom folder, or an in-memory store in tests. A
+   * {@code null} handler is rejected and the no-op handler is used instead.
+   *
+   * @param handler The storage this save reads from and writes to.
+   */
+  public FlixelSave(@Nullable FlixelSaveHandler handler) {
+    if (Objects.nonNull(handler)) {
+      this.handler = handler;
+    } else {
+      LOG.warn("A null save handler was given to the constructor; using the no-op handler instead.");
+      this.handler = FlixelNoopSaveHandler.INSTANCE;
+    }
+  }
+
+  /**
+   * Binds this save object to a named save (and optional slot), then loads any existing data.
+   *
+   * <p>This object's handler (see {@link #getHandler()}) decides where the save lives. With the
+   * platform's default handler on desktop, save files are written to the OS-specific application
+   * data directory, determined by the company name and game title set in {@link FlixelConfig}:
    * <ul>
    *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
    *   <li><b>macOS</b>: {@code ~/Library/Application Support/Company/Title/saves/}</li>
    *   <li><b>Linux</b>: {@code $XDG_DATA_HOME/Company/Title/saves/}</li>
    * </ul>
    *
-   * <p>A company name <b>must</b> be set via {@link FlixelConfig.Builder#company(String)}
-   * before calling this method. If it is missing, this method logs an error and returns
-   * {@code false}. Use {@link #bind(String, String, FlixelSaveHandler)} to supply your own storage
-   * as an alternative.
+   * <p>When this object uses {@link #defaultHandler}, a company name <b>must</b> be set via
+   * {@link FlixelConfig.Builder#company(String)} before calling this method. If it is missing,
+   * this method logs an error and returns {@code false}. Save objects with their own handler skip
+   * this check, since their handler decides where the data goes.
    *
    * @param name The save name, typically your game's name or the player's profile identifier.
    * @param slot An optional slot discriminator (for example {@code "slot1"}), or {@code null}.
@@ -117,41 +162,18 @@ public class FlixelSave implements FlixelDestroyable {
     if (name.isEmpty()) {
       return false;
     }
+    // Only the platform default needs the company name to find its folder; the no-op handler has none.
     FlixelConfig config = Flixel.config;
-    if (config.getCompany().isEmpty()) {
+    boolean needsCompany = handler == defaultHandler && handler != FlixelNoopSaveHandler.INSTANCE;
+    if (needsCompany && (config == null || config.getCompany().isEmpty())) {
       LOG.error("bind() requires a company name to resolve the correct save location. "
           + "Set it via FlixelConfig.Builder.company(...) in your FlixelGame subclass constructor, "
-          + "or use bind(name, slot, handler) to supply your own save storage instead.");
+          + "or give this save its own handler with setHandler(...) instead.");
       return false;
     }
-    return bindInternal(name, slot, Flixel.saveHandler);
-  }
-
-  /**
-   * Binds this save object to a named save (and optional slot) kept by a specific handler, then
-   * loads any existing data.
-   *
-   * <p>Use this when saves should live somewhere other than the platform's default storage, for
-   * example a cloud-sync service, a custom folder, or an in-memory store in tests. No company name
-   * check is performed, since the handler decides where the data goes.
-   *
-   * @param name The save name, typically your game's name or the player's profile identifier.
-   * @param slot An optional slot discriminator (for example {@code "slot1"}), or {@code null}.
-   * @param handler The storage to read from and write to. Must not be {@code null}.
-   * @return {@code true} when the bind succeeded.
-   */
-  public boolean bind(@NotNull String name, @Nullable String slot, @NotNull FlixelSaveHandler handler) {
-    if (name.isEmpty()) {
-      return false;
-    }
-    return bindInternal(name, slot, Objects.requireNonNull(handler, "handler cannot be null"));
-  }
-
-  private boolean bindInternal(@NotNull String name, @Nullable String slot, @NotNull FlixelSaveHandler handler) {
-    this.boundName = name;
-    this.boundSlot = slot;
-    this.handler = handler;
-    this.bound = true;
+    boundName = name;
+    boundSlot = slot;
+    bound = true;
     load();
     return true;
   }
@@ -286,7 +308,6 @@ public class FlixelSave implements FlixelDestroyable {
     bound = false;
     boundName = "";
     boundSlot = null;
-    handler = FlixelNoopSaveHandler.INSTANCE;
     status = FlixelSaveStatus.EMPTY;
   }
 
@@ -427,6 +448,23 @@ public class FlixelSave implements FlixelDestroyable {
   @NotNull
   public FlixelSaveHandler getHandler() {
     return handler;
+  }
+
+  /**
+   * Gives this save object its own handler, replacing the one it had.
+   *
+   * <p>Only this save object changes. The {@link #data} already in memory is kept, so the next
+   * {@link #flush()} writes it to the new handler; call {@link #load()} to read from the new handler
+   * instead. A {@code null} handler is rejected and the current handler is kept.
+   *
+   * @param handler The storage this save should read from and write to.
+   */
+  public void setHandler(@Nullable FlixelSaveHandler handler) {
+    if (Objects.nonNull(handler)) {
+      this.handler = handler;
+    } else {
+      LOG.warn("Ignoring a null save handler; keeping the current one.");
+    }
   }
 
   @NotNull

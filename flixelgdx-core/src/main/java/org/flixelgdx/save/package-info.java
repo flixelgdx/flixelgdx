@@ -59,7 +59,7 @@
  * <p>{@code FlixelSave} never touches storage itself. It turns {@code data} into JSON text and
  * hands it to a {@link org.flixelgdx.save.FlixelSaveHandler FlixelSaveHandler}, a small
  * interface with four methods: read, write, delete, and exists. Each platform installs its own
- * handler on {@link org.flixelgdx.Flixel#saveHandler Flixel.saveHandler} before the game starts:
+ * handler on {@link org.flixelgdx.save.FlixelSave#defaultHandler FlixelSave.defaultHandler} before the game starts:
  *
  * <ul>
  *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
@@ -71,13 +71,20 @@
  * </ul>
  *
  * <p>The company name set in {@link org.flixelgdx.FlixelConfig FlixelConfig} is required so
- * the framework can find the correct location. The two-argument bind method will log an error and
- * return {@code false} if the company name has not been set.
+ * the framework can find the correct location. When a save object uses the default handler, the
+ * bind method will log an error and return {@code false} if the company name has not been set.
  *
- * <p>To save somewhere else entirely (for example a cloud-sync service, a custom folder, or an
- * in-memory store in tests) pass your own handler to the three-argument overload
- * {@link org.flixelgdx.save.FlixelSave#bind(String, String, org.flixelgdx.save.FlixelSaveHandler) FlixelSave.bind(name, slot, handler)}.
- * When a handler is provided, no company name check is performed.
+ * <p>To keep one save somewhere else entirely (for example a cloud-sync service, a custom folder,
+ * or an in-memory store in tests) give that save object its own handler, either when creating it
+ * with {@link org.flixelgdx.save.FlixelSave#FlixelSave(org.flixelgdx.save.FlixelSaveHandler) new FlixelSave(handler)}
+ * or later with {@link org.flixelgdx.save.FlixelSave#setHandler(org.flixelgdx.save.FlixelSaveHandler) setHandler(handler)}.
+ * Only that object changes, and no company name check is performed for it. A {@code null} handler
+ * is always rejected.
+ *
+ * <pre>{@code
+ * FlixelSave cloud = new FlixelSave(new MyCloudSaveHandler());
+ * cloud.bind("AwesomeGame", "slot1");
+ * }</pre>
  *
  * <h2>Saving before the game is stopped</h2>
  * <p>Browsers and phones rarely shut a game down cleanly. A closed tab or an app swiped away from
