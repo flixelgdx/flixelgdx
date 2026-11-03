@@ -48,6 +48,10 @@ import android.content.res.AssetManager;
  * <p>Internal files are read first from the APK {@link AssetManager}, then from the classpath
  * (for framework-bundled resources such as default fonts and shaders). Disk-backed files use
  * standard Java IO available at API 24.
+ *
+ * <p>APK folders behave like normal folders: {@link #isDirectory()} reports them, and
+ * {@link #list()} returns their entries through {@link AssetManager#list(String)}. Classpath
+ * resources cannot be listed, so a classpath folder always looks empty.
  */
 public class FlixelAndroidFile implements FlixelFile {
 
@@ -106,7 +110,10 @@ public class FlixelAndroidFile implements FlixelFile {
 
   @Override
   public boolean isDirectory() {
-    if (apk || classpath) {
+    if (apk && assets != null) {
+      return apkIsDirectory();
+    }
+    if (classpath) {
       return false;
     }
     return file != null && file.isDirectory();
@@ -115,7 +122,10 @@ public class FlixelAndroidFile implements FlixelFile {
   @NotNull
   @Override
   public FlixelFile[] list() {
-    if (apk || classpath || file == null || !file.isDirectory()) {
+    if (apk && assets != null) {
+      return apkList(null);
+    }
+    if (classpath || file == null || !file.isDirectory()) {
       return new FlixelFile[0];
     }
     File[] children = file.listFiles();
@@ -133,7 +143,10 @@ public class FlixelAndroidFile implements FlixelFile {
   @NotNull
   @Override
   public FlixelFile[] list(@NotNull String suffix) {
-    if (apk || classpath || file == null || !file.isDirectory()) {
+    if (apk && assets != null) {
+      return apkList(suffix);
+    }
+    if (classpath || file == null || !file.isDirectory()) {
       return new FlixelFile[0];
     }
     File[] children = file.listFiles();
@@ -256,15 +269,128 @@ public class FlixelAndroidFile implements FlixelFile {
     if (assets == null) {
       return false;
     }
-    try {
-      InputStream in = assets.open(path);
-      in.close();
+    if (apkFileExists()) {
       return true;
-    } catch (IOException e) {
-      // Fall through to classpath check.
+    }
+    String dir = apkDirPath();
+    if (dir.isEmpty()) {
+      return true;
+    }
+    String[] children = apkChildren(dir);
+    if (children != null && children.length > 0) {
+      return true;
     }
     // Check classpath for framework-bundled resources.
     return classpathStream() != null;
+  }
+
+  /**
+   * Checks whether this path is a single file inside the APK assets.
+   *
+   * <p>{@link AssetManager#open(String)} only succeeds for files, so a folder path fails here.
+   *
+   * @return {@code true} if the asset can be opened as a stream.
+   */
+  private boolean apkFileExists() {
+    if (assets == null) {
+      return false;
+    }
+    try (InputStream in = assets.open(path)) {
+      return in != null;
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Checks whether this path is a folder inside the APK assets.
+   *
+   * <p>{@link AssetManager#list(String)} returns an empty array, not {@code null}, for a path that
+   * does not exist, so a folder only counts when it has at least one entry. Android never packs
+   * empty folders into an APK anyway, so this misses nothing.
+   *
+   * @return {@code true} if the path is the asset root or a folder with entries.
+   */
+  private boolean apkIsDirectory() {
+    if (assets == null) {
+      return false;
+    }
+    String dir = apkDirPath();
+    if (dir.isEmpty()) {
+      return true;
+    }
+    if (apkFileExists()) {
+      return false;
+    }
+    String[] children = apkChildren(dir);
+    return children != null && children.length > 0;
+  }
+
+  /**
+   * Lists the entries of this APK folder, optionally keeping only names that end with a suffix.
+   *
+   * @param suffix The suffix each name must end with, or {@code null} to keep every entry.
+   * @return The matching entries as APK handles, or an empty array if this is not a folder.
+   */
+  @NotNull
+  private FlixelFile[] apkList(@Nullable String suffix) {
+    String[] children = apkChildren(apkDirPath());
+    if (children == null || children.length == 0) {
+      return new FlixelFile[0];
+    }
+    int matches = 0;
+    for (String child : children) {
+      if (suffix == null || child.endsWith(suffix)) {
+        matches++;
+      }
+    }
+    FlixelFile[] out = new FlixelFile[matches];
+    int idx = 0;
+    for (String child : children) {
+      if (suffix == null || child.endsWith(suffix)) {
+        out[idx++] = new FlixelAndroidFile(assets, childPath(child), null, false, true);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Returns the names inside an APK folder.
+   *
+   * @param dir The folder path relative to the APK assets root, without a trailing slash.
+   * @return The entry names, or {@code null} if the asset manager could not read the folder.
+   */
+  @Nullable
+  private String[] apkChildren(@NotNull String dir) {
+    if (assets == null) {
+      return null;
+    }
+    try {
+      return assets.list(dir);
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
+  /**
+   * Returns this path in the form {@link AssetManager#list(String)} expects.
+   *
+   * <p>The asset manager does not accept leading or trailing slashes, so both are removed. The
+   * asset root becomes an empty string.
+   *
+   * @return The cleaned folder path.
+   */
+  @NotNull
+  private String apkDirPath() {
+    int start = 0;
+    int end = path.length();
+    while (start < end && path.charAt(start) == '/') {
+      start++;
+    }
+    while (end > start && path.charAt(end - 1) == '/') {
+      end--;
+    }
+    return path.substring(start, end);
   }
 
   @Nullable
