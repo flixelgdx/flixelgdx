@@ -33,6 +33,7 @@ import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
 import org.flixelgdx.file.FlixelFilePicker;
+import org.flixelgdx.file.FlixelFileSaveListener;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +64,11 @@ import org.teavm.jso.typedarrays.Int8Array;
  * {@link FlixelHtml5MemoryFile} instances. The listener runs directly from the browser event, which
  * is already the game's only thread. Browsers that do not fire a cancel event never call the
  * listener when the user dismisses the dialog.
+ *
+ * <p>{@link #saveFile(byte[], String, FlixelFileSaveListener, String...)} uses the File System
+ * Access API's save dialog where the browser has one. Elsewhere, or if that dialog cannot open, the
+ * data is downloaded as a file instead, and the listener reports {@code true} once the download
+ * starts, since the browser gives no further feedback.
  */
 public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
 
@@ -135,6 +141,17 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   @Override
   public void pickFiles(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
     showFilePicker(listener, extensions, true);
+  }
+
+  @Override
+  public void saveFile(
+      byte @NotNull [] data,
+      @NotNull String name,
+      @NotNull FlixelFileSaveListener listener,
+      @NotNull String... extensions) {
+    String[] exts = FlixelFilePicker.normalize(extensions);
+    saveBlob(Int8Array.copyFromJavaArray(data), FlixelFilePicker.withExtension(name, exts), String.join(",", exts),
+        listener::onSave);
   }
 
   @Override
@@ -276,6 +293,41 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
       """)
   private static native void openFileInput(String accept, boolean multiple, FilePickCallback callback);
 
+  @JSBody(params = { "data", "name", "exts", "callback" }, script = """
+      function download() {
+        try {
+          var url = URL.createObjectURL(new Blob([data]));
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = name;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function() { URL.revokeObjectURL(url); }, 10000);
+          callback(true);
+        } catch (e) {
+          callback(false);
+        }
+      }
+      if (typeof window.showSaveFilePicker !== 'function') { download(); return; }
+      var options = { suggestedName: name };
+      if (exts) {
+        options.types = [{
+          description: 'Files',
+          accept: { 'application/octet-stream': exts.split(',').map(function(e) { return '.' + e; }) }
+        }];
+      }
+      var chosen = false;
+      window.showSaveFilePicker(options)
+          .then(function(handle) { chosen = true; return handle.createWritable(); })
+          .then(function(writable) { return writable.write(data).then(function() { return writable.close(); }); })
+          .then(function() { callback(true); }, function(err) {
+            if (!chosen && !(err && err.name === 'AbortError')) { download(); } else { callback(false); }
+          });
+      """)
+  private static native void saveBlob(Int8Array data, String name, String exts, SaveCallback callback);
+
   @JSBody(script = "if (typeof Notification !== 'undefined') { Notification.requestPermission(); }")
   private static native void requestNotificationPermissionJs();
 
@@ -345,5 +397,11 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   @JSFunctor
   private interface FilePickCallback extends JSObject {
     void accept(JSArray<JSString> names, JSArray<Int8Array> data);
+  }
+
+  /** Receives whether the browser saved or downloaded the file. */
+  @JSFunctor
+  private interface SaveCallback extends JSObject {
+    void accept(boolean saved);
   }
 }
