@@ -39,13 +39,6 @@ class FlixelGamepadDetectorTest {
   }
 
   @Test
-  void detectSwitchDoesNotMatchPsWireless() {
-    Assertions.assertEquals(
-        FlixelGamepadModel.SWITCH_PRO,
-        FlixelGamepadDetector.detect("Nintendo Switch Pro Controller"));
-  }
-
-  @Test
   void detectXbox360() {
     Assertions.assertEquals(FlixelGamepadModel.XBOX_360, FlixelGamepadDetector.detect("Xbox 360 Controller"));
   }

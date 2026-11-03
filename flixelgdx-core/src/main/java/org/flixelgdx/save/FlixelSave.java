@@ -358,44 +358,44 @@ public class FlixelSave implements FlixelDestroyable {
 
   /** Serializes one supported value into JSON text. */
   private static void writeValue(@NotNull FlixelString out, @Nullable Object value) {
-    if (value == null) {
-      out.concat("null");
-    } else if (value instanceof String string) {
-      writeString(out, string);
-    } else if (value instanceof Boolean bool) {
-      out.concat(bool.booleanValue());
-    } else if (value instanceof Number number) {
-      double d = number.doubleValue();
-      // Integers write without a decimal point so they read back naturally.
-      if (d == Math.floor(d) && !Double.isInfinite(d) && Math.abs(d) < 1e15) {
-        out.concat((long) d);
-      } else {
-        out.concat(String.valueOf(d));
-      }
-    } else if (value instanceof FlixelMap<?, ?> map) {
-      out.concat('{');
-      boolean first = true;
-      for (FlixelMap.Entry<?, ?> e : map.entries()) {
-        if (!first) {
-          out.concat(',');
+    switch (value) {
+      case null -> out.concat("null");
+      case String string -> writeString(out, string);
+      case Boolean bool -> out.concat(bool.booleanValue());
+      case Number number -> {
+        double d = number.doubleValue();
+        // Integers write without a decimal point so they read back naturally.
+        if (d == Math.floor(d) && !Double.isInfinite(d) && Math.abs(d) < 1e15) {
+          out.concat((long) d);
+        } else {
+          out.concat(String.valueOf(d));
         }
-        first = false;
-        writeString(out, String.valueOf(e.key));
-        out.concat(':');
-        writeValue(out, e.value);
       }
-      out.concat('}');
-    } else if (value instanceof FlixelArray<?> list) {
-      out.concat('[');
-      for (int i = 0; i < list.getSize(); i++) {
-        if (i > 0) {
-          out.concat(',');
+      case FlixelMap<?, ?> map -> {
+        out.concat('{');
+        boolean first = true;
+        for (FlixelMap.Entry<?, ?> e : map.entries()) {
+          if (!first) {
+            out.concat(',');
+          }
+          first = false;
+          writeString(out, String.valueOf(e.key));
+          out.concat(':');
+          writeValue(out, e.value);
         }
-        writeValue(out, list.get(i));
+        out.concat('}');
       }
-      out.concat(']');
-    } else {
-      writeString(out, String.valueOf(value));
+      case FlixelArray<?> list -> {
+        out.concat('[');
+        for (int i = 0; i < list.getSize(); i++) {
+          if (i > 0) {
+            out.concat(',');
+          }
+          writeValue(out, list.get(i));
+        }
+        out.concat(']');
+      }
+      default -> writeString(out, String.valueOf(value));
     }
   }
 

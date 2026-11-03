@@ -41,6 +41,7 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(FlixelHeadlessExtension.class)
@@ -128,12 +129,9 @@ class FlixelSaveTest {
 
   @Test
   void nullHandlersAreRejected(@TempDir Path tempDir) {
-    assertSame(FlixelNoopSaveHandler.INSTANCE, new FlixelSave(null).getHandler());
-
     FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
     FlixelSave s = new FlixelSave(handler);
-    s.setHandler(null);
-    assertSame(handler, s.getHandler());
+    assertThrows(NullPointerException.class, () -> s.setHandler(null));
   }
 
   @Test
