@@ -28,11 +28,12 @@ import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelRuntimeMode;
+import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetManager;
 import org.flixelgdx.backend.html5.audio.FlixelWebAudioFactory;
 import org.flixelgdx.backend.html5.debug.FlixelHtml5DebugOverlay;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
-import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
+import org.flixelgdx.backend.html5.graphics.FlixelHtml5ImageDecoder;
 import org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
 import org.flixelgdx.backend.html5.logging.FlixelHtml5ConsoleSink;
@@ -45,7 +46,7 @@ import org.teavm.jso.JSBody;
  * The one-line entry point for a FlixelGDX game running in the browser through TeaVM.
  *
  * <p>Like the desktop launcher, this installs every web backend piece (canvas window, DOM input,
- * WebGL2 graphics, Web Audio, browser files and host integration) and then starts the game, so a
+ * WebGPU graphics, Web Audio, browser files and host integration) and then starts the game, so a
  * game's TeaVM entry point is a single call:
  *
  * <pre>{@code
@@ -56,6 +57,11 @@ import org.teavm.jso.JSBody;
  *   private WebLauncher() {}
  * }
  * }</pre>
+ *
+ * <p>Everything is drawn with WebGPU, which the game developer never sets up: the launcher's runner registers jwebgpu's
+ * browser backend, turns the canvas into a WebGPU surface and starts the game once the browser has handed out a GPU
+ * device. There is no WebGL fallback. When the browser lacks WebGPU, the page shows a message
+ * (see {@link FlixelHtml5WebGpuNotice}) and the game does not start.
  *
  * <p>The runtime mode is chosen from the page URL rather than a command-line flag, since a browser
  * has no launch arguments. Adding {@code ?flixel.mode=debug} (or the shorthand {@code ?debug}) to
@@ -88,7 +94,13 @@ public final class FlixelHtml5Launcher {
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
     FlixelConfig config = Flixel.config;
-    FlixelHtml5Graphics graphics = new FlixelHtml5Graphics();
+    // The renderer is the same one the desktop uses. It cannot draw until the browser has handed out a GPU device,
+    // which is asynchronous, so the runner finishes setting it up before the assets are downloaded. Decoding is
+    // set here already because the web decoder needs no GPU.
+    FlixelGpuGraphics graphics = new FlixelGpuGraphics();
+    graphics.setImageDecoder(FlixelHtml5ImageDecoder.INSTANCE);
+    // The page sizes the canvas, not the game, so a render resolution is always drawn at that size and stretched.
+    graphics.setWindowedRenderResolution(true);
     FlixelHtml5Window window = new FlixelHtml5Window();
     FlixelHtml5HostIntegration host = new FlixelHtml5HostIntegration();
     FlixelHtml5InputDevice input = new FlixelHtml5InputDevice();

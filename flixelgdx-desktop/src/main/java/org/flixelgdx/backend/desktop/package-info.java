@@ -1,10 +1,10 @@
 /**
- * Desktop backend for FlixelGDX, targeting Windows, macOS, and Linux through SDL3, bgfx, and
+ * Desktop backend for FlixelGDX, targeting Windows, macOS, and Linux through SDL3, WebGPU, and
  * miniaudio.
  *
  * <p>This module is the bridge between the platform-agnostic
  * {@code flixelgdx-core} API and the native system. It wires together three native libraries
- * (SDL3 for windowing and input, bgfx for rendering, miniaudio for audio) and hands them to the
+ * (SDL3 for windowing and input, WebGPU for rendering, miniaudio for audio) and hands them to the
  * core through FlixelGDX's backend interfaces. Game code never touches this module directly; it
  * only uses the abstractions in core ({@link org.flixelgdx.Flixel Flixel},
  * {@link org.flixelgdx.FlixelGame FlixelGame}, and so on).
@@ -35,13 +35,17 @@
  *       {@link org.flixelgdx.backend.desktop.FlixelSdlWindow FlixelSdlWindow} wraps an SDL3
  *       window and exposes title, size, position, fullscreen, decoration, focus, opacity, and
  *       close controls through {@link org.flixelgdx.Flixel#window Flixel.window}.</li>
- *   <li><b>Graphics</b> - {@code FlixelBgfxGraphics} in the {@code graphics} sub-package
- *       creates a bgfx device tied to the SDL3 window handle and implements the entire rendering
- *       API: textures, batched sprite drawing, render targets, and custom shaders. bgfx selects
- *       the best available graphics API (Vulkan, Metal, Direct3D 12, OpenGL) at startup. You
+ *   <li><b>Graphics</b> - the shared WebGPU renderer from {@code flixelgdx-gpu}
+ *       ({@link org.flixelgdx.backend.gpu.FlixelGpuGraphics FlixelGpuGraphics}) draws into a WebGPU
+ *       surface created from the SDL3 window's native handles, and implements the entire rendering
+ *       API: textures, batched sprite drawing, render targets, and custom WGSL shaders. WebGPU
+ *       selects the best available graphics API (Vulkan, Metal, Direct3D 12) at startup. You
  *       can override the graphics API by passing the JVM argument {@code -Dflixel.render.backend}
- *       with your preferred choice. Review the switch statement in {@code resolveRendererType}
- *       inside of {@link org.flixelgdx.backend.desktop.FlixelDesktopRunner} for the different options.</li>
+ *       with your preferred choice. Review the switch statement in {@code resolveBackendType}
+ *       inside of {@link org.flixelgdx.backend.desktop.FlixelDesktopRunner} for the different options.
+ *       The launcher installs the WebGPU backend (jwebgpu's FFM backend) itself, so games never do. The
+ *       JVM must be started with {@code --enable-native-access=ALL-UNNAMED}, which Gradle run tasks
+ *       and packaged games set for you.</li>
  *   <li><b>Audio</b> - {@code FlixelMiniAudio} in the {@code audio} sub-package provides
  *       multi-channel playback, volume control, and DSP effects (reverb, echo, low-pass) through
  *       miniaudio. It is accessed via {@link org.flixelgdx.Flixel#sound Flixel.sound}.</li>
@@ -63,8 +67,8 @@
  *
  * <h2>The game loop</h2>
  * <p>{@link org.flixelgdx.backend.desktop.FlixelDesktopRunner FlixelDesktopRunner} owns the
- * native main loop. It initializes SDL3, creates the window, hands the window's native handle to
- * bgfx, then pumps SDL3 events every frame and drives the game via
+ * native main loop. It initializes SDL3, creates the window, turns it into a WebGPU surface,
+ * then pumps SDL3 events every frame and drives the game via
  * {@link org.flixelgdx.FlixelGame#advanceTime(float) advanceTime},
  * {@link org.flixelgdx.FlixelGame#update(float) update}, and
  * {@link org.flixelgdx.FlixelGame#draw(org.flixelgdx.graphics.FlixelBatch) draw}
@@ -76,9 +80,8 @@
  * <ul>
  *   <li>{@code audio} - miniaudio integration ({@code FlixelMiniAudio},
  *       {@code FlixelMiniAudioSound}, {@code FlixelMiniAudioGroup}).</li>
- *   <li>{@code graphics} - bgfx integration ({@code FlixelBgfxGraphics},
- *       {@code FlixelBgfxTexture}, {@code FlixelBgfxBatch}, {@code FlixelBgfxShader},
- *       {@code FlixelBgfxRenderTarget}), plus the image loader ({@code FlixelStbImage}).</li>
+ *   <li>{@code graphics} - the stb_image decoder ({@code FlixelStbImage}). Rendering itself lives
+ *       in the shared {@code flixelgdx-gpu} module.</li>
  *   <li>{@code input} - SDL3 keyboard, mouse, and gamepad handling
  *       ({@code FlixelDesktopInputDevice}, {@code FlixelSdlGamepad},
  *       {@code FlixelSdlGamepadProvider}, {@code FlixelSdlKeyMap},

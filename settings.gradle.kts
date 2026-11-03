@@ -40,6 +40,27 @@ val includeAndroidFromLocal = run {
 val includeAndroid = includeAndroidFromCli || includeAndroidFromLocal
 gradle.extra["includeAndroid"] = includeAndroid
 
+// jwebgpu (the WebGPU bindings every renderer is written against) comes from Maven Central, at the version in
+// gradle/libs.versions.toml. To build against a local jwebgpu checkout instead (for example to test a change to it),
+// point at it with -Pjwebgpu.dir=..., jwebgpu.dir in gradle.properties or local.properties, or the JWEBGPU_DIR
+// environment variable. Gradle then substitutes the local projects for the published ones.
+val jwebgpuDir = run {
+  val fromCli = startParameter.projectProperties["jwebgpu.dir"]
+  val fromGradle = providers.gradleProperty("jwebgpu.dir").orNull
+  val fromLocal = File(settingsDir, "local.properties").takeIf { it.exists() }?.let { f ->
+    Properties().also { p -> f.inputStream().use(p::load) }.getProperty("jwebgpu.dir")
+  }
+  val fromEnv = System.getenv("JWEBGPU_DIR")
+  listOf(fromCli, fromGradle, fromLocal, fromEnv).firstOrNull { !it.isNullOrBlank() }
+    ?.let { raw -> File(raw).let { if (it.isAbsolute) it else File(settingsDir, raw).canonicalFile } }
+}
+if (jwebgpuDir != null) {
+  if (!File(jwebgpuDir, "settings.gradle.kts").exists()) {
+    throw GradleException("jwebgpu.dir points at ${jwebgpuDir.absolutePath}, which is not a jwebgpu checkout.")
+  }
+  includeBuild(jwebgpuDir)
+}
+
 dependencyResolutionManagement {
   repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
   repositories {
@@ -58,6 +79,7 @@ rootProject.name = "flixelgdx"
 
 include(
   "flixelgdx-core",
+  "flixelgdx-gpu",
   "flixelgdx-miniaudio",
   "flixelgdx-desktop",
   "flixelgdx-html5",

@@ -23,103 +23,57 @@
  */
 package org.flixelgdx.gradle.shader;
 
-import org.gradle.api.Action;
-import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 
 /**
- * Configuration exposed as the {@code shaders} DSL block in a game module's {@code build.gradle}.
+ * Configuration exposed as the {@code shaders} block in a game module's build script.
  *
- * <p>Declare one entry per shader effect. Each entry names a fragment source (and optionally a
- * vertex source) written in plain GLSL; the plugin cross-compiles them into every backend variant
- * at build time and bundles the results into the module's resources, so the game ships a single
- * shader that runs on OpenGL, OpenGL ES, WebGL, Vulkan, Metal, and Direct3D without any per-platform
- * authoring.
- *
- * <h2>Example</h2>
+ * <p>Every setting has a working default, so a game that keeps its shaders in {@value #DEFAULT_SOURCE_DIR} does
+ * not need this block at all.
  *
  * <pre>{@code
  * shaders {
- *   // Where the .glsl sources live (default: src/main/shaders).
- *   sourceDir = file('src/main/shaders')
- *
- *   shader('crt') {
- *     fragment = 'crt.frag.glsl'
- *   }
+ *   // Where the .wgsl files live (default: src/main/shaders).
+ *   sourceDir = layout.projectDirectory.dir("assets/shaders")
  * }
  * }</pre>
- *
- * @see ShaderSpec
  */
 public interface ShaderExtension {
 
-  /** Gradle extension name the DSL block is registered under. */
+  /** The name the extension is registered under. */
   String NAME = "shaders";
 
-  /** Default directory, relative to the module, that shader sources are read from. */
+  /** The directory, relative to the module, that shaders are read from by default. */
   String DEFAULT_SOURCE_DIR = "src/main/shaders";
 
   /**
-   * The directory shader source paths are resolved against.
+   * The directory scanned for {@code .wgsl} files, including its subfolders.
    *
-   * <p>Defaults to {@value #DEFAULT_SOURCE_DIR} relative to the module. Absolute source paths on a
-   * {@link ShaderSpec} bypass this directory.
+   * <p>A file at {@code <sourceDir>/fx/wave.wgsl} is loaded in the game as {@code FlixelShader.load("fx/wave")}.
    *
-   * @return The source directory property.
+   * @return The source directory property, defaulting to {@value #DEFAULT_SOURCE_DIR}.
    */
   DirectoryProperty getSourceDir();
 
   /**
-   * An optional explicit path to a bgfx {@code shaderc} executable.
+   * Whether the shaders are compiled with Dawn during the build to catch mistakes early.
    *
-   * <p>When unset, the plugin uses the {@code shaderc} bundled for the current operating system,
-   * falling back to one found on the system {@code PATH}. Set this to point at a locally built
-   * {@code shaderc}, for example when producing Direct3D variants on Windows.
+   * <p>Switch this off only on a machine where the Dawn library cannot run. The shaders are still copied into the
+   * resources, and the game then reports any mistake at run time instead.
    *
-   * @return The compiler path property.
+   * @return The validation switch, defaulting to {@code true}.
    */
-  RegularFileProperty getShadercPath();
+  Property<Boolean> getValidate();
 
   /**
-   * An optional explicit path to a Khronos {@code glslang} executable.
+   * The version of the jwebgpu libraries the validator is run with.
    *
-   * <p>glslang compiles every shader to SPIR-V before anything else runs. When unset, the plugin
-   * uses the {@code glslang} bundled for the current operating system, falling back to one found on
-   * the system {@code PATH}.
+   * <p>It defaults to the version the framework itself is built with, so it rarely needs setting. The libraries
+   * come from Maven Central (add {@code mavenCentral()} to the repositories). A build that swaps in a local jwebgpu
+   * checkout with a composite build uses that checkout whatever this says.
    *
-   * @return The compiler path property.
+   * @return The version property.
    */
-  RegularFileProperty getGlslangPath();
-
-  /**
-   * An optional explicit path to a Khronos {@code spirv-cross} executable.
-   *
-   * <p>spirv-cross translates the SPIR-V into the ESSL the web and Android backends load. When
-   * unset, the plugin uses the {@code spirv-cross} bundled for the current operating system, falling
-   * back to one found on the system {@code PATH}.
-   *
-   * @return The translator path property.
-   */
-  RegularFileProperty getSpirvCrossPath();
-
-  /**
-   * The set of shaders to compile.
-   *
-   * @return The container of shader specs.
-   */
-  NamedDomainObjectContainer<ShaderSpec> getShaders();
-
-  /**
-   * Declares a shader to compile.
-   *
-   * <p>Convenience for {@code getShaders().create(name, action)} so the DSL reads as
-   * {@code shader('name') { ... }}.
-   *
-   * @param name The shader's identifier, used to load it at runtime.
-   * @param action Configures the shader's sources.
-   */
-  default void shader(String name, Action<? super ShaderSpec> action) {
-    getShaders().create(name, action);
-  }
+  Property<String> getJwebgpuVersion();
 }

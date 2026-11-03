@@ -47,7 +47,7 @@ import org.gradle.api.provider.Property;
  *   // Where compressed .ktx2 files are written (default: build/generated/basisuAssets).
  *   outputDir = file('build/compressedAssets')
  *
- *   // Generate mipmaps for each compressed texture (default: true).
+ *   // Generate mipmaps for each compressed texture (default: false).
  *   generateMipmaps = true
  *
  *   // Use higher-quality UASTC instead of the smaller default ETC1S mode (default: false).
@@ -111,7 +111,9 @@ public interface BasisuExtension {
   /**
    * Whether the encoder generates a full mipmap chain for each compressed texture.
    *
-   * <p>Defaults to {@code true}.
+   * <p>Defaults to {@code false}, so a compressed texture looks the same as its PNG does on the platforms that
+   * load PNGs, which have no mipmaps. Turn it on for textures that are often drawn much smaller than their size,
+   * where mipmaps keep them smooth instead of shimmering.
    *
    * @return The {@code generate-mipmaps} property.
    */

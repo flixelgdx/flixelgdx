@@ -91,8 +91,7 @@ public interface FlixelRenderTarget extends FlixelDestroyable {
    * Returns {@code true} when {@link #getTexture()} is stored bottom-up and must be drawn
    * flipped vertically to appear correct.
    *
-   * <p>The built-in backends always store targets top-down and return {@code false}, including the
-   * OpenGL-based ones, which draw into their targets upside down to get there. That keeps camera and
+   * <p>The built-in backends always store targets top-down and return {@code false}. That keeps camera and
    * global shaders consistent: texture coordinate {@code y = 0} is the top of the image on every
    * platform.
    *

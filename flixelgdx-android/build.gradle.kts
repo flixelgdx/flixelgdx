@@ -10,7 +10,11 @@ android {
 
   defaultConfig {
     multiDexEnabled = true
-    minSdk = 24
+    minSdk = 26
+    ndk {
+      // jwebgpu (Dawn) ships 64-bit libraries only, so a 32-bit ABI could never start the renderer.
+      abiFilters += listOf("arm64-v8a", "x86_64")
+    }
   }
   compileOptions {
     isCoreLibraryDesugaringEnabled = true
@@ -31,6 +35,8 @@ dependencies {
   implementation(libs.kotlin.stdlib.jdk8)
 
   api(project(":flixelgdx-core"))
+  api(project(":flixelgdx-gpu"))
+  api(libs.jwebgpu.jni)
   api(project(":flixelgdx-miniaudio"))
   api(libs.multidex)
   implementation(libs.androidx.activity)

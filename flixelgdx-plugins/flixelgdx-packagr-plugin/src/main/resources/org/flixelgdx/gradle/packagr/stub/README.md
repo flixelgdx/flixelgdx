@@ -28,8 +28,8 @@ launcher with the matching command below and commit the result here.
 
 The launcher depends only on the system C runtime and resolves `JNI_CreateJavaVM` at runtime, so a
 single binary works with any JDK version and rarely needs rebuilding. Committing the finished
-binaries keeps packaging fast and free of a C toolchain requirement, the same approach the shader
-plugin takes with its bundled `shaderc` binaries. Only rebuild when `launcher.c` changes.
+binaries keeps packaging fast and free of a C toolchain requirement. Only rebuild when `launcher.c`
+changes.
 
 ## Building
 

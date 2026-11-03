@@ -321,6 +321,12 @@ All unit tests for the core API live in a separate Gradle module, inside of `fli
 FlixelGDX supports web builds through the **TeaVM** backend (in the `flixelgdx-html5` module). TeaVM transpiles
 Java bytecode into JavaScript and WebAssembly so your game can run in a browser.
 
+The web backend draws with **WebGPU** (through `flixelgdx-gpu` and jwebgpu's browser backend) and has **no WebGL
+fallback**. To run a web game you need a browser with WebGPU: Chrome or Edge 113 or newer, Safari 26 or newer, or
+Firefox 141 or newer on Windows. On some systems (for example Linux) WebGPU may still need to be switched on in the
+browser's settings. The page must be served over HTTPS or from `localhost`; the dev server started by `run` uses
+`localhost`. A browser without WebGPU shows a message in the page instead of the game. Shaders are WGSL.
+
 ### Run the game in the browser
 
 Running a FlixelGDX web game in your browser is as simple as executing the `run` task:
@@ -399,6 +405,16 @@ To **build the Android module in this repo** (e.g. to work on Android-specific c
   ```
   Then any normal `./gradlew ...` run will include the Android module. You still need the Android SDK and the setup steps below when the module is enabled.
 
+### Requirements of the Android backend
+
+FlixelGDX on Android renders with WebGPU (Dawn, through jwebgpu's JNI backend), which runs on Vulkan. Keep these in mind when you build or test:
+
+- **minSdk 26** (Android 8.0) and a device with **Vulkan 1.1**. The backend's manifest declares `android.hardware.vulkan.version` 0x401000 as required, so Google Play only offers the game to devices that can run it. Emulators need a Vulkan-capable GPU configuration.
+- **64-bit only**: `arm64-v8a` and `x86_64`. The 32-bit ABIs are not supported, and the backend restricts its ABI filters accordingly.
+- The `jwebgpu-jni` library is an Android library (AAR) from Maven Central. When you build against a local jwebgpu checkout, jwebgpu includes it whenever FlixelGDX enables Android, so nothing extra is needed in the checkout.
+- The AAR carries `libwebgpu_dawn.so`, `libjwebgpu_jni.so` and `META-INF/jwebgpu/dawn-licenses.txt`; a game picks them up through its normal dependency on `flixelgdx-android`.
+- Shaders are WGSL only, the same files as on desktop. The built-in preamble and sprite shader are Java text blocks in the framework's source, so they need no resources.
+
 ### Why you need the Android SDK
 
 - **Building the flixelgdx-android module in this repo**: after enabling it (see above), `./gradlew :flixelgdx-android:assemble` (or `assembleRelease`) requires the Android SDK and build tools.
@@ -475,6 +491,15 @@ Then run your Gradle command again.
 
 - **Symptom**: “Project directory does not exist” or path not found in `includeBuild`.
 - **Fix**: Use an absolute path with forward slashes, e.g. `C:/Users/You/flixelgdx`, or escaped backslashes. Avoid trailing backslash.
+
+### Testing FlixelGDX against a local jwebgpu checkout
+
+FlixelGDX gets [jwebgpu](https://github.com/stringdotjar/jwebgpu) from Maven Central, at the version in `gradle/libs.versions.toml`, so no checkout is needed. To try an unreleased jwebgpu change, point the build at your checkout with `-Pjwebgpu.dir=/path/to/jwebgpu`, `jwebgpu.dir=/path/to/jwebgpu` in `local.properties`, or the `JWEBGPU_DIR` environment variable. Gradle then uses the checkout in place of the published jars. If the path is not a jwebgpu checkout, the build stops and says so.
+
+### Native access warning or `IllegalCallerException` on the desktop
+
+- **Symptom**: The desktop backend reports it may not call native code.
+- **Fix**: The WebGPU backend uses Java's Foreign Function and Memory API, which must be enabled with `--enable-native-access=ALL-UNNAMED`. Gradle `run` tasks and packaged games set this for you; set it yourself when you start a game with plain `java`.
 
 ### Version mismatch (test project vs published artifact)
 

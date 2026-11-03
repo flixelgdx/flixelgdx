@@ -74,11 +74,8 @@ public final class FlixelGraphicsApi {
   /** The Direct3D 12 renderer, used on Windows. */
   public static final FlixelGraphicsApi DIRECT3D12 = of("Direct3D12");
 
-  /** The web backend built on the browser's native WebGPU. */
+  /** A WebGPU renderer whose underlying native API is unknown (the browser, or an adapter that does not say). */
   public static final FlixelGraphicsApi WEBGPU = of("WebGPU");
-
-  /** The web backend built on WebGL. */
-  public static final FlixelGraphicsApi WEBGL = of("WebGL");
 
   /**
    * No real backend is present.
@@ -100,7 +97,7 @@ public final class FlixelGraphicsApi {
    * <p>Calling this twice with the same ID returns the very same instance, so results compare equal
    * with {@code ==}. Use this to define a custom backend's identity, or to look one up by ID.
    *
-   * @param id The backend ID, for example {@code "bgfx"}; must not be {@code null}.
+   * @param id The backend ID, for example {@code "MyRenderer"}; must not be {@code null}.
    * @return The one shared {@link FlixelGraphicsApi} for that id.
    */
   @NotNull

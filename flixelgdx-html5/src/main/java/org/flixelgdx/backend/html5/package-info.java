@@ -1,9 +1,9 @@
 /**
- * Web backend for FlixelGDX, targeting the browser through TeaVM and WebGL2.
+ * Web backend for FlixelGDX, targeting the browser through TeaVM and WebGPU.
  *
  * <p>This module is the bridge between the platform-agnostic {@code flixelgdx-core} API and the
  * browser environment. It maps every backend interface onto the browser APIs that provide the same
- * thing: WebGL2 for rendering, the Web Audio API for sound, DOM events for keyboard and mouse input,
+ * thing: WebGPU for rendering, the Web Audio API for sound, DOM events for keyboard and mouse input,
  * the Web Gamepad API for controllers, {@code localStorage} for save data, and standard browser APIs
  * for the window, clipboard, notifications, and wake lock. Game code never imports from this module
  * directly; it only uses the abstractions in core ({@link org.flixelgdx.Flixel Flixel},
@@ -50,12 +50,16 @@
  *       {@code <canvas>} element. Tab title, canvas dimensions, fullscreen (via the Fullscreen
  *       API), and focus state are supported. Operations with no browser equivalent (window
  *       position, opacity, decorations) are no-ops.</li>
- *   <li><b>Graphics</b> -
- *       {@link org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics FlixelHtml5Graphics} in
- *       the {@code graphics} sub-package creates a WebGL2 context on the canvas and implements the
- *       full rendering API: texture upload, batched sprite drawing via
- *       {@link org.flixelgdx.backend.html5.graphics.FlixelWebGlBatch FlixelWebGlBatch}, render
- *       targets, and custom shaders compiled at runtime from GLSL source strings.</li>
+ *   <li><b>Graphics</b> - the shared WebGPU renderer
+ *       {@link org.flixelgdx.backend.gpu.FlixelGpuGraphics FlixelGpuGraphics} (the same one the
+ *       desktop uses) draws to the canvas through jwebgpu's browser backend.
+ *       {@link org.flixelgdx.backend.html5.graphics.FlixelHtml5Gpu FlixelHtml5Gpu} in the
+ *       {@code graphics} sub-package opens the GPU asynchronously, and
+ *       {@link org.flixelgdx.backend.html5.graphics.FlixelHtml5ImageDecoder FlixelHtml5ImageDecoder}
+ *       unpacks the images the browser decoded. Shaders are WGSL. There is no WebGL fallback: when
+ *       the browser has no WebGPU, the player sees
+ *       {@link org.flixelgdx.backend.html5.FlixelHtml5WebGpuNotice a message} that names the browsers
+ *       that support it.</li>
  *   <li><b>Audio</b> -
  *       {@link org.flixelgdx.backend.html5.audio.FlixelWebAudioFactory FlixelWebAudioFactory} in
  *       the {@code audio} sub-package provides multi-channel playback, per-sound volume and pan

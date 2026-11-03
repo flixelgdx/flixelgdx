@@ -36,16 +36,16 @@ import org.jetbrains.annotations.NotNull;
  * never interacts with it directly; instead, it uses {@link FlixelShader}, which wraps one of these
  * and integrates with the FlixelGDX update and destroy lifecycle.
  *
- * <p>Each backend supplies its own implementation: the bgfx backend wraps a bgfx program handle,
- * the WebGPU backend wraps a {@code GPUShaderModule} pair, and so on. When no backend is present
+ * <p>Each backend supplies its own implementation: the WebGPU renderer wraps a compiled shader
+ * module together with the bytes of the shader's uniform struct. When no backend is present
  * (headless or pre-startup), {@link FlixelUnsupportedShader} is returned as a safe no-op.
  *
  * <p>Obtain a program by calling
- * {@link FlixelGraphicsManager#compileShaderProgram(byte[], byte[])}. Call {@link #destroy()} to
+ * {@link FlixelGraphicsManager#compileShaderSource(String)}. Call {@link #destroy()} to
  * release GPU resources when finished.
  *
  * @see FlixelShader
- * @see FlixelGraphicsManager#compileShaderProgram(byte[], byte[])
+ * @see FlixelGraphicsManager#compileShaderSource(String)
  */
 public interface FlixelShaderProgram extends FlixelDestroyable {
 
@@ -95,4 +95,40 @@ public interface FlixelShaderProgram extends FlixelDestroyable {
    * @param value Value to upload.
    */
   void setUniform(@NotNull String name, @NotNull FlixelMatrix value);
+
+  /**
+   * Sets a {@code vec2} uniform by name from two numbers.
+   *
+   * <p>The default does nothing; real backends override it.
+   *
+   * @param name The uniform member name.
+   * @param x The first component.
+   * @param y The second component.
+   */
+  default void setUniform(@NotNull String name, float x, float y) {}
+
+  /**
+   * Sets a {@code vec3} uniform by name from three numbers.
+   *
+   * <p>The default does nothing; real backends override it.
+   *
+   * @param name The uniform member name.
+   * @param x The first component.
+   * @param y The second component.
+   * @param z The third component.
+   */
+  default void setUniform(@NotNull String name, float x, float y, float z) {}
+
+  /**
+   * Sets a {@code vec4} uniform by name from four numbers.
+   *
+   * <p>The default does nothing; real backends override it.
+   *
+   * @param name The uniform member name.
+   * @param x The first component.
+   * @param y The second component.
+   * @param z The third component.
+   * @param w The fourth component.
+   */
+  default void setUniform(@NotNull String name, float x, float y, float z, float w) {}
 }

@@ -4,7 +4,7 @@
 
 ## Project context (FlixelGDX)
 
-FlixelGDX is a general-purposed Java game framework, primarily build on **bgfx + SDL3** (with WebGL for HTML5).
+FlixelGDX is a general-purposed Java game framework, primarily built on **WebGPU (through jwebgpu) + SDL3** on desktop, with the same WebGPU renderer on Android and the web.
 It aims for strong performance and tooling, so game development stays modernized, approachable, and accessible.
 
 The overarching goal is to bring HaxeFlixel-style features into Java's ecosystem while staying as memory-efficient

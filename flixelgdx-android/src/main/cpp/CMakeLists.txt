@@ -1,12 +1,12 @@
 # CMakeLists.txt - flixelgdx-android native build
 #
-# Builds the Android natives via the NDK, one library per job:
+# Builds the Android natives via the NDK:
 #   - libflixel_miniaudio.so: audio JNI, built from the shared flixelgdx-miniaudio module
-#   - libbasisu.so: the Basis Universal KTX2 transcoder and its FlixelBasisu JNI wrapper
+#   - libflixel_basisu.so: the Basis Universal KTX2 transcoder and its JNI bridge
 #
 # The results are prebuilt and committed under flixelgdx-android/src/main/jniLibs, so the Gradle
 # build never runs this file. Rebuild every ABI with scripts/build_android_natives.sh, which passes
-# the NDK toolchain, ABI, and platform level, whenever a source file or deps.cmake changes.
+# the NDK toolchain, ABI, and platform level, whenever a source file or a deps.cmake changes.
 cmake_minimum_required(VERSION 3.21)
 project(flixelgdx C CXX)
 
@@ -43,53 +43,49 @@ FetchContent_Declare(
   basis_universal
   URL            ${FLIXEL_BASISU_URL}
   URL_HASH       SHA256=${FLIXEL_BASISU_SHA256}
-  # Point at a nonexistent subdirectory so FetchContent_MakeAvailable() does not configure
-  # basis_universal's own CMake project (it builds encoders, tools, and samples we do not need).
+  # Point at a missing subdirectory so FetchContent_MakeAvailable() only downloads the sources and does not
+  # configure basis_universal's own CMake project (which builds the encoder, tools and samples).
   SOURCE_SUBDIR  flixel-sources-only
 )
 FetchContent_MakeAvailable(basis_universal)
 
 set(BASISU_SRC_DIR ${basis_universal_SOURCE_DIR})
 
-# A minimal static library containing only the transcoder and the Zstd decompressor.
-# Defines choose which GPU texture formats are compiled in; only the three formats
-# FlixelBasisu exposes to Java are needed (ETC2_RGBA, ASTC_4x4_RGBA, and RGBA32).
-add_library(flixel_basisu_transcoder STATIC
+# The transcoder and the Zstandard decompressor (for UASTC files supercompressed with Zstandard), compiled straight
+# into the JNI library.
+add_library(flixel_basisu SHARED
+  ${CMAKE_CURRENT_LIST_DIR}/flixel_basisu.cpp
   ${BASISU_SRC_DIR}/transcoder/basisu_transcoder.cpp
   ${BASISU_SRC_DIR}/zstd/zstddeclib.c
 )
 
-target_include_directories(flixel_basisu_transcoder PUBLIC
+target_include_directories(flixel_basisu PRIVATE
   ${BASISU_SRC_DIR}/transcoder
   ${BASISU_SRC_DIR}/zstd
 )
 
-# Disable GPU formats that FlixelBasisu does not expose in order to reduce code size.
-# The dependency rules inside basisu_transcoder.cpp are:
-#   PVRTC2 requires ATC, ATC requires DXT5A.
-# All three are disabled together, and then the other PC/console-only formats are removed too.
-target_compile_definitions(flixel_basisu_transcoder PUBLIC
+# Keep only the GPU formats the renderer asks for (ASTC 4x4, ETC2 with and without alpha, BC7, and RGBA32, which
+# is always built in). The others are disabled to save space. basisu_transcoder.cpp requires ATC whenever PVRTC2 is
+# on, and DXT5A whenever ATC is on, so those three are switched off together.
+target_compile_definitions(flixel_basisu PRIVATE
   BASISD_SUPPORT_KTX2=1
   BASISD_SUPPORT_KTX2_ZSTD=1
   BASISD_SUPPORT_UASTC=1
-  BASISD_SUPPORT_ETC2_EAC_A8=1
   BASISD_SUPPORT_ASTC=1
+  BASISD_SUPPORT_ETC2_EAC_A8=1
+  BASISD_SUPPORT_BC7_MODE5=1
   BASISD_SUPPORT_DXT1=0
   BASISD_SUPPORT_DXT5A=0
-  BASISD_SUPPORT_BC7_MODE5=0
   BASISD_SUPPORT_PVRTC1=0
   BASISD_SUPPORT_ATC=0
   BASISD_SUPPORT_ETC2_EAC_RG11=0
   BASISD_SUPPORT_FXT1=0
   BASISD_SUPPORT_PVRTC2=0
+  # Keep the Zstandard functions private, so the library only exports its JNI functions.
+  ZSTDLIB_VISIBILITY=
+  ZSTDERRORLIB_VISIBILITY=
 )
 
-set_target_properties(flixel_basisu_transcoder PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-# --- JNI shared library: libbasisu.so ------------------------------------------------------
-
-add_library(basisu SHARED
-  ${CMAKE_CURRENT_LIST_DIR}/flixel_basisu.cpp
-)
-
-target_link_libraries(basisu PRIVATE flixel_basisu_transcoder log)
+target_link_libraries(flixel_basisu PRIVATE log)
+# Hide the statically linked C++ runtime too, as the NDK recommends for c++_static.
+target_link_options(flixel_basisu PRIVATE -Wl,--exclude-libs,ALL)

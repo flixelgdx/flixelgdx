@@ -27,9 +27,10 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelGameRunner;
+import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
-import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
+import org.flixelgdx.backend.html5.graphics.FlixelHtml5Gpu;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
@@ -54,6 +55,22 @@ import org.teavm.jso.dom.html.HTMLElement;
  * <p>The runner also owns the pieces of browser lifecycle the game needs to react to: it resizes
  * the canvas when the page changes size and forwards tab visibility changes to the game's focus
  * hooks so audio and updates can pause when the tab is hidden.
+ *
+ * <h2>Start-up order</h2>
+ *
+ * <p>The order of the first few steps matters, because a canvas locks to the first kind of context
+ * it is asked for. The runner therefore does this, one step per browser turn where the browser
+ * needs one:
+ *
+ * <ol>
+ *   <li>Find or create the canvas and size it. Nothing asks it for a context yet.</li>
+ *   <li>Check that the browser has WebGPU. When it does not, show the player a message and stop.</li>
+ *   <li>Turn the canvas into a WebGPU surface and ask for an adapter and a device
+ *       ({@link FlixelHtml5Gpu}). Both answers arrive asynchronously, so the runner waits for a
+ *       callback instead of blocking.</li>
+ *   <li>Download the bundled assets ({@link FlixelHtml5AssetPreloader}).</li>
+ *   <li>Create the game and start the {@code requestAnimationFrame} loop.</li>
+ * </ol>
  */
 public class FlixelHtml5Runner implements FlixelGameRunner {
 
@@ -69,7 +86,10 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private double lastTimestamp = -1.0;
 
   @NotNull
-  private final FlixelHtml5Graphics graphics;
+  private final FlixelGpuGraphics graphics;
+
+  @NotNull
+  private final FlixelHtml5Gpu gpu;
 
   @NotNull
   private final FlixelHtml5Window window;
@@ -92,6 +112,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private FlixelGame game;
   private FlixelCrashHandler crashHandler;
 
+  private boolean running;
   private boolean stopped;
 
   /**
@@ -100,18 +121,19 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * @param canvasId The HTML canvas element id.
    * @param width Fallback canvas width, used only when the page has no layout yet at startup.
    * @param height Fallback canvas height, used only when the page has no layout yet at startup.
-   * @param graphics The WebGL graphics implementation.
+   * @param graphics The shared WebGPU renderer. It is initialized by the runner once the browser has a device.
    * @param window The HTML5 window implementation.
    * @param host The HTML5 host integration.
    * @param input The HTML5 input device.
    */
-  public FlixelHtml5Runner(@NotNull String canvasId, int width, int height, @NotNull FlixelHtml5Graphics graphics,
+  public FlixelHtml5Runner(@NotNull String canvasId, int width, int height, @NotNull FlixelGpuGraphics graphics,
       @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5HostIntegration host,
       @NotNull FlixelHtml5InputDevice input) {
     this.canvasId = canvasId;
     this.width = width;
     this.height = height;
     this.graphics = graphics;
+    this.gpu = new FlixelHtml5Gpu(graphics);
     this.window = window;
     this.host = host;
     this.input = input;
@@ -147,7 +169,6 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
     window.bind(element, startWidth, startHeight);
     input.attach(element);
-    graphics.initialize(element);
 
     registerLifecycleListeners(document);
 
@@ -156,13 +177,39 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
       FlixelHtml5MonitorHelper.requestScreenDetails(host::updateMonitors);
     }
 
-    // The browser cannot read files synchronously, so every bundled asset is downloaded first and
-    // the game only starts once the cache is warm. See FlixelHtml5AssetPreloader.
-    // After the regular preload, framework-owned images (the packaged bitmap font atlas) are
-    // decoded and stored so the runtime can read them synchronously at startup.
+    // The canvas locks to the first kind of context it is given, so WebGPU has to be set up before anything else
+    // touches it. The adapter and the device arrive asynchronously, so the assets are only downloaded from the
+    // callback below, and the game starts after that.
+    if (!FlixelHtml5Gpu.isSupported()) {
+      onGpuFailed("This browser does not provide navigator.gpu.");
+      return;
+    }
+    gpu.start(element, startWidth, startHeight, Flixel.config.isTransparentFramebuffer(), new GpuListener());
+  }
+
+  /**
+   * Runs once the renderer can draw: downloads every bundled asset, then starts the game.
+   *
+   * <p>The browser cannot read files synchronously, so every bundled asset is downloaded first and
+   * the game only starts once the cache is warm. See {@link FlixelHtml5AssetPreloader}. After the
+   * regular preload, framework-owned images (the packaged bitmap font atlas) are decoded and
+   * stored so the runtime can read them synchronously at startup.
+   */
+  private void onGpuReady() {
     FlixelHtml5AssetPreloader.preload(FlixelHtml5Files.ASSET_MANIFEST, FlixelHtml5Files.ASSET_ROOT,
         () -> FlixelHtml5AssetPreloader.preloadFrameworkImages(FlixelHtml5Files.ASSET_ROOT, this::startGame),
         FlixelHtml5Runner::onPreloadFailed);
+  }
+
+  /**
+   * Runs when WebGPU cannot be used. The game is not started; the player sees a message that names
+   * the cause and the browsers that have WebGPU, and the technical reason is written to the log.
+   *
+   * @param reason What went wrong, in a technical sentence.
+   */
+  private void onGpuFailed(String reason) {
+    LOG.error("WebGPU is required but could not be used: {}", reason);
+    FlixelHtml5WebGpuNotice.show(reason);
   }
 
   /**
@@ -188,8 +235,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
       }
       return;
     }
-    // The window may have been resized while assets were downloading, so sync once before the
-    // first frame.
+    // The window may have been resized while the GPU and the assets were loading, so sync once
+    // before the first frame.
+    running = true;
     onViewportChanged();
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
@@ -247,9 +295,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     try {
       float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
       lastTimestamp = timestamp;
+      graphics.beginFrame();
       float elapsed = game.advanceTime(deltaSeconds);
       game.update(elapsed);
-      graphics.beginFrame();
       game.draw(graphics.getBatch());
       game.endFrame();
       graphics.endFrame();
@@ -303,7 +351,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    *
    * <p>Both the {@code resize} and {@code fullscreenchange} events call {@link #onViewportChanged}
    * because the browser does not guarantee that {@code resize} fires around every fullscreen
-   * transition. Handling both events ensures the canvas drawing buffer and WebGL viewport are
+   * transition. Handling both events ensures the canvas drawing buffer and the WebGPU surface are
    * always kept in sync with the actual rendered size.
    *
    * @param document The current page document.
@@ -312,6 +360,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     Window.current().addEventListener("resize", event -> onViewportChanged());
     document.addEventListener("fullscreenchange", event -> onViewportChanged());
     document.addEventListener("visibilitychange", event -> {
+      if (!running) {
+        return;
+      }
       if (isDocumentHidden()) {
         game.onFocusLost();
       } else {
@@ -323,16 +374,21 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   }
 
   /**
-   * Synchronizes the canvas drawing buffer, WebGL viewport, and game cameras to the current
+   * Synchronizes the canvas drawing buffer, the WebGPU surface, and game cameras to the current
    * browser viewport size.
    *
-   * <p>The canvas {@code width} and {@code height} attributes control the WebGL drawing-buffer
-   * resolution. When they do not match the dimensions passed to {@code gl.viewport}, WebGL renders
-   * into a buffer that is a different size than the projection matrix expects, which causes the
-   * view to appear zoomed in or out. Updating the attributes here keeps the drawing buffer in sync
-   * whenever the viewport changes, including during fullscreen transitions.
+   * <p>The canvas {@code width} and {@code height} attributes control the size of the drawing
+   * buffer. When they do not match the size the renderer configured its surface with, the frame
+   * is drawn into a buffer that is a different size than the projection matrix expects, which
+   * causes the view to appear zoomed in or out. Updating the attributes here and telling the
+   * renderer keeps both in sync whenever the viewport changes, including during fullscreen
+   * transitions. Changes that arrive before the game has started are ignored, since the start
+   * itself syncs once.
    */
   private void onViewportChanged() {
+    if (!running) {
+      return;
+    }
     int newWidth = browserInnerWidth();
     int newHeight = browserInnerHeight();
     if (newWidth <= 0 || newHeight <= 0) {
@@ -342,7 +398,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     canvas.setWidth(newWidth);
     canvas.setHeight(newHeight);
     window.onResized(newWidth, newHeight);
-    graphics.onResized(newWidth, newHeight);
+    graphics.onResize(newWidth, newHeight);
     game.resize(newWidth, newHeight);
   }
 
@@ -367,8 +423,12 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     return height;
   }
 
-  public FlixelHtml5Graphics getGraphics() {
+  public FlixelGpuGraphics getGraphics() {
     return graphics;
+  }
+
+  public FlixelHtml5Gpu getGpu() {
+    return gpu;
   }
 
   public FlixelHtml5Window getWindow() {
@@ -405,5 +465,19 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
   public boolean isStopped() {
     return stopped;
+  }
+
+  /** Forwards the outcome of the WebGPU start-up to the runner. */
+  private final class GpuListener implements FlixelHtml5Gpu.Listener {
+
+    @Override
+    public void onReady() {
+      onGpuReady();
+    }
+
+    @Override
+    public void onFailed(@NotNull String message) {
+      onGpuFailed(message);
+    }
   }
 }

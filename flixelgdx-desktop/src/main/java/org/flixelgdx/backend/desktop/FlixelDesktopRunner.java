@@ -27,21 +27,20 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
-import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
+import org.flixelgdx.backend.desktop.graphics.FlixelStbImage;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlKeyMap;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
+import org.flixelgdx.backend.gpu.FlixelGpuBootstrap;
+import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelDisplayMode;
-import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.bgfx.BGFX;
-import org.lwjgl.bgfx.BGFXInit;
 import org.lwjgl.sdl.SDLEvents;
 import org.lwjgl.sdl.SDLInit;
 import org.lwjgl.sdl.SDLMouse;
@@ -55,6 +54,11 @@ import org.lwjgl.sdl.SDL_Surface;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
+import io.github.stringdotjar.jwebgpu.GpuBackendType;
+import io.github.stringdotjar.jwebgpu.GpuInstance;
+import io.github.stringdotjar.jwebgpu.GpuSurface;
+import io.github.stringdotjar.jwebgpu.JWebGpu;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -62,11 +66,11 @@ import java.nio.IntBuffer;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * The desktop main loop: creates the SDL3 window, hands its native handle to bgfx for rendering,
+ * The desktop main loop: creates the SDL3 window, turns it into a WebGPU surface for rendering,
  * then pumps events and drives the game each frame until the window closes.
  *
  * <p>This is the {@link FlixelGameRunner} the desktop launcher installs. It owns everything that
- * only makes sense once a window exists: SDL initialization, bgfx device setup, the per-frame
+ * only makes sense once a window exists: SDL initialization, WebGPU device setup, the per-frame
  * event pump (translated into the input device), and the frame timing passed to the game loop.
  */
 public class FlixelDesktopRunner implements FlixelGameRunner {
@@ -80,13 +84,16 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   private long frameDeadlineNanos;
 
   @NotNull
+  private final FlixelSdlNativeHandle nativeHandle = new FlixelSdlNativeHandle();
+
+  @NotNull
   private final FlixelSdlWindow window;
 
   @NotNull
   private final FlixelDesktopInputDevice input;
 
   @NotNull
-  private final FlixelBgfxGraphics graphics;
+  private final FlixelGpuGraphics graphics;
 
   @NotNull
   private final FlixelSdlGamepadProvider gamepads;
@@ -105,6 +112,12 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   @Nullable
   private final String[] iconPaths;
 
+  @Nullable
+  private GpuInstance gpuInstance;
+
+  @Nullable
+  private GpuSurface gpuSurface;
+
   private int width;
   private int height;
 
@@ -115,7 +128,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    *
    * @param window The SDL window implementation.
    * @param input The desktop input device.
-   * @param graphics The bgfx graphics implementation.
+   * @param graphics The WebGPU graphics implementation.
    * @param gamepads The SDL gamepad provider.
    * @param iconManager The mouse icon manager.
    * @param host The desktop host integration.
@@ -127,7 +140,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    *                  classpath). May be {@code null} to set no icon.
    */
   public FlixelDesktopRunner(@NotNull FlixelSdlWindow window, @NotNull FlixelDesktopInputDevice input,
-      @NotNull FlixelBgfxGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads,
+      @NotNull FlixelGpuGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads,
       @NotNull FlixelSdlMouseIconManager iconManager, @NotNull FlixelDesktopHostIntegration host,
       int width, int height, @Nullable String[] iconPaths) {
     this.window = window;
@@ -157,20 +170,19 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     long windowFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
     if (transparentFramebuffer) {
       windowFlags |= SDLVideo.SDL_WINDOW_TRANSPARENT;
-      // On X11, SDL3 uses XMatchVisualInfo for the window visual when no OpenGL flag is
-      // present, which may return a visual that is not in the GLX visual list. bgfx then
-      // cannot create a compatible alpha-capable context, so the compositor sees a 24-bit
-      // window and renders transparent areas as black. Adding SDL_WINDOW_OPENGL forces SDL3
-      // to use glXChooseFBConfig (with GLX_ALPHA_SIZE=8) for visual selection, giving bgfx
-      // a 32-bit RGBA-compatible window without SDL3 creating any GL context of its own.
-      //
-      // This is temporary, as I need to battle test the framework on different hardware.
-      // Linux is so fucking annoying to deal with bro. :wilted_flower:
+      // On X11, SDL3 only picks an alpha-capable (32-bit) window visual when it is asked for an OpenGL window
+      // with an 8-bit alpha channel. Without it the compositor sees a 24-bit window and renders transparent
+      // areas as black. SDL3 does not create any GL context of its own here; WebGPU draws to the window through
+      // its own surface.
       String driver = SDLVideo.SDL_GetCurrentVideoDriver();
       if ("x11".equals(driver)) {
         SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_ALPHA_SIZE, 8);
         windowFlags |= SDLVideo.SDL_WINDOW_OPENGL;
       }
+    }
+    if ("cocoa".equals(SDLVideo.SDL_GetCurrentVideoDriver())) {
+      // SDL only hands out Metal views (needed for the WebGPU surface) to windows created with this flag.
+      windowFlags |= SDLVideo.SDL_WINDOW_METAL;
     }
     if (config.isFullscreen()) {
       windowFlags |= SDLVideo.SDL_WINDOW_FULLSCREEN;
@@ -186,14 +198,13 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     input.setWindowHandle(windowHandle);
     applyWindowIcons(windowHandle);
 
-    if (!initBgfx(windowHandle, transparentFramebuffer)) {
+    if (!initGpu(windowHandle, transparentFramebuffer)) {
+      shutdownGpu();
       SDLVideo.SDL_DestroyWindow(windowHandle);
       SDLInit.SDL_Quit();
       return;
     }
 
-    graphics.onInitialized(width, height, transparentFramebuffer);
-    graphics.setVSync(vsync);
     gamepads.openConnected();
 
     // The debug overlay's command line needs text-input events (which carry composed characters,
@@ -233,7 +244,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     game.destroy();
     gamepads.dispose();
     iconManager.dispose();
-    BGFX.bgfx_shutdown();
+    shutdownGpu();
     SDLVideo.SDL_DestroyWindow(windowHandle);
     SDLInit.SDL_Quit();
   }
@@ -337,7 +348,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    *
    * <p>The path is resolved from the Java classpath root: {@code "icons/icon16.png"} maps to
    * {@code /icons/icon16.png} on the classpath. This matches the convention used by other
-   * framework loaders (such as the shader loader in {@code FlixelBgfxGraphics}).
+   * framework loaders (such as the shader loader in {@code FlixelGpuGraphics}).
    *
    * @param path The classpath-relative resource path (no leading slash).
    * @return The decoded image, or {@code null} when the resource was not found or could not
@@ -364,76 +375,95 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     }
   }
 
-  /** Initializes bgfx with the SDL window's native handle. */
-  private boolean initBgfx(long windowHandle, boolean transparentFramebuffer) {
-    long nativeWindow = FlixelSdlNativeHandle.windowHandle(windowHandle);
-    long nativeDisplay = FlixelSdlNativeHandle.displayHandle(windowHandle);
-    if (nativeWindow == 0L) {
-      LOG.error("Could not resolve the native window handle for bgfx.");
+  /**
+   * Opens the GPU for the SDL window: creates a WebGPU instance, turns the window into a surface, asks for an
+   * adapter and a device, and hands them to the renderer.
+   *
+   * <p>The adapter and device requests are asynchronous in WebGPU, so this pumps the instance's events until
+   * both have answered. The first request is the slow one, because the driver is loaded then.
+   */
+  private boolean initGpu(long sdlWindow, boolean transparentFramebuffer) {
+    try {
+      gpuInstance = JWebGpu.createInstance();
+    } catch (RuntimeException e) {
+      LOG.error("WebGPU could not be started: {}", e.getMessage());
       return false;
     }
-    try (BGFXInit init = BGFXInit.calloc()) {
-      BGFX.bgfx_init_ctor(init);
-      init.type(resolveRendererType());
-      int resetFlags = vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE;
-      if (transparentFramebuffer) {
-        resetFlags |= BGFX.BGFX_RESET_TRANSPARENT_BACKBUFFER;
-      }
-      int finalResetFlags = resetFlags;
-      init.resolution(
-          res -> res.width(width).height(height).reset(finalResetFlags).formatColor(BGFX.BGFX_TEXTURE_FORMAT_RGBA8));
-      init.platformData(pd -> pd.nwh(nativeWindow).ndt(nativeDisplay));
-      if (!BGFX.bgfx_init(init)) {
-        LOG.error("bgfx could not be initialized.");
-        return false;
-      }
+    gpuSurface = nativeHandle.createSurface(gpuInstance, sdlWindow);
+    if (gpuSurface == null) {
+      LOG.error("The window system '{}' is not supported; no WebGPU surface could be created for the window.",
+          FlixelSdlNativeHandle.driver());
+      return false;
     }
+    FlixelGpuBootstrap bootstrap = new FlixelGpuBootstrap(gpuInstance, gpuSurface);
+    bootstrap.setBackendType(resolveBackendType());
+    bootstrap.start();
+    long deadline = System.nanoTime() + 20_000_000_000L;
+    while (!bootstrap.isDone() && System.nanoTime() < deadline) {
+      gpuInstance.processEvents();
+      LockSupport.parkNanos(1_000_000L);
+    }
+    if (!bootstrap.isDone() || bootstrap.getDevice() == null || bootstrap.getAdapter() == null) {
+      String error = bootstrap.getError();
+      LOG.error("{}", error != null ? error : "The GPU did not answer in time.");
+      return false;
+    }
+    graphics.setVSync(vsync);
+    graphics.setEventPump(gpuInstance::processEvents);
+    graphics.initialize(bootstrap.getAdapter(), bootstrap.getDevice(), gpuSurface, width, height,
+        transparentFramebuffer, FlixelStbImage::decode);
     return true;
   }
 
+  /** Releases the renderer, the surface and the WebGPU instance, in that order. Safe to call twice. */
+  private void shutdownGpu() {
+    graphics.dispose();
+    nativeHandle.destroy();
+    if (gpuSurface == null && gpuInstance != null) {
+      gpuInstance.release();
+      gpuInstance = null;
+    }
+    gpuSurface = null;
+    if (gpuInstance != null) {
+      gpuInstance.release();
+      gpuInstance = null;
+    }
+  }
+
   /**
-   * Resolves the bgfx renderer backend to request at initialization.
+   * Resolves the native graphics API to request from WebGPU.
    *
-   * <p>By default, bgfx auto-picks the best backend for the platform. Some systems have a driver
-   * that bgfx would prefer but that crashes or misbehaves (a common example is Mesa's Intel Vulkan
-   * driver on Linux). The {@code flixel.render.backend} system property forces a specific backend
-   * so those machines can fall back to a working one without a code change, for example:
+   * <p>By default WebGPU picks the best API for the platform (Vulkan on Linux, Metal on macOS, Direct3D 12 on
+   * Windows). Some systems have a driver that is preferred but misbehaves; the {@code flixel.render.backend}
+   * system property forces a specific API so those machines can fall back to a working one without a code
+   * change, for example:
    *
    * <pre>{@code
    * java -Dflixel.render.backend=opengl -jar mygame.jar
    * }</pre>
    *
-   * <p>Recognized values are {@code auto} (the default), {@code opengl}, {@code vulkan},
-   * {@code metal}, {@code direct3d11}, {@code direct3d12}, and {@code noop}. An unrecognized value
-   * is ignored with a warning and auto-selection is used.
+   * <p>Recognized values are {@code auto} (the default), {@code vulkan}, {@code metal}, {@code direct3d11},
+   * {@code direct3d12}, {@code opengl}, {@code opengles} and {@code noop}. An unrecognized value is ignored with
+   * a warning and the automatic choice is used.
    *
-   * @return The bgfx renderer type constant to hand to {@link BGFXInit#type(int)}.
+   * @return The backend type to request, or {@code UNDEFINED} for the automatic choice.
    */
-  private static int resolveRendererType() {
+  private static GpuBackendType resolveBackendType() {
     String backend = System.getProperty("flixel.render.backend", "auto").trim().toLowerCase();
-    if (backend.isEmpty() || backend.equals("auto")) {
-      return BGFX.BGFX_RENDERER_TYPE_COUNT; // Let bgfx auto-pick the best backend.
-    }
-    if (backend.equals(FlixelGraphicsApi.OPENGL.getId().toLowerCase())) {
-      return BGFX.BGFX_RENDERER_TYPE_OPENGL;
-    }
-    if (backend.equals(FlixelGraphicsApi.VULKAN.getId().toLowerCase())) {
-      return BGFX.BGFX_RENDERER_TYPE_VULKAN;
-    }
-    if (backend.equals(FlixelGraphicsApi.METAL.getId().toLowerCase())) {
-      return BGFX.BGFX_RENDERER_TYPE_METAL;
-    }
-    if (backend.equals(FlixelGraphicsApi.DIRECT3D11.getId().toLowerCase())) {
-      return BGFX.BGFX_RENDERER_TYPE_DIRECT3D11;
-    }
-    if (backend.equals(FlixelGraphicsApi.DIRECT3D12.getId().toLowerCase())) {
-      return BGFX.BGFX_RENDERER_TYPE_DIRECT3D12;
-    }
-    if (backend.equals(FlixelGraphicsApi.NOOP.getId().toLowerCase())) {
-      return BGFX.BGFX_RENDERER_TYPE_NOOP;
-    }
-    LOG.warn("Unknown flixel.render.backend '{}'; letting bgfx auto-pick the renderer.", backend);
-    return BGFX.BGFX_RENDERER_TYPE_COUNT;
+    return switch (backend) {
+      case "", "auto" -> GpuBackendType.UNDEFINED;
+      case "vulkan" -> GpuBackendType.VULKAN;
+      case "metal" -> GpuBackendType.METAL;
+      case "direct3d11" -> GpuBackendType.D3D11;
+      case "direct3d12" -> GpuBackendType.D3D12;
+      case "opengl" -> GpuBackendType.OPENGL;
+      case "opengles" -> GpuBackendType.OPENGLES;
+      case "noop" -> GpuBackendType.NULL;
+      default -> {
+        LOG.warn("Unknown flixel.render.backend '{}'; letting WebGPU pick the graphics API.", backend);
+        yield GpuBackendType.UNDEFINED;
+      }
+    };
   }
 
   /**
@@ -592,7 +622,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   }
 
   @NotNull
-  public FlixelBgfxGraphics getGraphics() {
+  public FlixelGpuGraphics getGraphics() {
     return graphics;
   }
 

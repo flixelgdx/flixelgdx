@@ -3,7 +3,7 @@
  *
  * <p>Game code reaches everything here through {@link org.flixelgdx.Flixel#graphics Flixel.graphics},
  * the central {@link org.flixelgdx.graphics.FlixelGraphicsManager FlixelGraphicsManager} backed by
- * the active GPU library (bgfx on native, WebGL in the browser). No backend type is ever named in
+ * the active GPU renderer (WebGPU). No backend type is ever named in
  * game code: you call this interface and the framework handles the rest. A safe no-op default
  * ({@link org.flixelgdx.graphics.FlixelNoopGraphicsManager FlixelNoopGraphicsManager}) is installed
  * before any backend starts, so {@code Flixel.graphics} is never {@code null}.

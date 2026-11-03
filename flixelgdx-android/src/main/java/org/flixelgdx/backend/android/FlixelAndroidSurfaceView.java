@@ -28,19 +28,23 @@ import org.flixelgdx.input.keyboard.FlixelKey;
 import org.jetbrains.annotations.NotNull;
 
 import android.content.Context;
-import android.opengl.GLSurfaceView;
 import android.text.InputType;
 import android.view.KeyEvent;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
 /**
- * The game surface view, extending {@link GLSurfaceView} to support soft-keyboard text input.
+ * The game surface view, a plain {@link SurfaceView} that the WebGPU renderer presents into, extended to support
+ * soft-keyboard text input.
  *
- * <p>By overriding {@link #onCheckIsTextEditor()} and {@link #onCreateInputConnection}, this
- * view tells Android that it can accept text from an Input Method Editor (IME). When
+ * <p>The view itself draws nothing. Android hands its surface to {@link FlixelAndroidRunner}, which turns it into a
+ * WebGPU surface on the render thread.
+ *
+ * <p>By overriding {@link #onCheckIsTextEditor()} and {@link #onCreateInputConnection}, this view tells Android
+ * that it can accept text from an Input Method Editor (IME). When
  * {@link FlixelAndroidInputDevice#startTextInput()} is called, the launcher shows the IME and
  * focuses this view. The IME then calls back through the {@link FlixelInputConnection} inner
  * class, which forwards committed characters directly into the input device's ring buffer as
@@ -53,7 +57,7 @@ import android.view.inputmethod.InputConnection;
  * @see FlixelAndroidInputDevice
  * @see FlixelAndroidLauncher
  */
-public class FlixelAndroidSurfaceView extends GLSurfaceView {
+public class FlixelAndroidSurfaceView extends SurfaceView {
 
   @NotNull
   private final FlixelAndroidInputDevice input;

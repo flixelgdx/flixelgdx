@@ -36,6 +36,7 @@ import java.util.List;
  * main=com.mygame.DesktopLauncher
  * jre=jre
  * libs=.
+ * vmarg=--enable-native-access=ALL-UNNAMED
  * vmarg=-Xmx1G
  * vmarg=-XX:+UseZGC
  * }</pre>
@@ -43,9 +44,15 @@ import java.util.List;
  * <p>The {@code main} key is the class to launch, {@code jre} and {@code libs} are the bundled
  * runtime and classpath directories (relative to the launcher; {@code .} means the launcher's own
  * folder, where the game jar sits), and each {@code vmarg} line is one
- * argument handed to the JVM. A blank line or a line starting with {@code #} is ignored.
+ * argument handed to the JVM. The first {@code vmarg} is always {@code --enable-native-access=ALL-UNNAMED}. A blank line or a line starting with {@code #} is ignored.
  */
 public final class LaunchConfig {
+
+  /**
+   * The argument every packaged game starts the JVM with. The desktop renderer calls the GPU library through
+   * Java's foreign function API, which Java only allows when it is asked for.
+   */
+  public static final String NATIVE_ACCESS_ARG = "--enable-native-access=ALL-UNNAMED";
 
   private static final String JRE_DIR = "jre";
   private static final String LIBS_DIR = ".";
@@ -65,7 +72,11 @@ public final class LaunchConfig {
     sb.append("main=").append(mainClass).append('\n');
     sb.append("jre=").append(JRE_DIR).append('\n');
     sb.append("libs=").append(LIBS_DIR).append('\n');
+    sb.append("vmarg=").append(NATIVE_ACCESS_ARG).append('\n');
     for (String arg : jvmArgs) {
+      if (arg.equals(NATIVE_ACCESS_ARG)) {
+        continue;
+      }
       sb.append("vmarg=").append(arg).append('\n');
     }
     return sb.toString();

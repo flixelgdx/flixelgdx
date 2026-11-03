@@ -214,9 +214,24 @@ on the default font would silently not render in the browser. This task runs aut
 
 ## Shaders
 
-If the shader plugin is on the classpath, the plugin also runs `copyShaders`, which copies the ESSL
-shader variants out of the JAR resources and into the web assets tree so the browser can fetch them
-as regular files. This happens automatically; no extra configuration is needed.
+Games write shaders in WGSL (`shaders/<name>.wgsl` in the game's resources) and load them with
+`FlixelShader.load("<name>")`. A browser cannot read classpath resources, so the plugin runs
+`copyShaders`, which copies every `shaders/**/*.wgsl` file from the game's resources and from the
+JARs on the runtime classpath into the web assets tree. They preload like any other asset, and
+the web renderer reads them from the preloaded cache. This works whether or not the shader plugin
+is applied: the shader plugin's `processShaders` task writes its validated shaders to a resource root of the `main`
+source set, so they are part of the resources and are picked up the same way.
+
+The renderer's own shaders (the shader preamble and the built-in sprite shader) need no copying:
+the web backend embeds them into the translated program when TeaVM builds the game.
+
+## WebGPU is required
+
+The web backend draws with WebGPU only; there is no WebGL fallback. A browser without WebGPU shows a
+message in the page that explains this and lists the browsers that support it (Chrome and Edge 113 or
+newer, Safari 26 or newer, Firefox 141 or newer on Windows). The page must also be opened over HTTPS or from
+`localhost`, because browsers only expose WebGPU to secure contexts. Nothing in the plugin has to be configured for this;
+a custom `index.html` is covered too, since the message is added to the page by the backend itself.
 
 ## Native scripts (JavaScript and WebAssembly)
 
@@ -285,7 +300,7 @@ sourceSets.main.resources.srcDir = 'src/main/emcc-output'
 |----------------------------|-------------|---------------------------------------------------------------------------------------|
 | `copyAssets`               | build       | Copies game assets into the web output.                                               |
 | `copyWebApp`               | build       | Copies user-provided web resources into the web output.                               |
-| `copyShaders`              | build       | Copies compiled ESSL shader variants into the web assets.                             |
+| `copyShaders`              | build       | Copies the game's WGSL shaders (`shaders/**/*.wgsl`) into the web assets.             |
 | `copyFrameworkResources`   | build       | Copies packaged framework classpath resources (e.g. the bitmap font) into web assets. |
 | `extractNativeScripts`     | build       | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.                       |
 | `generateAssetManifest`    | build       | Writes `assets/assets.txt` for the web preloader.                                     |

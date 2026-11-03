@@ -33,7 +33,10 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
@@ -191,25 +194,36 @@ public class Html5Plugin implements Plugin<Project> {
   }
 
   /**
-   * Registers the web shader copy task. The shader plugin compiles each shader to a raw ESSL variant
-   * on the classpath ({@code shaders/<name>/essl/*.glsl}); a browser cannot read classpath resources,
-   * so those files are copied into the web assets tree where they preload like any other asset and
-   * the web backend can read them from its warm cache when a shader is loaded by name.
+   * Registers the web shader copy task. Shaders are WGSL files that live in the game's resources
+   * ({@code shaders/<name>.wgsl}) and reach the runtime classpath whether or not the shader plugin is
+   * applied; the shader plugin only adds its validated copies to the same place. A browser cannot read
+   * classpath resources, so those files are copied into the web assets tree, where they preload like any
+   * other asset and the web backend reads them from its warm cache when a shader is loaded by name.
+   *
+   * <p>The renderer's built-in shaders are not copied here: they are text blocks in the framework's
+   * source, so they need no files at all.
    */
   private void registerShaderTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("copyShaders", Copy.class, task -> {
       task.setGroup(BUILD_GROUP);
-      task.setDescription("Copies compiled web (ESSL) shader variants into the web assets so they preload.");
+      task.setDescription("Copies the game's WGSL shaders into the web assets so they preload.");
       Configuration runtimeClasspath = project.getConfigurations().findByName("runtimeClasspath");
       if (runtimeClasspath != null) {
-        // The ESSL variants live on the runtime classpath, either as loose resource directories
-        // (project dependencies) or inside dependency jars, so both cases are expanded here.
+        // The shaders live on the runtime classpath, either as loose resource directories (the game's own
+        // resources and project dependencies) or inside dependency jars, so both cases are expanded here.
         task.dependsOn(runtimeClasspath);
         task.from(project.provider(() -> runtimeClasspath.getFiles().stream()
             .map(file -> file.isDirectory() ? file : project.zipTree(file))
             .collect(Collectors.toList())));
       }
-      task.include("shaders/**/essl/**");
+      // The module's own resources are not part of its resolved runtime classpath, so add them separately.
+      project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
+        SourceSet main =
+            project.getExtensions().getByType(SourceSetContainer.class).getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        task.dependsOn(project.getTasks().named(main.getProcessResourcesTaskName()));
+        task.from(project.provider(() -> main.getOutput().getResourcesDir()));
+      });
+      task.include("shaders/**/*.wgsl");
       task.into(webRoot.dir("assets"));
     });
   }
@@ -221,7 +235,7 @@ public class Html5Plugin implements Plugin<Project> {
    * present there before the game runs. This task copies any path matching
    * {@code org/flixelgdx/bitmap/**} (the packaged bitmap font atlas and descriptor) from every
    * source on the runtime classpath into the web assets tree, following the same pattern used by
-   * {@code copyShaders} for compiled shader variants.
+   * {@code copyShaders} for the game's WGSL shaders.
    */
   private void registerFrameworkResourcesTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("copyFrameworkResources", Copy.class, task -> {

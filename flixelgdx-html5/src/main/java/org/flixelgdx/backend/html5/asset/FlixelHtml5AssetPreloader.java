@@ -102,6 +102,7 @@ public final class FlixelHtml5AssetPreloader {
    * @param onComplete Invoked once all framework images have been decoded (or failed).
    */
   public static void preloadFrameworkImages(String assetRoot, PreloadCallback onComplete) {
+    FlixelHtml5ImageBytes.install();
     preloadFrameworkImagesJs(assetRoot, onComplete);
   }
 
@@ -114,20 +115,9 @@ public final class FlixelHtml5AssetPreloader {
           return res.arrayBuffer();
         })
         .then(function(buffer) {
-          return createImageBitmap(new Blob([buffer], { type: 'image/png' }));
+          return window.__flixelDecodeImage(buffer, 'image/png');
         })
-        .then(function(bitmap) {
-          var canvas = document.createElement('canvas');
-          canvas.width = bitmap.width; canvas.height = bitmap.height;
-          var ctx = canvas.getContext('2d');
-          ctx.drawImage(bitmap, 0, 0);
-          var pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
-          var out = new Uint8Array(12 + pixels.length);
-          out[0] = 70; out[1] = 76; out[2] = 88; out[3] = 73;
-          var view = new DataView(out.buffer);
-          view.setUint32(4, bitmap.width, true); view.setUint32(8, bitmap.height, true);
-          out.set(pixels, 12);
-          if (bitmap.close) { bitmap.close(); }
+        .then(function(out) {
           window.__flixelAssets[path] = out;
           onComplete();
         })

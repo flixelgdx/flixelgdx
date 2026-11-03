@@ -58,7 +58,7 @@ public class FlixelStbImage {
    * @return The decoded image, or {@code null} when the data is not a supported image.
    */
   @Nullable
-  static FlixelImage decode(ByteBuffer encoded) {
+  public static FlixelImage decode(ByteBuffer encoded) {
     if (encoded.isDirect()) {
       return decodeDirect(encoded);
     }

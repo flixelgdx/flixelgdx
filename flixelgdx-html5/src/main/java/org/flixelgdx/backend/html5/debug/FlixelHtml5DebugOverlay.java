@@ -44,7 +44,7 @@ import org.teavm.jso.JSBody;
  * browser already ships a capable, hardware-accelerated UI layer: the DOM. This overlay therefore
  * builds a single docked panel out of ordinary HTML elements layered on top of the game canvas,
  * exactly the way {@code FlixelHtml5Alerter} and the crash overlay in {@link FlixelHtml5RuntimeDevice}
- * build their dialogs. Nothing here touches WebGL.
+ * build their dialogs. Nothing here touches the GPU, so the overlay does not depend on the renderer.
  *
  * <h2>What the panel shows</h2>
  *

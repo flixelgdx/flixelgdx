@@ -66,8 +66,9 @@ import org.jetbrains.annotations.NotNull;
  * }</pre>
  *
  * <p>The framework registers loaders for image ({@code .png}, {@code .jpg}, {@code .jpeg},
- * {@code .bmp}, {@code .tga}, {@code .ktx2}), audio ({@code .mp3}, {@code .ogg}, {@code .wav},
- * {@code .flac}), and text ({@code .txt}, {@code .xml}, {@code .json}) files by default.
+ * {@code .bmp}, {@code .tga}), audio ({@code .mp3}, {@code .ogg}, {@code .wav},
+ * {@code .flac}), and text ({@code .txt}, {@code .xml}, {@code .json}) files by default. Platforms
+ * that support compressed textures (Android) also register one for {@code .ktx2}.
  *
  * @param <T> The wrapper type that game code receives from {@link FlixelAsset#get()}.
  */

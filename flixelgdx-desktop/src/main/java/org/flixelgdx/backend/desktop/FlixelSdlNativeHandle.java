@@ -23,81 +23,118 @@
  */
 package org.flixelgdx.backend.desktop;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.sdl.SDLMetal;
 import org.lwjgl.sdl.SDLProperties;
 import org.lwjgl.sdl.SDLVideo;
 
+import io.github.stringdotjar.jwebgpu.GpuInstance;
+import io.github.stringdotjar.jwebgpu.GpuSurface;
+import io.github.stringdotjar.jwebgpu.GpuSurfaceDescriptor;
+import io.github.stringdotjar.jwebgpu.GpuSurfaceSourceMetalLayer;
+import io.github.stringdotjar.jwebgpu.GpuSurfaceSourceWaylandSurface;
+import io.github.stringdotjar.jwebgpu.GpuSurfaceSourceWindowsHWND;
+import io.github.stringdotjar.jwebgpu.GpuSurfaceSourceXlibWindow;
+
 /**
- * Extracts the OS-native window and display handles from an SDL3 window so bgfx can render into it.
+ * Turns an SDL window into a WebGPU surface by reading the window's native handles.
  *
- * <p>bgfx does not open its own window; it renders into one that already exists. To do that it needs
- * two raw pointers: the native window handle (bgfx calls it {@code nwh}) and, on some systems, the
- * native display handle ({@code ndt}). SDL owns the window, so it is the one that knows these values,
- * and it exposes them through its per-window property store. This class asks SDL which windowing
- * system is active ({@link SDLVideo#SDL_GetCurrentVideoDriver()}) and reads the matching properties.
+ * <p>WebGPU draws to a native window through a "surface source" that names the platform's own window objects.
+ * SDL3 exposes those objects as window properties, and this class picks the right pair for the video driver SDL
+ * chose: an X11 display and window, a Wayland display and surface, a Win32 window and instance, or the
+ * {@code CAMetalLayer} of a Metal view on macOS.
  *
- * <p>The exact handles differ per platform:
- * <ul>
- *   <li><b>X11 (Linux):</b> the window is an integer XID; the display is a pointer to the X display.</li>
- *   <li><b>Wayland (Linux):</b> both the surface and the display are pointers.</li>
- *   <li><b>Windows:</b> the window is an {@code HWND} pointer; no separate display handle is needed.</li>
- *   <li><b>macOS (Cocoa):</b> the window is an {@code NSWindow} pointer; no separate display handle.</li>
- * </ul>
+ * <p>On macOS the window must have been created with {@code SDL_WINDOW_METAL}, because SDL only hands out Metal
+ * views to such windows.
  */
 final class FlixelSdlNativeHandle {
 
-  private FlixelSdlNativeHandle() {}
+  private long metalView;
+
+  FlixelSdlNativeHandle() {}
 
   /**
-   * Returns the native window handle (bgfx {@code nwh}) for the given SDL window.
+   * Creates the WebGPU surface for a window.
    *
-   * @param sdlWindow The SDL window handle from {@code SDL_CreateWindow}.
-   * @return The OS-native window handle, or {@code 0} if it could not be resolved.
+   * @param instance The WebGPU instance that owns the surface.
+   * @param sdlWindow The SDL window handle.
+   * @return The surface, or {@code null} when the window system is not supported or its handles could not be
+   *     read.
    */
-  static long windowHandle(long sdlWindow) {
+  @Nullable
+  GpuSurface createSurface(@NotNull GpuInstance instance, long sdlWindow) {
     int props = SDLVideo.SDL_GetWindowProperties(sdlWindow);
     if (props == 0) {
-      return 0L;
+      return null;
     }
+    GpuSurfaceDescriptor descriptor = new GpuSurfaceDescriptor();
+    descriptor.label = "flixel window";
     String driver = driver();
-    if ("x11".equals(driver)) {
-      return SDLProperties.SDL_GetNumberProperty(props, SDLVideo.SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0L);
+    switch (driver) {
+      case "x11" -> {
+        GpuSurfaceSourceXlibWindow source = new GpuSurfaceSourceXlibWindow();
+        source.display = SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_X11_DISPLAY_POINTER, 0L);
+        source.window = SDLProperties.SDL_GetNumberProperty(props, SDLVideo.SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0L);
+        if (source.display == 0L || source.window == 0L) {
+          return null;
+        }
+        descriptor.nextInChain = source;
+      }
+      case "wayland" -> {
+        GpuSurfaceSourceWaylandSurface source = new GpuSurfaceSourceWaylandSurface();
+        source.display = SDLProperties.SDL_GetPointerProperty(props,
+            SDLVideo.SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, 0L);
+        source.surface = SDLProperties.SDL_GetPointerProperty(props,
+            SDLVideo.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, 0L);
+        if (source.display == 0L || source.surface == 0L) {
+          return null;
+        }
+        descriptor.nextInChain = source;
+      }
+      case "windows" -> {
+        GpuSurfaceSourceWindowsHWND source = new GpuSurfaceSourceWindowsHWND();
+        source.hwnd = SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_WIN32_HWND_POINTER, 0L);
+        source.hinstance = SDLProperties.SDL_GetPointerProperty(props,
+            SDLVideo.SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER, 0L);
+        if (source.hwnd == 0L) {
+          return null;
+        }
+        descriptor.nextInChain = source;
+      }
+      case "cocoa" -> {
+        metalView = SDLMetal.SDL_Metal_CreateView(sdlWindow);
+        long layer = metalView != 0L ? SDLMetal.SDL_Metal_GetLayer(metalView) : 0L;
+        if (layer == 0L) {
+          return null;
+        }
+        GpuSurfaceSourceMetalLayer source = new GpuSurfaceSourceMetalLayer();
+        source.layer = layer;
+        descriptor.nextInChain = source;
+      }
+      default -> {
+        return null;
+      }
     }
-    if ("wayland".equals(driver)) {
-      return SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, 0L);
+    return instance.createSurface(descriptor);
+  }
+
+  /** Releases the Metal view created for the window, if there is one. Safe to call more than once. */
+  void destroy() {
+    if (metalView != 0L) {
+      SDLMetal.SDL_Metal_DestroyView(metalView);
+      metalView = 0L;
     }
-    if ("windows".equals(driver)) {
-      return SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_WIN32_HWND_POINTER, 0L);
-    }
-    if ("cocoa".equals(driver)) {
-      return SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, 0L);
-    }
-    return 0L;
   }
 
   /**
-   * Returns the native display handle (bgfx {@code ndt}) for the given SDL window, or {@code 0} on
-   * platforms that do not use one (Windows, macOS).
+   * Returns the name of the video driver SDL is using, such as {@code x11}, {@code wayland}, {@code windows}
+   * or {@code cocoa}.
    *
-   * @param sdlWindow The SDL window handle from {@code SDL_CreateWindow}.
-   * @return The OS-native display handle, or {@code 0} when none applies.
+   * @return The driver name, or an empty string when none is active.
    */
-  static long displayHandle(long sdlWindow) {
-    int props = SDLVideo.SDL_GetWindowProperties(sdlWindow);
-    if (props == 0) {
-      return 0L;
-    }
-    String driver = driver();
-    if ("x11".equals(driver)) {
-      return SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_X11_DISPLAY_POINTER, 0L);
-    }
-    if ("wayland".equals(driver)) {
-      return SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, 0L);
-    }
-    return 0L;
-  }
-
-  /** Returns the active SDL video driver name (for example {@code "x11"}), or an empty string. */
-  private static String driver() {
+  @NotNull
+  static String driver() {
     String driver = SDLVideo.SDL_GetCurrentVideoDriver();
     return driver != null ? driver : "";
   }

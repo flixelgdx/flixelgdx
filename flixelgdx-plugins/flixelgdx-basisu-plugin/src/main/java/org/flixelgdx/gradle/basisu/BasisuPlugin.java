@@ -58,9 +58,10 @@ import java.util.Set;
  * {@code compressBasisuTextures} task into the Android build so every {@code .png} under the
  * configured assets directory is compressed automatically. The Android backend registers the
  * matching runtime loader and {@code FlixelGame.create()} turns it on, so game code keeps requesting
- * {@code .png} paths and transparently gets the compressed texture back; see
- * {@code FlixelAssetManager.enableCompressedTextures()} in {@code flixelgdx-core} for the loading
- * side of this feature.
+ * {@code .png} paths and transparently gets the compressed texture back, transcoded to ASTC or ETC2
+ * for the device's GPU; see {@code FlixelAssetManager.setCompressedTexturesEnabled(boolean)} in
+ * {@code flixelgdx-core} and {@code FlixelKtx2} in {@code flixelgdx-gpu} for the loading side of
+ * this feature.
  *
  * <p>Compression stays off unless a developer opts in, since it changes build output. See
  * {@link BasisuExtension} for the {@code enableBasisuCompression} Gradle property and other
@@ -76,14 +77,10 @@ import java.util.Set;
  * }
  * }</pre>
  *
- * <p>This does not cover the desktop backend. Its bgfx renderer cannot parse Basis Universal KTX2
- * files (their pixel format is undefined until transcoded, and they are supercompressed), and the
- * desktop backend ships no transcoder, so desktop builds always package and load the plain PNGs.
- * Applying this plugin to a desktop module has no effect on its output.
- *
- * <p>This does not currently cover the TeaVM web backend: neither libGDX's own compressed texture
- * loaders nor Basis Universal's transcoder ship a TeaVM binding, so web builds keep loading plain
- * PNGs regardless of this plugin.
+ * <p>This does not cover the desktop or web backends. Basis Universal files must be transcoded
+ * before upload, and only the Android backend ships the native transcoder, so desktop and web builds
+ * always package and load the plain PNGs. Applying this plugin to a desktop module has no effect on
+ * its output.
  *
  * @see BasisuExtension
  */
@@ -103,7 +100,7 @@ public class BasisuPlugin implements Plugin<Project> {
     ext.getEnabled().convention(enabledByProperty);
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
     ext.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/basisuAssets"));
-    ext.getGenerateMipmaps().convention(true);
+    ext.getGenerateMipmaps().convention(false);
     ext.getUseUastc().convention(false);
     ext.getEtc1sQuality().convention(128);
     ext.getUastcLevel().convention(2);

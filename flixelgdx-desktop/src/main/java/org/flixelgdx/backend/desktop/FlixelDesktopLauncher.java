@@ -33,7 +33,7 @@ import org.flixelgdx.backend.desktop.asset.FlixelJvmAssetManager;
 import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
 import org.flixelgdx.backend.desktop.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
-import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
+import org.flixelgdx.backend.desktop.graphics.FlixelStbImage;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
@@ -42,6 +42,7 @@ import org.flixelgdx.backend.desktop.logging.FlixelJvmLogFileSink;
 import org.flixelgdx.backend.desktop.logging.FlixelJvmLogSiteResolver;
 import org.flixelgdx.backend.desktop.runtime.FlixelJvmRuntimeDevice;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
+import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.logging.FlixelLogger;
@@ -49,6 +50,8 @@ import org.flixelgdx.text.FlixelFontRegistry;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import io.github.stringdotjar.jwebgpu.ffm.JWebGpuFfm;
 
 /**
  * The one-line entry point for a desktop FlixelGDX game.
@@ -76,6 +79,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelDesktopLauncher {
 
+  private static final String LWJGL_MEMORY_BACKEND = "org.lwjgl.system.memoryBackend";
   private static final FlixelLogger LOG = Flixel.log.tagged("Desktop");
 
   private static boolean loggingInstalled;
@@ -104,7 +108,6 @@ public final class FlixelDesktopLauncher {
    * @param game The game instance to run.
    */
   public static void launch(@NotNull FlixelGame game) {
-    installLogging();
     launch(game, resolveRuntimeMode(), (String[]) null);
   }
 
@@ -134,8 +137,23 @@ public final class FlixelDesktopLauncher {
    * @throws RuntimeException if any icon path cannot be found in the classpath.
    */
   public static void launch(@NotNull FlixelGame game, @NotNull String... icons) {
-    installLogging();
     launch(game, resolveRuntimeMode(), icons);
+  }
+
+  /**
+   * Makes LWJGL use Java's foreign memory API instead of {@code sun.misc.Unsafe}.
+   *
+   * <p>LWJGL picks how it reads and writes native memory once, the first time it is used. Its default is
+   * {@code sun.misc.Unsafe}, which Java 25 warns about on every start and is removing. Its foreign memory backend
+   * does the same job through the supported API, so the launcher selects it before anything touches LWJGL. A game
+   * that sets {@code org.lwjgl.system.memoryBackend} itself keeps its choice, and a GraalVM native image keeps
+   * LWJGL's default.
+   */
+  private static void useForeignMemoryForLwjgl() {
+    if (System.getProperty(LWJGL_MEMORY_BACKEND) == null
+        && System.getProperty("org.graalvm.nativeimage.imagecode") == null) {
+      System.setProperty(LWJGL_MEMORY_BACKEND, "ffm");
+    }
   }
 
   /**
@@ -145,7 +163,6 @@ public final class FlixelDesktopLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode) {
-    installLogging();
     launch(game, runtimeMode, (String[]) null);
   }
 
@@ -166,7 +183,20 @@ public final class FlixelDesktopLauncher {
    */
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode,
       @Nullable String... icons) {
-    installLogging();
+    useForeignMemoryForLwjgl();
+    // Install logging before anything else.
+    if (loggingInstalled) {
+      return;
+    }
+    loggingInstalled = true;
+    Flixel.log.setSiteResolver(new FlixelJvmLogSiteResolver());
+    Flixel.log.setConsoleSink(new FlixelAnsiConsoleSink());
+    Flixel.log.setFileSink(new FlixelJvmLogFileSink());
+    if (!FlixelDesktopLauncher.class.getModule().isNativeAccessEnabled()) {
+      LOG.warn("Native access is not enabled, so Java warns about the restricted methods WebGPU and SDL use, and"
+          + " a future Java release will block them. Start the game with --enable-native-access=ALL-UNNAMED (the"
+          + " game jar's manifest and packaged builds already do).");
+    }
     if (icons != null) {
       for (String path : icons) {
         if (FlixelDesktopLauncher.class.getResource("/" + path) == null) {
@@ -176,6 +206,9 @@ public final class FlixelDesktopLauncher {
     }
 
     FlixelConfig config = Flixel.config;
+    // Game developers never call this: the launcher loads the WebGPU native library for the current platform
+    // and registers the FFM backend, so everything after this point only talks to the platform-neutral API.
+    JWebGpuFfm.install();
     Flixel.runtime = new FlixelJvmRuntimeDevice();
     if (Flixel.runtime.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
@@ -184,7 +217,9 @@ public final class FlixelDesktopLauncher {
     FlixelSdlWindow window = new FlixelSdlWindow();
     FlixelDesktopHostIntegration host = new FlixelDesktopHostIntegration();
     FlixelDesktopInputDevice input = new FlixelDesktopInputDevice();
-    FlixelBgfxGraphics graphics = new FlixelBgfxGraphics();
+    FlixelGpuGraphics graphics = new FlixelGpuGraphics();
+    // Decoding is needed before the GPU exists (the window icons are decoded first).
+    graphics.setImageDecoder(FlixelStbImage::decode);
     FlixelSdlGamepadProvider gamepads = new FlixelSdlGamepadProvider();
     FlixelSdlMouseIconManager iconManager = new FlixelSdlMouseIconManager();
     // A windowed game opens at its render resolution, which is the design size unless configured.
@@ -220,26 +255,6 @@ public final class FlixelDesktopLauncher {
     if (AnsiConsole.isInstalled()) {
       AnsiConsole.systemUninstall();
     }
-  }
-
-  /**
-   * Installs the desktop call-site resolver, the colored console sink, and the log file sink.
-   *
-   * <p>Every public launch method calls this first, so even a warning logged while the runtime mode
-   * is being resolved has colors and a call site. Only the first call does anything, so overloads
-   * that delegate to each other do not install the sinks twice.
-   *
-   * <p>Logging to a file still starts only when the game calls
-   * {@link FlixelLogger#startFileLogging() Flixel.log.startFileLogging()}.
-   */
-  private static void installLogging() {
-    if (loggingInstalled) {
-      return;
-    }
-    loggingInstalled = true;
-    Flixel.log.setSiteResolver(new FlixelJvmLogSiteResolver());
-    Flixel.log.setConsoleSink(new FlixelAnsiConsoleSink());
-    Flixel.log.setFileSink(new FlixelJvmLogFileSink());
   }
 
   /**

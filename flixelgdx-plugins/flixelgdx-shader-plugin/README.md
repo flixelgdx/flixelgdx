@@ -1,173 +1,153 @@
 # FlixelGDX Shader Plugin
 
-Write one shader. Run it everywhere.
+Catch your shader mistakes at build time, not when the game opens.
 
-This Gradle plugin lets a game author a single GLSL shader and have it work on every FlixelGDX
-backend, with no per-platform authoring and no manual shader compilation. At build time it compiles
-each shader to SPIR-V, translates it for the web and Android, cross-compiles it into the OpenGL,
-Vulkan, Metal, and Direct3D bytecode the desktop backend loads, then bundles the results into the
-game's resources.
+FlixelGDX shaders are written in **WGSL**, the WebGPU shading language, and nothing else. Every platform compiles
+the same `.wgsl` text at run time, so the plugin has no cross-compiling to do. Its job is to be a proofreader: at
+build time it compiles each shader with **Dawn** (the exact compiler the game uses), fails the build with
+`file:line:column` messages when something is wrong, and copies the shaders into the game's resources so
+`FlixelShader.load(name)` finds them on every platform.
 
-## Why it exists
-
-Each FlixelGDX backend needs shaders in a different form: the desktop backend loads bgfx's compiled
-`.bin` format, while the web (WebGL 2) and Android (OpenGL ES 3) backends compile ESSL source at
-runtime. Without this plugin a developer would have to write shaders in several dialects and run
-the compilers by hand for every platform. The plugin removes that entirely: you write ordinary GLSL,
-and the build produces every variant for you.
-
-## How it works
-
-Every shader goes through the same three steps:
-
-```
-your GLSL + framework preamble
-   |  glslang (Khronos reference compiler)
-   v
- SPIR-V --- spirv-cross ---> essl/{vs,fs}.glsl       web and Android
-   |
-   '------- (checked) -----> shaderc x4 -> .bin     desktop (bgfx)
-```
-
-1. **glslang compiles the shader to SPIR-V.** glslang really parses GLSL, so a mistake in your
-   shader fails the build right here, reported against your own file name and line number
-   (for example `ERROR: crt.frag.glsl:12: ...`). Nothing broken ever reaches a player's GPU driver.
-2. **spirv-cross translates the SPIR-V into ESSL 3.00** for the web and Android backends. Because
-   it works from the compiled module, the output is always valid, with every macro expanded and every
-   uniform, attribute, and varying keeping the exact name you wrote.
-3. **bgfx's `shaderc` compiles the desktop variants.** It is the same compiler that builds the
-   framework's own sprite shader, so its output is guaranteed to be the exact container
-   `bgfx_create_shader` expects, down to the uniform reflection table and the vertex/fragment
-   signature hashes. `shaderc` is fed your original source, not the translated SPIR-V: bgfx compiles
-   several variants through an HLSL front end, where only `mul(a, b)` is a real matrix product, and
-   translated code always writes `a * b`.
-
-## Applying the plugin
-
-In the game module's `build.gradle`:
+## Usage
 
 ```groovy
 plugins {
   id 'java'
-  id 'org.flixelgdx.shaders' version '<flixel-version>'
-}
-
-shaders {
-  // Where the .glsl sources live (default: src/main/shaders).
-  sourceDir = file('src/main/shaders')
-
-  shader('crt') {
-    fragment = 'crt.frag.glsl'
-  }
-
-  shader('wave') {
-    fragment = 'wave.frag.glsl'
-    vertex = 'wave.vert.glsl'   // optional
-  }
+  id 'org.flixelgdx.shaders' version '0.1.0-beta'
 }
 ```
 
-The `compileShaders` task runs automatically before `processResources`, so a normal build
-produces and bundles the compiled shaders.
-
-## Authoring a shader
-
-Write a plain GLSL fragment shader. The plugin injects the framework preamble, so you do not declare
-the sampler or varyings yourself; you just use the names it provides:
-
-| Name                 | Type          | Meaning                                                |
-|----------------------|---------------|--------------------------------------------------------|
-| `u_texture`          | `sampler2D`   | The sprite or camera scene texture (bound at stage 0). |
-| `v_texCoords`        | `vec2`        | The interpolated texture coordinate.                   |
-| `v_color`            | `vec4`        | The interpolated vertex tint.                          |
-| `flixel_texture(uv)` | function      | Shorthand for `texture2D(u_texture, uv)`.              |
-
-Write the result to `gl_FragColor`. A minimal pass-through fragment shader:
-
-```glsl
-void main() {
-  gl_FragColor = flixel_texture(v_texCoords) * v_color;
-}
-```
-
-The vertex stage is optional. The built-in pass-through vertex shader is correct for almost every
-sprite and camera effect, since the batch already transforms quad corners on the CPU. A custom
-vertex shader may read `a_position` (`vec2`), `a_texcoord0` (`vec2`), and `a_color0` (`vec4`),
-transform with `u_modelViewProj`, and must write `v_texCoords` and `v_color`.
-
-Custom vertex shaders work on all backends, including the web and Android ESSL backends. The plugin
-maps the bgfx naming convention onto the names the GL backends bind before compiling to SPIR-V, so
-you never have to write platform-specific vertex code.
-
-One form that does not translate: treating `a_position` as a `vec4`. The framework's vertex buffer
-stores position as two floats (`vec2`), so write `vec4(a_position, 0.0, 1.0)` to promote it to a
-homogeneous coordinate, which compiles correctly on both bgfx and ESSL. The alias table is:
-
-| bgfx name        | ESSL name        | Note                                         |
-|------------------|------------------|----------------------------------------------|
-| `a_texcoord0`    | `a_texCoord0`    | Lowercase `c` versus capital `C`.            |
-| `a_color0`       | `a_color`        | Numeric suffix dropped.                      |
-| `u_modelViewProj`| `u_projTrans`    | Different uniform name.                      |
-| `mul(a, b)`      | `((a) * (b))`    | bgfx GLSL helper, not available in plain ES. |
-
-## Loading at runtime
-
-Load a compiled shader by the same name you declared in the build:
+Put shaders in `src/main/shaders` (subfolders are kept) and load them by path without the extension:
 
 ```java
-FlixelShader crt = FlixelShader.load("crt");
-Flixel.cameras.first().setShader(crt);
+FlixelShader tint = FlixelShader.load("tint");     // src/main/shaders/tint.wgsl
+FlixelShader wave = FlixelShader.load("fx/wave");  // src/main/shaders/fx/wave.wgsl
 ```
 
-The framework selects the variant matching the active renderer. If a variant is missing (for
-example, a Direct3D build produced on a non-Windows machine), the effect degrades to an unshaded
-draw instead of crashing.
+The `processShaders` task runs before `processResources`, so a normal `build` or `run` validates and bundles every
+shader. Run `./gradlew processShaders` to check shaders on their own.
 
-## Output layout
+## The WGSL contract
 
-Each shader is written into the module's resources as:
+A shader file does not declare the camera matrix, the texture or the sampler. The framework puts a *preamble* in
+front of every shader before compiling it. The preamble is
+the `PREAMBLE` text block of `FlixelWgsl` in `flixelgdx-core` (the single source of truth, which the plugin copies out at
+its own build time), so these names are always available:
+
+| What | Where | Notes |
+|------|-------|-------|
+| `flixel` (`FlixelGlobals`) | `@group(0) @binding(0)` | `proj` (`mat4x4f`), `texSize` and `texelSize` (`vec2f`). |
+| `flixelTexture` | `@group(0) @binding(1)` | `texture_2d<f32>` being drawn. |
+| `flixelSampler` | `@group(0) @binding(2)` | Nearest or linear sampler. |
+| Your uniform struct | `@group(1) @binding(0)` | Optional. Set its members from Java with `setUniform(...)`. |
+| `FlixelVertexInput`, `FlixelVertexOutput` | | The vertex and the vertex-to-fragment structs. |
+| Entry points | | `fs_main` is required. `vs_main` is optional (the default `flixel_vs` is used otherwise). |
+
+`fs_main` returns straight (non-premultiplied) color, like the texture it samples. The framework premultiplies the
+result itself before blending, so every blend mode treats transparent pixels correctly. For that to work, declare it
+in the usual form, `@fragment fn fs_main(...) -> @location(0) vec4f`; a fragment stage that returns a struct is still
+allowed, but its output is blended as straight color and the game logs a warning.
+
+A complete shader that mixes the sprite toward a color, driven by a group 1 uniform struct:
+
+```wgsl
+struct Params {
+  tint: vec4f,
+  amount: f32,
+}
+@group(1) @binding(0) var<uniform> params: Params;
+
+@fragment
+fn fs_main(in: FlixelVertexOutput) -> @location(0) vec4f {
+  let c = textureSample(flixelTexture, flixelSampler, in.uv) * in.color;
+  return vec4f(mix(c.rgb, params.tint.rgb, params.amount), c.a);
+}
+```
+
+```java
+FlixelShader tint = FlixelShader.load("tint");
+tint.setUniform("tint", FlixelColor.RED);
+tint.setUniform("amount", 0.5f);
+sprite.setShader(tint);
+```
+
+## What is checked
+
+For every shader the plugin does what the renderer does when it creates a shader:
+
+1. Joins the preamble and your file exactly like the framework does, and compiles the result as one module.
+2. Builds a trial render pipeline with the framework's own bind group layouts (group 0: globals, texture and
+   sampler; group 1: one uniform buffer), the framework's vertex layout and the entry points `fs_main` and
+   `vs_main` (or `flixel_vs`). This catches what compiling alone cannot: a missing `fs_main`, or a group 1 binding
+   that is not a uniform buffer.
+
+Line numbers are mapped back to **your file** (the preamble's lines are subtracted), so editors and terminals can
+jump straight to the problem. A failing build looks like this:
 
 ```
-shaders/<name>/glsl/{vs,fs}.bin      OpenGL (and the runtime fallback)
-shaders/<name>/spirv/{vs,fs}.bin     Vulkan
-shaders/<name>/metal/{vs,fs}.bin     Metal
-shaders/<name>/dx11/{vs,fs}.bin      Direct3D 11 and 12
-shaders/<name>/essl/{vs,fs}.glsl     ESSL 3.00 (web and Android)
+> Task :processShaders FAILED
+* What went wrong:
+Execution failed for task ':processShaders'.
+> Found 2 shader errors:
+  /game/src/main/shaders/broken.wgsl:5:3: error: expected ';' for variable declaration
+    return vec4f(x);
+    ^
+  /game/src/main/shaders/nofs.wgsl: error: Entry point "fs_main" doesn't exist in the shader module.
 ```
 
-## Direct3D and the compiler
+Findings about a whole shader (such as a missing entry point) have no line and read
+`<file>: error: <message>`. Warnings are printed and do not fail the build. The uniform struct's members are not
+type-checked against `setUniform(...)` calls here; the renderer lays the struct out when the shader is created.
 
-Every variant except Direct3D compiles on any host: the OpenGL, Vulkan, and Metal bytecode all
-build fine on Linux, macOS, and Windows.
+## How validation runs
 
-The Direct3D (`dx11`) variant is the one exception, because it is DXBC produced by Microsoft's FXC
-compiler. FXC runs natively on Windows, and on Linux and macOS through the `d3d4linux` Wine shim,
-which the plugin bundles and extracts automatically. So the only extra requirement to build the
-Direct3D variant off Windows is **Wine installed on the host**:
+The check calls Dawn through Java's foreign function API, so it runs in a **forked Java 25 process** (Gradle's
+worker API with process isolation, started with `--enable-native-access=ALL-UNNAMED`), using the Java 25 toolchain
+of the build. The process creates one Dawn device on the **Null backend**, a fake GPU that compiles and validates
+but never draws, so **no graphics card or display is needed** and it works on CI. One device is shared by all
+shaders of a run.
 
-- **Windows:** works out of the box; FXC is native.
-- **Linux / macOS:** works when `wine` is on the `PATH` (the bundled shim runs the real FXC through
-  it). Install Wine with your package manager, for example `sudo apt install wine` or
-  `brew install --cask wine-stable`.
-- **No Wine anywhere:** the plugin skips just the `dx11` variant with a warning (the same way the
-  framework's own `scripts/build_shaders.sh` does) and still produces all the others. You can then
-  build `dx11` on a Windows CI runner (see below).
+The jwebgpu libraries it needs (`jwebgpu-api`, `jwebgpu-ffm` and the `jwebgpu-natives-<os>-<arch>` jar of the
+machine running the build) come from a dedicated `shaderValidator` configuration of the plugin, so they never reach
+your game's own class path. They are resolved from Maven Central, so the build needs `mavenCentral()` in its
+repositories, and their version defaults to the one the framework is built with.
 
-A game that ships without the `dx11` variant does not crash; the effect simply falls back to an
-unshaded draw on the Direct3D renderer, and bgfx can also be pointed at the Vulkan or OpenGL
-renderer on Windows.
+## Settings
 
-## Bundled tools
+All optional:
 
-The plugin ships every compiler it runs, so a game developer never installs any shader tooling:
+```groovy
+shaders {
+  sourceDir = layout.projectDirectory.dir('assets/shaders')  // default: src/main/shaders
+  validate = true                                            // false only copies the files
+  jwebgpuVersion = '0.1.0'                                   // default: the framework's jwebgpu version
+}
+```
 
-| Tool          | Job                                         | Override option  |
-|---------------|---------------------------------------------|------------------|
-| `glslang`     | Compiles GLSL to SPIR-V and reports errors. | `glslangPath`    |
-| `spirv-cross` | Translates SPIR-V to ESSL 3.00.             | `spirvCrossPath` |
-| `shaderc`     | Compiles the bgfx `.bin` desktop variants.  | `shadercPath`    |
+## Output contract
 
-Each tool is resolved in priority order: an explicit path in the `shaders` block, the binary bundled
-with the plugin for the current operating system, and finally one with the same name found on the
-system `PATH`. See [`tools/README.md`](src/main/resources/org/flixelgdx/gradle/shader/tools/README.md)
-for how the bundled binaries are produced.
+Other plugins may rely on this.
+
+- The task is `processShaders` (type `ProcessShadersTask`, group `shaders`).
+- Its output directory, `ProcessShadersTask.getOutputDir()`, defaults to `build/generated/flixelgdx/shaders`. It is a
+  **resource root**: a source file `<sourceDir>/<name>.wgsl` is written to
+  `build/generated/flixelgdx/shaders/shaders/<name>.wgsl`, with subfolders kept.
+- The directory is added to the `main` source set's resources, so the files end up on the class path as
+  `shaders/<name>.wgsl`, which is where `FlixelShader.load(name)` looks.
+- To serve the shaders as files (for example the web build), take the task's `outputDir` (or the files under its
+  `shaders` folder) as an input of your task instead of hard-coding the path. That also wires the task dependency.
+- The output only ever holds shaders that passed validation: it is emptied at the start of each run.
+- The task is cacheable and incremental: it is up to date while the shaders, the settings and the plugin are
+  unchanged, and skipped (`NO-SOURCE`) when there are no `.wgsl` files.
+
+## Developing the plugin
+
+The plugin's build copies the `FlixelWgsl.PREAMBLE` text block into `flixel_preamble.wgsl` and turns the other
+constants of `FlixelWgsl` (entry point names, bind group numbers, the globals size) into a small properties file, both
+bundled as plugin resources. The text block must not use backslash escapes, and its closing quotes must line up with
+the text, so the copy matches the Java string exactly; the task fails if either rule is broken. This keeps one source
+of truth: change the contract in `flixelgdx-core` and the plugin follows on its next build. If a constant is renamed
+there, the plugin's `generateShaderContract` task fails and says so.
+
+`./gradlew :flixelgdx-plugins:flixelgdx-shader-plugin:test` runs the helper tests and the Gradle TestKit builds. The
+TestKit builds download jwebgpu from Maven Central; they are skipped on a machine jwebgpu has no Dawn library for.

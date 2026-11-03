@@ -268,8 +268,8 @@ public interface FlixelAssetManager extends FlixelDestroyable {
 
   /**
    * Unloads the asset at {@code path}, removing its handle from the cache and destroying GPU
-   * or native resources it holds. On platforms with a WebGL context (web), this calls
-   * {@code gl.deleteTexture()} so GPU memory is actually freed in the browser.
+   * or native resources it holds. A texture's GPU memory is released right away, including in
+   * the browser, instead of waiting for garbage collection.
    *
    * <p>If the asset's reference count is still above zero when this is called, a warning is
    * logged and the unload still proceeds. Any code still holding the underlying resource after
