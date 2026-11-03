@@ -53,7 +53,7 @@ import android.util.AtomicFile;
  */
 public class FlixelAndroidSaveHandler implements FlixelSaveHandler {
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Save");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Save/Android");
 
   /** The app's private files folder, used to build the default save folder. */
   @Nullable

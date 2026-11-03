@@ -66,7 +66,7 @@ import java.util.Objects;
  */
 public class FlixelJvmSaveHandler implements FlixelSaveHandler {
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Save");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Save/Desktop");
 
   /** The folder saves live in, or {@code null} to use the default app data folder. */
   @Nullable

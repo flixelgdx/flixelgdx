@@ -109,9 +109,10 @@ public final class FlixelAndroidLauncher {
     Flixel.runtime = runtime;
     Flixel.alert = new FlixelAndroidAlerter(activity);
     Flixel.files = new FlixelAndroidFiles(activity);
-    FlixelSave.defaultHandler = new FlixelAndroidSaveHandler(activity);
     Flixel.assets = new FlixelAndroidAssetManager();
     Flixel.host = new FlixelAndroidHostIntegration(activity);
+
+    FlixelSave.defaultHandler = new FlixelAndroidSaveHandler(activity);
 
     Flixel.log.setSiteResolver(new FlixelAndroidLogSiteResolver());
     Flixel.log.setConsoleSink(new FlixelLogcatSink());
