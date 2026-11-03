@@ -281,7 +281,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     if (device.getLimits(limits) != null && limits.minUniformBufferOffsetAlignment > 0) {
       uniformAlignment = Math.max(limits.minUniformBufferOffsetAlignment, 16);
     }
-    LOG.info("GPU: {} ({}), {} backend.", adapterInfo.device, adapterInfo.description, adapterInfo.backendType);
     blockFormats = queryBlockFormats(device);
 
     pipelines = new FlixelGpuPipelines(device);
@@ -992,7 +991,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
   @Override
   public void setRenderScale(float scale) {
-    renderScale = Math.max(MIN_RENDER_SCALE, Math.min(MAX_RENDER_SCALE, scale));
+    renderScale = Math.clamp(scale, MIN_RENDER_SCALE, MAX_RENDER_SCALE);
   }
 
   @Override
@@ -1478,11 +1477,9 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     // Read through the asset system, which knows where each platform keeps the game's files: the assets folder or
     // the packaged resources on desktop and Android, and the preloaded assets on the web.
     String source = null;
-    if (Flixel.assets != null) {
-      FlixelFile file = Flixel.assets.resolveFile(path);
-      if (file != null && file.exists()) {
-        source = file.readString();
-      }
+    FlixelFile file = Flixel.assets.resolveFile(path);
+    if (file.exists()) {
+      source = file.readString();
     }
     if (source == null) {
       LOG.error("Shader '{}' was not found. Put it at {} in the resources or the assets folder.", name, path);
@@ -1546,7 +1543,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
    */
   int uploadUniforms(byte[] data, int size) {
     int padded = (size + 3) & ~3;
-    long at = uniformRing.write(queue, data, padded > data.length ? data.length : padded, uniformAlignment);
+    long at = uniformRing.write(queue, data, Math.min(padded, data.length), uniformAlignment);
     return (int) at;
   }
 
