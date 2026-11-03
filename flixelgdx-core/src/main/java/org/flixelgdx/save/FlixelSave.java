@@ -460,11 +460,7 @@ public class FlixelSave implements FlixelDestroyable {
    * @param handler The storage this save should read from and write to.
    */
   public void setHandler(@Nullable FlixelSaveHandler handler) {
-    if (Objects.nonNull(handler)) {
-      this.handler = handler;
-    } else {
-      LOG.warn("Ignoring a null save handler; keeping the current one.");
-    }
+    this.handler = Objects.requireNonNull(handler, "The provided handler cannot be null.");
   }
 
   @NotNull
