@@ -72,7 +72,9 @@ import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelRandom;
+import org.flixelgdx.save.FlixelNoopSaveHandler;
 import org.flixelgdx.save.FlixelSave;
+import org.flixelgdx.save.FlixelSaveHandler;
 import org.flixelgdx.signal.FlixelSignal;
 import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
@@ -589,8 +591,8 @@ public final class Flixel {
    * The preferences-based save data helper for the game.
    *
    * <p>{@link FlixelSave} is a simple key-value store that persists between sessions. It is
-   * backed by platform-native storage through the file seam: a save file on desktop, browser
-   * {@code localStorage} on web, and the equivalent on mobile.
+   * backed by the platform's {@link #saveHandler}: a save file on desktop, the app's private
+   * storage on Android, and browser {@code localStorage} on web.
    *
    * <p>Call {@link FlixelSave#bind(String, String)} once before using any other method to open (or
    * create) the named preferences file. After that, read and write values directly through the
@@ -872,6 +874,21 @@ public final class Flixel {
    */
   @NotNull
   public static FlixelFiles files = FlixelNoopFiles.INSTANCE;
+
+  /**
+   * The platform's default save storage, used by {@link FlixelSave#bind(String, String)}.
+   *
+   * <p>Each backend installs its own {@link FlixelSaveHandler} here before the game starts: a
+   * folder in the OS app data directory on desktop, the app's private storage on Android, and
+   * {@code localStorage} on web. Until then, and on headless sessions, the
+   * {@link FlixelNoopSaveHandler} keeps nothing, so save calls are always safe.
+   *
+   * <p>Most games never touch this field. Replace it before the game starts (or pass a handler to
+   * {@link FlixelSave#bind(String, String, FlixelSaveHandler)}) to keep saves somewhere else, such
+   * as a cloud-sync service.
+   */
+  @NotNull
+  public static FlixelSaveHandler saveHandler = FlixelNoopSaveHandler.INSTANCE;
 
   /**
    * The current machine and program layout: memory usage, whether the game runs from a JAR or an

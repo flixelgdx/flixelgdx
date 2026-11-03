@@ -3,7 +3,7 @@
  *
  * <p>Saving in FlixelGDX works like a simple key-value notebook. You open a named notebook
  * (called "binding"), write whatever you want into it, and close it (called "flushing") to
- * persist the data to disk. The next time the game starts, you open the same notebook and
+ * persist the data. The next time the game starts, you open the same notebook and
  * your data is there waiting. The only class you need for this is
  * {@link org.flixelgdx.save.FlixelSave FlixelSave}, which the framework makes available
  * globally as {@link org.flixelgdx.Flixel#save Flixel.save}.
@@ -23,7 +23,7 @@
  *     {@link org.flixelgdx.save.FlixelSave#getString(String, String) getString(...)})
  *     when reading values back.</li>
  *   <li><b>Flush</b> - call {@link org.flixelgdx.save.FlixelSave#flush() FlixelSave.flush()} to
- *     write the current state of {@code data} to disk. Nothing is saved until you flush.</li>
+ *     write the current state of {@code data} to storage. Nothing is saved until you flush.</li>
  * </ol>
  *
  * <pre>{@code
@@ -40,7 +40,7 @@
  * <h2>Save slots</h2>
  * <p>The second argument to {@code bind(...)} is an optional slot discriminator. Slots let you
  * maintain several independent save files under the same game name (for example, one per player
- * profile or difficulty mode). Each {@code (name, slot)} pair maps to a separate file on disk.
+ * profile or difficulty mode). Each {@code (name, slot)} pair maps to a separate save.
  *
  * <pre>{@code
  * // Three independent save files for three player profiles.
@@ -55,22 +55,40 @@
  * Flixel.save.bind("AwesomeGame", null);
  * }</pre>
  *
- * <h2>Save file locations</h2>
- * <p>FlixelGDX writes save files through the platform file seam using the OS-specific preferences
- * directory. The company name set in {@link org.flixelgdx.FlixelConfig FlixelConfig}
- * is required so the framework can find the correct folder. The bind method will log an error and return
- * {@code false} if the company name has not been set.
+ * <h2>Where saves are stored</h2>
+ * <p>{@code FlixelSave} never touches storage itself. It turns {@code data} into JSON text and
+ * hands it to a {@link org.flixelgdx.save.FlixelSaveHandler FlixelSaveHandler}, a small
+ * interface with four methods: read, write, delete, and exists. Each platform installs its own
+ * handler on {@link org.flixelgdx.Flixel#saveHandler Flixel.saveHandler} before the game starts:
  *
  * <ul>
  *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
  *   <li><b>macOS</b>: {@code ~/Library/Application Support/Company/Title/saves/}</li>
  *   <li><b>Linux</b>: {@code $XDG_DATA_HOME/Company/Title/saves/}</li>
+ *   <li><b>Android</b>: the app's private storage, under {@code Company/Title/saves/}</li>
+ *   <li><b>Web</b>: the browser's {@code localStorage}, under keys starting with
+ *     {@code flixel:Company:Title:}</li>
  * </ul>
  *
- * <p>To save somewhere else entirely (for example a cloud-sync folder during development or
- * a temporary path in tests) use the three-argument overload
- * {@link org.flixelgdx.save.FlixelSave#bind(String, String, org.flixelgdx.file.FlixelFile) FlixelSave.bind(name, slot, directory)}.
- * When a custom directory is provided, no company name check is performed.
+ * <p>The company name set in {@link org.flixelgdx.FlixelConfig FlixelConfig} is required so
+ * the framework can find the correct location. The two-argument bind method will log an error and
+ * return {@code false} if the company name has not been set.
+ *
+ * <p>To save somewhere else entirely (for example a cloud-sync service, a custom folder, or an
+ * in-memory store in tests) pass your own handler to the three-argument overload
+ * {@link org.flixelgdx.save.FlixelSave#bind(String, String, org.flixelgdx.save.FlixelSaveHandler) FlixelSave.bind(name, slot, handler)}.
+ * When a handler is provided, no company name check is performed.
+ *
+ * <h2>Saving before the game is stopped</h2>
+ * <p>Browsers and phones rarely shut a game down cleanly. A closed tab or an app swiped away from
+ * the recent apps list is simply stopped, so {@link org.flixelgdx.Flixel.Signals#preGameClose}
+ * may never run there. Flush whenever important data changes, or listen to
+ * {@link org.flixelgdx.Flixel.Signals#gameSuspended}, which fires at the last moment each platform
+ * reliably gives the game:
+ *
+ * <pre>{@code
+ * Flixel.Signals.gameSuspended.add(data -> Flixel.save.flush());
+ * }</pre>
  *
  * <h2>Checking whether data was loaded</h2>
  * <p>After binding, inspect
@@ -128,7 +146,7 @@
  *
  * <h2>Erasing a save</h2>
  * <p>Call {@link org.flixelgdx.save.FlixelSave#erase() FlixelSave.erase()} to clear the
- * in-memory {@code data} map and delete the file from disk. The save remains bound afterward,
+ * in-memory {@code data} map and delete the stored save. The save remains bound afterward,
  * so you can immediately start writing new data and flush again.
  *
  * <h2>Things to keep in mind</h2>
@@ -137,7 +155,7 @@
  *   <li>This system is designed for small structured state: scores, settings, unlocks, and
  *     similar compact data. Do not store large binary blobs here; load those through
  *     {@link org.flixelgdx.Flixel#files Flixel.files} instead.</li>
- *   <li>Nothing is written to disk until you call {@link org.flixelgdx.save.FlixelSave#flush() flush()}.
+ *   <li>Nothing is written to storage until you call {@link org.flixelgdx.save.FlixelSave#flush() flush()}.
  *     Forgetting to flush after writing is the most common save bug.</li>
  * </ul>
  *
