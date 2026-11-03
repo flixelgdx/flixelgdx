@@ -28,10 +28,13 @@ import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
 import org.flixelgdx.file.FlixelFilePicker;
+import org.flixelgdx.file.FlixelFileSaveListener;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * Host platform integration for notifications, display management, and clipboard access.
@@ -59,6 +62,10 @@ import org.jetbrains.annotations.Nullable;
  * thread, with a possibly empty array of files. On the web, the browser only allows the dialog to
  * open from a user gesture, so call these from a click or key handler.
  *
+ * <p>{@link #saveFile(byte[], String, FlixelFileSaveListener, String...)} is the other direction:
+ * the game hands over bytes, the user chooses where to save them, and a
+ * {@link FlixelFileSaveListener} hears whether the file was written.
+ *
  * <p>Example:
  *
  * <pre>{@code
@@ -83,6 +90,9 @@ import org.jetbrains.annotations.Nullable;
  *     byte[] data = files[0].readBytes();
  *   }
  * }, "png", "jpg");
+ *
+ * // Save dialog (export a level).
+ * Flixel.host.saveFile(levelBytes, "level.json", saved -> {}, "json");
  * }</pre>
  *
  * @see Flixel#host
@@ -252,6 +262,139 @@ public interface FlixelHostIntegration {
   }
 
   /**
+   * Opens the system save dialog so the user can choose where to save {@code data}.
+   *
+   * <p>This is a shortcut for {@link #saveFile(byte[], String, FlixelFileSaveListener, String...)}
+   * that ignores the result and uses no filter.
+   *
+   * @param data The bytes to write.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   */
+  default void saveFile(byte @NotNull [] data, @NotNull String name) {
+    saveFile(data, name, FlixelFileSaveListener.NONE, FlixelFilePicker.NO_FILTER);
+  }
+
+  /**
+   * Opens the system save dialog so the user can choose where to save the text in {@code data}.
+   *
+   * <p>This is a shortcut for {@link #saveFile(String, String, FlixelFileSaveListener, String...)}
+   * that ignores the result and uses no filter.
+   *
+   * @param data The text to write, saved as UTF-8.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   */
+  default void saveFile(@NotNull String data, @NotNull String name) {
+    saveFile(data, name, FlixelFileSaveListener.NONE);
+  }
+
+  /**
+   * Opens the system save dialog so the user can choose where to save {@code data}.
+   *
+   * <p>This is a shortcut for {@link #saveFile(byte[], String, FlixelFileSaveListener, String...)}
+   * with no filter.
+   *
+   * @param data The bytes to write.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   * @param listener Receives whether the data was saved.
+   */
+  default void saveFile(byte @NotNull [] data, @NotNull String name, @NotNull FlixelFileSaveListener listener) {
+    saveFile(data, name, listener, FlixelFilePicker.NO_FILTER);
+  }
+
+  /**
+   * Opens the system save dialog so the user can choose where to save the text in {@code data}.
+   *
+   * <p>This is a shortcut for {@link #saveFile(String, String, FlixelFileSaveListener, String...)}
+   * with no filter.
+   *
+   * @param data The text to write, saved as UTF-8.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   * @param listener Receives whether the data was saved.
+   */
+  default void saveFile(@NotNull String data, @NotNull String name, @NotNull FlixelFileSaveListener listener) {
+    saveFile(data, name, listener, FlixelFilePicker.NO_FILTER);
+  }
+
+  /**
+   * Opens the system save dialog so the user can choose where to save {@code data}.
+   *
+   * <p>This is the opposite of {@link #pickFile(FlixelFilePickListener, String...)}: instead of
+   * reading a file the user chose, the game hands over bytes and the user chooses where they go.
+   * The framework writes the file for you, so it works the same way everywhere, including the web
+   * and Android where games cannot write to arbitrary paths themselves. Like the picker, this
+   * returns right away and calls {@code listener} later on the main thread.
+   *
+   * <p>{@code name} is the suggested file name shown in the dialog. {@code extensions} follows the
+   * same rules as the picker; if the user types a name without an extension, the first one is added.
+   *
+   * <p>Platform notes:
+   *
+   * <ul>
+   *   <li>On the web, call this from a click or key handler. Browsers with the File System Access
+   *       API show a real save dialog; others download the file straight to the user's downloads
+   *       folder, and the listener then reports {@code true} as soon as the download starts.</li>
+   *   <li>On Android, the system document picker is shown and the file is written through the
+   *       chosen document provider.</li>
+   *   <li>On unsupported platforms (see {@link #supportsFilePicker()}) the listener is called
+   *       immediately with {@code false}.</li>
+   * </ul>
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * byte[] data = levelJson.getBytes(StandardCharsets.UTF_8);
+   * Flixel.host.saveFile(data, "my-level.json", saved -> {
+   *   if (saved) {
+   *     showToast("Level exported!");
+   *   }
+   * }, "json");
+   * }</pre>
+   *
+   * @param data The bytes to write. The array is not copied, so do not change it until the
+   *     listener is called.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   * @param listener Receives {@code true} if the data was saved, or {@code false} on cancel or failure.
+   * @param extensions The allowed extensions; empty allows any file.
+   */
+  default void saveFile(
+      byte @NotNull [] data,
+      @NotNull String name,
+      @NotNull FlixelFileSaveListener listener,
+      @NotNull String... extensions) {
+    listener.onSave(false);
+  }
+
+  /**
+   * Opens the system save dialog so the user can choose where to save the text in {@code data}.
+   *
+   * <p>The text is encoded as UTF-8 and passed to
+   * {@link #saveFile(byte[], String, FlixelFileSaveListener, String...)}, so everything said there
+   * (platform notes, extension rules, main thread delivery) applies here too.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Flixel.host.saveFile(levelJson, "my-level.json", saved -> {
+   *   if (saved) {
+   *     showToast("Level exported!");
+   *   }
+   * }, "json");
+   * }</pre>
+   *
+   * @param data The text to write, saved as UTF-8.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   * @param listener Receives {@code true} if the data was saved, or {@code false} on cancel or failure.
+   * @param extensions The allowed extensions; empty allows any file.
+   */
+  default void saveFile(
+      @NotNull String data,
+      @NotNull String name,
+      @NotNull FlixelFileSaveListener listener,
+      @NotNull String... extensions) {
+    saveFile(data.getBytes(StandardCharsets.UTF_8), name, listener, extensions);
+  }
+
+  /**
    * Returns {@code true} if {@link #sendNotification(String, String)} is expected to do useful
    * work on this platform session. On the web backend, returns {@code true} only after
    * {@link #requestNotificationPermission()} has been granted by the user.
@@ -282,10 +425,11 @@ public interface FlixelHostIntegration {
   }
 
   /**
-   * Returns {@code true} if the file picker methods are supported on this platform.
+   * Returns {@code true} if the file picker and save dialog methods are supported on this platform.
    *
-   * @return {@code true} if {@link #pickFile(FlixelFilePickListener, String...)} and
-   *     {@link #pickFiles(FlixelFilePickListener, String...)} can show a dialog.
+   * @return {@code true} if {@link #pickFile(FlixelFilePickListener, String...)},
+   *     {@link #pickFiles(FlixelFilePickListener, String...)}, and
+   *     {@link #saveFile(byte[], String, FlixelFileSaveListener, String...)} can show a dialog.
    */
   default boolean supportsFilePicker() {
     return false;

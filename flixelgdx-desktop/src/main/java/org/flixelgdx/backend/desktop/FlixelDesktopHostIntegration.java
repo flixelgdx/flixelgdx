@@ -33,6 +33,7 @@ import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
 import org.flixelgdx.file.FlixelFilePicker;
+import org.flixelgdx.file.FlixelFileSaveListener;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
@@ -123,6 +124,15 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   @Override
   public void pickFiles(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
     showFileDialog(listener, extensions, true);
+  }
+
+  @Override
+  public void saveFile(
+      byte @NotNull [] data,
+      @NotNull String name,
+      @NotNull FlixelFileSaveListener listener,
+      @NotNull String... extensions) {
+    showSaveDialog(data, name, listener, extensions);
   }
 
   @Override
@@ -228,22 +238,8 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
     final String[] exts = FlixelFilePicker.normalize(extensions);
     final SDL_DialogFileCallback[] callback = new SDL_DialogFileCallback[1];
     final ByteBuffer[] strings = new ByteBuffer[2];
-    SDL_DialogFileFilter.Buffer filters = null;
     try {
-      if (exts.length > 0) {
-        StringBuilder pattern = new StringBuilder();
-        for (int i = 0; i < exts.length; i++) {
-          if (i > 0) {
-            pattern.append(';');
-          }
-          pattern.append(exts[i]);
-        }
-        strings[0] = MemoryUtil.memUTF8("Files");
-        strings[1] = MemoryUtil.memUTF8(pattern);
-        filters = SDL_DialogFileFilter.calloc(1);
-        filters.get(0).set(strings[0], strings[1]);
-      }
-      final SDL_DialogFileFilter.Buffer nativeFilters = filters;
+      final SDL_DialogFileFilter.Buffer filters = createFilters(exts, strings);
       callback[0] = SDL_DialogFileCallback.create((userdata, fileList, filter) -> {
         FlixelFile[] result = FlixelFilePicker.NO_FILES;
         if (fileList != 0L) {
@@ -260,8 +256,8 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
         FlixelFilePicker.deliver(listener, result);
         Flixel.graphics.queueMainThread(() -> {
           callback[0].free();
-          if (nativeFilters != null) {
-            nativeFilters.free();
+          if (filters != null) {
+            filters.free();
           }
           MemoryUtil.memFree(strings[0]);
           MemoryUtil.memFree(strings[1]);
@@ -272,6 +268,74 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
       log.error("Failed to open the file picker.", t);
       FlixelFilePicker.deliver(listener, FlixelFilePicker.NO_FILES);
     }
+  }
+
+  /**
+   * Shows SDL's asynchronous save dialog, writes {@code data} to the chosen path, and reports the
+   * result on the main thread.
+   *
+   * <p>The write happens inside the SDL callback, which may run on another thread, so large files
+   * do not stall the game loop. Native memory is released the same way as in
+   * {@link #showFileDialog(FlixelFilePickListener, String[], boolean)}.
+   */
+  private void showSaveDialog(byte[] data, String name, FlixelFileSaveListener listener, String[] extensions) {
+    final String[] exts = FlixelFilePicker.normalize(extensions);
+    final SDL_DialogFileCallback[] callback = new SDL_DialogFileCallback[1];
+    final ByteBuffer[] strings = new ByteBuffer[2];
+    try {
+      final SDL_DialogFileFilter.Buffer filters = createFilters(exts, strings);
+      callback[0] = SDL_DialogFileCallback.create((userdata, fileList, filter) -> {
+        boolean saved = false;
+        long first = fileList != 0L ? MemoryUtil.memGetAddress(fileList) : 0L;
+        if (first != 0L) {
+          String path = FlixelFilePicker.withExtension(MemoryUtil.memUTF8(first), exts);
+          saved = Flixel.files.absolute(path).writeBytes(data);
+          if (!saved) {
+            log.error("Failed to save the file to \"{}\".", path);
+          }
+        }
+        FlixelFilePicker.deliver(listener, saved);
+        Flixel.graphics.queueMainThread(() -> {
+          callback[0].free();
+          if (filters != null) {
+            filters.free();
+          }
+          MemoryUtil.memFree(strings[0]);
+          MemoryUtil.memFree(strings[1]);
+        });
+      });
+      SDLDialog.SDL_ShowSaveFileDialog(callback[0], 0L, 0L, filters, name);
+    } catch (Throwable t) {
+      log.error("Failed to open the save dialog.", t);
+      FlixelFilePicker.deliver(listener, false);
+    }
+  }
+
+  /**
+   * Builds SDL's native filter list for the given extensions.
+   *
+   * @param exts Extensions from {@link FlixelFilePicker#normalize(String[])}.
+   * @param strings Receives the two native strings the filter points at, so the caller can free
+   *     them later. Both stay {@code null} when there is no filter.
+   * @return The native filter buffer, or {@code null} when every file is allowed.
+   */
+  @Nullable
+  private static SDL_DialogFileFilter.Buffer createFilters(String[] exts, ByteBuffer[] strings) {
+    if (exts.length == 0) {
+      return null;
+    }
+    StringBuilder pattern = new StringBuilder();
+    for (int i = 0; i < exts.length; i++) {
+      if (i > 0) {
+        pattern.append(';');
+      }
+      pattern.append(exts[i]);
+    }
+    strings[0] = MemoryUtil.memUTF8("Files");
+    strings[1] = MemoryUtil.memUTF8(pattern);
+    SDL_DialogFileFilter.Buffer filters = SDL_DialogFileFilter.calloc(1);
+    filters.get(0).set(strings[0], strings[1]);
+    return filters;
   }
 
   private boolean isWindows() {

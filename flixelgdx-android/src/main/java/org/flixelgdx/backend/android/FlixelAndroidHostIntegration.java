@@ -33,10 +33,14 @@ import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
 import org.flixelgdx.file.FlixelFilePicker;
+import org.flixelgdx.file.FlixelFileSaveListener;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.io.OutputStream;
 
 import android.app.Activity;
 import android.content.ContentResolver;
@@ -54,8 +58,10 @@ import android.webkit.MimeTypeMap;
  * registers automatically. Extensions are converted to MIME types with {@link MimeTypeMap}; if any
  * extension has no known MIME type, the dialog shows every file and the result is filtered by name
  * afterward. Chosen files are {@link FlixelAndroidUriFile} instances that read through the
- * {@link ContentResolver}. Only one picker can be open at a time; a second request while one is open
- * receives an empty array.
+ * {@link ContentResolver}. Saving uses {@code ACTION_CREATE_DOCUMENT} through the same helper
+ * activity and writes the data through the {@link ContentResolver}. Only one picker or save dialog
+ * can be open at a time; a second request while one is open receives an empty array (or
+ * {@code false} for a save).
  */
 public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
 
@@ -88,6 +94,45 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
   @Override
   public void pickFiles(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
     showPicker(listener, extensions, true);
+  }
+
+  @Override
+  public void saveFile(
+      byte @NotNull [] data,
+      @NotNull String name,
+      @NotNull FlixelFileSaveListener listener,
+      @NotNull String... extensions) {
+    if (FlixelAndroidPickerActivity.isPending()) {
+      FlixelFilePicker.deliver(listener, false);
+      return;
+    }
+    final String[] exts = FlixelFilePicker.normalize(extensions);
+    String type = exts.length > 0 ? MimeTypeMap.getSingleton().getMimeTypeFromExtension(exts[0]) : null;
+    FlixelAndroidPickerActivity.setPending(uris -> {
+      boolean saved = false;
+      if (uris.length > 0) {
+        try (OutputStream out = activity.getContentResolver().openOutputStream(uris[0], "w")) {
+          if (out != null) {
+            out.write(data);
+            saved = true;
+          }
+        } catch (IOException | RuntimeException e) {
+          log.error("Failed to save the file.", e);
+        }
+      }
+      FlixelFilePicker.deliver(listener, saved);
+    });
+    try {
+      Intent intent = new Intent(activity, FlixelAndroidPickerActivity.class);
+      intent.putExtra(FlixelAndroidPickerActivity.EXTRA_SAVE_NAME, FlixelFilePicker.withExtension(name, exts));
+      intent.putExtra(FlixelAndroidPickerActivity.EXTRA_SAVE_TYPE,
+          type != null ? type : FlixelAndroidPickerActivity.BINARY_TYPE);
+      activity.startActivity(intent);
+    } catch (RuntimeException e) {
+      log.error("Failed to open the save dialog.", e);
+      FlixelAndroidPickerActivity.setPending(null);
+      FlixelFilePicker.deliver(listener, false);
+    }
   }
 
   @Override

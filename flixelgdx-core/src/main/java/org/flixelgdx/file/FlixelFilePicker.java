@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Locale;
 
 /**
- * Shared helpers for {@link FlixelHostIntegration} file picker implementations.
+ * Shared helpers for {@link FlixelHostIntegration} file picker and save dialog implementations.
  *
  * <p>Game code normally never needs this class. Backends use it to clean up the extension filter
  * the game passed in and to hand results back on the main thread.
@@ -117,6 +117,29 @@ public final class FlixelFilePicker {
   }
 
   /**
+   * Adds the first filter extension to a file name that has none.
+   *
+   * <p>Some save dialogs return exactly what the user typed, so {@code "level"} would be saved
+   * without the {@code .json} the game asked for. Names that already have any extension are left
+   * alone, since the user may have picked one on purpose.
+   *
+   * @param name The file name or path the user chose.
+   * @param extensions Extensions from {@link #normalize(String[])}; empty leaves the name unchanged.
+   * @return The name with an extension added when it had none.
+   */
+  @NotNull
+  public static String withExtension(@NotNull String name, @NotNull String[] extensions) {
+    if (extensions.length == 0) {
+      return name;
+    }
+    int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+    if (name.lastIndexOf('.') > slash) {
+      return name;
+    }
+    return name + '.' + extensions[0];
+  }
+
+  /**
    * Delivers picked files to a listener on the game's main thread.
    *
    * @param listener The listener to notify.
@@ -125,5 +148,15 @@ public final class FlixelFilePicker {
   public static void deliver(@NotNull FlixelFilePickListener listener, @Nullable FlixelFile[] files) {
     final FlixelFile[] result = files != null ? files : NO_FILES;
     Flixel.graphics.queueMainThread(() -> listener.onPick(result));
+  }
+
+  /**
+   * Delivers a save result to a listener on the game's main thread.
+   *
+   * @param listener The listener to notify.
+   * @param saved Whether the data was written.
+   */
+  public static void deliver(@NotNull FlixelFileSaveListener listener, boolean saved) {
+    Flixel.graphics.queueMainThread(() -> listener.onSave(saved));
   }
 }

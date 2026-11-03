@@ -42,9 +42,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
  * <p>Android only returns picker results to an activity. Rather than forcing every game to forward
  * result callbacks, the framework launches this transparent helper, which opens the Storage Access
  * Framework picker with the modern Activity Result API, hands the result to the pending
- * {@link Listener}, and closes itself. It is declared in this library's manifest, so games do not
- * register it by hand. Game code never starts it directly; use
- * {@link FlixelHostIntegration#pickFile} instead.
+ * {@link Listener}, and closes itself. When started with {@link #EXTRA_SAVE_NAME}, it shows the
+ * "create document" dialog instead, which is how saving works. It is declared in this library's
+ * manifest, so games do not register it by hand. Game code never starts it directly; use
+ * {@link FlixelHostIntegration#pickFile} or {@link FlixelHostIntegration#saveFile} instead.
  */
 public class FlixelAndroidPickerActivity extends ComponentActivity {
 
@@ -53,6 +54,15 @@ public class FlixelAndroidPickerActivity extends ComponentActivity {
 
   /** Intent extra holding whether several files may be chosen. */
   static final String EXTRA_MANY = "org.flixelgdx.PICK_MANY";
+
+  /** Intent extra holding the suggested file name; its presence switches to save mode. */
+  static final String EXTRA_SAVE_NAME = "org.flixelgdx.SAVE_NAME";
+
+  /** Intent extra holding the MIME type of the document to create in save mode. */
+  static final String EXTRA_SAVE_TYPE = "org.flixelgdx.SAVE_TYPE";
+
+  /** The MIME type used when saving a file whose type is unknown. */
+  static final String BINARY_TYPE = "application/octet-stream";
 
   private static final String[] ANY_TYPE = { "*/*" };
 
@@ -82,6 +92,8 @@ public class FlixelAndroidPickerActivity extends ComponentActivity {
     super.onCreate(savedInstanceState);
     Intent request = getIntent();
     boolean many = request.getBooleanExtra(EXTRA_MANY, false);
+    String saveName = request.getStringExtra(EXTRA_SAVE_NAME);
+    String saveType = request.getStringExtra(EXTRA_SAVE_TYPE);
     String[] types = request.getStringArrayExtra(EXTRA_TYPES);
     if (types == null || types.length == 0) {
       types = ANY_TYPE;
@@ -91,6 +103,9 @@ public class FlixelAndroidPickerActivity extends ComponentActivity {
         new ActivityResultContracts.OpenDocument(), uri -> finishWith(uri != null ? new Uri[] { uri } : null));
     ActivityResultLauncher<String[]> multiple = registerForActivityResult(
         new ActivityResultContracts.OpenMultipleDocuments(), this::finishWithList);
+    ActivityResultLauncher<String> create = registerForActivityResult(
+        new ActivityResultContracts.CreateDocument(saveType != null ? saveType : BINARY_TYPE),
+        uri -> finishWith(uri != null ? new Uri[] { uri } : null));
 
     if (savedInstanceState != null) {
       return;
@@ -100,7 +115,9 @@ public class FlixelAndroidPickerActivity extends ComponentActivity {
       return;
     }
     try {
-      if (many) {
+      if (saveName != null) {
+        create.launch(saveName);
+      } else if (many) {
         multiple.launch(types);
       } else {
         single.launch(types);
@@ -123,7 +140,8 @@ public class FlixelAndroidPickerActivity extends ComponentActivity {
   }
 
   private void finishWith(@Nullable Uri[] uris) {
-    if (uris != null) {
+    // A created document is written right away, so it needs no lasting read grant.
+    if (uris != null && !getIntent().hasExtra(EXTRA_SAVE_NAME)) {
       for (Uri uri : uris) {
         if (uri == null) {
           continue;
