@@ -117,6 +117,9 @@ class FlixelFilePickerTest {
     host.saveFile(data, "level.json");
     host.saveFile(data, "level.json", listener);
     host.saveFile(data, "level.json", listener, "json");
-    assertEquals(2, calls[0]);
+    host.saveFile("{}", "level.json");
+    host.saveFile("{}", "level.json", listener);
+    host.saveFile("{}", "level.json", listener, "json");
+    assertEquals(4, calls[0]);
   }
 }

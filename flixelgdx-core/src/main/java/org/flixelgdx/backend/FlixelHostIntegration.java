@@ -34,6 +34,8 @@ import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * Host platform integration for notifications, display management, and clipboard access.
  *
@@ -284,6 +286,63 @@ public interface FlixelHostIntegration {
    */
   default void saveFile(byte @NotNull [] data, @NotNull String name, @NotNull FlixelFileSaveListener listener) {
     saveFile(data, name, listener, FlixelFilePicker.NO_FILTER);
+  }
+
+  /**
+   * Opens the system save dialog so the user can choose where to save the text in {@code data}.
+   *
+   * <p>This is a shortcut for {@link #saveFile(String, String, FlixelFileSaveListener, String...)}
+   * that ignores the result and uses no filter.
+   *
+   * @param data The text to write, saved as UTF-8.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   */
+  default void saveFile(@NotNull String data, @NotNull String name) {
+    saveFile(data, name, FlixelFileSaveListener.NONE);
+  }
+
+  /**
+   * Opens the system save dialog so the user can choose where to save the text in {@code data}.
+   *
+   * <p>This is a shortcut for {@link #saveFile(String, String, FlixelFileSaveListener, String...)}
+   * with no filter.
+   *
+   * @param data The text to write, saved as UTF-8.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   * @param listener Receives whether the data was saved.
+   */
+  default void saveFile(@NotNull String data, @NotNull String name, @NotNull FlixelFileSaveListener listener) {
+    saveFile(data, name, listener, FlixelFilePicker.NO_FILTER);
+  }
+
+  /**
+   * Opens the system save dialog so the user can choose where to save the text in {@code data}.
+   *
+   * <p>The text is encoded as UTF-8 and passed to
+   * {@link #saveFile(byte[], String, FlixelFileSaveListener, String...)}, so everything said there
+   * (platform notes, extension rules, main thread delivery) applies here too.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Flixel.host.saveFile(levelJson, "my-level.json", saved -> {
+   *   if (saved) {
+   *     showToast("Level exported!");
+   *   }
+   * }, "json");
+   * }</pre>
+   *
+   * @param data The text to write, saved as UTF-8.
+   * @param name The suggested file name, such as {@code "level.json"}.
+   * @param listener Receives {@code true} if the data was saved, or {@code false} on cancel or failure.
+   * @param extensions The allowed extensions; empty allows any file.
+   */
+  default void saveFile(
+      @NotNull String data,
+      @NotNull String name,
+      @NotNull FlixelFileSaveListener listener,
+      @NotNull String... extensions) {
+    saveFile(data.getBytes(StandardCharsets.UTF_8), name, listener, extensions);
   }
 
   /**
