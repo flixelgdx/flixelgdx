@@ -128,6 +128,7 @@ public final class FlixelAndroidLauncher {
     Flixel.files = new FlixelAndroidFiles(activity);
     Flixel.assets = new FlixelAndroidAssetManager();
     Flixel.host = new FlixelAndroidHostIntegration(activity);
+    Flixel.profiler = new FlixelAndroidProfiler();
 
     FlixelSave.defaultHandler = new FlixelAndroidSaveHandler(activity);
 
