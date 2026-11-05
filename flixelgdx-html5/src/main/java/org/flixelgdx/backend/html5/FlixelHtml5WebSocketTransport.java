@@ -80,6 +80,11 @@ public class FlixelHtml5WebSocketTransport implements FlixelDebugTransport {
   /** The most unsent bytes the browser may hold before {@link #send(ByteBuffer)} refuses a message. */
   public static final int OUTBOUND_LIMIT = 4 * 1024 * 1024;
 
+  /** The starting size, in bytes, of the reusable buffer that outgoing messages are copied into. */
+  private static final int SCRATCH_START = 4096;
+
+  private ByteBuffer scratch;
+
   private boolean opened;
 
   @Override
@@ -102,7 +107,15 @@ public class FlixelHtml5WebSocketTransport implements FlixelDebugTransport {
     if (!isConnected() || buffered() > OUTBOUND_LIMIT) {
       return false;
     }
-    sendBytes(Int8Array.fromJavaBuffer(message));
+    int length = message.remaining();
+    ByteBuffer out = ensureScratch(length);
+    // The browser can only view a Java buffer that lives in memory it can see: a direct buffer. A heap buffer
+    // (such as the one the message writer uses) is rejected on some TeaVM targets, so copy the bytes into the
+    // reusable direct scratch buffer first. Absolute put(...) leaves the position of the caller's message alone.
+    out.put(0, message, message.position(), length);
+    // fromJavaBuffer(...) views the whole scratch buffer, so the browser is told how many bytes to send. The view
+    // is made again on every send because the WebAssembly memory it points into may have been replaced.
+    sendBytes(Int8Array.fromJavaBuffer(out), length);
     return true;
   }
 
@@ -140,6 +153,20 @@ public class FlixelHtml5WebSocketTransport implements FlixelDebugTransport {
       opened = false;
       stop();
     }
+  }
+
+  private ByteBuffer ensureScratch(int length) {
+    ByteBuffer out = scratch;
+    if (out != null && out.capacity() >= length) {
+      return out;
+    }
+    int capacity = out == null ? SCRATCH_START : out.capacity();
+    while (capacity < length) {
+      capacity <<= 1;
+    }
+    out = ByteBuffer.allocateDirect(capacity);
+    scratch = out;
+    return out;
   }
 
   /**
@@ -211,8 +238,11 @@ public class FlixelHtml5WebSocketTransport implements FlixelDebugTransport {
   @JSBody(script = "var s = window.__flixelDebugWs; return (s && s.ws) ? s.ws.bufferedAmount : 0;")
   private static native double buffered();
 
-  @JSBody(params = "data", script = "var s = window.__flixelDebugWs; if (s && s.ws && s.up) { s.ws.send(data); }")
-  private static native void sendBytes(Int8Array data);
+  @JSBody(params = { "data", "length" }, script = """
+      var s = window.__flixelDebugWs;
+      if (s && s.ws && s.up) { s.ws.send(data.subarray(0, length)); }
+      """)
+  private static native void sendBytes(Int8Array data, int length);
 
   @JSBody(script = "var s = window.__flixelDebugWs; return (s && s.inbox.length) ? s.inbox[0].length : 0;")
   private static native int inboxLength();
