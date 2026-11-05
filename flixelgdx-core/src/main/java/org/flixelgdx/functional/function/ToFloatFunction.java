@@ -23,10 +23,12 @@
  */
 package org.flixelgdx.functional.function;
 
+import java.util.function.ToIntFunction;
+
 /**
  * Represents a function that takes one object and returns a {@code float}, without boxing.
  *
- * <p>This is the {@code float} sibling of {@link java.util.function.ToIntFunction}, which Java does not ship.
+ * <p>This is the {@code float} sibling of {@link ToIntFunction}, which Java does not ship.
  *
  * @param <T> The type of the input object.
  */

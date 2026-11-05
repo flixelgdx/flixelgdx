@@ -23,10 +23,12 @@
  */
 package org.flixelgdx.functional.consumer;
 
+import java.util.function.ObjIntConsumer;
+
 /**
  * Represents an operation that accepts an object and a {@code boolean}, without boxing the flag.
  *
- * <p>This is the {@code boolean} sibling of {@link java.util.function.ObjIntConsumer}, which Java does not ship.
+ * <p>This is the {@code boolean} sibling of {@link ObjIntConsumer}, which Java does not ship.
  *
  * @param <T> The type of the object argument.
  */
