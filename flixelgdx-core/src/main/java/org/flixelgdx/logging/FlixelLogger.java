@@ -163,7 +163,7 @@ public interface FlixelLogger {
 
   /**
    * Adds a sink that receives every message in addition to the console and file sinks. The in-game
-   * debug overlay is one of these. {@code null} is ignored.
+   * debugger log panel is one of these. {@code null} is ignored.
    *
    * @param sink The sink to add.
    */

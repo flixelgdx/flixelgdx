@@ -27,7 +27,6 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
-import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelMouseListener;
@@ -412,48 +411,34 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   }
 
   /**
-   * Returns whether the given mouse button is held down. Returns {@code false} while the active
-   * debug overlay reports that another UI layer (typically the imgui debugger) is capturing
-   * mouse input, so clicking inside an imgui window cannot leak into game logic.
+   * Returns whether the given mouse button is held down.
    *
    * @param button Button index (e.g. {@code 0} for left mouse button).
-   * @return {@code true} if the button is pressed and input is enabled and not suppressed by UI.
+   * @return {@code true} if the button is pressed and input is enabled.
    */
   public boolean pressed(int button) {
-    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON
+    return enabled && button >= 0 && button <= MAX_BUTTON
         && Flixel.input.isButtonPressed(button);
   }
 
   /**
-   * Returns whether the given mouse button was just pressed this frame. Returns {@code false}
-   * while the debug UI reports that another UI layer is capturing mouse input.
+   * Returns whether the given mouse button was just pressed this frame.
    *
    * @param button Button index.
-   * @return {@code true} if the button was just pressed and input is enabled and not suppressed.
+   * @return {@code true} if the button was just pressed and input is enabled.
    */
   public boolean justPressed(int button) {
-    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON && justPressed[button];
+    return enabled && button >= 0 && button <= MAX_BUTTON && justPressed[button];
   }
 
   /**
-   * Returns whether the given mouse button was just released this frame. Returns {@code false}
-   * while the debug UI reports that another UI layer is capturing mouse input.
+   * Returns whether the given mouse button was just released this frame.
    *
    * @param button Button index.
-   * @return {@code true} if the button was just released and input is enabled and not suppressed.
+   * @return {@code true} if the button was just released and input is enabled.
    */
   public boolean justReleased(int button) {
-    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON && justReleased[button];
-  }
-
-  /**
-   * Returns {@code true} when the active {@link FlixelDebugOverlay} reports that another UI
-   * layer is consuming mouse input. Used by {@link #pressed(int)}, {@link #justPressed(int)},
-   * and {@link #justReleased(int)} to suppress game-level input while the cursor is over a
-   * debug UI panel.
-   */
-  private static boolean isCapturedByDebugUI() {
-    return Flixel.debug != null && Flixel.debug.overlay.isMouseCapturedByUI();
+    return enabled && button >= 0 && button <= MAX_BUTTON && justReleased[button];
   }
 
   /**

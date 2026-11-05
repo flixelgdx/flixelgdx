@@ -81,17 +81,6 @@
  * polling for every key, which would silently break {@code justPressed} and {@code justReleased}
  * there. The listener is the only writer of internal key state.
  *
- * <h2>Debug UI suppression</h2>
- *
- * <p>When the active {@link org.flixelgdx.debug.FlixelDebugOverlay FlixelDebugOverlay} reports
- * that a debug UI element has keyboard focus,
- * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#pressed(int) pressed()},
- * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#justPressed(int) justPressed()},
- * and
- * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#justReleased(int) justReleased()}
- * all return {@code false} automatically. This prevents debug-console typing from leaking into
- * game controls.
- *
  * <h2>FlixelKey reference</h2>
  *
  * <p>{@link org.flixelgdx.input.keyboard.FlixelKey FlixelKey} holds integer constants for every

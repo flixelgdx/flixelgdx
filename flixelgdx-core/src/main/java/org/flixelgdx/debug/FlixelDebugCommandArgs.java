@@ -26,18 +26,21 @@ package org.flixelgdx.debug;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Locale;
+
 /**
  * Lightweight wrapper around the positional arguments passed to a custom debug console
  * command. Provides typed accessors with default values so command handlers can stay free
  * of boilerplate parsing logic.
  *
- * <p>Each command line is split on whitespace; the first token is the command name and the
+ * <p>Each command line is split on whitespace, except that double quotes keep spaces inside one
+ * token and {@code ""} is an empty token. The first token is the command name and the
  * remaining tokens are wrapped in this object. Tokens are kept as raw {@link String} values
  * and parsed lazily when a typed getter is called.
  *
  * <h2>Example</h2>
  * <pre>{@code
- * Flixel.debug.commands.register("setScale", args -> {
+ * Flixel.debug.console.register("setScale", "setScale <key> [scale]", "Scales an object.", args -> {
  *   String key = args.getString(0, "");
  *   float scale = args.getFloat(1, 1f);
  *   // ... do something with key and scale ...
@@ -201,7 +204,7 @@ public final class FlixelDebugCommandArgs {
     if (s == null || s.isEmpty()) {
       return defaultValue;
     }
-    String lower = s.toLowerCase();
+    String lower = s.toLowerCase(Locale.ROOT);
     return switch (lower) {
       case "true", "1", "yes", "on" -> true;
       case "false", "0", "no", "off" -> false;

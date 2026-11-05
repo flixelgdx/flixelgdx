@@ -27,10 +27,10 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 
 /**
- * Interface for objects that can draw a debug bounding box in the
- * {@link FlixelDebugOverlay}. Any class that
+ * Interface for objects that can draw a debug bounding box when hitboxes are
+ * turned on (see {@link FlixelDebugControlsPanel#setHitboxes(boolean)}). Any class that
  * implements this will automatically appear when visual debug drawing is enabled,
- * without being hard-coded into the overlay.
+ * without being hard-coded into the debugger.
  *
  * <p>{@link FlixelObject} implements this by default, using collision state to
  * pick an appropriate color. Custom objects can implement this interface to provide

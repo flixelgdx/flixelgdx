@@ -26,18 +26,18 @@ package org.flixelgdx.debug;
 import org.flixelgdx.collections.FlixelMap;
 
 /**
- * Abstract base for custom entries shown in the debug overlay's <b>Tracker</b> panel.
+ * Abstract base for custom entries shown in the debugger's <b>Trackers</b> panel.
  *
- * <p>Each entry contributes a named, collapsible group of {@code label -> value} pairs (rendered like the
- * Watch panel, but grouped under your entry's name). It is the right tool for a tidy, always-current dump
+ * <p>Each entry contributes a named, collapsible group of {@code label -> value} pairs (shown like the
+ * watches, but grouped under your entry's name). It is the right tool for a tidy, always-current dump
  * of related values, such as an inventory, an AI state machine, or a table of spawn weights, that would be
  * hard to read as a flood of {@code Flixel.info} log lines.
  *
- * <p>To keep the overlay allocation-free, hold a single reusable {@link FlixelMap} as a field and return it
+ * <p>To keep the debugger allocation-free, hold a single reusable {@link FlixelMap} as a field and return it
  * from {@link #getTrackedValues()}, only updating its values in place each frame. Keep the same set of keys
- * between frames so the panel's row order stays stable. Register instances via
- * {@link FlixelDebugManager#addTrackerEntry(FlixelDebugTrackerEntry)} (for example
- * {@code Flixel.debug.addTrackerEntry(...)}).
+ * between frames so the panel's row order stays stable. The app shows the lines sorted by label. Register instances via
+ * {@link FlixelDebugTrackerPanel#add(FlixelDebugTrackerEntry)} (for example
+ * {@code Flixel.debug.trackers.add(...)}).
  *
  * <p>Example usage:
  * <pre>{@code
@@ -61,7 +61,7 @@ import org.flixelgdx.collections.FlixelMap;
  * }
  *
  * // Register it once, for example in your state's create():
- * Flixel.debug.addTrackerEntry(new EnemyTrackerEntry(enemyManager));
+ * Flixel.debug.trackers.add(new EnemyTrackerEntry(enemyManager));
  * }</pre>
  */
 public abstract class FlixelDebugTrackerEntry {
@@ -87,7 +87,7 @@ public abstract class FlixelDebugTrackerEntry {
   }
 
   /**
-   * Called by the debug overlay (on its refresh interval) to retrieve the {@code label -> value} pairs this
+   * Called by the tracker panel (on its refresh interval) to retrieve the {@code label -> value} pairs this
    * entry wants to display. Return an empty map to hide the entry temporarily.
    *
    * <p>Prefer returning a single reused {@link FlixelMap} field whose values you update in place, rather than

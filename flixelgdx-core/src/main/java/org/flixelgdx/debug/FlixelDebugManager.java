@@ -32,138 +32,221 @@ import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 /**
  * The single entry point for everything related to the FlixelGDX debugger.
  *
- * <p>An instance of this class is automatically created when {@link Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner)}
- * runs and is exposed as the static field {@link Flixel#debug}, mirroring how
- * {@link Flixel#sound}, {@link Flixel#assets}, and friends work. From your game code you can do things
- * like:
+ * <p>An instance of this class is automatically created when
+ * {@link Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner)} runs and is
+ * exposed as the static field {@link Flixel#debug}, mirroring how {@link Flixel#sound},
+ * {@link Flixel#assets}, and friends work.
+ *
+ * <p>The debugger is made of <strong>panels</strong>. A panel samples one kind of data from the game
+ * (performance numbers, log lines, watched values, and so on) and knows how to encode it for the
+ * remote debugger app. Think of the manager as the front desk of a hospital: it keeps the list of
+ * departments (the panels), makes sure each one gets a turn every frame, and lets staff look one up by
+ * name. The built-in panels are ready-made fields:
+ *
+ * <ul>
+ *   <li>{@link #stats}: frame rate, frame time, draw calls, memory, and the camera.</li>
+ *   <li>{@link #logs}: the most recent log lines.</li>
+ *   <li>{@link #watches}: live values that you register from game code.</li>
+ *   <li>{@link #trackers}: named groups of values.</li>
+ *   <li>{@link #controls}: pause, step, hitboxes, and debugger settings.</li>
+ *   <li>{@link #console}: a command line with commands that you can register.</li>
+ * </ul>
+ *
+ * <p>Example:
  *
  * <pre>{@code
- * Flixel.debug.toggleVisible();
- * Flixel.debug.setDrawDebug(true);
- * Flixel.debug.commands.register("hello", args -> Flixel.info("Hi!"));
- * Flixel.debug.commands.execute("hello");
+ * Flixel.debug.watches.addFloat("Player X", player::getX);
+ * Flixel.debug.console.register("god", "god [on|off]", "Makes the player invincible.", args -> {
+ *   player.setInvincible(args.getBoolean(0, true));
+ * });
+ * Flixel.debug.controls.setHitboxes(true);
  *
- * // Customize keybinds via the overlay field (null-safe: only set after debug mode starts).
- * if (Flixel.debug.overlay != null) {
- *   Flixel.debug.overlay.toggleKey = FlixelKey.F1;
- * }
+ * // Add your own panel and find it again later.
+ * Flixel.debug.register(new ScorePanel());
+ * ScorePanel score = Flixel.debug.get("custom.score", ScorePanel.class);
  * }</pre>
  *
- * <p>The manager is intentionally lightweight: it forwards visibility/hitbox toggles to the active
- * {@link FlixelDebugOverlay}, exposes the console command registry through {@link #commands}, and tracks the
- * "currently inspected sprite" for the texture inspector window. The overlay itself (and the
- * platform-specific UI) reads from the manager rather than the other way around so the manager can
- * stay platform-agnostic and reflection-free.
- *
- * <h2>Custom commands</h2>
- *
- * <p>Use {@link FlixelDebugCommandManager#register(String, Consumer)} via {@link #commands} with a handler that receives
- * {@link FlixelDebugCommandArgs}. That keeps parsing explicit and avoids reflection, which is
- * important on platforms where reflection is restricted (TeaVM, R8/ProGuard-shrunk Android
- * builds).
+ * <p>Panels are only updated while the game runs in debug mode, so they cost nothing in release builds.
  *
  * <h2>Thread safety</h2>
  *
- * <p>All public methods are intended to be called from the game's main thread. Reading the
- * registered commands map outside the main thread is unsupported. If you must run it on the main
- * thread, you can use {@link FlixelGraphicsManager#queueMainThread Flixel.graphics.queueMainThread(...)} and
- * run a debug method there instead.
+ * <p>All public methods are intended to be called from the game's main thread. If you must run one from
+ * another thread, you can use {@link FlixelGraphicsManager#queueMainThread Flixel.graphics.queueMainThread(...)}
+ * and run the debug method there instead.
  */
 public class FlixelDebugManager {
 
-  private Supplier<FlixelDebugOverlay> overlayFactory = FlixelHeadlessDebugOverlay::new;
-
   /**
    * Extra {@link FlixelBatch} instances registered by game code via {@link #trackBatch(FlixelBatch)}.
-   * The framework's own batch is counted separately in {@link FlixelDebugOverlay}, so only user-supplied
+   * The framework's own batch is counted separately by the stats panel, so only user-supplied
    * batches live here.
    */
   private final FlixelArray<FlixelBatch> trackedBatches = new FlixelArray<>(false, 4);
 
-  /**
-   * Custom entries shown in the overlay's Tracker panel, registered via
-   * {@link #addTrackerEntry(FlixelDebugTrackerEntry)}.
-   */
-  private final FlixelArray<FlixelDebugTrackerEntry> trackerEntries = new FlixelArray<>(FlixelDebugTrackerEntry[]::new);
+  /** Every registered panel, in registration order. */
+  private final FlixelArray<FlixelDebugPanel> panels = new FlixelArray<>();
+
+  /** The performance panel: frame rate, frame time, draw calls, memory, and the camera. */
+  public final FlixelDebugStatsPanel stats;
+
+  /** The log panel: the most recent log lines. */
+  public final FlixelDebugLogPanel logs;
 
   /**
-   * The active debug overlay. Defaults to {@link FlixelNoopDebugOverlay#INSTANCE} so this field
-   * is never {@code null}, meaning callers do not need a null check. When debug mode starts,
-   * {@link Flixel} replaces this with a real overlay instance.
-   *
-   * <p>Access keybinds and visibility via this field:
+   * The watch panel: live values shown in the debugger.
    * <pre>{@code
-   * Flixel.debug.overlay.toggleKey = FlixelKey.F1;
-   * Flixel.debug.overlay.setVisible(true);
+   * Flixel.debug.watches.addInt("Score", () -> score);
    * }</pre>
    */
-  public FlixelDebugOverlay overlay = FlixelNoopDebugOverlay.INSTANCE;
+  public final FlixelDebugWatchPanel watches;
+
+  /** The tracker panel: named groups of values. */
+  public final FlixelDebugTrackerPanel trackers;
 
   /**
-   * The console command registry. Register custom commands and run command lines through it:
+   * The control panel: pause, step, hitboxes, and debugger settings.
    * <pre>{@code
-   * Flixel.debug.commands.register("god", args -> player.setInvincible(true));
-   * Flixel.debug.commands.execute("god");
+   * Flixel.debug.controls.setPaused(true);
    * }</pre>
    */
-  public final FlixelDebugCommandManager commands;
+  public final FlixelDebugControlsPanel controls;
 
-  /** The sprite currently selected by the LMB picker, or {@code null}. */
+  /**
+   * The console panel. Register custom commands and run command lines through it:
+   * <pre>{@code
+   * Flixel.debug.console.register("god", args -> player.setInvincible(true));
+   * Flixel.debug.console.execute("god");
+   * }</pre>
+   */
+  public final FlixelDebugConsolePanel console;
+
+  /** The sprite currently selected in the debugger, or {@code null}. */
   @Nullable
   private FlixelObject inspectedSprite;
 
-  /** The sprite currently being dragged, or {@code null} if no drag is in progress. */
-  @Nullable
-  private FlixelObject draggedSprite;
+  /** Goes up whenever a panel is registered or unregistered. */
+  private long panelRevision;
 
-  /** Creates the debug manager and its {@link #commands} registry with the always-available commands. */
+  /** Creates the debug manager with all of its built-in panels registered. */
   public FlixelDebugManager() {
-    commands = new FlixelDebugCommandManager(this);
+    controls = new FlixelDebugControlsPanel();
+    stats = new FlixelDebugStatsPanel(controls, this);
+    logs = new FlixelDebugLogPanel();
+    watches = new FlixelDebugWatchPanel();
+    trackers = new FlixelDebugTrackerPanel();
+    console = new FlixelDebugConsolePanel(this);
+    register(stats);
+    register(logs);
+    register(watches);
+    register(trackers);
+    register(controls);
+    register(console);
   }
 
   /**
-   * Sets the factory that produces the {@link FlixelDebugOverlay} when debug mode is enabled.
+   * Registers a panel. The panel is updated every frame from now on and listed to the debugger app.
    *
-   * <p>Call this before {@link Flixel#start} (for example, in the launcher or in
-   * {@link FlixelGame#create()}) to install a custom overlay. The factory is only invoked once,
-   * when the game actually starts in debug mode; calling this after the overlay is already created
-   * has no effect on the running overlay.
-   *
-   * <p>The default factory builds {@link FlixelHeadlessDebugOverlay}. Desktop launchers typically
-   * replace this with a richer overlay before the game starts.
-   *
-   * <p>Example:
-   * <pre>{@code
-   * Flixel.debug.setOverlayFactory(MyCustomOverlay::new);
-   * }</pre>
-   *
-   * @param factory A supplier that creates a new {@link FlixelDebugOverlay} (or subclass). Must not be null.
+   * @param panel The panel to add.
+   * @param <T> The panel type, so the call can be chained: {@code ScorePanel p = Flixel.debug.register(new ScorePanel())}.
+   * @return The same panel.
+   * @throws IllegalArgumentException If a panel with the same id is already registered.
    */
-  public void setOverlayFactory(@NotNull Supplier<FlixelDebugOverlay> factory) {
-    if (factory != null) {
-      overlayFactory = factory;
+  public <T extends FlixelDebugPanel> T register(@NotNull T panel) {
+    if (indexOf(panel.getId()) >= 0) {
+      throw new IllegalArgumentException("A debug panel with the id '" + panel.getId() + "' is already registered.");
+    }
+    panels.add(panel);
+    panelRevision++;
+    return panel;
+  }
+
+  /**
+   * Removes a panel.
+   *
+   * @param id The id of the panel to remove.
+   * @return The removed panel, or {@code null} when no panel has that id.
+   */
+  @Nullable
+  public FlixelDebugPanel unregister(@NotNull String id) {
+    int index = indexOf(id);
+    if (index < 0) {
+      return null;
+    }
+    FlixelDebugPanel removed = panels.removeIndex(index);
+    panelRevision++;
+    return removed;
+  }
+
+  /**
+   * Finds a panel by id.
+   *
+   * @param id The id to look for.
+   * @return The panel, or {@code null} when no panel has that id.
+   */
+  @Nullable
+  public FlixelDebugPanel get(@NotNull String id) {
+    int index = indexOf(id);
+    return index >= 0 ? panels.get(index) : null;
+  }
+
+  /**
+   * Finds a panel by id and checks its type.
+   *
+   * @param id The id to look for.
+   * @param type The class the panel must be an instance of.
+   * @param <T> The panel type.
+   * @return The panel, or {@code null} when no panel has that id or it is not a {@code type}.
+   */
+  @Nullable
+  public <T extends FlixelDebugPanel> T get(@NotNull String id, @NotNull Class<T> type) {
+    FlixelDebugPanel panel = get(id);
+    return panel != null && type.isInstance(panel) ? type.cast(panel) : null;
+  }
+
+  /**
+   * Starts the debugger for a running game: the log panel begins to collect messages.
+   *
+   * <p>{@link FlixelGame} calls this when it starts in debug mode.
+   */
+  public void start() {
+    logs.attach();
+  }
+
+  /**
+   * Updates every enabled panel once.
+   *
+   * <p>{@link FlixelGame} calls this every frame while the game runs in debug mode, even while the game is
+   * paused. It does not allocate.
+   *
+   * @param elapsed Real seconds since the last frame, not scaled by {@code Flixel.timeScale}.
+   */
+  public void update(float elapsed) {
+    for (int i = 0; i < panels.getSize(); i++) {
+      FlixelDebugPanel panel = panels.get(i);
+      if (panel.isEnabled()) {
+        panel.update(elapsed);
+      }
     }
   }
 
   /**
-   * Creates the debug overlay using the registered factory and assigns it to {@link #overlay}.
-   * Called internally by {@link FlixelGame} during startup when debug mode is enabled.
+   * Shuts the debugger down with the game: the log panel stops collecting messages and every panel is
+   * reset.
    *
-   * @return The newly created overlay.
+   * <p>{@link FlixelGame} calls this when it is destroyed.
    */
-  public FlixelDebugOverlay createOverlay() {
-    overlay = overlayFactory.get();
-    return overlay;
+  public void dispose() {
+    logs.detach();
+    for (int i = 0; i < panels.getSize(); i++) {
+      panels.get(i).reset();
+    }
   }
 
   /**
-   * Sets the sprite currently inspected by the texture inspector window.
+   * Sets the sprite currently selected in the debugger.
    * Pass {@code null} to clear the selection.
    *
    * @param obj The sprite to inspect, or {@code null} to clear.
@@ -187,27 +270,9 @@ public class FlixelDebugManager {
     return inspectedSprite;
   }
 
-  /** Sets the sprite that is currently being dragged via the LMB picker. Internal API. */
-  void setDraggedSprite(@Nullable FlixelObject obj) {
-    draggedSprite = obj;
-  }
-
-  /**
-   * Returns the sprite that is currently being dragged via the LMB picker, or {@code null}.
-   *
-   * @return The currently dragged sprite, or {@code null} if none is being dragged.
-   */
-  @Nullable
-  public FlixelObject getDraggedSprite() {
-    if (draggedSprite != null && !draggedSprite.exists) {
-      draggedSprite = null;
-    }
-    return draggedSprite;
-  }
-
   /**
    * Registers a {@link FlixelBatch} whose {@link FlixelBatch#getRenderCalls()} will be included in
-   * the debugger's total render-call count shown in the Stats panel. The framework's own batch is
+   * the debugger's total render-call count shown in the stats panel. The framework's own batch is
    * already counted automatically; call this for any additional batches your game creates.
    *
    * <p>Registering a batch that is already tracked is a no-op. The batch must remain valid (not
@@ -241,41 +306,49 @@ public class FlixelDebugManager {
     }
   }
 
+  private int indexOf(String id) {
+    for (int i = 0, n = panels.getSize(); i < n; i++) {
+      if (panels.get(i).getId().equals(id)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   public FlixelArray<FlixelBatch> getTrackedBatches() {
     return trackedBatches;
   }
 
   /**
-   * Registers a {@link FlixelDebugTrackerEntry} whose {@code label -> value} pairs are shown as a named,
-   * collapsible group in the overlay's Tracker panel. Registering the same entry twice is a no-op.
+   * Returns how many panels are registered. Together with {@link #getPanel(int)} this walks the panels in
+   * registration order without creating an iterator.
    *
-   * <p>Example:
-   * <pre>{@code
-   * Flixel.debug.addTrackerEntry(new EnemyTrackerEntry(enemyManager));
-   * }</pre>
-   *
-   * @param entry The entry to register. Must not be {@code null}.
+   * @return The panel count.
    */
-  public void addTrackerEntry(@NotNull FlixelDebugTrackerEntry entry) {
-    if (entry == null || trackerEntries.contains(entry, true)) {
-      return;
-    }
-    trackerEntries.add(entry);
+  public int getPanelCount() {
+    return panels.getSize();
   }
 
   /**
-   * Removes a previously registered tracker entry. Passing an entry that was never registered is a no-op.
+   * Returns the panel at the given position in registration order.
    *
-   * @param entry The entry to stop tracking.
+   * @param index A position from 0 to {@link #getPanelCount()} minus 1.
+   * @return The panel.
    */
-  public void removeTrackerEntry(@NotNull FlixelDebugTrackerEntry entry) {
-    if (entry != null) {
-      trackerEntries.removeValue(entry, true);
-    }
+  @NotNull
+  public FlixelDebugPanel getPanel(int index) {
+    return panels.get(index);
   }
 
-  /** Returns the live array of registered tracker entries. Package-private; consumed by the debug overlay. */
-  FlixelArray<FlixelDebugTrackerEntry> getTrackerEntries() {
-    return trackerEntries;
+  /**
+   * Returns a number that goes up whenever a panel is registered or unregistered.
+   *
+   * <p>The network agent compares it with the value it saw last and re-sends the panel list when it
+   * differs.
+   *
+   * @return The panel list revision.
+   */
+  public long getPanelRevision() {
+    return panelRevision;
   }
 }
