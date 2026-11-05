@@ -95,7 +95,7 @@ public class FlixelDebugPicker {
         continue;
       }
       point.set(screenX, screenY);
-      cam.unproject(point);
+      cam.unprojectToView(point);
       Object hit = pickInCamera(cam, point.x, point.y);
       if (hit != null) {
         return hit;

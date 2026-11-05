@@ -255,6 +255,26 @@ class FlixelDebugPickerTest {
     assertNull(picker.pickAt(screen.x + 200f, screen.y));
   }
 
+  @Test
+  void aScreenPointOnAScrolledCameraFindsTheObjectDrawnThere() {
+    FlixelObject object = box(600, 450, 50, 50);
+    state.add(object);
+    cam.getViewport().setScreenBounds(0, 0, 400, 300);
+    cam.setZoom(2f);
+    cam.scrollX = 400f;
+    cam.scrollY = 300f;
+    cam.applyCameraTransform();
+
+    FlixelVector screen = new FlixelVector(625f, 475f);
+    cam.project(screen);
+
+    assertSame(object, picker.pickAt(screen.x, screen.y));
+    FlixelVector world = cam.unproject(new FlixelVector(screen.x, screen.y));
+    assertEquals(625f, world.x, 1e-3f);
+    assertEquals(475f, world.y, 1e-3f);
+    assertNull(picker.pickAt(screen.x - 60f, screen.y));
+  }
+
   private static FlixelObject box(float x, float y, float width, float height) {
     return new FlixelObject(x, y, width, height);
   }

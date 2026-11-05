@@ -143,7 +143,7 @@ public final class FlixelTouch {
   public float getWorldX(@NotNull FlixelCamera cam) {
     TMP.set(screenX, screenY);
     cam.unproject(TMP);
-    return TMP.x + cam.getViewX();
+    return TMP.x;
   }
 
   /**
@@ -159,6 +159,6 @@ public final class FlixelTouch {
   public float getWorldY(@NotNull FlixelCamera cam) {
     TMP.set(screenX, screenY);
     cam.unproject(TMP);
-    return TMP.y + cam.getViewY();
+    return TMP.y;
   }
 }

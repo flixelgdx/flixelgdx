@@ -25,6 +25,7 @@ package org.flixelgdx;
 
 import org.flixelgdx.FlixelCamera.FollowStyle;
 import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.math.FlixelVector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -155,6 +156,61 @@ class FlixelCameraTest {
     camera.follow(stub(-200, 150, 0, 0), FollowStyle.LOCKON);
     camera.update(DELTA);
     assertEquals(0f, camera.scrollX, EPS);
+  }
+
+  @Test
+  void unprojectAddsTheScrollToTheViewPosition() {
+    showOnScreen(camera);
+    camera.scrollX = 250f;
+    camera.scrollY = 120f;
+    camera.applyCameraTransform();
+
+    FlixelVector world = camera.unproject(new FlixelVector(100f, 40f));
+    FlixelVector view = camera.unprojectToView(new FlixelVector(100f, 40f));
+
+    assertEquals(100f, view.x, 1e-3f, "one window pixel is one view unit at zoom 1");
+    assertEquals(350f, world.x, 1e-3f);
+    assertEquals(view.x + 250f, world.x, 1e-3f);
+    assertEquals(view.y + 120f, world.y, 1e-3f);
+  }
+
+  @Test
+  void unprojectAccountsForTheZoomMargin() {
+    showOnScreen(camera);
+    camera.setZoom(2f);
+    camera.scrollX = 40f;
+    camera.scrollY = 10f;
+    camera.applyCameraTransform();
+
+    FlixelVector world = camera.unproject(new FlixelVector(100f, 40f));
+    FlixelVector view = camera.unprojectToView(new FlixelVector(100f, 40f));
+
+    // At zoom 2 the camera shows 200 by 150 world units, so the view starts 100 by 75 units in.
+    assertEquals(50f, view.x, 1e-3f);
+    assertEquals(40f + 100f + 50f, world.x, 1e-3f);
+    assertEquals(view.y + 10f + 75f, world.y, 1e-3f);
+    // The world point under the pixel is drawn exactly at that pixel's view position.
+    assertEquals(view.x, camera.worldToViewX(world.x, 1f), 1e-3f);
+    assertEquals(view.y, camera.worldToViewY(world.y, 1f), 1e-3f);
+  }
+
+  @Test
+  void projectIsTheInverseOfUnproject() {
+    showOnScreen(camera);
+    camera.setZoom(1.5f);
+    camera.scrollX = -75f;
+    camera.scrollY = 310f;
+    camera.applyCameraTransform();
+
+    FlixelVector point = new FlixelVector(123f, 77f);
+    camera.project(camera.unproject(point));
+
+    assertEquals(123f, point.x, 1e-3f);
+    assertEquals(77f, point.y, 1e-3f);
+  }
+
+  private static void showOnScreen(FlixelCamera cam) {
+    cam.getViewport().setScreenBounds(0, 0, 400, 300);
   }
 
   private static FlixelPositional stub(float x, float y, float w, float h) {

@@ -236,8 +236,8 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
       if (cam != null) {
         tmpUnproject.set(t.screenX, t.screenY);
         cam.unproject(tmpUnproject);
-        t.worldX = tmpUnproject.x + cam.getViewX();
-        t.worldY = tmpUnproject.y + cam.getViewY();
+        t.worldX = tmpUnproject.x;
+        t.worldY = tmpUnproject.y;
       } else {
         t.worldX = t.screenX;
         t.worldY = t.screenY;
