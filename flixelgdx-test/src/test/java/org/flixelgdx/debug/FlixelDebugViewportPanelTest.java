@@ -318,9 +318,9 @@ class FlixelDebugViewportPanelTest {
     assertEquals(revision, viewport.getRevision());
 
     object.setX(11f);
-    viewport.update(0.001f);
-    assertEquals(revision, viewport.getRevision(), "nothing is sampled before the sample interval");
-    viewport.update(1f / FlixelDebugControlsPanel.DEFAULT_RATE);
+    viewport.update(1f);
+    assertEquals(revision, viewport.getRevision(), "timed samples are skipped while no app is connected");
+    viewport.sample();
     assertTrue(viewport.getRevision() > revision);
 
     revision = viewport.getRevision();

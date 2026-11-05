@@ -28,6 +28,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelObjectIntMap;
+import org.flixelgdx.debug.remote.FlixelDebugAgent;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
@@ -63,7 +64,8 @@ import org.jetbrains.annotations.Nullable;
  * <p>The panel looks at the camera at the sample rate of the controls panel (see
  * {@link FlixelDebugControlsPanel#setRate(int)}) and right after each action. It only has new content, and only
  * gets sent, when something on the map changed, which it checks with a cheap checksum. Sampling does not allocate
- * once every object and type on screen has been seen once.
+ * once every object and type on screen has been seen once. While no debugger app is connected, the timed samples
+ * are skipped, so the panel costs nothing when nobody is watching.
  *
  * <h2>Flying the camera</h2>
  *
@@ -151,6 +153,11 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
 
   @Override
   public void update(float elapsed) {
+    if (!dirty && !isAppLive()) {
+      // Nobody is looking at the map, so walking the scene would be wasted work.
+      timer = 0f;
+      return;
+    }
     timer += elapsed;
     float interval = 1f / controls.getRate();
     if (dirty || timer >= interval) {
@@ -490,6 +497,12 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
       sum = sum * 31 + boxFlags[i];
     }
     return sum;
+  }
+
+  private static boolean isAppLive() {
+    FlixelDebugManager debug = Flixel.debug;
+    FlixelDebugAgent agent = debug != null ? debug.getAgent() : null;
+    return agent != null && agent.isLive();
   }
 
   /**
