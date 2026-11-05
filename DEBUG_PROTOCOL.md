@@ -133,6 +133,7 @@ Panel kinds:
 | 8    | `SCENE`     | `scene`       | [scene](#scene) |
 | 9    | `INSPECTOR` | `inspector`   | [inspector](#inspector) |
 | 10   | `SAVE`      | `save`        | [save](#save) |
+| 11   | `VIEWPORT`  | `viewport`    | [viewport](#viewport) |
 
 ### PANEL_DATA (4)
 
@@ -339,7 +340,8 @@ mouse), `W A S D / Arrows` (move the free camera), `Wheel / Q / E` (zoom the fre
 and `Right Drag` (pan the free camera). A hotkey that was disabled in the game is left out. Show the rows as given
 instead of hard-coding the keys, because the three hotkeys are configurable.
 
-The **free camera** flies the main camera without touching the game. Turning it on saves the camera's scroll,
+The **free camera** flies the main camera (or the camera that [viewport](#viewport) actions chose) without
+touching the game. Turning it on saves the camera's scroll,
 zoom, scroll bounds, and follow target and stops following; turning it off restores them exactly. It pans at 600
 screen pixels per second (4 times that with Shift), zooms by 1.25 per wheel notch between 0.1 and 10, and runs on real
 time, so it works while the game is paused. The keys and the right mouse button it uses are hidden from the game
@@ -565,6 +567,87 @@ of them at a time, and `saves` lists every one the app can switch to with `SELEC
   new save, with its summary in `status`. An index that is out of range is ignored.
 
 Nothing reaches storage until `SAVE_NOW` (or the game's own save call).
+
+### viewport
+
+Id `viewport`, kind 11. A live map of what one camera shows, so the app can pick objects, drag them, and fly the
+camera without the device's keyboard and mouse (a phone has neither). Single payload (state):
+
+| Field         | Type  | Notes |
+|---------------|-------|-------|
+| `camera`      | `u8`  | Index of the camera the map shows (a position in the game's camera list). |
+| `cameraCount` | `u8`  | How many cameras the game has (at most 255). `0` means there is no camera and no boxes. |
+| `viewWidth`   | `f32` | Visible width of the camera in view units (its world width divided by its zoom). |
+| `viewHeight`  | `f32` | Visible height in view units. |
+| `zoom`        | `f32` | |
+| `scrollX`     | `f32` | Camera scroll in world units. |
+| `scrollY`     | `f32` | |
+| `freeCam`     | `bool`| Same as `freeCam` of [controls](#controls). |
+| `paused`      | `bool`| |
+| `hitboxes`    | `bool`| |
+| `selectedId`  | `i32` | The object selected in the [inspector](#inspector), or `-1`. |
+| types         | `array<string>` | Type names (simple class names) that boxes refer to by index. |
+| boxes         | `array<box>` | See below. |
+
+Box: `i32 id`, `f32 x`, `f32 y`, `f32 width`, `f32 height`, `u16 typeIndex` (into `types`), `u8 flags`.
+
+| Bit | Value | Meaning |
+|-----|-------|---------|
+| 0   | 1     | The object is the inspector's selection. |
+| 1   | 2     | The object is a group (it has members of its own, which have their own boxes). |
+| 2   | 4     | The object is not active, so it is drawn but not updated. |
+
+Other bits are reserved and are 0.
+
+**View space.** Every position is in the view space of the camera: `0, 0` is the top left corner of what the
+camera shows and the visible area is `viewWidth` by `viewHeight`. Each object is placed with its own scroll factor,
+so parallax layers and objects fixed to the screen are where they appear. To draw the map, scale the view to the
+size of your canvas; no camera math is needed. A box is the area the object is drawn in (a sprite's graphic with its
+offset and scale, widened to the bounding box when it is rotated; other objects use their hitbox), which is exactly
+what a click hits. The box `id` is the same object id that [scene](#scene) and [inspector](#inspector) use.
+
+**Which objects.** Boxes are listed in draw order, bottom first, so the last box that contains a point is the one
+on top. Only objects that exist, are visible, are drawn on the camera, and touch the visible area are listed, and an
+open sub state is drawn on top of the state below it (the state below only counts while it still draws). At most
+1024 boxes are sent; when more objects are on screen, the ones drawn on top are kept. Read `types` again from every
+message, because the indices are only valid inside the message they came in. The table may hold names that no box
+uses.
+
+**When it is sent.** The game samples the camera at the sample rate of [controls](#controls) and right after each
+action, and sends the state only when something in it changed.
+
+Actions:
+
+| Code | Name           | Fields |
+|------|----------------|--------|
+| 1    | `SET_CAMERA`   | `u8 index` (a position in the camera list) |
+| 2    | `PICK`         | `f32 viewX`, `f32 viewY` |
+| 3    | `MOVE`         | `i32 id`, `f32 dx`, `f32 dy` (world units) |
+| 4    | `PAN`          | `f32 dx`, `f32 dy` (view units) |
+| 5    | `ZOOM`         | `f32 factor`, `f32 anchorViewX`, `f32 anchorViewY` |
+| 6    | `RESET_CAMERA` | none |
+
+- `SET_CAMERA` chooses the camera the map shows and the camera actions act on. While the index is past the end of
+  the camera list, the game shows the main camera (index 0) and says so in `camera`.
+- `PICK` selects the topmost object drawn at that point of the view in the inspector, the same way `Alt + Click`
+  does in the game. When nothing is drawn there, the selection is cleared.
+- `MOVE` moves an object by a distance in world units. It is a distance, not a position, so updates that arrive late
+  or close together add up instead of fighting. Any object with a position can be moved, selected or not, and a
+  group moves its members with it. An unknown id or an object without a position is ignored. For a drag, send the
+  pointer's movement in view units; for an object with a scroll factor of 1 a view unit is a world unit.
+- `PAN` moves the camera by a distance in view units: a positive `dx` moves the camera right, so the world slides
+  left. To drag the world with a finger, send the finger's movement with the sign flipped. It turns the free camera
+  of [controls](#controls) on for the camera the map shows (restoring any other camera the free camera was flying),
+  so the camera stops following its target and the move is not undone.
+- `ZOOM` multiplies the zoom by `factor` (for example `1.25` for one wheel notch in, `0.8` for one notch out) and
+  keeps the point at `anchorViewX, anchorViewY` (in view space before the zoom) still on the screen, like a pinch.
+  The zoom stays between 0.1 and 10. Like `PAN`, it turns the free camera on. A factor that is not positive is
+  ignored.
+- `RESET_CAMERA` turns the free camera off, which restores the camera's scroll, zoom, scroll bounds, and follow
+  target exactly, and points the free camera back at the main camera.
+
+Non-finite numbers are ignored. Pause, step, and hitboxes are actions of [controls](#controls); the viewport only
+reports them.
 
 ## Custom panels
 

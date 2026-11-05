@@ -69,6 +69,11 @@ adb shell am start -n <package>/<activity> -e flixel.debugHost 192.168.1.20:6510
 
 The extra takes `host` or `host:port`. Release builds never open a connection.
 
+A phone has no keyboard or mouse for the debugger's own shortcuts (Alt + Click to pick, F4 for the free camera). Use
+the app's **Viewport** panel instead: it shows a live map of what the game's camera draws, so you can tap an object
+to select it, drag it to move it, and drag or pinch the map to fly the camera. Code can do the same through
+`Flixel.debug.viewport`.
+
 ## Profiling with trace sections
 
 The framework marks its per-frame phases in the Android system trace, so they appear as labeled bars:
