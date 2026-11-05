@@ -23,10 +23,13 @@
  */
 package org.flixelgdx.backend.html5;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
+import org.teavm.jso.JSFunctor;
+import org.teavm.jso.JSObject;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 
@@ -44,7 +47,11 @@ import org.teavm.jso.dom.html.HTMLDocument;
  * <ul>
  *   <li>{@link #setTitle(String)} updates the browser tab title through {@code document.title}.</li>
  *   <li>{@link #getWidth()} and {@link #getHeight()} report the canvas size in CSS pixels.</li>
- *   <li>{@link #setFullscreen} and {@link #setWindowed} use the browser Fullscreen API.</li>
+ *   <li>{@link #setFullscreen} and {@link #setWindowed} use the browser Fullscreen API. A browser only
+ *       allows fullscreen right after the player presses a key or clicks, so a request made at any other
+ *       time (for example when a game applies a saved fullscreen setting at startup) is held back and
+ *       retried on the player's next click, tap, or key press. {@link #isFullscreen()} reports the
+ *       browser's real state, so it stays {@code false} until fullscreen has actually started.</li>
  *   <li>{@link #isFocused()} reports whether the page currently has focus.</li>
  *   <li>{@link #close()} stops the game loop and asks the browser to close the tab.</li>
  * </ul>
@@ -56,10 +63,11 @@ public class FlixelHtml5Window implements FlixelWindow {
   @Nullable
   private FlixelHtml5Runner runner;
 
+  private final FullscreenDeferred onDeferred = () -> Flixel.log.tagged("Html5").debug(
+      "Fullscreen needs a user gesture, so it will start on the next click, tap, or key press.");
+
   private int width;
   private int height;
-
-  private boolean fullscreen;
 
   /**
    * Binds this window to the canvas element the runner created. Called once during startup before
@@ -123,7 +131,20 @@ public class FlixelHtml5Window implements FlixelWindow {
 
   @Override
   public boolean isFullscreen() {
-    return fullscreen;
+    return isFullscreenJs();
+  }
+
+  /**
+   * Returns whether a fullscreen request is waiting for the player's next click, tap, or key press.
+   *
+   * <p>This is {@code true} only after the browser refused a request because it did not come from a
+   * user gesture. It turns {@code false} again once the retry is made, or when {@link #setWindowed}
+   * or a newer {@link #setFullscreen} call cancels the wait.
+   *
+   * @return {@code true} while a deferred fullscreen request is pending.
+   */
+  public boolean isFullscreenPending() {
+    return isFullscreenPendingJs();
   }
 
   @Override
@@ -135,14 +156,13 @@ public class FlixelHtml5Window implements FlixelWindow {
   public void setFullscreen(FlixelDisplayMode mode) {
     // Request fullscreen on the document element rather than the canvas. The browser's Fullscreen
     // API promotes the target element into a top layer that sits above all normal page content.
-    requestFullscreen();
-    fullscreen = true;
+    // The browser may refuse until a user gesture happens; the script then retries on the next one.
+    requestFullscreen(onDeferred);
   }
 
   @Override
   public void setWindowed(int width, int height) {
     exitFullscreen();
-    fullscreen = false;
   }
 
   @Override
@@ -163,11 +183,62 @@ public class FlixelHtml5Window implements FlixelWindow {
     closeWindow();
   }
 
-  @JSBody(script = "if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }")
-  private static native void requestFullscreen();
+  @JSBody(params = "onDeferred", script = """
+      var fs = window.__flixelFs;
+      if (!fs) {
+        fs = window.__flixelFs = { id: 0, tries: 0, handler: null, cancel: null };
+        fs.cancel = function() {
+          fs.id++;
+          if (!fs.handler) { return; }
+          document.removeEventListener('pointerdown', fs.handler, true);
+          document.removeEventListener('pointerup', fs.handler, true);
+          document.removeEventListener('keydown', fs.handler, true);
+          fs.handler = null;
+        };
+      }
+      var el = document.documentElement;
+      fs.cancel();
+      fs.tries = 0;
+      if (!el.requestFullscreen) { return; }
+      function defer(id, retry) {
+        if (id !== fs.id || fs.handler) { return; }
+        if (retry && ++fs.tries > 3) { return; }
+        fs.handler = function(e) {
+          if (e.type === 'keydown' && e.key === 'Escape') { return; }
+          fs.cancel();
+          attempt(true);
+        };
+        document.addEventListener('pointerdown', fs.handler, true);
+        document.addEventListener('pointerup', fs.handler, true);
+        document.addEventListener('keydown', fs.handler, true);
+        if (!retry) { onDeferred(); }
+      }
+      function attempt(inGesture) {
+        var id = fs.id;
+        var p;
+        try { p = el.requestFullscreen(); } catch (e) { return; }
+        if (p && typeof p.catch === 'function') {
+          p.catch(function() { defer(id, inGesture); });
+        }
+      }
+      attempt(false);
+      """)
+  private static native void requestFullscreen(FullscreenDeferred onDeferred);
 
-  @JSBody(script = "if (document.exitFullscreen && document.fullscreenElement) { document.exitFullscreen(); }")
+  @JSBody(script = """
+      if (window.__flixelFs) { window.__flixelFs.cancel(); }
+      if (document.exitFullscreen && document.fullscreenElement) {
+        var p = document.exitFullscreen();
+        if (p && typeof p.catch === 'function') { p.catch(function() {}); }
+      }
+      """)
   private static native void exitFullscreen();
+
+  @JSBody(script = "return !!document.fullscreenElement;")
+  private static native boolean isFullscreenJs();
+
+  @JSBody(script = "return !!(window.__flixelFs && window.__flixelFs.handler);")
+  private static native boolean isFullscreenPendingJs();
 
   @JSBody(script = "return document.hasFocus();")
   private static native boolean hasFocus();
@@ -183,5 +254,11 @@ public class FlixelHtml5Window implements FlixelWindow {
   @Nullable
   public FlixelHtml5Runner getRunner() {
     return runner;
+  }
+
+  /** Told by the fullscreen script when the browser refused a request and it was held for a user gesture. */
+  @JSFunctor
+  private interface FullscreenDeferred extends JSObject {
+    void run();
   }
 }

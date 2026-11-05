@@ -287,7 +287,7 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
             if (results[i]) { names.push(results[i].n); data.push(results[i].d); }
           }
           finish(names, data);
-        });
+        }).catch(function() { finish([], []); });
       });
       input.click();
       """)
@@ -328,7 +328,14 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
       """)
   private static native void saveBlob(Int8Array data, String name, String exts, SaveCallback callback);
 
-  @JSBody(script = "if (typeof Notification !== 'undefined') { Notification.requestPermission(); }")
+  @JSBody(script = """
+      if (typeof Notification !== 'undefined') {
+        try {
+          var p = Notification.requestPermission();
+          if (p && typeof p.catch === 'function') { p.catch(function() {}); }
+        } catch (e) {}
+      }
+      """)
   private static native void requestNotificationPermissionJs();
 
   @JSBody(script = "return typeof Notification !== 'undefined' && Notification.permission === 'granted';")
@@ -340,7 +347,14 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   @JSBody(script = "return !!(navigator.clipboard);")
   private static native boolean clipboardSupported();
 
-  @JSBody(params = "text", script = "if (navigator.clipboard) { navigator.clipboard.writeText(text); }")
+  @JSBody(params = "text", script = """
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          var p = navigator.clipboard.writeText(text);
+          if (p && typeof p.catch === 'function') { p.catch(function() {}); }
+        } catch (e) {}
+      }
+      """)
   private static native void writeClipboard(String text);
 
   @JSBody(params = "callback", script = """
@@ -363,8 +377,16 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
       """)
   private static native void acquireWakeLock();
 
-  @JSBody(
-      script = "if (window.__flixelWakeLock) { window.__flixelWakeLock.release(); window.__flixelWakeLock = null; }")
+  @JSBody(script = """
+      var lock = window.__flixelWakeLock;
+      window.__flixelWakeLock = null;
+      if (lock) {
+        try {
+          var p = lock.release();
+          if (p && typeof p.catch === 'function') { p.catch(function() {}); }
+        } catch (e) {}
+      }
+      """)
   private static native void releaseWakeLock();
 
   @JSBody(params = "message", script = """

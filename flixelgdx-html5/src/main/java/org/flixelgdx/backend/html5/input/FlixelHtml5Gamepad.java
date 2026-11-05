@@ -140,15 +140,23 @@ public class FlixelHtml5Gamepad implements FlixelGamepad {
   @JSBody(params = { "i", "duration", "strong", "weak" }, script = """
       var g = navigator.getGamepads()[i];
       if (g && g.vibrationActuator && g.vibrationActuator.playEffect) {
-        g.vibrationActuator.playEffect('dual-rumble',
-          { duration: duration, strongMagnitude: strong, weakMagnitude: weak });
+        try {
+          var p = g.vibrationActuator.playEffect('dual-rumble',
+            { duration: duration, strongMagnitude: strong, weakMagnitude: weak });
+          if (p && typeof p.catch === 'function') { p.catch(function() {}); }
+        } catch (e) {}
       }
       """)
   private static native void vibrate(int i, int duration, float strong, float weak);
 
   @JSBody(params = "i", script = """
       var g = navigator.getGamepads()[i];
-      if (g && g.vibrationActuator && g.vibrationActuator.reset) { g.vibrationActuator.reset(); }
+      if (g && g.vibrationActuator && g.vibrationActuator.reset) {
+        try {
+          var p = g.vibrationActuator.reset();
+          if (p && typeof p.catch === 'function') { p.catch(function() {}); }
+        } catch (e) {}
+      }
       """)
   private static native void resetVibration(int i);
 

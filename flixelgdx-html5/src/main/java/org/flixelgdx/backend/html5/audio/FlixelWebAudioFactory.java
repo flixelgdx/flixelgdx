@@ -95,11 +95,19 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
 
   @Override
   public void destroyEngine() {
-    context.close();
+    closeContext(context);
   }
 
   @JSBody(params = { "source", "target" }, script = "source.connect(target);")
   static native void connect(AudioNode source, AudioNode target);
+
+  @JSBody(params = "context", script = """
+      try {
+        var p = context.close();
+        if (p && typeof p.catch === 'function') { p.catch(function() {}); }
+      } catch (e) {}
+      """)
+  private static native void closeContext(AudioContext context);
 
   @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
   private static native AudioContext createContext();
@@ -107,7 +115,10 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
   @JSBody(params = "context", script = """
       var resume = function() {
         if (context.state === 'suspended') {
-          context.resume();
+          try {
+            var p = context.resume();
+            if (p && typeof p.catch === 'function') { p.catch(function() {}); }
+          } catch (e) {}
         }
         window.removeEventListener('pointerdown', resume);
         window.removeEventListener('keydown', resume);
