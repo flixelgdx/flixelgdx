@@ -181,6 +181,51 @@ class FlixelGpuSmokeTest {
   }
 
   @Test
+  void aTextureReadbackCallsBackOnceWithPaddedRows() {
+    FlixelTexture texture = solid(10);
+    assertTrue(graphics.supportsReadPixels());
+    int[] calls = new int[1];
+    int[] shape = new int[3];
+    boolean[] hadPixels = new boolean[1];
+    graphics.getDevice().pushErrorScope(GpuErrorFilter.VALIDATION);
+    graphics.readPixels(texture, 2, 1, 5, 4, (rgba, width, height, rowBytes) -> {
+      calls[0]++;
+      hadPixels[0] = rgba != null;
+      shape[0] = width;
+      shape[1] = height;
+      shape[2] = rowBytes;
+      if (rgba != null) {
+        assertTrue(rgba.capacity() >= rowBytes * height);
+        rgba.get((height - 1) * rowBytes + width * 4 - 1);
+      }
+    });
+    long deadline = System.nanoTime() + 5_000_000_000L;
+    while (calls[0] == 0 && System.nanoTime() < deadline) {
+      graphics.beginFrame();
+      graphics.endFrame();
+    }
+    assertEquals(1, calls[0], "the callback runs exactly once");
+    assertTrue(hadPixels[0], "the pixels were mapped");
+    assertEquals(5, shape[0]);
+    assertEquals(4, shape[1]);
+    assertEquals(256, shape[2], "rows are padded to 256 bytes");
+    assertNull(popValidationError());
+    texture.destroy();
+  }
+
+  @Test
+  void aReadbackOfADestroyedTextureReportsNoPixels() {
+    FlixelTexture texture = solid(4);
+    texture.destroy();
+    boolean[] called = new boolean[1];
+    graphics.readPixels(texture, 0, 0, 4, 4, (rgba, width, height, rowBytes) -> {
+      called[0] = true;
+      assertNull(rgba);
+    });
+    assertTrue(called[0], "a failure calls back right away");
+  }
+
+  @Test
   void aShaderWithUniformsCompilesAndDrawsAndABrokenOneIsRejected() {
     FlixelShaderProgram program = graphics.compileShaderSource(TINT);
     assertTrue(program.isValid());

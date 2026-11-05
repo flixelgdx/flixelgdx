@@ -35,6 +35,7 @@ import org.flixelgdx.graphics.FlixelGlobalShaderPipeline;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelPixelReadback;
 import org.flixelgdx.graphics.FlixelRenderStats;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelShader;
@@ -53,6 +54,7 @@ import io.github.stringdotjar.jwebgpu.GpuBindGroup;
 import io.github.stringdotjar.jwebgpu.GpuBuffer;
 import io.github.stringdotjar.jwebgpu.GpuBufferDescriptor;
 import io.github.stringdotjar.jwebgpu.GpuBufferUsage;
+import io.github.stringdotjar.jwebgpu.GpuCallbackMode;
 import io.github.stringdotjar.jwebgpu.GpuCommandBuffer;
 import io.github.stringdotjar.jwebgpu.GpuCommandEncoder;
 import io.github.stringdotjar.jwebgpu.GpuCompositeAlphaMode;
@@ -62,6 +64,8 @@ import io.github.stringdotjar.jwebgpu.GpuFeatureName;
 import io.github.stringdotjar.jwebgpu.GpuIndexFormat;
 import io.github.stringdotjar.jwebgpu.GpuLimits;
 import io.github.stringdotjar.jwebgpu.GpuLoadOp;
+import io.github.stringdotjar.jwebgpu.GpuMapAsyncStatus;
+import io.github.stringdotjar.jwebgpu.GpuMapMode;
 import io.github.stringdotjar.jwebgpu.GpuPresentMode;
 import io.github.stringdotjar.jwebgpu.GpuQueue;
 import io.github.stringdotjar.jwebgpu.GpuRenderPassColorAttachment;
@@ -74,6 +78,7 @@ import io.github.stringdotjar.jwebgpu.GpuSurfaceCapabilities;
 import io.github.stringdotjar.jwebgpu.GpuSurfaceConfiguration;
 import io.github.stringdotjar.jwebgpu.GpuSurfaceGetCurrentTextureStatus;
 import io.github.stringdotjar.jwebgpu.GpuSurfaceTexture;
+import io.github.stringdotjar.jwebgpu.GpuTexelCopyBufferInfo;
 import io.github.stringdotjar.jwebgpu.GpuTexelCopyBufferLayout;
 import io.github.stringdotjar.jwebgpu.GpuTexelCopyTextureInfo;
 import io.github.stringdotjar.jwebgpu.GpuTexture;
@@ -129,6 +134,12 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
   private static final long VERTEX_RING_BYTES = 4L << 20;
   private static final long UNIFORM_RING_BYTES = 1L << 20;
+
+  /** The largest staging buffer a texture readback may use, which is 128 MB. */
+  private static final long MAX_READBACK_BYTES = 128L << 20;
+
+  /** WebGPU requires the rows of a texture-to-buffer copy to start at multiples of this many bytes. */
+  private static final int READBACK_ROW_ALIGNMENT = 256;
   private static final int MAX_LEVELS = 16;
   private static final int SPARE = MAX_LEVELS;
   private static final int GLOBALS_FLOATS = FlixelWgsl.GLOBALS_SIZE / 4;
@@ -212,6 +223,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private GpuRenderPipeline lastPipeline;
 
   private int deviceEpoch;
+  private int pendingReadbacks;
   private int uniformAlignment = 256;
   private int backBufferWidth;
   private int backBufferHeight;
@@ -517,6 +529,11 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
   @Override
   public void beginFrame() {
+    Runnable pump = eventPump;
+    if (pendingReadbacks > 0 && pump != null) {
+      // Let finished texture readbacks call back. The pump is the GPU instance's event processing.
+      pump.run();
+    }
     synchronized (mainThreadQueue) {
       for (int i = 0; i < mainThreadQueue.getSize(); i++) {
         mainThreadQueue.get(i).run();
@@ -755,6 +772,99 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     return new FlixelGpuTexture(this, image);
   }
 
+  @Override
+  public boolean supportsReadPixels() {
+    return device != null;
+  }
+
+  /**
+   * Copies a rectangle of a texture back to the CPU.
+   *
+   * <p>The texture is copied into a buffer the CPU can map. WebGPU needs every row of that buffer to start at a
+   * multiple of 256 bytes, so the buffer is wider than the picture and the callback receives the padded row size.
+   * The copy is queued behind everything already submitted, then {@code mapAsync} waits for it. On desktop and
+   * Android the callback runs when {@link #beginFrame()} pumps the GPU's events, which happens every frame while a
+   * request is pending, so the answer arrives within a few frames. In the browser the callback arrives on its own.
+   *
+   * <p>Compressed (block) textures cannot be read this way and report {@code null} pixels. The callback is always
+   * called exactly once, and always on the thread that pumps events.
+   *
+   * @param texture A texture created by this renderer.
+   * @param x Left edge of the rectangle in pixels. Clamped to the texture.
+   * @param y Top edge of the rectangle in pixels. Clamped to the texture.
+   * @param width Width of the rectangle in pixels. Clamped to the texture.
+   * @param height Height of the rectangle in pixels. Clamped to the texture.
+   * @param callback Receives the pixels, valid only during the call, or {@code null}.
+   */
+  @Override
+  public void readPixels(@NotNull FlixelTexture texture, int x, int y, int width, int height,
+      @NotNull FlixelPixelReadback callback) {
+    if (device == null || !(texture instanceof FlixelGpuTexture source) || source.isDestroyed()
+        || source.isCompressed()) {
+      callback.onPixels(null, 0, 0, 0);
+      return;
+    }
+    int left = Math.max(0, Math.min(x, source.getWidth() - 1));
+    int top = Math.max(0, Math.min(y, source.getHeight() - 1));
+    int w = Math.max(1, Math.min(width, source.getWidth() - left));
+    int h = Math.max(1, Math.min(height, source.getHeight() - top));
+    int rowBytes = (w * 4 + READBACK_ROW_ALIGNMENT - 1) / READBACK_ROW_ALIGNMENT * READBACK_ROW_ALIGNMENT;
+    long size = (long) rowBytes * h;
+    if (size > MAX_READBACK_BYTES) {
+      LOG.warn("A {}x{} readback needs {} bytes, which is more than the {} byte limit.", w, h, size,
+          MAX_READBACK_BYTES);
+      callback.onPixels(null, 0, 0, 0);
+      return;
+    }
+    GpuBuffer staging;
+    synchronized (gpuLock) {
+      GpuBufferDescriptor descriptor = new GpuBufferDescriptor();
+      descriptor.label = "flixel readback";
+      descriptor.usage = GpuBufferUsage.COPY_DST | GpuBufferUsage.MAP_READ;
+      descriptor.size = size;
+      staging = device.createBuffer(descriptor);
+
+      GpuTexelCopyTextureInfo from = new GpuTexelCopyTextureInfo();
+      from.texture = source.getGpuTexture();
+      from.origin.x = left;
+      from.origin.y = top;
+      from.aspect = GpuTextureAspect.ALL;
+      GpuTexelCopyBufferInfo to = new GpuTexelCopyBufferInfo();
+      to.buffer = staging;
+      to.layout.bytesPerRow = rowBytes;
+      to.layout.rowsPerImage = h;
+      GpuExtent3D extent = new GpuExtent3D();
+      extent.width = w;
+      extent.height = h;
+      extent.depthOrArrayLayers = 1;
+
+      GpuCommandEncoder copy = device.createCommandEncoder(null);
+      copy.copyTextureToBuffer(from, to, extent);
+      GpuCommandBuffer finished = copy.finish(null);
+      queue.submit(new GpuCommandBuffer[] { finished }, 1);
+
+      GpuCallbackMode mode = eventPump != null ? GpuCallbackMode.ALLOW_PROCESS_EVENTS
+          : GpuCallbackMode.ALLOW_SPONTANEOUS;
+      pendingReadbacks++;
+      staging.mapAsync(GpuMapMode.READ, 0L, size, mode, (status, message) -> {
+        pendingReadbacks--;
+        try {
+          if (status == GpuMapAsyncStatus.SUCCESS) {
+            callback.onPixels(staging.getConstMappedRange(0L, size), w, h, rowBytes);
+          } else {
+            LOG.warn("Reading back a texture failed: {} {}", status, message);
+            callback.onPixels(null, 0, 0, 0);
+          }
+        } finally {
+          if (status == GpuMapAsyncStatus.SUCCESS) {
+            staging.unmap();
+          }
+          staging.destroy();
+        }
+      });
+    }
+  }
+
   @Nullable
   @Override
   public FlixelImage decodeImage(@NotNull ByteBuffer encoded) {
@@ -843,7 +953,9 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     synchronized (gpuLock) {
       textureDescriptor.reset();
       textureDescriptor.label = "flixel texture";
-      textureDescriptor.usage = GpuTextureUsage.TEXTURE_BINDING | GpuTextureUsage.COPY_DST | extraUsage;
+      // COPY_SRC lets tools such as the debugger read the pixels back (see readPixels).
+      textureDescriptor.usage = GpuTextureUsage.TEXTURE_BINDING | GpuTextureUsage.COPY_DST
+          | GpuTextureUsage.COPY_SRC | extraUsage;
       textureDescriptor.dimension = GpuTextureDimension.D2;
       textureDescriptor.size.width = width;
       textureDescriptor.size.height = height;
