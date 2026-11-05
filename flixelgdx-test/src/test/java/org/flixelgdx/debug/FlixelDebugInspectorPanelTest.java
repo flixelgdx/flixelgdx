@@ -415,7 +415,7 @@ class FlixelDebugInspectorPanelTest {
   }
 
   @Test
-  void selectionClearsWhenTheObjectIsDestroyedOrNoLongerExists() {
+  void selectionClearsWhenTheObjectStopsExistingOutsideTheScene() {
     List<Object> events = new ArrayList<>();
     inspector.addSelectionListener(events::add);
 
@@ -430,18 +430,77 @@ class FlixelDebugInspectorPanelTest {
     FlixelSprite killed = new FlixelSprite();
     inspector.select(killed);
     killed.kill();
-    assertNull(inspector.getSelected(), "getSelected() also drops an object that no longer exists");
+    assertSame(killed, inspector.getSelected(), "getSelected() itself never drops the selection");
+    inspector.update(0f);
+    assertNull(inspector.getSelected());
 
     State state = InspectorTestSupport.state(inspector);
     assertEquals(FlixelDebugObjectIds.NONE, state.selectedId());
   }
 
   @Test
-  void selectingAnObjectThatDoesNotExistDoesNothing() {
+  void aKilledObjectOutsideTheSceneIsDroppedOnTheNextUpdate() {
     FlixelSprite sprite = new FlixelSprite();
     sprite.kill();
     inspector.select(sprite);
+    assertSame(sprite, inspector.getSelected());
+    inspector.update(0f);
     assertNull(inspector.getSelected());
+  }
+
+  @Test
+  void anObjectWithExistsOffStaysSelectableWhileItIsInTheScene() {
+    FlixelState state = new TestState();
+    FlixelSpriteGroup group = new FlixelSpriteGroup();
+    FlixelSprite sprite = new FlixelSprite();
+    group.add(sprite);
+    state.add(group);
+    Flixel.state = state;
+
+    inspector.select(sprite);
+    int id = ids.peek(sprite);
+    String path = InspectorTestSupport.state(inspector).path();
+    sprite.exists = false;
+    inspector.update(0f);
+    inspector.update(2f);
+    inspector.update(2f);
+
+    assertSame(sprite, inspector.getSelected());
+    assertEquals(id, inspector.getSelectedId());
+    assertSame(sprite, ids.get(id));
+
+    inspector.clearSelection();
+    assertTrue(inspector.selectPath(path));
+    assertSame(sprite, inspector.getSelected());
+    assertEquals(id, inspector.getSelectedId());
+
+    group.exists = false;
+    inspector.update(2f);
+    assertSame(sprite, inspector.getSelected(), "members of a group with exists off are still in the scene");
+    assertSame(sprite, ids.get(id));
+  }
+
+  @Test
+  void anObjectRemovedFromTheSceneAndKilledIsForgottenAtTheNextSweep() {
+    FlixelState state = new TestState();
+    FlixelSpriteGroup group = new FlixelSpriteGroup();
+    FlixelSprite sprite = new FlixelSprite();
+    group.add(sprite);
+    state.add(group);
+    Flixel.state = state;
+
+    inspector.select(sprite);
+    int id = ids.peek(sprite);
+    sprite.kill();
+    inspector.update(0f);
+    assertSame(sprite, inspector.getSelected());
+
+    group.remove(sprite);
+    inspector.update(2f);
+
+    assertNull(inspector.getSelected());
+    assertNull(ids.get(id));
+    assertEquals(FlixelDebugObjectIds.NONE, ids.peek(sprite));
   }
 
   @Test

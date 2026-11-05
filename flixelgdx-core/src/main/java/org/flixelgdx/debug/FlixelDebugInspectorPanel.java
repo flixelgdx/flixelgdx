@@ -82,7 +82,11 @@ import java.util.function.Consumer;
  * Flixel.debug.inspector.clearSelection();
  * }</pre>
  *
- * <p>The selection clears itself when the selected object is destroyed or stops existing.
+ * <p>An object whose {@code exists} flag is off can still be selected and edited while it is anywhere in the scene,
+ * so a killed or recyclable object can be inspected and switched back on. The selection clears itself, and the
+ * object's id is forgotten, once the object no longer exists and is no longer anywhere in the scene (it was
+ * destroyed or removed). The scene is everything reachable from {@link Flixel#state}, its sub states, and the
+ * objects added with {@link #track(Object, String)}, through every {@link FlixelGroupable}.
  *
  * <p>Each selected object has a stable numeric id from {@link FlixelDebugManager#ids}, and the app refers to
  * objects by that number. The path sent with the selection is its address in the object tree, such as
@@ -102,7 +106,7 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   /** Seconds between revision bumps while an object is selected, which is how often the app is offered fresh values. */
   private static final float REFRESH_INTERVAL = 0.1f;
 
-  /** Seconds between cleanups of ids of objects that no longer exist. */
+  /** Seconds between cleanups of ids of objects that no longer exist and are no longer in the scene. */
   private static final float SWEEP_INTERVAL = 1f;
 
   /** How deep a parent search goes, which also protects against a group that contains itself. */
@@ -138,6 +142,9 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   private Object pathObject;
 
   private boolean pathFound;
+
+  /** Whether the selected object was already checked for being in the scene since its exists flag went off. */
+  private boolean goneChecked;
 
   /**
    * Creates the inspector panel.
@@ -194,7 +201,11 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   }
 
   /**
-   * Selects an object. Selecting an object that does not exist (see {@link FlixelExistable}) does nothing.
+   * Selects an object.
+   *
+   * <p>An object that does not exist (see {@link FlixelExistable}) can be selected too, so a killed object can be
+   * inspected and switched back on. When it is not anywhere in the scene either, the next {@link #update(float)}
+   * clears the selection again.
    *
    * @param object The object to select, or {@code null} to clear the selection.
    */
@@ -203,11 +214,9 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
       clearSelection();
       return;
     }
-    if (isGone(object)) {
-      return;
-    }
     boolean changed = selected != object;
     selected = object;
+    goneChecked = false;
     ids.idOf(object);
     epoch++;
     refreshTimer = 0f;
@@ -233,11 +242,13 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
    * Selects the object a path points to.
    *
    * @param path A path in the format of {@link FlixelDebugPaths}, such as {@code state.3.0}.
-   * @return {@code true} when the path led to an object that exists and it was selected. Otherwise nothing changes.
+   * <p>Objects whose {@code exists} flag is off are found as well, since a path always points into the scene.
+   *
+   * @return {@code true} when the path led to an object and it was selected. Otherwise nothing changes.
    */
   public boolean selectPath(@Nullable CharSequence path) {
     Object object = FlixelDebugPaths.resolve(this, path);
-    if (object == null || isGone(object)) {
+    if (object == null) {
       return false;
     }
     select(object);
@@ -358,12 +369,29 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     return true;
   }
 
+  /**
+   * Refreshes the selection and cleans up ids.
+   *
+   * <p>The frame the selected object stops existing, the scene is searched once for it, and the selection is
+   * cleared when it is no longer there. About once a second the whole scene is walked and marked (see
+   * {@link FlixelDebugObjectIds#beginMark()}), the selection is cleared when it no longer exists and was not
+   * reached, and {@link FlixelDebugObjectIds#sweep()} forgets every other such object.
+   *
+   * @param elapsed Seconds since the last frame.
+   */
   @Override
   public void update(float elapsed) {
     Object current = selected;
     if (current != null && isGone(current)) {
-      clearSelection();
-      current = null;
+      if (!goneChecked) {
+        goneChecked = true;
+        if (!isInScene(current)) {
+          clearSelection();
+          current = null;
+        }
+      }
+    } else {
+      goneChecked = false;
     }
     if (current != null) {
       refreshTimer += elapsed;
@@ -383,6 +411,11 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     sweepTimer += elapsed;
     if (sweepTimer >= SWEEP_INTERVAL) {
       sweepTimer = 0f;
+      markScene();
+      Object stale = selected;
+      if (stale != null && isGone(stale) && !ids.isMarked(stale)) {
+        clearSelection();
+      }
       ids.sweep();
     }
   }
@@ -571,6 +604,49 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     return object instanceof FlixelExistable existable && !existable.isExists();
   }
 
+  /** Returns whether an object is the current state, a tracked root, or somewhere below one of them. */
+  private boolean isInScene(Object target) {
+    if (target == Flixel.state || trackedObjects.contains(target, true)) {
+      return true;
+    }
+    if (findParent(Flixel.state, target, 0) != null) {
+      return true;
+    }
+    for (int i = 0, n = trackedObjects.getSize(); i < n; i++) {
+      if (findParent(trackedObjects.get(i), target, 0) != null) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Starts a mark pass and marks every object reachable from the current state and the tracked roots. */
+  private void markScene() {
+    ids.beginMark();
+    markTree(Flixel.state, 0);
+    for (int i = 0, n = trackedObjects.getSize(); i < n; i++) {
+      markTree(trackedObjects.get(i), 0);
+    }
+  }
+
+  private void markTree(@Nullable Object node, int depth) {
+    if (node == null || depth > MAX_DEPTH) {
+      return;
+    }
+    ids.mark(node);
+    if (node instanceof FlixelGroupable<?> group) {
+      FlixelArray<?> members = group.getMembers();
+      if (members != null) {
+        for (int i = 0, n = members.getSize(); i < n; i++) {
+          markTree(members.get(i), depth + 1);
+        }
+      }
+    }
+    if (node instanceof FlixelState state) {
+      markTree(state.getSubState(), depth + 1);
+    }
+  }
+
   @Nullable
   private static Object findParent(@Nullable Object node, Object target, int depth) {
     if (node == null || depth > MAX_DEPTH) {
@@ -639,16 +715,15 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   }
 
   /**
-   * Returns the selected object, or {@code null} when nothing is selected. An object that was destroyed or no
-   * longer exists is dropped from the selection first.
+   * Returns the selected object, or {@code null} when nothing is selected.
+   *
+   * <p>The object may have its {@code exists} flag off while it is still in the scene. One that was destroyed or
+   * removed is dropped from the selection by {@link #update(float)}.
    *
    * @return The selected object, or {@code null}.
    */
   @Nullable
   public Object getSelected() {
-    if (selected != null && isGone(selected)) {
-      clearSelection();
-    }
     return selected;
   }
 

@@ -26,6 +26,7 @@ package org.flixelgdx.debug;
 import org.flixelgdx.collections.FlixelIdentityMap;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.collections.FlixelIntMap;
+import org.flixelgdx.collections.FlixelIntSet;
 import org.flixelgdx.functional.FlixelExistable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,8 +43,12 @@ import org.jetbrains.annotations.Nullable;
  * happen to look the same still get different ids.
  *
  * <p>The registry holds its objects strongly, so an id must be given back when the object is gone. Objects that
- * implement {@link FlixelExistable} (every {@code FlixelBasic} does) are cleaned up by {@link #sweep()} once they
- * stop existing (after {@code destroy()} or {@code kill()}). Anything else is released with
+ * implement {@link FlixelExistable} (every {@code FlixelBasic} does) are cleaned up by {@link #sweep()}. An object
+ * is forgotten once it no longer exists and is no longer anywhere in the scene. Both {@code destroy()} and
+ * {@code kill()} turn {@code exists} off, so {@code exists} alone cannot tell a destroyed object from one that is
+ * only hidden or waiting to be recycled. The scene tells them apart instead: before sweeping, the inspector walks
+ * the scene and marks every object it reaches with {@link #beginMark()} and {@link #mark(Object)}, and a sweep
+ * keeps every marked object. Anything that does not implement {@link FlixelExistable} is released with
  * {@link #release(Object)}.
  *
  * <p>Assigning the id of a new object creates one small object, which happens once per object. Looking up an
@@ -66,8 +71,11 @@ public class FlixelDebugObjectIds {
   private final FlixelIdentityMap<Object, Integer> ids = new FlixelIdentityMap<>();
   private final FlixelIntMap<Object> objects = new FlixelIntMap<>();
   private final FlixelIntArray dead = new FlixelIntArray();
+  private final FlixelIntSet marked = new FlixelIntSet();
 
   private int next = 1;
+
+  private boolean marking;
 
   /** Creates an empty registry. */
   public FlixelDebugObjectIds() {}
@@ -133,16 +141,61 @@ public class FlixelDebugObjectIds {
   }
 
   /**
-   * Forgets every object that implements {@link FlixelExistable} and no longer exists.
+   * Starts a new mark pass, forgetting the marks of the previous one.
    *
-   * <p>This walks the registry once and does not allocate. The inspector calls it about once a second.
+   * <p>Call it before marking every object that is still in the scene with {@link #mark(Object)}, then call
+   * {@link #sweep()}. Once a mark pass has started, {@link #sweep()} keeps every marked object even when it no
+   * longer exists. This does not allocate.
+   */
+  public void beginMark() {
+    marked.clear();
+    marking = true;
+  }
+
+  /**
+   * Marks an object as still being in the scene for the current mark pass (see {@link #beginMark()}).
+   *
+   * <p>An object without an id is ignored, since there is nothing to keep. This does not allocate once the mark
+   * set has grown to the size of the scene.
+   *
+   * @param object The object that was reached.
+   * @return {@code true} when the object has an id and was marked.
+   */
+  public boolean mark(@Nullable Object object) {
+    int id = peek(object);
+    if (id == NONE) {
+      return false;
+    }
+    marked.add(id);
+    return true;
+  }
+
+  /**
+   * Returns whether an object was marked in the latest mark pass.
+   *
+   * @param object The object.
+   * @return {@code true} when the object has an id and was marked since the last {@link #beginMark()}.
+   */
+  public boolean isMarked(@Nullable Object object) {
+    int id = peek(object);
+    return id != NONE && marked.contains(id);
+  }
+
+  /**
+   * Forgets every object that implements {@link FlixelExistable}, no longer exists, and is no longer anywhere in
+   * the scene.
+   *
+   * <p>"In the scene" means it was marked in the latest mark pass (see {@link #beginMark()}). When no mark pass has
+   * ever run, every object that no longer exists is forgotten. This walks the registry once and does not allocate.
+   * The inspector marks the scene and calls this about once a second.
    *
    * @return How many objects were released.
    */
   public int sweep() {
     dead.clear();
     for (FlixelIntMap.Entry<Object> entry : objects.entries()) {
-      if (entry.value instanceof FlixelExistable existable && !existable.isExists()) {
+      if (entry.value instanceof FlixelExistable existable && !existable.isExists()
+          && !(marking && marked.contains(entry.key))) {
         dead.add(entry.key);
       }
     }
@@ -160,6 +213,8 @@ public class FlixelDebugObjectIds {
   public void clear() {
     ids.clear();
     objects.clear();
+    marked.clear();
+    marking = false;
   }
 
   /**

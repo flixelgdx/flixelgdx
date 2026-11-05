@@ -106,6 +106,33 @@ class FlixelDebugObjectIdsTest {
   }
 
   @Test
+  void sweepKeepsObjectsMarkedInTheLatestPass() {
+    FlixelDebugObjectIds ids = new FlixelDebugObjectIds();
+    FlixelSprite inScene = new FlixelSprite();
+    FlixelSprite removed = new FlixelSprite();
+    FlixelSprite unknown = new FlixelSprite();
+    int inSceneId = ids.idOf(inScene);
+    int removedId = ids.idOf(removed);
+    inScene.kill();
+    removed.kill();
+
+    ids.beginMark();
+    assertTrue(ids.mark(inScene));
+    assertFalse(ids.mark(unknown), "an object without an id is not marked");
+    assertTrue(ids.isMarked(inScene));
+    assertFalse(ids.isMarked(removed));
+
+    assertEquals(1, ids.sweep());
+    assertSame(inScene, ids.get(inSceneId));
+    assertNull(ids.get(removedId));
+
+    ids.beginMark();
+    assertFalse(ids.isMarked(inScene), "a new pass starts with no marks");
+    assertEquals(1, ids.sweep());
+    assertNull(ids.get(inSceneId));
+  }
+
+  @Test
   void clearForgetsEverythingWithoutReusingIds() {
     FlixelDebugObjectIds ids = new FlixelDebugObjectIds();
     Object a = new Object();

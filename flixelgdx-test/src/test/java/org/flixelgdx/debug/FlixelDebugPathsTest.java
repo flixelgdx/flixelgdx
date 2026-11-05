@@ -175,7 +175,8 @@ class FlixelDebugPathsTest {
 
     sprite.kill();
     inspector.clearSelection();
-    assertFalse(inspector.selectPath("state.0"), "an object that no longer exists is not selected");
+    assertTrue(inspector.selectPath("state.0"), "a killed object that is still in the scene can be selected");
+    assertSame(sprite, inspector.getSelected());
   }
 
   @Test
