@@ -377,6 +377,10 @@ Id `inspector`, kind 9. Subtypes:
 `STATE` payload: `u8 subtype=1`, `i32 selectedId` (`-1` if nothing is selected), `string path`,
 `array<section>`, `bool hasTexture`.
 
+`path` is the selected object's address in the scene (see [Scene paths](#scene-paths)). An object that is not
+in the scene tree (for example a tracked object that is not a group) gets `TypeName#id` instead, which is not a
+valid scene path.
+
 Section: `string typeName`, `string displayName`, `array<property row>`.
 
 `THUMBNAIL` payload: `u8 subtype=2`, `i32 id`, `i32 width`, `i32 height`, `bytes png`.
@@ -393,6 +397,9 @@ Actions:
 | 6    | `SET_PROPERTY`      | `i32 id`, `u16 sectionIndex`, `u16 propertyIndex`, `value` |
 | 7    | `REQUEST_THUMBNAIL` | `i32 id` (object id) |
 
+`SELECT_PATH` selects the object a [scene path](#scene-paths) points to and does nothing when the path leads
+nowhere.
+
 `SET_PROPERTY` refers to a row by its position in the latest `STATE` the game sent: `sectionIndex` is the
 position in the `array<section>` and `propertyIndex` is the position in that section's rows. The game ignores
 the action when `id` is not the currently selected object, when an index is out of range, or when the row is
@@ -401,6 +408,23 @@ not editable.
 The game converts the value by the row's kind. A numeric row (int, long, float, or double) accepts any numeric
 value kind and converts it like a Java cast, a bool row accepts only a bool, and a string row accepts only a
 string. A value of any other kind is ignored and a warning is logged.
+
+### Scene paths
+
+A scene path is a readable address for one object, used by the inspector's `path` field, the `SELECT_PATH`
+action, and the `select` console command. It is a list of steps separated by dots:
+
+- The first step is `state` (the current game state), `substate` (the sub state open on top of the state), or the
+  label of an object the game registered as an extra root (a label may itself contain dots).
+- Every later step is a decimal **member index** (the position in the group's member list, counting empty slots)
+  or the word `substate`, which steps from a state into its open sub state. `substate.substate` is the sub state
+  open on top of the first one.
+
+Examples: `state` (the state itself), `state.3` (its fourth member), `state.3.0` (the first member of that
+member, which must be a group), `substate.2`, and `managers.0` for a tracked root labeled `managers`. The
+framework has no per-object debug names, so indexes are the only naming. Indexes change when members are added or
+removed in front of an object, so a path is a snapshot, not a permanent address. Use the numeric `id` for a stable
+reference.
 
 ### save
 

@@ -74,7 +74,8 @@ import java.util.function.Consumer;
  *
  * <p>{@code help [filter]}, {@code pause [on|off]}, {@code hitboxes [on|off]}, {@code step},
  * {@code rate [hz]}, {@code loglevel [Debug|Info|Warn|Error|Default]}, {@code watch.mouse [on|off]},
- * {@code watch.camera [on|off]}, {@code watch.clear}, and {@code resetState}.
+ * {@code watch.camera [on|off]}, {@code watch.clear}, {@code select <path>}, {@code select.clear},
+ * {@code select.parent}, and {@code resetState}.
  *
  * <p>All methods must be called from the game's main thread.
  *
@@ -492,6 +493,19 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
       owner.watches.clear();
       logger().info("Cleared the watches.");
     });
+
+    register("select", "select <path>", "Selects the object at a scene path such as state.3.0 in the inspector.",
+        args -> {
+          FlixelDebugInspectorPanel inspector = owner.inspector;
+          String path = args.getString(0, "");
+          if (path.isEmpty()) {
+            logger().warn("Usage: select <path>, for example select state.3.0");
+          } else if (inspector.selectPath(path)) {
+            logger().info("Selected {}", inspector.getSelected());
+          } else {
+            logger().warn("No object lives at \"{}\".", path);
+          }
+        });
 
     register("select.clear", "select.clear", "Clears the object selected in the inspector.", args -> {
       owner.inspector.clearSelection();

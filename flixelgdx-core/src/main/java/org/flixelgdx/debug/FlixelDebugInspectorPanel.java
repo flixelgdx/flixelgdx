@@ -83,8 +83,10 @@ import java.util.function.Consumer;
  * <p>The selection clears itself when the selected object is destroyed or stops existing.
  *
  * <p>Each selected object has a stable numeric id from {@link FlixelDebugManager#ids}, and the app refers to
- * objects by that number. The path sent with the selection is {@code TypeName#id}. The scene panel provides the
- * full path through the object tree.
+ * objects by that number. The path sent with the selection is its address in the object tree, such as
+ * {@code state.3.0} (see {@link FlixelDebugPaths}). An object that is not in the tree, for example a tracked
+ * object that is not a group, gets {@code TypeName#id} instead. The same paths work with
+ * {@link #selectPath(CharSequence)}, the {@code SELECT_PATH} action, and the {@code select} console command.
  *
  * <p>Reading values never allocates. Values are re-read about ten times a second while an object is selected.
  *
@@ -108,6 +110,7 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
 
   private float refreshTimer;
   private float sweepTimer;
+  private float pathTimer;
 
   private int epoch;
 
@@ -118,11 +121,17 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   private final FlixelArray<Object> trackedObjects = new FlixelArray<>();
   private final FlixelArray<String> trackedLabels = new FlixelArray<>();
   private final FlixelDebugValue value = new FlixelDebugValue();
-  private final FlixelString scratch = new FlixelString(64);
+  private final FlixelString pathText = new FlixelString(64);
+  private final FlixelString pathInput = new FlixelString(64);
   private final FlixelDebugObjectIds ids;
 
   @Nullable
   private Object selected;
+
+  @Nullable
+  private Object pathObject;
+
+  private boolean pathFound;
 
   /**
    * Creates the inspector panel.
@@ -212,6 +221,21 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     epoch++;
     markChanged();
     notifyListeners(null);
+  }
+
+  /**
+   * Selects the object a path points to.
+   *
+   * @param path A path in the format of {@link FlixelDebugPaths}, such as {@code state.3.0}.
+   * @return {@code true} when the path led to an object that exists and it was selected. Otherwise nothing changes.
+   */
+  public boolean selectPath(@Nullable CharSequence path) {
+    Object object = FlixelDebugPaths.resolve(this, path);
+    if (object == null || isGone(object)) {
+      return false;
+    }
+    select(object);
+    return true;
   }
 
   /**
@@ -335,6 +359,14 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
         markChanged();
       }
     }
+    pathTimer += elapsed;
+    if (pathTimer >= SWEEP_INTERVAL) {
+      pathTimer = 0f;
+      if (!pathFound) {
+        // An object that was not in the tree may have been added to it since the last search.
+        pathObject = null;
+      }
+    }
     sweepTimer += elapsed;
     if (sweepTimer >= SWEEP_INTERVAL) {
       sweepTimer = 0f;
@@ -364,9 +396,7 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     }
     int id = ids.idOf(current);
     Chain chain = chainFor(current.getClass());
-    scratch.clear();
-    scratch.concat(chain.typeName).concat('#').concat(id);
-    writer.writeI32(id).writeString(scratch);
+    writer.writeI32(id).writeString(pathOf(current, chain, id));
 
     sent.clear();
     writer.beginArray();
@@ -398,9 +428,12 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
       case FlixelDebugProtocol.INSPECTOR_CLEAR -> clearSelection();
       case FlixelDebugProtocol.INSPECTOR_GO_TO -> goTo();
       case FlixelDebugProtocol.INSPECTOR_SET_PROPERTY -> setProperty(reader);
+      case FlixelDebugProtocol.INSPECTOR_SELECT_PATH -> {
+        reader.readString(pathInput);
+        selectPath(pathInput);
+      }
       default -> {
-        // SELECT_PATH and REQUEST_THUMBNAIL are handled by later additions to the protocol. Unknown actions are
-        // ignored without reading anything.
+        // REQUEST_THUMBNAIL is handled by a later addition. Unknown actions are ignored without reading anything.
       }
     }
   }
@@ -423,6 +456,23 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
    */
   protected boolean hasTexture(@NotNull Object object) {
     return object instanceof FlixelSprite sprite && sprite.getTexture() != null;
+  }
+
+  /**
+   * Returns the path text of the selected object, searching the tree only when the cached path no longer leads to
+   * the object.
+   */
+  private FlixelString pathOf(Object current, Chain chain, int id) {
+    if (pathObject == current && (!pathFound || FlixelDebugPaths.resolve(this, pathText) == current)) {
+      return pathText;
+    }
+    pathObject = current;
+    pathFound = FlixelDebugPaths.build(this, current, pathText);
+    if (!pathFound) {
+      pathText.clear();
+      pathText.concat(chain.typeName).concat('#').concat(id);
+    }
+    return pathText;
   }
 
   private void setProperty(FlixelDebugMessageReader reader) {
