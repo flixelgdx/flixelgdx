@@ -43,6 +43,7 @@ import org.flixelgdx.backend.desktop.runtime.FlixelJvmRuntimeDevice;
 import org.flixelgdx.backend.desktop.save.FlixelJvmSaveHandler;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
 import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
+import org.flixelgdx.backend.jvm.FlixelJvmDebugger;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.logging.FlixelLogger;
@@ -100,6 +101,9 @@ public final class FlixelDesktopLauncher {
    *   <li>No property (the default, and how packaged/published builds run) starts in
    *       {@link FlixelRuntimeMode#RELEASE RELEASE}.</li>
    * </ul>
+   *
+   * <p>In debug mode the game also connects to the remote debugger app on {@code 127.0.0.1:6510}. Add
+   * {@code -Dflixel.debugHost=host[:port]} to connect to another computer.
    *
    * <p>Because the flag lives in the launch command (for example a Gradle {@code debug} run task) and
    * not in code, there is nothing to remember to remove before publishing: a shipped build simply runs
@@ -249,6 +253,11 @@ public final class FlixelDesktopLauncher {
     });
 
     Flixel.runtime.setMode(runtimeMode);
+
+    if (runtimeMode == FlixelRuntimeMode.DEBUG) {
+      // The remote debugger app. -Dflixel.debugHost=host[:port] points the game somewhere other than this computer.
+      FlixelJvmDebugger.install(System.getProperty(FlixelJvmDebugger.HOST_KEY));
+    }
 
     Flixel.start(game, runner);
     if (AnsiConsole.isInstalled()) {

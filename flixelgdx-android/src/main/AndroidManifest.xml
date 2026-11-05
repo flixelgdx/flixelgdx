@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Lets a game in debug mode reach the remote debugger app over the network or through "adb reverse". -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!--
       FlixelGDX renders through WebGPU (Dawn), which runs on Vulkan 1.1 on Android. There is no OpenGL ES fallback,
       so the requirement is hard: Google Play hides the game from devices without Vulkan 1.1 instead of letting
