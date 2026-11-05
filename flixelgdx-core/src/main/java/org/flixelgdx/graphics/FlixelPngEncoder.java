@@ -34,8 +34,8 @@ import java.nio.ByteBuffer;
  * a compression library), it only wraps it in the envelope that every PNG reader expects. The pixel rows are
  * stored as "uncompressed" deflate blocks, and the checksums (CRC32 for each chunk and Adler32 for the zlib stream)
  * are computed by hand. That makes the files bigger than a real encoder's, which does not matter for a debugger
- * thumbnail, and it means the encoder runs everywhere, including the browser and Android, without {@code java.util.zip},
- * {@code java.awt}, or {@code javax.imageio}.
+ * thumbnail, and it means the encoder runs everywhere, including the browser and Android, without
+ * {@code java.util.zip}, {@code java.awt}, or {@code javax.imageio}.
  *
  * <p>The encoder can also shrink a picture while it writes it. It picks every n-th pixel (nearest neighbor), so
  * pixel art stays sharp. One encoder reuses its buffers, so encoding many thumbnails in a row creates little

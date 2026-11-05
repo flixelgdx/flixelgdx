@@ -370,6 +370,15 @@ Id `console`, kind 7. Subtypes:
 
 Command output itself arrives through [`logs`](#logs).
 
+The game registers these commands for the debugger itself (the `COMMANDS` list always includes them, with usage and
+description, and a game can add more):
+
+| Command | Usage | What it does |
+|---------|-------|--------------|
+| `select` | `select [path]` | Selects the object at a [scene path](#scene-paths) in the inspector, or the object under the mouse when no path is given. |
+| `freecam` | `freecam [on\|off]` | Turns the free camera on or off (see [controls](#controls)). Without an argument it toggles. |
+| `goto` | `goto <x> <y>` | Centers the main camera on a world position. It turns the free camera on first, so the follow target does not pull the camera away again. |
+
 Actions:
 
 | Code | Name  | Fields |

@@ -198,8 +198,8 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
    *
    * <p>The path must already exist and lead to a string, a boolean, or a number. A string may be typed with or
    * without double quotes (inside quotes, {@code \"}, {@code \\}, and {@code \n} stand for a quote, a backslash, and
-   * a line break). A boolean is {@code true} or {@code false} in any case. A number is parsed as the type the value has,
-   * so a whole number rejects {@code 1.5}, and a number that does not fit is rejected. The outcome is shown in the
+   * a line break). A boolean is {@code true} or {@code false} in any case. A number is parsed as the type the value
+   * has, so a whole number rejects {@code 1.5}, and a number that does not fit is rejected. The outcome is shown in the
    * status line.
    *
    * @param path The dotted path of the value, as shown in the rows.
@@ -827,7 +827,7 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
 
   /** Removes one pair of surrounding quotes and undoes the escapes of {@link #quote}; unquoted text is kept as is. */
   private static String unquote(String typed) {
-    String text = typed.strip();
+    String text = typed.trim();
     if (text.length() < 2 || text.charAt(0) != '"' || text.charAt(text.length() - 1) != '"') {
       return typed;
     }
