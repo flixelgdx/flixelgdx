@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>What is listed</h2>
  *
  * <p>The panel lists the textures of every loaded {@link FlixelGraphic} that the asset manager tracks
- * ({@link org.flixelgdx.Flixel#assets}): files loaded by path and graphics made in code, such as {@code makeGraphic}.
+ * ({@link Flixel#assets}): files loaded by path and graphics made in code, such as {@code makeGraphic}.
  * A texture created by hand with the graphics manager and not wrapped in a graphic, or one that belongs to the
  * framework itself (the font atlas, render targets), is not listed. Each row has:
  * <ul>
