@@ -34,6 +34,7 @@ import io.github.stringdotjar.jwebgpu.GpuCallbackMode;
 import io.github.stringdotjar.jwebgpu.GpuDevice;
 import io.github.stringdotjar.jwebgpu.GpuDeviceDescriptor;
 import io.github.stringdotjar.jwebgpu.GpuDeviceLostCallback;
+import io.github.stringdotjar.jwebgpu.GpuDeviceLostReason;
 import io.github.stringdotjar.jwebgpu.GpuFeatureName;
 import io.github.stringdotjar.jwebgpu.GpuInstance;
 import io.github.stringdotjar.jwebgpu.GpuPowerPreference;
@@ -122,10 +123,8 @@ public final class FlixelGpuBootstrap {
       }
     }
     descriptor.uncapturedErrorCallback = (dev, type, message) -> LOG.error("WebGPU error ({}): {}", type, message);
-    if (lostCallback != null) {
-      descriptor.deviceLostCallback = lostCallback;
-      descriptor.deviceLostMode = GpuCallbackMode.ALLOW_PROCESS_EVENTS;
-    }
+    descriptor.deviceLostCallback = this::onLost;
+    descriptor.deviceLostMode = GpuCallbackMode.ALLOW_PROCESS_EVENTS;
     chosen.requestDevice(descriptor, GpuCallbackMode.ALLOW_PROCESS_EVENTS, (status, result, message) -> {
       if (result == null) {
         fail("The GPU device could not be created (" + status + "): " + message);
@@ -134,6 +133,18 @@ public final class FlixelGpuBootstrap {
       device = result;
       done = true;
     });
+  }
+
+  private void onLost(GpuDevice lostDevice, GpuDeviceLostReason reason, String message) {
+    if (reason == GpuDeviceLostReason.DESTROYED) {
+      LOG.warn("The GPU device was destroyed ({}): {}", reason, message);
+    } else {
+      LOG.error("The GPU device was lost ({}): {}", reason, message);
+    }
+    GpuDeviceLostCallback callback = lostCallback;
+    if (callback != null) {
+      callback.onDeviceLost(lostDevice, reason, message);
+    }
   }
 
   private void fail(String message) {
@@ -241,6 +252,9 @@ public final class FlixelGpuBootstrap {
   /**
    * Sets a callback for when the device is lost (a GPU reset, a driver crash, or the device being destroyed on
    * purpose). Takes effect only if called before {@link #start()}.
+   *
+   * <p>The loss reason and message are always logged (an error, or a warning when the device was destroyed on
+   * purpose), whether or not a callback is set.
    *
    * <p>With the mode used here, the callback runs from {@code instance.processEvents()}, on the thread that calls
    * it. A platform that wants to survive a lost device checks a flag set by this callback once per frame.
