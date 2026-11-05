@@ -532,7 +532,6 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
     if (disposing) {
       return;
     }
-    LOG.error("The GPU device was lost ({}): {}", reason, message);
     deviceLost = true;
   }
 

@@ -265,15 +265,6 @@ public final class FlixelDesktopLauncher {
    * @return The runtime mode requested on the command line, or {@code RELEASE} when none was.
    */
   private static FlixelRuntimeMode resolveRuntimeMode() {
-    String mode = System.getProperty("flixel.mode", "").trim().toLowerCase();
-    return switch (mode) {
-      case "debug" -> FlixelRuntimeMode.DEBUG;
-      case "test" -> FlixelRuntimeMode.TEST;
-      case "", "release" -> FlixelRuntimeMode.RELEASE;
-      default -> {
-        LOG.warn("Unknown flixel.mode '{}'; defaulting to RELEASE.", mode);
-        yield FlixelRuntimeMode.RELEASE;
-      }
-    };
+    return FlixelRuntimeMode.parse(System.getProperty("flixel.mode"), FlixelRuntimeMode.RELEASE);
   }
 }

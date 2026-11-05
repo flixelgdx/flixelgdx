@@ -160,6 +160,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** Frame-rate cap applied to the render loop while the window is unfocused and {@link Flixel#autoPause} is on. */
   private static final int BACKGROUND_FPS = 10;
 
+  private static final String TRACE_UPDATE = "flixel.update";
+  private static final String TRACE_UPDATE_TWEENS = "flixel.update.tweens";
+  private static final String TRACE_UPDATE_STATE = "flixel.update.state";
+  private static final String TRACE_UPDATE_CAMERAS = "flixel.update.cameras";
+  private static final String TRACE_DRAW = "flixel.draw";
+
   /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
   public FlixelColor bgColor = new FlixelColor(FlixelColor.BLACK);
 
@@ -373,6 +379,15 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   @Override
   public void update(float elapsed) {
+    Flixel.profiler.begin(TRACE_UPDATE);
+    try {
+      updateFrame(elapsed);
+    } finally {
+      Flixel.profiler.end();
+    }
+  }
+
+  private void updateFrame(float elapsed) {
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
 
@@ -384,28 +399,43 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     FlixelActionSets.update(elapsed);
 
     if (!gamePaused && shouldUpdate) {
-      FlixelTween.updateTweens(elapsed);
-      FlixelTimer.getGlobalManager().update(elapsed);
+      Flixel.profiler.begin(TRACE_UPDATE_TWEENS);
+      try {
+        FlixelTween.updateTweens(elapsed);
+        FlixelTimer.getGlobalManager().update(elapsed);
+      } finally {
+        Flixel.profiler.end();
+      }
 
       // Walk the state/substate chain. Each state in the chain is updated only
       // if it is the active (innermost) state or if its persistentUpdate flag is true.
-      FlixelState current = Flixel.state;
-      while (current != null) {
-        FlixelState sub = current.getSubState();
-        boolean hasSubState = (sub != null);
+      Flixel.profiler.begin(TRACE_UPDATE_STATE);
+      try {
+        FlixelState current = Flixel.state;
+        while (current != null) {
+          FlixelState sub = current.getSubState();
+          boolean hasSubState = (sub != null);
 
-        if (!hasSubState || current.persistentUpdate) {
-          current.update(elapsed);
+          if (!hasSubState || current.persistentUpdate) {
+            current.update(elapsed);
+          }
+
+          current = sub;
         }
-
-        current = sub;
+      } finally {
+        Flixel.profiler.end();
       }
 
       Flixel.sound.update(elapsed);
 
       // Update all cameras.
-      for (FlixelCamera camera : Flixel.cameras) {
-        camera.update(elapsed);
+      Flixel.profiler.begin(TRACE_UPDATE_CAMERAS);
+      try {
+        for (FlixelCamera camera : Flixel.cameras) {
+          camera.update(elapsed);
+        }
+      } finally {
+        Flixel.profiler.end();
       }
 
       if (overlayGroup != null && overlayEnabled) {
@@ -431,6 +461,15 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   @Override
   public void draw(@NotNull FlixelBatch batch) {
+    Flixel.profiler.begin(TRACE_DRAW);
+    try {
+      drawFrame(batch);
+    } finally {
+      Flixel.profiler.end();
+    }
+  }
+
+  private void drawFrame(@NotNull FlixelBatch batch) {
     Flixel.Signals.preDraw.dispatch();
 
     Flixel.graphics.clear(bgColor.r, bgColor.g, bgColor.b, bgColor.a); // Clear the screen to refresh it.
