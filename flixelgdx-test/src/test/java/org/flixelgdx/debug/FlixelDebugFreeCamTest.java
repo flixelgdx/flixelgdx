@@ -255,6 +255,77 @@ class FlixelDebugFreeCamTest {
   }
 
   @Test
+  void panFreeCamTurnsTheFreeCameraOnAndMovesInViewUnits() {
+    cam.follow(target);
+    cam.scrollX = 10f;
+    cam.scrollY = 20f;
+
+    assertTrue(controls.panFreeCam(30f, -5f));
+
+    assertTrue(controls.isFreeCamActive());
+    assertNull(cam.target);
+    assertEquals(40f, cam.scrollX, EPS);
+    assertEquals(15f, cam.scrollY, EPS);
+    assertFalse(controls.panFreeCam(Float.NaN, 0f));
+    assertEquals(40f, cam.scrollX, EPS);
+  }
+
+  @Test
+  void zoomFreeCamKeepsTheAnchorStillAndStaysInsideTheLimits() {
+    cam.scrollX = 100f;
+    cam.scrollY = 50f;
+    float anchorX = 80f;
+    float anchorY = 60f;
+    float worldX = anchorX + cam.scrollX + cam.getViewMarginX();
+    float worldY = anchorY + cam.scrollY + cam.getViewMarginY();
+
+    assertTrue(controls.zoomFreeCam(2f, anchorX, anchorY));
+
+    assertEquals(2f, cam.getZoom(), EPS);
+    // The anchor was a fraction of the old view; that same fraction of the new, smaller view shows the same point.
+    float newAnchorX = anchorX / 2f;
+    float newAnchorY = anchorY / 2f;
+    assertEquals(worldX, newAnchorX + cam.scrollX + cam.getViewMarginX(), EPS);
+    assertEquals(worldY, newAnchorY + cam.scrollY + cam.getViewMarginY(), EPS);
+
+    assertTrue(controls.zoomFreeCam(1000f, 0f, 0f));
+    assertEquals(FlixelDebugControlsPanel.MAX_ZOOM, cam.getZoom(), 0f);
+    assertFalse(controls.zoomFreeCam(2f, 0f, 0f), "already at the limit");
+    assertTrue(controls.zoomFreeCam(0.00001f, 0f, 0f));
+    assertEquals(FlixelDebugControlsPanel.MIN_ZOOM, cam.getZoom(), 0f);
+    assertFalse(controls.zoomFreeCam(0f, 0f, 0f));
+    assertFalse(controls.zoomFreeCam(-2f, 0f, 0f));
+  }
+
+  @Test
+  void anotherCameraCanBeFlownAndTheFirstOneIsRestored() {
+    FlixelCamera second = newCamera();
+    Flixel.cameras.add(second);
+    cam.scrollX = 5f;
+    controls.panFreeCam(100f, 0f);
+    assertEquals(105f, cam.scrollX, EPS);
+
+    controls.setFreeCamIndex(1);
+
+    assertEquals(1, controls.getFreeCamIndex());
+    assertEquals(5f, cam.scrollX, 0f, "the main camera is put back");
+    assertTrue(controls.isFreeCamActive());
+    float before = second.scrollX;
+    controls.panFreeCam(7f, 0f);
+    assertEquals(before + 7f, second.scrollX, EPS);
+    assertEquals(5f, cam.scrollX, 0f);
+
+    controls.reset();
+    assertEquals(0, controls.getFreeCamIndex());
+    assertEquals(before, second.scrollX, 0f);
+
+    controls.setFreeCamIndex(9);
+    controls.setFreeCam(true);
+    controls.panFreeCam(1f, 0f);
+    assertEquals(6f, cam.scrollX, EPS, "an index past the end flies the main camera");
+  }
+
+  @Test
   void dragWithTheRightButtonPansTheOppositeWayToTheMouse() {
     controls.setFreeCam(true);
     float x = cam.scrollX;

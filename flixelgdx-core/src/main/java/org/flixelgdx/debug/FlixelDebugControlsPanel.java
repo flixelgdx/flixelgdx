@@ -91,6 +91,11 @@ import java.util.function.Consumer;
  * while you fly. Turning it off puts the camera's scroll, zoom, scroll bounds, and follow target back exactly as
  * they were.
  *
+ * <p>Code (and the debugger app, through the viewport panel) can fly the camera too: {@link #panFreeCam(float, float)}
+ * moves it, {@link #zoomFreeCam(float, float, float)} zooms around a point that stays still, and
+ * {@link #setFreeCamIndex(int)} chooses another camera to fly than the main one. The keys, the wheel, and the right
+ * button use the same two methods, so every way of flying behaves the same.
+ *
  * <p>Example:
  *
  * <pre>{@code
@@ -99,6 +104,7 @@ import java.util.function.Consumer;
  * Flixel.debug.controls.setHitboxes(true);
  * Flixel.debug.controls.setPauseKey(FlixelKey.P);
  * Flixel.debug.controls.goTo(1200f, 300f); // Turns the free camera on and looks at that spot.
+ * Flixel.debug.controls.panFreeCam(0f, -50f); // Looks a little higher.
  * Flixel.debug.controls.setFreeCam(false); // Back to the game's camera.
  * }</pre>
  *
@@ -199,6 +205,7 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
   private int pauseKey = FlixelKey.F3;
   private int hitboxesKey = FlixelKey.F2;
   private int freeCamKey = FlixelKey.F4;
+  private int freeCamIndex;
   private int rate = DEFAULT_RATE;
   private int logLevel = FlixelDebugProtocol.LEVEL_DEFAULT;
   private int syncedRate = -1;
@@ -234,9 +241,9 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
     FlixelKeyInputManager keys = Flixel.keys;
     FlixelMouseInputManager mouse = Flixel.mouse;
     if (freeCam) {
-      FlixelCamera main = mainCamera();
-      if (freeCamActive && main != freeCamCamera) {
-        // The camera list was rebuilt (for example by a new state), so fly the new main camera instead.
+      FlixelCamera wanted = freeCamTarget();
+      if (freeCamActive && wanted != freeCamCamera) {
+        // The camera list was rebuilt (for example by a new state), so fly the new camera instead.
         leaveFreeCam();
       }
       if (!freeCamActive) {
@@ -309,7 +316,9 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
   }
 
   /**
-   * Turns the free camera on if needed and centers the main camera on a world point.
+   * Turns the free camera on if needed and centers the flown camera on a world point.
+   *
+   * <p>The flown camera is the main camera unless {@link #setFreeCamIndex(int)} chose another one.
    *
    * <p>Turning the free camera on first is what keeps the move from being undone by the camera's follow target on
    * the next frame. Turn the free camera off to go back to the game's camera.
@@ -328,6 +337,88 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
       return false;
     }
     cam.focusOn(worldX, worldY);
+    return true;
+  }
+
+  /**
+   * Turns the free camera on if needed and moves the flown camera by a distance in view space.
+   *
+   * <p>One view unit is one world unit for an object with a scroll factor of {@code 1}, so the distance does not
+   * depend on the window size. A positive {@code dx} moves the camera right, which makes the world slide left on
+   * the screen. To drag the world with a finger, pass the finger's movement with the sign flipped. The keyboard
+   * and the right mouse button of the free camera go through this method too.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Flixel.debug.controls.panFreeCam(100f, 0f); // Look 100 units further right.
+   * }</pre>
+   *
+   * @param dx How far to move right, in view units. Negative moves left.
+   * @param dy How far to move down, in view units. Negative moves up.
+   * @return {@code true} when the camera moved. It is {@code false} when there is no camera or a distance is not
+   *     a finite number.
+   */
+  public boolean panFreeCam(float dx, float dy) {
+    if (!Float.isFinite(dx) || !Float.isFinite(dy)) {
+      return false;
+    }
+    setFreeCam(true);
+    FlixelCamera cam = freeCamCamera;
+    if (!freeCamActive || cam == null) {
+      return false;
+    }
+    cam.scrollX += dx;
+    cam.scrollY += dy;
+    return true;
+  }
+
+  /**
+   * Turns the free camera on if needed and zooms the flown camera, keeping one point of the screen still.
+   *
+   * <p>Think of pinching a map on a phone: the spot between your fingers stays under your fingers while
+   * everything else grows or shrinks around it. The anchor is that spot, given in the camera's view space as it is
+   * before the zoom ({@code 0, 0} is the top left corner of what the camera shows). Pass the center of the view to
+   * zoom the way the mouse wheel does. The zoom stays between {@value #MIN_ZOOM} and {@value #MAX_ZOOM}.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * FlixelCamera cam = Flixel.cameras.first();
+   * float centerX = cam.getWorldWidth() / cam.getZoom() / 2f;
+   * float centerY = cam.getWorldHeight() / cam.getZoom() / 2f;
+   * Flixel.debug.controls.zoomFreeCam(2f, centerX, centerY); // Twice as close, around the center.
+   * }</pre>
+   *
+   * @param factor How much to multiply the zoom by. {@code 2} zooms in twice as close, {@code 0.5} zooms out.
+   * @param anchorViewX The horizontal position of the point that stays still, in view space.
+   * @param anchorViewY The vertical position of the point that stays still, in view space.
+   * @return {@code true} when the zoom changed. It is {@code false} when there is no camera, the factor is not a
+   *     positive finite number, an anchor is not finite, or the zoom was already at its limit.
+   */
+  public boolean zoomFreeCam(float factor, float anchorViewX, float anchorViewY) {
+    if (!(factor > 0f) || !Float.isFinite(factor) || !Float.isFinite(anchorViewX) || !Float.isFinite(anchorViewY)) {
+      return false;
+    }
+    setFreeCam(true);
+    FlixelCamera cam = freeCamCamera;
+    if (!freeCamActive || cam == null) {
+      return false;
+    }
+    float before = cam.getZoom();
+    float after = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, before * factor));
+    if (after == before) {
+      return false;
+    }
+    // The world point under the anchor, for an object with a scroll factor of 1 (see worldToViewX(...)).
+    float worldX = anchorViewX + cam.scrollX + cam.getViewMarginX();
+    float worldY = anchorViewY + cam.scrollY + cam.getViewMarginY();
+    cam.setZoom(after);
+    // The same spot on the screen now has a view position scaled by the zoom change. Scroll so the world point
+    // is drawn there again.
+    float ratio = before / after;
+    cam.scrollX = worldX - anchorViewX * ratio - cam.getViewMarginX();
+    cam.scrollY = worldY - anchorViewY * ratio - cam.getViewMarginY();
     return true;
   }
 
@@ -429,6 +520,7 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
   public void reset() {
     hitboxes = false;
     setFreeCam(false);
+    freeCamIndex = 0;
     rate = DEFAULT_RATE;
     setLogLevel(FlixelDebugProtocol.LEVEL_DEFAULT);
     markChanged();
@@ -477,13 +569,18 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
     }
   }
 
+  /** Returns the camera the free camera should fly: the chosen one, or the main camera when it does not exist. */
   @Nullable
-  private static FlixelCamera mainCamera() {
-    return Flixel.cameras.getSize() > 0 ? Flixel.cameras.first() : null;
+  private FlixelCamera freeCamTarget() {
+    int size = Flixel.cameras.getSize();
+    if (size == 0) {
+      return null;
+    }
+    return Flixel.cameras.get(freeCamIndex < size ? freeCamIndex : 0);
   }
 
   private void enterFreeCam() {
-    FlixelCamera cam = mainCamera();
+    FlixelCamera cam = freeCamTarget();
     if (cam == null) {
       return;
     }
@@ -580,16 +677,16 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
       // Keep diagonal movement as fast as straight movement.
       pixels *= 0.70710678f;
     }
-    cam.scrollX += moveX * pixels * perPixelX;
-    cam.scrollY += moveY * pixels * perPixelY;
+    if (moveX != 0f || moveY != 0f) {
+      panFreeCam(moveX * pixels * perPixelX, moveY * pixels * perPixelY);
+    }
 
     if (mouse.rawPressed(FlixelMouseButton.RIGHT)) {
       float x = mouse.getScreenX();
       float y = mouse.getScreenY();
-      if (dragging) {
+      if (dragging && (x != dragX || y != dragY)) {
         // Dragging grabs the world, so it moves the opposite way to the camera.
-        cam.scrollX -= (x - dragX) * perPixelX;
-        cam.scrollY -= (y - dragY) * perPixelY;
+        panFreeCam(-(x - dragX) * perPixelX, -(y - dragY) * perPixelY);
       }
       dragX = x;
       dragY = y;
@@ -608,14 +705,9 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
       steps -= ZOOM_KEY_STEPS_PER_SECOND * elapsed;
     }
     if (steps != 0f) {
-      setFreeCamZoom(cam, (float) (cam.getZoom() * Math.pow(ZOOM_STEP, steps)));
-    }
-  }
-
-  private void setFreeCamZoom(FlixelCamera cam, float zoom) {
-    float clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
-    if (clamped != cam.getZoom()) {
-      cam.setZoom(clamped);
+      float zoom = cam.getZoom();
+      zoomFreeCam((float) Math.pow(ZOOM_STEP, steps), cam.getWorldWidth() / zoom * 0.5f,
+          cam.getWorldHeight() / zoom * 0.5f);
     }
   }
 
@@ -704,11 +796,12 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
   /**
    * Turns the free camera on or off.
    *
-   * <p>Turning it on saves the main camera's scroll, zoom, scroll bounds, and follow target, stops following,
+   * <p>Turning it on saves the flown camera's scroll, zoom, scroll bounds, and follow target, stops following,
    * and hides the free camera keys from the game. Turning it off restores all of that exactly. When there is no
    * camera yet, the request is remembered and the free camera starts as soon as one exists.
    *
-   * @param freeCam {@code true} to fly the main camera.
+   * @param freeCam {@code true} to fly the camera chosen with {@link #setFreeCamIndex(int)} (the main camera by
+   *     default).
    */
   public void setFreeCam(boolean freeCam) {
     this.freeCam = freeCam;
@@ -724,10 +817,38 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
   /**
    * Returns whether the free camera is flying a camera right now.
    *
-   * @return {@code true} when the main camera is under the free camera's control.
+   * @return {@code true} when a camera is under the free camera's control.
    */
   public boolean isFreeCamActive() {
     return freeCamActive;
+  }
+
+  public int getFreeCamIndex() {
+    return freeCamIndex;
+  }
+
+  /**
+   * Chooses which camera the free camera flies.
+   *
+   * <p>The index is a position in {@link Flixel#cameras}, and {@code 0} (the main camera) is the default. When the
+   * free camera is flying another camera right now, that camera is restored exactly first and the new one takes
+   * over. While the index is past the end of the camera list, the main camera is flown instead.
+   *
+   * @param freeCamIndex A position in {@link Flixel#cameras}. Negative values are raised to {@code 0}.
+   */
+  public void setFreeCamIndex(int freeCamIndex) {
+    int index = Math.max(0, freeCamIndex);
+    if (index == this.freeCamIndex) {
+      return;
+    }
+    boolean flying = freeCamActive;
+    if (flying) {
+      leaveFreeCam();
+    }
+    this.freeCamIndex = index;
+    if (flying && freeCam) {
+      enterFreeCam();
+    }
   }
 
   public float getFreeCamSpeed() {
