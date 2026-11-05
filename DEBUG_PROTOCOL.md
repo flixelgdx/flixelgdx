@@ -31,7 +31,10 @@ Current version: **1.0**.
 - The **game is the WebSocket client** and the **app is the server**. The default URL is
   `ws://127.0.0.1:6510/`.
 - Android devices reach the PC through `adb reverse tcp:6510 tcp:6510`, so the game still connects to
-  `127.0.0.1:6510`.
+  `127.0.0.1:6510`. A game can be pointed at another host with `host[:port]` in the `-Dflixel.debugHost` system
+  property (desktop), the `flixel.debugHost` intent extra (Android), or the `flixel.debugHost` URL query parameter
+  (web). The game only connects in debug mode.
+- The game limits a message to 16 MB and closes the connection with code 1009 above that.
 - Either side may close the connection at any time. The game reconnects every 2 seconds until it
   succeeds. After every reconnect the whole handshake starts over (`HELLO` first, then everything the
   game sends is re-sent in full).

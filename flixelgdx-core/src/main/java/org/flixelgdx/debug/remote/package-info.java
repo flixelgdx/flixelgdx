@@ -11,8 +11,13 @@
  *       messages in a reusable buffer.</li>
  *   <li>{@link org.flixelgdx.debug.remote.FlixelDebugMessageReader FlixelDebugMessageReader}: parses
  *       received messages.</li>
+ *   <li>{@link org.flixelgdx.debug.remote.FlixelDebugAgent FlixelDebugAgent}: the messenger that runs the
+ *       handshake and sends the debug panels each frame.</li>
+ *   <li>{@link org.flixelgdx.debug.remote.FlixelDebugTransport FlixelDebugTransport}: the pipe the agent talks
+ *       through, which each platform fills in.</li>
  * </ul>
  *
- * <p>Nothing in this package touches the network, so it is safe on every platform.
+ * <p>Nothing in this package touches the network, so it is safe on every platform. Sockets live in the platform
+ * modules: {@code flixelgdx-jvm} for desktop and Android, and {@code flixelgdx-html5} for the browser.
  */
 package org.flixelgdx.debug.remote;
