@@ -51,6 +51,8 @@ import io.github.stringdotjar.jwebgpu.jni.JWebGpuJni;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.view.Window;
 
@@ -85,13 +87,28 @@ public final class FlixelAndroidLauncher {
   private FlixelAndroidLauncher() {}
 
   /**
-   * Launches the game, defaulting to {@link FlixelRuntimeMode#RELEASE}.
+   * Launches the game, choosing the runtime mode from the launch intent and the build type.
+   *
+   * <p>This is the call almost every game uses. The mode is resolved as follows:
+   *
+   * <ul>
+   *   <li>A {@code flixel.mode} string extra on the activity's intent wins when present. Accepted
+   *       values are {@code debug}, {@code test} and {@code release}. For example:
+   *       {@code adb shell am start -n <package>/<activity> -e flixel.mode debug}.</li>
+   *   <li>Otherwise a debuggable app (a normal debug build) starts in
+   *       {@link FlixelRuntimeMode#DEBUG DEBUG}.</li>
+   *   <li>Otherwise the app starts in {@link FlixelRuntimeMode#RELEASE RELEASE}.</li>
+   * </ul>
+   *
+   * <p>Because the choice follows the build type, a release build that you publish lands in release
+   * mode without any code change. To force a specific mode, call
+   * {@link #launch(Activity, FlixelGame, FlixelRuntimeMode)} directly.
    *
    * @param activity The host activity.
    * @param game The game instance to run.
    */
   public static void launch(@NotNull Activity activity, @NotNull FlixelGame game) {
-    launch(activity, game, FlixelRuntimeMode.RELEASE);
+    launch(activity, game, resolveRuntimeMode(activity));
   }
 
   /**
@@ -191,6 +208,22 @@ public final class FlixelAndroidLauncher {
     Flixel.start(game, runner);
 
     runner.setCrashHandler(runtime.getCrashHandler());
+  }
+
+  /**
+   * Resolves the runtime mode from the {@code flixel.mode} intent extra, falling back to
+   * {@code DEBUG} for debuggable apps and {@code RELEASE} otherwise.
+   *
+   * @param activity The host activity.
+   * @return The runtime mode to start with.
+   */
+  @NotNull
+  private static FlixelRuntimeMode resolveRuntimeMode(@NotNull Activity activity) {
+    boolean debuggable = (activity.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+    FlixelRuntimeMode fallback = debuggable ? FlixelRuntimeMode.DEBUG : FlixelRuntimeMode.RELEASE;
+    Intent intent = activity.getIntent();
+    String extra = intent == null ? null : intent.getStringExtra("flixel.mode");
+    return FlixelRuntimeMode.parse(extra, fallback);
   }
 
   /**

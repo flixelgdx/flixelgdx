@@ -147,15 +147,7 @@ public final class FlixelHtml5Launcher {
    * @return The runtime mode requested in the URL, or {@code RELEASE} when none was.
    */
   private static FlixelRuntimeMode resolveRuntimeMode() {
-    String mode = urlMode();
-    if (mode == null) {
-      return FlixelRuntimeMode.RELEASE;
-    }
-    return switch (mode.trim().toLowerCase()) {
-      case "debug" -> FlixelRuntimeMode.DEBUG;
-      case "test" -> FlixelRuntimeMode.TEST;
-      default -> FlixelRuntimeMode.RELEASE;
-    };
+    return FlixelRuntimeMode.parse(urlMode(), FlixelRuntimeMode.RELEASE);
   }
 
   /**
