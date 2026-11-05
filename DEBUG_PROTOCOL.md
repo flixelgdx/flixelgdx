@@ -484,14 +484,46 @@ Id `save`, kind 10. Payload:
 | `status`  | `string` |
 | `isError` | `bool` (true when `status` describes a failure) |
 
-Actions:
+The game sends the payload again whenever something in it changed (it checks about once a second, and right
+after every action), so the app can simply poll or listen.
+
+**Rows.** The save is a tree of maps, lists, and plain values. The game flattens it into one row per plain value:
+
+- `path` is the dotted path of the value, for example `player.coins` or `inventory.2.name`. List elements are
+  named by their index. A key that contains a dot is written as it is, so a path can be ambiguous; the game tries
+  every way of cutting it when it resolves one.
+- Keys that are whole numbers sort by value and come first; all other keys sort alphabetically without regard to
+  case. At most 300 rows are sent, and the status line shows `300+ values` when more exist.
+- `display` is the value as text: strings are in double quotes (with `\"`, `\\`, `\n`, `\r`, and `\t` escaped and
+  cut after 200 characters), booleans are `true` or `false`, numbers are plain digits, and an empty map or list is
+  `{}` or `[]`. A `null` is `null`.
+- `valueKind` is the kind of the stored value: `BOOL`, `INT`, `LONG`, `FLOAT`, `DOUBLE`, or `STRING` (strings, nulls,
+  and empty containers). A saved file does not remember whether a number was whole, so numbers read back from disk
+  are always `DOUBLE`.
+- `unsaved` is true when the value differs from the copy in storage: it is new, or it has another type of value
+  (text, number, boolean) or another value. `5` and `5.0` are the same number.
+- `removed` lists the paths that are in storage but no longer in the data.
+
+**Actions.**
 
 | Code | Name        | Fields |
 |------|-------------|--------|
-| 1    | `SET`       | `string path`, `string text` (parsed by the game using the row's value kind) |
+| 1    | `SET`       | `string path`, `string text` (both at most 200 characters) |
 | 2    | `RESET_KEY` | `string path` |
 | 3    | `SAVE_NOW`  | none |
 | 4    | `RESET_ALL` | none |
+
+- `SET` changes a value that already exists and keeps its type. A string may be typed with or without double
+  quotes (inside quotes `\"`, `\\`, and `\n` mean a quote, a backslash, and a line break). A boolean must be `true`
+  or `false`. A number is parsed as the type the value already has, so a whole number rejects `1.5`. A path that
+  does not exist, a `null`, a map, or a list is rejected. The result is in `status`.
+- `RESET_KEY` removes the value (or a whole branch). The game has no table of default values, so the game uses
+  the default it passes when it reads the value. Removing a list element moves the later elements down.
+- `SAVE_NOW` writes the data to storage.
+- `RESET_ALL` erases the data and the stored save at once. The app should ask the person to confirm before
+  sending it.
+
+Nothing reaches storage until `SAVE_NOW` (or the game's own save call).
 
 ## Custom panels
 

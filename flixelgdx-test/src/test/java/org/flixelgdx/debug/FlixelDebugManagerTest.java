@@ -47,11 +47,11 @@ class FlixelDebugManagerTest {
 
   @Test
   void builtInPanelsAreRegisteredInOrder() {
-    String[] ids = { "stats", "logs", "watches", "trackers", "textures", "controls", "console", "inspector" };
+    String[] ids = { "stats", "logs", "watches", "trackers", "textures", "controls", "console", "inspector", "save" };
     int[] kinds = {
         FlixelDebugProtocol.KIND_STATS, FlixelDebugProtocol.KIND_LOGS, FlixelDebugProtocol.KIND_WATCHES,
         FlixelDebugProtocol.KIND_TRACKERS, FlixelDebugProtocol.KIND_TEXTURES, FlixelDebugProtocol.KIND_CONTROLS,
-        FlixelDebugProtocol.KIND_CONSOLE, FlixelDebugProtocol.KIND_INSPECTOR };
+        FlixelDebugProtocol.KIND_CONSOLE, FlixelDebugProtocol.KIND_INSPECTOR, FlixelDebugProtocol.KIND_SAVE };
     assertEquals(ids.length, manager.getPanelCount());
     for (int i = 0; i < ids.length; i++) {
       assertEquals(ids[i], manager.getPanel(i).getId());
@@ -65,6 +65,7 @@ class FlixelDebugManagerTest {
     assertSame(manager.controls, manager.get("controls"));
     assertSame(manager.console, manager.get("console"));
     assertSame(manager.inspector, manager.get("inspector"));
+    assertSame(manager.save, manager.get("save"));
   }
 
   @Test
@@ -90,7 +91,7 @@ class FlixelDebugManagerTest {
     manager.register(new CountingPanel("custom.count"));
     assertThrows(IllegalArgumentException.class, () -> manager.register(new CountingPanel("custom.count")));
     assertThrows(IllegalArgumentException.class, () -> manager.register(new CountingPanel("stats")));
-    assertEquals(9, manager.getPanelCount());
+    assertEquals(10, manager.getPanelCount());
   }
 
   @Test

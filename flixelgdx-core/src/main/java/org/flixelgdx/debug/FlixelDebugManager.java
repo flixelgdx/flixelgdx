@@ -54,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #controls}: pause, step, hitboxes, the free camera, picking, and debugger settings.</li>
  *   <li>{@link #console}: a command line with commands that you can register.</li>
  *   <li>{@link #inspector}: select an object and see or edit its properties.</li>
+ *   <li>{@link #save}: view and edit the game's save data.</li>
  * </ul>
  *
  * <p>Example:
@@ -113,6 +114,15 @@ public class FlixelDebugManager {
    */
   public final FlixelDebugWatchPanel watches;
 
+  /**
+   * The save panel: view and edit the values of {@link Flixel#save}, then save or erase them.
+   * <pre>{@code
+   * Flixel.debug.save.set("player.coins", "999");
+   * Flixel.debug.save.saveNow();
+   * }</pre>
+   */
+  public final FlixelDebugSavePanel save;
+
   /** The tracker panel: named groups of values. */
   public final FlixelDebugTrackerPanel trackers;
 
@@ -171,6 +181,7 @@ public class FlixelDebugManager {
     trackers = new FlixelDebugTrackerPanel();
     textures = new FlixelDebugTexturePanel(ids);
     console = new FlixelDebugConsolePanel(this);
+    save = new FlixelDebugSavePanel();
     inspector.setFocusHandler(controls::goTo);
     FlixelDebugDefaultSections.register(inspector);
     register(stats);
@@ -181,6 +192,7 @@ public class FlixelDebugManager {
     register(controls);
     register(console);
     register(inspector);
+    register(save);
   }
 
   /**

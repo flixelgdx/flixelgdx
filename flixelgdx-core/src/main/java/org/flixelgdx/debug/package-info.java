@@ -78,6 +78,12 @@
  * for a small PNG thumbnail of a texture, and of the selected sprite in the inspector, when the graphics backend can
  * read textures back from the GPU. See {@link org.flixelgdx.debug.FlixelDebugThumbnails FlixelDebugThumbnails}.
  *
+ * <h2>Editing the save</h2>
+ * <p>The save panel ({@link org.flixelgdx.debug.FlixelDebugSavePanel FlixelDebugSavePanel}) shows every value of
+ * {@code Flixel.save} as a row, marks the ones that differ from what is stored, and lets you change a value, remove
+ * one, write the save, or erase it, all from the debugger app or from code with
+ * {@code Flixel.debug.save.set("player.coins", "999")}.
+ *
  * <h2>Custom panels</h2>
  * <p>For a panel that is not about one object, use a
  * {@link org.flixelgdx.debug.FlixelDebugCustomPanel FlixelDebugCustomPanel}. Describe its rows and buttons with
