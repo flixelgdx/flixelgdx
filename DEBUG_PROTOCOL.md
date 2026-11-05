@@ -34,7 +34,9 @@ Current version: **1.0**.
   `127.0.0.1:6510`. A game can be pointed at another host with `host[:port]` in the `-Dflixel.debugHost` system
   property (desktop), the `flixel.debugHost` intent extra (Android), or the `flixel.debugHost` URL query parameter
   (web). The game only connects in debug mode.
-- The game limits a message to 16 MB and closes the connection with code 1009 above that.
+- The game limits a message to 16 MB and closes the connection with code 1009 above that. Separately, the game
+  reads each message from the app into a 128 KB buffer (`FlixelDebugAgent.RECEIVE_BYTES`) and drops any app
+  message larger than that without closing. Every app-to-game message in this spec is far smaller.
 - Either side may close the connection at any time. The game reconnects every 2 seconds until it
   succeeds. After every reconnect the whole handshake starts over (`HELLO` first, then everything the
   game sends is re-sent in full).
