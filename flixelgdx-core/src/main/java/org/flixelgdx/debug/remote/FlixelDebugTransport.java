@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.debug.remote;
 
+import org.flixelgdx.debug.FlixelDebugManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
@@ -35,7 +36,7 @@ import java.nio.ByteBuffer;
  * socket, the WebSocket handshake, waiting for a slow network, trying again after a failure) is the
  * transport's business, so {@link FlixelDebugAgent} stays plain Java that runs on every platform, including the
  * web. Core never touches {@code java.net}: a platform module supplies the transport and installs it through
- * {@link org.flixelgdx.debug.FlixelDebugManager#defaultTransport FlixelDebugManager.defaultTransport}.
+ * {@link FlixelDebugManager#defaultTransport}.
  *
  * <h2>Threading contract</h2>
  *
