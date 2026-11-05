@@ -34,6 +34,7 @@ import java.io.File;
 import java.util.Objects;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Debug;
 
 /**
@@ -72,6 +73,13 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
   @Override
   public long getNativeHeap() {
     return Debug.getNativeHeapAllocatedSize();
+  }
+
+  @Override
+  @NotNull
+  public String getDeviceDescription() {
+    return Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ", API "
+        + Build.VERSION.SDK_INT + ")";
   }
 
   @Override

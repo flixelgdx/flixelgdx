@@ -26,6 +26,10 @@ package org.flixelgdx.debug;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.debug.remote.FlixelDebugAgent;
+import org.flixelgdx.debug.remote.FlixelDebugEndpoint;
+import org.flixelgdx.debug.remote.FlixelDebugTransport;
+import org.flixelgdx.debug.remote.FlixelNoopDebugTransport;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.jetbrains.annotations.NotNull;
@@ -83,6 +87,13 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Panels are only updated while the game runs in debug mode, so they cost nothing in release builds.
  *
+ * <h2>The remote debugger app</h2>
+ *
+ * <p>In debug mode the manager also runs a {@link FlixelDebugAgent} that sends the panels to the debugger app over
+ * the installed {@link FlixelDebugTransport}. A platform launcher installs the transport and the address of the app
+ * in {@link #defaultTransport} and {@link #defaultEndpoint} before the game starts. Without a transport the agent
+ * does not run.
+ *
  * <h2>Thread safety</h2>
  *
  * <p>All public methods are intended to be called from the game's main thread. If you must run one from
@@ -90,6 +101,20 @@ import org.jetbrains.annotations.Nullable;
  * and run the debug method there instead.
  */
 public class FlixelDebugManager {
+
+  /**
+   * The transport new managers use to reach the debugger app. A platform launcher sets it before
+   * {@link Flixel#start(FlixelGame, org.flixelgdx.backend.FlixelGameRunner)} runs, the same way it installs
+   * {@code FlixelSave.defaultHandler}. The default is {@link FlixelNoopDebugTransport#INSTANCE}, which means no
+   * remote debugger.
+   */
+  public static FlixelDebugTransport defaultTransport = FlixelNoopDebugTransport.INSTANCE;
+
+  /**
+   * The address of the debugger app that new managers connect to. Launchers fill it from their
+   * {@code flixel.debugHost} setting; see {@link FlixelDebugEndpoint}.
+   */
+  public static FlixelDebugEndpoint defaultEndpoint = FlixelDebugEndpoint.DEFAULT;
 
   /**
    * Extra {@link FlixelBatch} instances registered by game code via {@link #trackBatch(FlixelBatch)}.
@@ -178,6 +203,11 @@ public class FlixelDebugManager {
 
   /** Goes up whenever a panel is registered or unregistered. */
   private long panelRevision;
+
+  private FlixelDebugTransport transport = defaultTransport;
+  private FlixelDebugEndpoint endpoint = defaultEndpoint;
+  private FlixelDebugAgent agent;
+  private boolean started;
 
   /** Creates the debug manager with all of its built-in panels registered. */
   public FlixelDebugManager() {
@@ -269,10 +299,13 @@ public class FlixelDebugManager {
   /**
    * Starts the debugger for a running game: the log panel begins to collect messages.
    *
-   * <p>{@link FlixelGame} calls this when it starts in debug mode.
+   * <p>{@link FlixelGame} calls this when it starts in debug mode. When a transport is installed, this also opens
+   * the connection to the debugger app (in the background).
    */
   public void start() {
     logs.attach();
+    started = true;
+    startAgent();
   }
 
   /**
@@ -302,6 +335,9 @@ public class FlixelDebugManager {
         panel.update(elapsed);
       }
     }
+    if (agent != null) {
+      agent.update(elapsed);
+    }
   }
 
   /**
@@ -311,6 +347,8 @@ public class FlixelDebugManager {
    * <p>{@link FlixelGame} calls this when it is destroyed.
    */
   public void dispose() {
+    started = false;
+    stopAgent();
     logs.detach();
     for (int i = 0; i < panels.getSize(); i++) {
       panels.get(i).reset();
@@ -353,6 +391,47 @@ public class FlixelDebugManager {
     }
   }
 
+  /**
+   * Replaces the transport that reaches the debugger app.
+   *
+   * <p>When the debugger is already running, the old transport is closed and the new one is opened at once.
+   * Use {@link #defaultTransport} instead to install a transport before the game starts.
+   *
+   * @param transport The new transport; {@link FlixelNoopDebugTransport#INSTANCE} turns the remote debugger off.
+   */
+  public void setTransport(@NotNull FlixelDebugTransport transport) {
+    stopAgent();
+    this.transport = transport;
+    if (started) {
+      startAgent();
+    }
+  }
+
+  /**
+   * Replaces the address of the debugger app. A running agent keeps its current connection; the new address is
+   * used the next time the transport is set or the debugger starts.
+   *
+   * @param endpoint The new address.
+   */
+  public void setEndpoint(@NotNull FlixelDebugEndpoint endpoint) {
+    this.endpoint = endpoint;
+  }
+
+  private void startAgent() {
+    if (transport == FlixelNoopDebugTransport.INSTANCE || agent != null) {
+      return;
+    }
+    agent = new FlixelDebugAgent(this, transport);
+    agent.start(endpoint.getHost(), endpoint.getPort());
+  }
+
+  private void stopAgent() {
+    if (agent != null) {
+      agent.stop();
+      agent = null;
+    }
+  }
+
   private int indexOf(String id) {
     for (int i = 0, n = panels.getSize(); i < n; i++) {
       if (panels.get(i).getId().equals(id)) {
@@ -364,6 +443,36 @@ public class FlixelDebugManager {
 
   public FlixelArray<FlixelBatch> getTrackedBatches() {
     return trackedBatches;
+  }
+
+  /**
+   * Returns the transport the agent uses.
+   *
+   * @return The transport, {@link FlixelNoopDebugTransport#INSTANCE} when there is none.
+   */
+  @NotNull
+  public FlixelDebugTransport getTransport() {
+    return transport;
+  }
+
+  /**
+   * Returns the address of the debugger app.
+   *
+   * @return The address.
+   */
+  @NotNull
+  public FlixelDebugEndpoint getEndpoint() {
+    return endpoint;
+  }
+
+  /**
+   * Returns the agent that talks to the debugger app.
+   *
+   * @return The agent, or {@code null} when the debugger has not started or no transport is installed.
+   */
+  @Nullable
+  public FlixelDebugAgent getAgent() {
+    return agent;
   }
 
   /**

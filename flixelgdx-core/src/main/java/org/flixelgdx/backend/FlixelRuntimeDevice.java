@@ -155,6 +155,19 @@ public interface FlixelRuntimeDevice {
   }
 
   /**
+   * Describes the machine the game runs on in one line, for example the operating system and its version on a
+   * desktop, the phone model and Android version on a phone, or the browser on the web.
+   *
+   * <p>The remote debugger shows this text next to the connected game so you can tell devices apart.
+   *
+   * @return A short human-readable description; {@code "Unknown"} when the platform cannot tell.
+   */
+  @NotNull
+  default String getDeviceDescription() {
+    return "Unknown";
+  }
+
+  /**
    * Classifies how the game's code is being loaded on this platform.
    *
    * @return The detected environment; {@link FlixelRunEnvironment#UNKNOWN} when the platform cannot
