@@ -72,6 +72,13 @@
  * object at a scene path such as {@code state.3.0}. See {@link org.flixelgdx.debug.FlixelDebugControlsPanel
  * FlixelDebugControlsPanel} and {@link org.flixelgdx.debug.FlixelDebugPaths FlixelDebugPaths}.
  *
+ * <h2>The viewport from the app</h2>
+ * <p>On a phone there is no keyboard or mouse for picking and the free camera. The viewport panel
+ * ({@link org.flixelgdx.debug.FlixelDebugViewportPanel FlixelDebugViewportPanel}) sends the debugger app a live map
+ * of every object a camera draws, so you can tap an object in the app to select it, drag it to move it, and drag or
+ * pinch the map to fly the camera. The same actions work from code, for example
+ * {@code Flixel.debug.viewport.pan(0f, -100f)}.
+ *
  * <h2>Textures</h2>
  * <p>The texture panel ({@link org.flixelgdx.debug.FlixelDebugTexturePanel FlixelDebugTexturePanel}) lists every
  * loaded texture with its size, GPU memory, the number of sprites using it, and a duplicate flag. The app can ask

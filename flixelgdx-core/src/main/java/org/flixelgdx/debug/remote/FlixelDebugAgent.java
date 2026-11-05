@@ -363,7 +363,7 @@ public final class FlixelDebugAgent {
         }
         case FlixelDebugProtocol.KIND_INSPECTOR -> wait = INSPECTOR_INTERVAL;
         case FlixelDebugProtocol.KIND_STATS, FlixelDebugProtocol.KIND_CONTROLS, FlixelDebugProtocol.KIND_CONSOLE,
-            FlixelDebugProtocol.KIND_SAVE ->
+            FlixelDebugProtocol.KIND_SAVE, FlixelDebugProtocol.KIND_VIEWPORT ->
           wait = 0f;
         default -> wait = interval;
       }

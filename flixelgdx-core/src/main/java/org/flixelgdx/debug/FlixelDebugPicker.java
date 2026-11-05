@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  * Groups are searched member by member, last member first, and a hidden or removed group hides its members.
  *
  * <p>The same walk is shared with anything else that needs "every object drawn on this camera", such as the
- * viewport panel that sends a map of the screen to the debugger app. Call
+ * {@linkplain FlixelDebugViewportPanel viewport panel} that sends a map of the screen to the debugger app. Call
  * {@link #forEachDrawn(FlixelCamera, boolean, Visitor)} to walk the objects in either order, and
  * {@link #computeBounds(FlixelObject, FlixelCamera)} to measure one of them, so every tool agrees on what is drawn
  * where.
@@ -71,6 +71,7 @@ import org.jetbrains.annotations.Nullable;
  * }</pre>
  *
  * @see FlixelDebugControlsPanel
+ * @see FlixelDebugViewportPanel
  */
 public class FlixelDebugPicker {
 

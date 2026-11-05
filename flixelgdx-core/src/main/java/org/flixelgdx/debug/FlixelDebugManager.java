@@ -60,6 +60,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #scene}: the tree of states, sub states, and groups.</li>
  *   <li>{@link #inspector}: select an object and see or edit its properties.</li>
  *   <li>{@link #save}: view and edit the game's save data.</li>
+ *   <li>{@link #viewport}: a live map of what a camera shows, with remote picking, moving, and camera flying.</li>
  * </ul>
  *
  * <p>Example:
@@ -151,6 +152,16 @@ public class FlixelDebugManager {
    */
   public final FlixelDebugSavePanel save;
 
+  /**
+   * The viewport panel: a live map of every object a camera draws, so the debugger app can pick objects, drag
+   * them, and fly the camera without the device's keyboard or mouse.
+   * <pre>{@code
+   * Flixel.debug.viewport.setCameraIndex(1);
+   * Flixel.debug.viewport.pan(50f, 0f);
+   * }</pre>
+   */
+  public final FlixelDebugViewportPanel viewport;
+
   /** The tracker panel: named groups of values. */
   public final FlixelDebugTrackerPanel trackers;
 
@@ -224,6 +235,7 @@ public class FlixelDebugManager {
     console = new FlixelDebugConsolePanel(this);
     save = new FlixelDebugSavePanel();
     scene = new FlixelDebugScenePanel(ids, inspector);
+    viewport = new FlixelDebugViewportPanel(controls, inspector);
     inspector.setFocusHandler(controls::goTo);
     FlixelDebugDefaultSections.register(inspector);
     register(stats);
@@ -236,6 +248,7 @@ public class FlixelDebugManager {
     register(scene);
     register(inspector);
     register(save);
+    register(viewport);
   }
 
   /**

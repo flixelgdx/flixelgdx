@@ -70,6 +70,7 @@ public final class FlixelDebugProtocol {
   public static final int KIND_SCENE = 8;
   public static final int KIND_INSPECTOR = 9;
   public static final int KIND_SAVE = 10;
+  public static final int KIND_VIEWPORT = 11;
 
   public static final int VALUE_BOOL = 1;
   public static final int VALUE_INT = 2;
@@ -122,6 +123,16 @@ public final class FlixelDebugProtocol {
   public static final int SAVE_SAVE_NOW = 3;
   public static final int SAVE_RESET_ALL = 4;
   public static final int SAVE_SELECT = 5;
+
+  public static final int VIEWPORT_SET_CAMERA = 1;
+  public static final int VIEWPORT_PICK = 2;
+  public static final int VIEWPORT_MOVE = 3;
+  public static final int VIEWPORT_PAN = 4;
+  public static final int VIEWPORT_ZOOM = 5;
+  public static final int VIEWPORT_RESET_CAMERA = 6;
+  public static final int VIEWPORT_BOX_SELECTED = 1;
+  public static final int VIEWPORT_BOX_GROUP = 2;
+  public static final int VIEWPORT_BOX_INACTIVE = 4;
 
   public static final int CUSTOM_PRESS = 1;
   public static final int CUSTOM_SET_PROPERTY = 2;
