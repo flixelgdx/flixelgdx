@@ -47,6 +47,7 @@ tasks.register("javadocAll") {
     ":flixelgdx-core:javadoc",
     ":flixelgdx-gpu:javadoc",
     ":flixelgdx-miniaudio:javadoc",
+    ":flixelgdx-jvm:javadoc",
     ":flixelgdx-desktop:javadoc",
     ":flixelgdx-html5:javadoc",
     ":flixelgdx-ios:javadoc",

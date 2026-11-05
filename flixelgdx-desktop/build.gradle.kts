@@ -15,6 +15,7 @@ dependencies {
   api(project(":flixelgdx-core"))
   api(project(":flixelgdx-gpu"))
   api(project(":flixelgdx-miniaudio"))
+  api(project(":flixelgdx-jvm"))
 
   // The WebGPU backend for the desktop (Java FFM) plus the Dawn library of every desktop platform, so a packaged
   // game runs anywhere. Each natives jar is a few MB; a game that ships to fewer platforms can exclude the rest.

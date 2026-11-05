@@ -81,6 +81,7 @@ include(
   "flixelgdx-core",
   "flixelgdx-gpu",
   "flixelgdx-miniaudio",
+  "flixelgdx-jvm",
   "flixelgdx-desktop",
   "flixelgdx-html5",
   "flixelgdx-ios",
