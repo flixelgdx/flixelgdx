@@ -159,7 +159,7 @@ public class FlixelDebugPicker {
     float width = object.getWidth();
     float height = object.getHeight();
     if (object instanceof FlixelSprite sprite) {
-      FlixelFrame frame = sprite.getCurrentFrame();
+      FlixelFrame frame = sprite.getFrame();
       if (frame != null) {
         // Mirror FlixelSprite.draw(): the whole source box is scaled around its center and then anchored so its
         // top left corner stays at the sprite's drawn position (position plus offset).

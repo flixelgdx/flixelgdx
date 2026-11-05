@@ -290,7 +290,24 @@ Entry:
 
 Totals (after the array): `i32 textureCount`, `i64 totalGpuBytes`, `i32 duplicateCount`.
 
+What the fields mean:
+
+- `id` is stable for as long as the texture stays in the list. It is only meaningful for `REQUEST_THUMBNAIL`.
+- `name` is the asset path. Graphics made in code have no file and use `flixel://synthetic/N`.
+- `format` is a short display name such as `RGBA8` or `BC7`. Do not parse it.
+- `gpuBytes` is the memory the texture takes on the GPU, as far as the graphics backend knows.
+- `users` is the number of **existing sprites** in the current state (and its open sub states, including sprites
+  inside groups) that are showing the texture at the moment the list was built. It is not the asset manager's
+  reference count.
+- `duplicate` is true for every texture of a group of two or more that were loaded from the same file path.
+
+Only textures that belong to a graphic tracked by the asset manager are listed. Textures the framework creates for
+itself (the font atlas, render targets) are not. The game rebuilds the list about once a second while the panel is
+enabled and sends it again only when something in it changed.
+
 `THUMBNAIL` payload: `u8 subtype=2`, `i32 id`, `i32 width`, `i32 height`, `bytes png`.
+
+See [Thumbnails](#thumbnails) for how they are made.
 
 Actions:
 
@@ -422,6 +439,22 @@ not editable.
 The game converts the value by the row's kind. A numeric row (int, long, float, or double) accepts any numeric
 value kind and converts it like a Java cast, a bool row accepts only a bool, and a string row accepts only a
 string. A value of any other kind is ignored and a warning is logged.
+
+### Thumbnails
+
+A thumbnail is a PNG picture of a texture (or, for the inspector, of the part of the texture a sprite shows). The
+app asks with `REQUEST_THUMBNAIL`; the game reads the pixels back from the GPU, which takes a few frames, and then
+sends one `THUMBNAIL` payload. There is no answer at all when the pixels cannot be read, so the app must not wait
+for one forever. The inspector's `hasTexture` flag is only `true` when the game's graphics backend can read pixels
+back, so the app can hide its thumbnail button otherwise.
+
+- `width` and `height` are the size of the PNG. The longest side is at most 256 pixels. Bigger pictures are
+  shrunk with nearest-neighbor sampling, so pixel art stays sharp, and smaller pictures keep their size.
+- `png` is an ordinary 8-bit RGBA PNG. The game does not compress it (the deflate data uses stored blocks), so
+  every PNG reader can open it, but the file is as large as the raw pixels.
+- At most 8 thumbnails are open at once. Requests beyond that, and a repeat request for an id that is already open,
+  are dropped.
+- The picture shows the texture's current pixels, not what is drawn on screen.
 
 ### Scene paths
 

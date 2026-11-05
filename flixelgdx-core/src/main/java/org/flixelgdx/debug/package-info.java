@@ -72,6 +72,12 @@
  * object at a scene path such as {@code state.3.0}. See {@link org.flixelgdx.debug.FlixelDebugControlsPanel
  * FlixelDebugControlsPanel} and {@link org.flixelgdx.debug.FlixelDebugPaths FlixelDebugPaths}.
  *
+ * <h2>Textures</h2>
+ * <p>The texture panel ({@link org.flixelgdx.debug.FlixelDebugTexturePanel FlixelDebugTexturePanel}) lists every
+ * loaded texture with its size, GPU memory, the number of sprites using it, and a duplicate flag. The app can ask
+ * for a small PNG thumbnail of a texture, and of the selected sprite in the inspector, when the graphics backend can
+ * read textures back from the GPU. See {@link org.flixelgdx.debug.FlixelDebugThumbnails FlixelDebugThumbnails}.
+ *
  * <h2>Custom panels</h2>
  * <p>For a panel that is not about one object, use a
  * {@link org.flixelgdx.debug.FlixelDebugCustomPanel FlixelDebugCustomPanel}. Describe its rows and buttons with

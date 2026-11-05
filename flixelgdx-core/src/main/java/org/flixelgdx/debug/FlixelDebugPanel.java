@@ -40,7 +40,8 @@ import org.jetbrains.annotations.NotNull;
  * The reporter never talks to the network itself, so the same panel works on every platform.
  *
  * <p>Panels are registered on {@link FlixelDebugManager} and are looked up by their stable
- * {@linkplain #getId() id}. The built-in panels (stats, logs, watches, trackers, controls, and console)
+ * {@linkplain #getId() id}. The built-in panels (stats, logs, watches, trackers, textures, controls, console,
+ * inspector, and save)
  * are already registered and exposed as fields such as {@code Flixel.debug.stats}. A game can add its own
  * panels with {@link FlixelDebugManager#register(FlixelDebugPanel)}.
  *
@@ -142,6 +143,31 @@ public interface FlixelDebugPanel {
    * @param writer The writer positioned right after the panel index.
    */
   void write(@NotNull FlixelDebugMessageWriter writer);
+
+  /**
+   * Returns whether the panel has an extra payload waiting that is not part of its regular state, such as a
+   * finished thumbnail or the result of a console command.
+   *
+   * <p>The network agent asks every panel each frame. While this is {@code true} it sends one
+   * {@code PANEL_DATA} message for the panel whose payload is written by
+   * {@link #writePendingPayload(FlixelDebugMessageWriter)}, then asks again. The default has nothing waiting.
+   *
+   * @return {@code true} when {@link #writePendingPayload(FlixelDebugMessageWriter)} has something to write.
+   */
+  default boolean hasPendingPayload() {
+    return false;
+  }
+
+  /**
+   * Writes the next extra payload and removes it from the panel's queue.
+   *
+   * <p>Like {@link #write(FlixelDebugMessageWriter)}, the caller has already written the message header and the
+   * panel index. The payload starts with the subtype byte that the panel's kind defines in
+   * {@code DEBUG_PROTOCOL.md}. Does nothing when {@link #hasPendingPayload()} is {@code false}.
+   *
+   * @param writer The writer positioned right after the panel index.
+   */
+  default void writePendingPayload(@NotNull FlixelDebugMessageWriter writer) {}
 
   /**
    * Handles an action sent by the debugger app.

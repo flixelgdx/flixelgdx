@@ -50,6 +50,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #logs}: the most recent log lines.</li>
  *   <li>{@link #watches}: live values that you register from game code.</li>
  *   <li>{@link #trackers}: named groups of values.</li>
+ *   <li>{@link #textures}: loaded textures, their memory use, and thumbnails.</li>
  *   <li>{@link #controls}: pause, step, hitboxes, the free camera, picking, and debugger settings.</li>
  *   <li>{@link #console}: a command line with commands that you can register.</li>
  *   <li>{@link #inspector}: select an object and see or edit its properties.</li>
@@ -116,6 +117,15 @@ public class FlixelDebugManager {
   public final FlixelDebugTrackerPanel trackers;
 
   /**
+   * The texture panel: every loaded texture with its size, GPU memory, users, and a thumbnail on request.
+   * <pre>{@code
+   * Flixel.debug.textures.refresh();
+   * long bytes = Flixel.debug.textures.getTotalBytes();
+   * }</pre>
+   */
+  public final FlixelDebugTexturePanel textures;
+
+  /**
    * The control panel: pause, step, hitboxes, the free camera, picking, and debugger settings.
    * <pre>{@code
    * Flixel.debug.controls.setPaused(true);
@@ -159,6 +169,7 @@ public class FlixelDebugManager {
     logs = new FlixelDebugLogPanel();
     watches = new FlixelDebugWatchPanel();
     trackers = new FlixelDebugTrackerPanel();
+    textures = new FlixelDebugTexturePanel(ids);
     console = new FlixelDebugConsolePanel(this);
     inspector.setFocusHandler(controls::goTo);
     FlixelDebugDefaultSections.register(inspector);
@@ -166,6 +177,7 @@ public class FlixelDebugManager {
     register(logs);
     register(watches);
     register(trackers);
+    register(textures);
     register(controls);
     register(console);
     register(inspector);

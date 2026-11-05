@@ -38,6 +38,8 @@ import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.functional.FlixelExistable;
 import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
@@ -123,6 +125,7 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   private final FlixelDebugValue value = new FlixelDebugValue();
   private final FlixelString pathText = new FlixelString(64);
   private final FlixelString pathInput = new FlixelString(64);
+  private final FlixelDebugThumbnails thumbnails = new FlixelDebugThumbnails();
   private final FlixelDebugObjectIds ids;
 
   @Nullable
@@ -442,10 +445,25 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
         reader.readString(pathInput);
         selectPath(pathInput);
       }
+      case FlixelDebugProtocol.INSPECTOR_REQUEST_THUMBNAIL -> requestThumbnail(reader.readI32());
       default -> {
-        // REQUEST_THUMBNAIL is handled by a later addition. Unknown actions are ignored without reading anything.
       }
     }
+  }
+
+  @Override
+  public boolean hasPendingPayload() {
+    return thumbnails.hasPending();
+  }
+
+  /**
+   * Writes the oldest finished thumbnail as a {@code THUMBNAIL} payload.
+   *
+   * @param writer The writer positioned after the panel index.
+   */
+  @Override
+  public void writePendingPayload(@NotNull FlixelDebugMessageWriter writer) {
+    thumbnails.write(writer, FlixelDebugProtocol.INSPECTOR_THUMBNAIL);
   }
 
   @Override
@@ -453,19 +471,38 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     clearSelection();
     sent.clear();
     ids.clear();
+    thumbnails.clear();
   }
 
   /**
    * Returns whether the object has a texture whose thumbnail the app can request.
    *
    * <p>This is the hook for the thumbnail feature: override it (or extend it) when more kinds of objects can
-   * provide a picture.
+   * provide a picture. The default is {@code true} for a sprite that has a frame, when the graphics backend can read
+   * textures back (see {@link FlixelGraphicsManager#supportsReadPixels()}).
    *
    * @param object The selected object.
-   * @return {@code true} for a sprite that has a texture.
+   * @return {@code true} when a thumbnail can be requested.
    */
   protected boolean hasTexture(@NotNull Object object) {
-    return object instanceof FlixelSprite sprite && sprite.getTexture() != null;
+    return object instanceof FlixelSprite sprite && sprite.getFrame() != null
+        && Flixel.graphics.supportsReadPixels();
+  }
+
+  /**
+   * Starts making a thumbnail of what a sprite shows: the part of its texture that its current frame covers.
+   *
+   * <p>The result arrives a few frames later through {@link #writePendingPayload(FlixelDebugMessageWriter)}. An
+   * object that is not a sprite with a frame is ignored.
+   */
+  private void requestThumbnail(int id) {
+    if (ids.get(id) instanceof FlixelSprite sprite) {
+      FlixelFrame frame = sprite.getFrame();
+      if (frame != null) {
+        thumbnails.request(id, frame.getTexture(), frame.getRegionX(), frame.getRegionY(), frame.getRegionWidth(),
+            frame.getRegionHeight());
+      }
+    }
   }
 
   /**

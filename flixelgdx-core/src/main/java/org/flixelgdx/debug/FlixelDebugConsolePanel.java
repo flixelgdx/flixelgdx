@@ -294,6 +294,18 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
   }
 
   @Override
+  public boolean hasPendingPayload() {
+    return resultPending;
+  }
+
+  @Override
+  public void writePendingPayload(@NotNull FlixelDebugMessageWriter writer) {
+    if (resultPending) {
+      writeResult(writer);
+    }
+  }
+
+  @Override
   public void handleAction(int action, @NotNull FlixelDebugMessageReader reader) {
     if (action == FlixelDebugProtocol.CONSOLE_RUN) {
       reader.readString(lineScratch);
