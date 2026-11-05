@@ -29,6 +29,7 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelNoopTexture;
 import org.flixelgdx.group.FlixelSpriteGroup;
@@ -273,6 +274,49 @@ class FlixelDebugPickerTest {
     assertEquals(625f, world.x, 1e-3f);
     assertEquals(475f, world.y, 1e-3f);
     assertNull(picker.pickAt(screen.x - 60f, screen.y));
+  }
+
+  @Test
+  void theSharedWalkVisitsInDrawOrderOrTopFirstAndCanStop() {
+    FlixelObject lower = box(0, 0, 10, 10);
+    FlixelSpriteGroup group = new FlixelSpriteGroup();
+    FlixelSprite member = new FlixelSprite(0f, 0f);
+    group.add(member);
+    FlixelObject hidden = box(0, 0, 10, 10);
+    hidden.visible = false;
+    state.add(lower);
+    state.add(group);
+    state.add(hidden);
+    TestSubState sub = new TestSubState();
+    FlixelObject upper = box(0, 0, 10, 10);
+    sub.add(upper);
+    state.openSubState(sub);
+
+    FlixelArray<Object> seen = new FlixelArray<>();
+    FlixelDebugPicker.Visitor collect = (object, camera) -> {
+      seen.add(object);
+      return false;
+    };
+    assertFalse(picker.forEachDrawn(cam, false, collect));
+    assertEquals(4, seen.getSize());
+    assertSame(lower, seen.get(0));
+    assertSame(group, seen.get(1), "a group comes before its members in draw order");
+    assertSame(member, seen.get(2));
+    assertSame(upper, seen.get(3), "the open sub state is drawn last");
+
+    seen.clear();
+    picker.forEachDrawn(cam, true, collect);
+    assertSame(upper, seen.get(0));
+    assertSame(member, seen.get(1));
+    assertSame(group, seen.get(2));
+    assertSame(lower, seen.get(3));
+
+    seen.clear();
+    assertTrue(picker.forEachDrawn(cam, true, (object, camera) -> {
+      seen.add(object);
+      return true;
+    }));
+    assertEquals(1, seen.getSize(), "returning true stops the walk");
   }
 
   private static FlixelObject box(float x, float y, float width, float height) {

@@ -52,6 +52,12 @@ import org.jetbrains.annotations.Nullable;
  * with its offset and scale, widened to the bounding box when rotated), other objects against their hitbox.
  * Groups are searched member by member, last member first, and a hidden or removed group hides its members.
  *
+ * <p>The same walk is shared with anything else that needs "every object drawn on this camera", such as the
+ * viewport panel that sends a map of the screen to the debugger app. Call
+ * {@link #forEachDrawn(FlixelCamera, boolean, Visitor)} to walk the objects in either order, and
+ * {@link #computeBounds(FlixelObject, FlixelCamera)} to measure one of them, so every tool agrees on what is drawn
+ * where.
+ *
  * <p>Nothing here allocates.
  *
  * <p>Example:
@@ -72,9 +78,14 @@ public class FlixelDebugPicker {
   private float boundsTop;
   private float boundsWidth;
   private float boundsHeight;
+  private float hitX;
+  private float hitY;
 
   private final FlixelVector point = new FlixelVector();
-  private final FlixelState[] chain = new FlixelState[FlixelDebugPaths.MAX_DEPTH];
+  private final Visitor hitTest = this::testHit;
+
+  @Nullable
+  private Object hit;
 
   /** Creates a picker. */
   public FlixelDebugPicker() {}
@@ -96,9 +107,9 @@ public class FlixelDebugPicker {
       }
       point.set(screenX, screenY);
       cam.unprojectToView(point);
-      Object hit = pickInCamera(cam, point.x, point.y);
-      if (hit != null) {
-        return hit;
+      Object found = pickInCamera(cam, point.x, point.y);
+      if (found != null) {
+        return found;
       }
     }
     return null;
@@ -121,23 +132,50 @@ public class FlixelDebugPicker {
     if (viewX < 0f || viewY < 0f || viewX > cam.getWorldWidth() / zoom || viewY > cam.getWorldHeight() / zoom) {
       return null;
     }
-    int levels = 0;
-    for (FlixelState level = Flixel.state; level != null && levels < chain.length; level = level.getSubState()) {
-      chain[levels++] = level;
-    }
-    // The open sub state is drawn last, so it is on top and is checked first. A state below it only counts
-    // while it still draws behind the sub state.
-    Object hit = null;
-    for (int i = levels - 1; i >= 0 && hit == null; i--) {
-      FlixelState level = chain[i];
-      if (i == levels - 1 || level.persistentDraw) {
-        hit = pickInGroup(level, cam, viewX, viewY, 0);
-      }
-    }
-    for (int i = 0; i < levels; i++) {
-      chain[i] = null;
-    }
-    return hit;
+    hitX = viewX;
+    hitY = viewY;
+    forEachDrawn(cam, true, hitTest);
+    Object found = hit;
+    hit = null;
+    return found;
+  }
+
+  /**
+   * Visits every object that is drawn on a camera, in draw order or in the reverse of it.
+   *
+   * <p>This is the walk the picker itself uses, so a tool built on it sees exactly the objects a click can hit.
+   * It starts at {@link Flixel#state} and follows the open sub states. A state below an open sub state only counts
+   * while it still draws behind it ({@link FlixelState#persistentDraw}). Members that do not exist, are not
+   * visible, or are not drawn on the camera are skipped, and a group that is skipped hides all of its members.
+   * Groups are visited too (they are members like any other), and a group's members are drawn after the group, so
+   * they count as being on top of it. Objects nested deeper than {@link FlixelDebugPaths#MAX_DEPTH} are not
+   * visited.
+   *
+   * <p>It does not allocate. The visitor may call {@link #computeBounds(FlixelObject, FlixelCamera)} on this
+   * picker, but it must not change the scene while the walk runs.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * // List every sprite drawn on the main camera, bottom to top. Make the visitor once, not every frame.
+   * FlixelDebugPicker.Visitor printer = (member, cam) -> {
+   *   if (member instanceof FlixelSprite sprite) {
+   *     Flixel.info("Sprite at {}, {}", sprite.getX(), sprite.getY());
+   *   }
+   *   return false; // Keep going.
+   * };
+   * picker.forEachDrawn(Flixel.cameras.first(), false, printer);
+   * }</pre>
+   *
+   * @param cam The camera whose objects are visited.
+   * @param topFirst {@code true} to visit the object drawn last (on top) first, the way a click searches.
+   *     {@code false} visits in draw order, bottom first.
+   * @param visitor Called once per drawn member. It returns {@code true} to stop the walk.
+   * @return {@code true} when the visitor stopped the walk, or {@code false} when every object was visited.
+   */
+  public boolean forEachDrawn(@NotNull FlixelCamera cam, boolean topFirst, @NotNull Visitor visitor) {
+    FlixelState state = Flixel.state;
+    return state != null && walkLevel(state, cam, topFirst, visitor, 0);
   }
 
   /**
@@ -208,17 +246,31 @@ public class FlixelDebugPicker {
     return false;
   }
 
-  @Nullable
-  private Object pickInGroup(Object node, FlixelCamera cam, float viewX, float viewY, int depth) {
+  private boolean walkLevel(FlixelState level, FlixelCamera cam, boolean topFirst, Visitor visitor, int levels) {
+    FlixelState sub = level.getSubState();
+    boolean top = sub == null || levels + 1 >= FlixelDebugPaths.MAX_DEPTH;
+    // The open sub state is drawn last, so it is on top. A state below it only counts while it still draws
+    // behind the sub state.
+    boolean drawn = top || level.persistentDraw;
+    if (topFirst) {
+      return (!top && walkLevel(sub, cam, true, visitor, levels + 1))
+          || (drawn && walkGroup(level, cam, true, visitor, 0));
+    }
+    return (drawn && walkGroup(level, cam, false, visitor, 0))
+        || (!top && walkLevel(sub, cam, false, visitor, levels + 1));
+  }
+
+  private boolean walkGroup(Object node, FlixelCamera cam, boolean topFirst, Visitor visitor, int depth) {
     if (depth >= FlixelDebugPaths.MAX_DEPTH || !(node instanceof FlixelGroupable<?> group)) {
-      return null;
+      return false;
     }
     FlixelArray<?> members = group.getMembers();
     if (members == null) {
-      return null;
+      return false;
     }
-    for (int i = members.getSize() - 1; i >= 0; i--) {
-      Object member = members.get(i);
+    int size = members.getSize();
+    for (int k = 0; k < size; k++) {
+      Object member = members.get(topFirst ? size - 1 - k : k);
       if (member == null) {
         continue;
       }
@@ -229,21 +281,25 @@ public class FlixelDebugPicker {
         continue;
       }
       // Children are drawn after their parent, so they are on top of it.
-      Object inside = pickInGroup(member, cam, viewX, viewY, depth + 1);
-      if (inside != null) {
-        return inside;
-      }
-      if (member instanceof FlixelObject object && contains(object, cam, viewX, viewY)) {
-        return object;
+      if (topFirst) {
+        if (walkGroup(member, cam, true, visitor, depth + 1) || visitor.visit(member, cam)) {
+          return true;
+        }
+      } else if (visitor.visit(member, cam) || walkGroup(member, cam, false, visitor, depth + 1)) {
+        return true;
       }
     }
-    return null;
+    return false;
   }
 
-  private boolean contains(FlixelObject object, FlixelCamera cam, float viewX, float viewY) {
-    return computeBounds(object, cam)
-        && viewX >= boundsLeft && viewX <= boundsLeft + boundsWidth
-        && viewY >= boundsTop && viewY <= boundsTop + boundsHeight;
+  private boolean testHit(Object member, FlixelCamera cam) {
+    if (member instanceof FlixelObject object && computeBounds(object, cam)
+        && hitX >= boundsLeft && hitX <= boundsLeft + boundsWidth
+        && hitY >= boundsTop && hitY <= boundsTop + boundsHeight) {
+      hit = object;
+      return true;
+    }
+    return false;
   }
 
   public float getBoundsLeft() {
@@ -260,5 +316,23 @@ public class FlixelDebugPicker {
 
   public float getBoundsHeight() {
     return boundsHeight;
+  }
+
+  /**
+   * Receives the objects of {@link #forEachDrawn(FlixelCamera, boolean, Visitor)} one at a time.
+   *
+   * <p>Keep one instance in a field (for example a method reference made once) so walking every frame does not
+   * allocate.
+   */
+  public interface Visitor {
+
+    /**
+     * Looks at one drawn object.
+     *
+     * @param member The object. It exists, is visible, and is drawn on {@code cam}. It may be a group.
+     * @param cam The camera being walked.
+     * @return {@code true} to stop the walk here, or {@code false} to keep going.
+     */
+    boolean visit(@NotNull Object member, @NotNull FlixelCamera cam);
   }
 }
