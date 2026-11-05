@@ -222,5 +222,6 @@ already got you covered. You can get started right way with the following links:
 - **[Contributing Guide](CONTRIBUTING.md)**: Coding standards, PR requirements, and how to contribute.
 - **[Project Structure](ARCHITECTURE.md)**: The multi-module layout and how Gradle is used.
 - **[Compiling & Testing](COMPILING.md)**: How to build the framework and test it as a dependency in your own projects.
+- **[Remote Debug Protocol](DEBUG_PROTOCOL.md)**: The wire protocol between a running game and the desktop debugger app.
 - **[Code of Conduct](CODE_OF_CONDUCT.md)**: Rules set in place for a stable open source community.
 - **[Project Roles](GOVERNANCE.md)**: How each role for the project operates, including project leaders and maintainers.
