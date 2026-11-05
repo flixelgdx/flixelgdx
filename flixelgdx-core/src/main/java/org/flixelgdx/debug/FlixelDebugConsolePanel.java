@@ -493,6 +493,22 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
       logger().info("Cleared the watches.");
     });
 
+    register("select.clear", "select.clear", "Clears the object selected in the inspector.", args -> {
+      owner.inspector.clearSelection();
+      logger().info("Cleared the selection.");
+    });
+
+    register("select.parent", "select.parent", "Selects the group or state that holds the selected object.", args -> {
+      FlixelDebugInspectorPanel inspector = owner.inspector;
+      if (inspector.getSelected() == null) {
+        logger().warn("Nothing is selected.");
+      } else if (inspector.selectParent()) {
+        logger().info("Selected the parent: {}", inspector.getSelected());
+      } else {
+        logger().warn("The selected object has no parent.");
+      }
+    });
+
     register("resetState", "resetState", "Restarts the current state.", args -> {
       logger().info("Resetting the current state.");
       Flixel.resetState();

@@ -25,7 +25,6 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
-import org.flixelgdx.FlixelObject;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
@@ -53,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #trackers}: named groups of values.</li>
  *   <li>{@link #controls}: pause, step, hitboxes, and debugger settings.</li>
  *   <li>{@link #console}: a command line with commands that you can register.</li>
+ *   <li>{@link #inspector}: select an object and see or edit its properties.</li>
  * </ul>
  *
  * <p>Example:
@@ -64,7 +64,16 @@ import org.jetbrains.annotations.Nullable;
  * });
  * Flixel.debug.controls.setHitboxes(true);
  *
- * // Add your own panel and find it again later.
+ * // Show your own class in the inspector.
+ * Flixel.debug.inspector.register(Player.class, "Player", b -> b
+ *     .intProp("Health", Player::getHealth, Player::setHealth));
+ *
+ * // Add a panel with rows and buttons.
+ * Flixel.debug.register(new FlixelDebugCustomPanel("ai", "Enemy AI", p -> p
+ *     .intProp("Active enemies", () -> enemies.countLiving())
+ *     .action("Kill all", enemies::killAll)));
+ *
+ * // Add a fully custom panel and find it again later.
  * Flixel.debug.register(new ScorePanel());
  * ScorePanel score = Flixel.debug.get("custom.score", ScorePanel.class);
  * }</pre>
@@ -123,9 +132,20 @@ public class FlixelDebugManager {
    */
   public final FlixelDebugConsolePanel console;
 
-  /** The sprite currently selected in the debugger, or {@code null}. */
-  @Nullable
-  private FlixelObject inspectedSprite;
+  /**
+   * The inspector panel: select an object and see or edit its properties.
+   * <pre>{@code
+   * Flixel.debug.inspector.select(player);
+   * Flixel.debug.inspector.register(Player.class, "Player", b -> b.intProp("Health", Player::getHealth));
+   * }</pre>
+   */
+  public final FlixelDebugInspectorPanel inspector;
+
+  /**
+   * The registry that gives objects the numeric ids the debugger app refers to them by. The inspector and the
+   * scene share it.
+   */
+  public final FlixelDebugObjectIds ids;
 
   /** Goes up whenever a panel is registered or unregistered. */
   private long panelRevision;
@@ -138,12 +158,16 @@ public class FlixelDebugManager {
     watches = new FlixelDebugWatchPanel();
     trackers = new FlixelDebugTrackerPanel();
     console = new FlixelDebugConsolePanel(this);
+    ids = new FlixelDebugObjectIds();
+    inspector = new FlixelDebugInspectorPanel(ids);
+    FlixelDebugDefaultSections.register(inspector);
     register(stats);
     register(logs);
     register(watches);
     register(trackers);
     register(controls);
     register(console);
+    register(inspector);
   }
 
   /**
@@ -243,31 +267,6 @@ public class FlixelDebugManager {
     for (int i = 0; i < panels.getSize(); i++) {
       panels.get(i).reset();
     }
-  }
-
-  /**
-   * Sets the sprite currently selected in the debugger.
-   * Pass {@code null} to clear the selection.
-   *
-   * @param obj The sprite to inspect, or {@code null} to clear.
-   */
-  public void setInspectedSprite(@Nullable FlixelObject obj) {
-    inspectedSprite = obj;
-  }
-
-  /**
-   * Returns the sprite currently inspected, or {@code null} if no sprite is selected (or the previously
-   * selected sprite has been destroyed). The returned sprite may be of any subclass of
-   * {@link FlixelObject}.
-   *
-   * @return The inspected sprite, or {@code null}.
-   */
-  @Nullable
-  public FlixelObject getInspectedSprite() {
-    if (inspectedSprite != null && !inspectedSprite.exists) {
-      inspectedSprite = null;
-    }
-    return inspectedSprite;
   }
 
   /**
