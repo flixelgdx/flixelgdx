@@ -31,7 +31,6 @@ import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetManager;
 import org.flixelgdx.backend.html5.audio.FlixelWebAudioFactory;
-import org.flixelgdx.backend.html5.debug.FlixelHtml5DebugOverlay;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5ImageDecoder;
 import org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider;
@@ -128,7 +127,6 @@ public final class FlixelHtml5Launcher {
     gamepads.attach();
 
     Flixel.boot.afterStart(() -> {
-      Flixel.debug.setOverlayFactory(FlixelHtml5DebugOverlay::new);
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
     });
