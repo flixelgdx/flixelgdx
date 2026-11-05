@@ -64,6 +64,14 @@
  * never allocates, and a getter that throws shows its message in the app instead of a value. See
  * {@link org.flixelgdx.debug.inspector.FlixelSectionBuilder FlixelSectionBuilder} for all the options.
  *
+ * <h2>Picking and the free camera</h2>
+ * <p>Hold Alt and click in the game to select the object you click, and the inspector opens on it. The selected
+ * object is outlined in yellow. Press F4 (or type {@code freecam} in the console) to fly the camera with W, A, S, D,
+ * the arrow keys, the mouse wheel, and the right mouse button, without the game reacting to those inputs. The
+ * {@code goto <x> <y>} command moves the camera to a spot in the world, and {@code select <path>} selects the
+ * object at a scene path such as {@code state.3.0}. See {@link org.flixelgdx.debug.FlixelDebugControlsPanel
+ * FlixelDebugControlsPanel} and {@link org.flixelgdx.debug.FlixelDebugPaths FlixelDebugPaths}.
+ *
  * <h2>Custom panels</h2>
  * <p>For a panel that is not about one object, use a
  * {@link org.flixelgdx.debug.FlixelDebugCustomPanel FlixelDebugCustomPanel}. Describe its rows and buttons with

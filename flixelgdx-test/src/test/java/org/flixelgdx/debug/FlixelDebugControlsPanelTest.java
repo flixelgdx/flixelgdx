@@ -66,11 +66,23 @@ class FlixelDebugControlsPanelTest {
     assertFalse(r.readBool(), "freeCam");
     assertEquals(20, r.readU8(), "rate");
     assertEquals(FlixelDebugProtocol.LEVEL_DEFAULT, r.readU8(), "logLevel");
-    assertEquals(2, r.readCount());
+    assertEquals(8, r.readCount());
     assertEquals("F3", DebugTestSupport.str(r));
     assertEquals("Pause or resume the game", DebugTestSupport.str(r));
     assertEquals("F2", DebugTestSupport.str(r));
     assertEquals("Show or hide hitboxes", DebugTestSupport.str(r));
+    assertEquals("F4", DebugTestSupport.str(r));
+    assertEquals("Turn the free camera on or off", DebugTestSupport.str(r));
+    assertEquals("Alt + Click", DebugTestSupport.str(r));
+    assertEquals("Select the object under the mouse", DebugTestSupport.str(r));
+    assertEquals("W A S D / Arrows", DebugTestSupport.str(r));
+    assertEquals("Move the free camera", DebugTestSupport.str(r));
+    assertEquals("Wheel / Q / E", DebugTestSupport.str(r));
+    assertEquals("Zoom the free camera", DebugTestSupport.str(r));
+    assertEquals("Shift", DebugTestSupport.str(r));
+    assertEquals("Move the free camera 4 times faster", DebugTestSupport.str(r));
+    assertEquals("Right Drag", DebugTestSupport.str(r));
+    assertEquals("Pan the free camera", DebugTestSupport.str(r));
     assertEquals(0, r.getRemaining());
   }
 
@@ -127,8 +139,10 @@ class FlixelDebugControlsPanelTest {
   void hotkeysAreConfigurableAndShownAsKeybindRows() {
     assertEquals(FlixelKey.F3, controls.getPauseKey());
     assertEquals(FlixelKey.F2, controls.getHitboxesKey());
+    assertEquals(FlixelKey.F4, controls.getFreeCamKey());
     controls.setPauseKey(FlixelKey.P);
     controls.setHitboxesKey(FlixelKey.NONE);
+    controls.setFreeCamKey(FlixelKey.NONE);
 
     FlixelDebugMessageReader r = DebugTestSupport.payload(controls);
     r.readBool();
@@ -136,7 +150,7 @@ class FlixelDebugControlsPanelTest {
     r.readBool();
     r.readU8();
     r.readU8();
-    assertEquals(1, r.readCount());
+    assertEquals(6, r.readCount());
     assertEquals("P", DebugTestSupport.str(r));
   }
 

@@ -306,10 +306,24 @@ Id `controls`, kind 6. Single payload (state), sent on connect and whenever it c
 |-------------|-------|-------|
 | `paused`    | `bool`| |
 | `hitboxes`  | `bool`| |
-| `freeCam`   | `bool`| |
+| `freeCam`   | `bool`| True while the free camera is requested (see below). |
 | `rate`      | `u8`  | Sample rate in Hz, 1 to 30. |
 | `logLevel`  | `u8`  | Log level, or `255` (`DEFAULT`) for the game's own setting. |
 | `keybinds`  | `array<keybind>` | `string key`, `string description` |
+
+The `keybinds` list is for display only. The game sends, in this order, the pause key (default `F3`), the
+hitboxes key (`F2`), the free camera key (`F4`), then fixed rows for `Alt + Click` (select the object under the
+mouse), `W A S D / Arrows` (move the free camera), `Wheel / Q / E` (zoom the free camera), `Shift` (4 times faster),
+and `Right Drag` (pan the free camera). A hotkey that was disabled in the game is left out. Show the rows as given
+instead of hard-coding the keys, because the three hotkeys are configurable.
+
+The **free camera** flies the main camera without touching the game. Turning it on saves the camera's scroll,
+zoom, scroll bounds, and follow target and stops following; turning it off restores them exactly. It pans at 600
+screen pixels per second (4 times that with Shift), zooms by 1.25 per wheel notch between 0.1 and 10, and runs on real
+time, so it works while the game is paused. The keys and the right mouse button it uses are hidden from the game
+while it is on. `Alt + Click` selects the topmost object drawn under the mouse on the `inspector` panel and the game
+does not receive that click. The selected object is outlined in yellow in the game window even when hitboxes are
+off.
 
 Actions:
 

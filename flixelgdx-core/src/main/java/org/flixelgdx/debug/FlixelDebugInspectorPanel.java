@@ -126,6 +126,9 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   private final FlixelDebugObjectIds ids;
 
   @Nullable
+  private FocusHandler focusHandler;
+
+  @Nullable
   private Object selected;
 
   @Nullable
@@ -266,6 +269,9 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   /**
    * Centers the main camera on the selected object.
    *
+   * <p>When the debug manager created this panel, the move goes through the free camera, which stops the camera
+   * from following its target so the move is not undone on the next frame.
+   *
    * @return {@code true} when the camera moved. It does nothing when the selection has no position (it is not a
    *     {@link FlixelPositional}), nothing is selected, or there is no camera.
    */
@@ -273,6 +279,10 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     Object current = getSelected();
     if (!(current instanceof FlixelPositional positional) || Flixel.cameras.getSize() == 0) {
       return false;
+    }
+    FocusHandler handler = focusHandler;
+    if (handler != null) {
+      return handler.focus(positional.getMidpointX(), positional.getMidpointY());
     }
     FlixelCamera camera = Flixel.cameras.first();
     camera.focusOn(positional.getMidpointX(), positional.getMidpointY());
@@ -616,6 +626,15 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   }
 
   /**
+   * Replaces how {@link #goTo()} moves the camera.
+   *
+   * @param focusHandler The handler, or {@code null} to center the main camera directly.
+   */
+  public void setFocusHandler(@Nullable FocusHandler focusHandler) {
+    this.focusHandler = focusHandler;
+  }
+
+  /**
    * Returns the registry that gives objects their ids.
    *
    * @return The registry.
@@ -634,6 +653,20 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
       String simple = type.getSimpleName();
       typeName = simple.isEmpty() ? type.getName() : simple;
     }
+  }
+
+  /** Moves the main camera to a world point for {@link #goTo()}. */
+  @FunctionalInterface
+  public interface FocusHandler {
+
+    /**
+     * Centers the main camera on a world point.
+     *
+     * @param worldX The world X to center on.
+     * @param worldY The world Y to center on.
+     * @return {@code true} when the camera moved.
+     */
+    boolean focus(float worldX, float worldY);
   }
 
   /** Listens for changes of the inspector's selection. */

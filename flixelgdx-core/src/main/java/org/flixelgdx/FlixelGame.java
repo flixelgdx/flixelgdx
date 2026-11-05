@@ -395,6 +395,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.gamepads.update();
     FlixelActionSets.update(elapsed);
 
+    if (Flixel.isDebugMode() && Flixel.debug != null) {
+      // Before the game logic runs, so a click or key the debugger takes is already hidden from the game.
+      Flixel.debug.updateInput(rawElapsed);
+    }
+
     boolean stepping = gamePaused && stepPending;
     stepPending = false;
 
@@ -678,7 +683,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   private void snapshotCamerasForDebugPause() {
-    if (Flixel.cameras.getSize() == 0) {
+    if (Flixel.cameras.getSize() == 0 || isDebugFreeCamActive()) {
+      // The free camera owns the camera and puts it back itself when it is turned off.
       debugPauseCameraScroll = null;
       debugPauseCameraZoom = null;
       return;
@@ -694,8 +700,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
   }
 
+  private static boolean isDebugFreeCamActive() {
+    return Flixel.debug != null && Flixel.debug.controls.isFreeCamActive();
+  }
+
   private void restoreCamerasAfterDebugPause() {
-    if (debugPauseCameraScroll == null || debugPauseCameraZoom == null) {
+    if (debugPauseCameraScroll == null || debugPauseCameraZoom == null || isDebugFreeCamActive()) {
       debugPauseCameraScroll = null;
       debugPauseCameraZoom = null;
       return;

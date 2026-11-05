@@ -74,8 +74,8 @@ import java.util.function.Consumer;
  *
  * <p>{@code help [filter]}, {@code pause [on|off]}, {@code hitboxes [on|off]}, {@code step},
  * {@code rate [hz]}, {@code loglevel [Debug|Info|Warn|Error|Default]}, {@code watch.mouse [on|off]},
- * {@code watch.camera [on|off]}, {@code watch.clear}, {@code select <path>}, {@code select.clear},
- * {@code select.parent}, and {@code resetState}.
+ * {@code watch.camera [on|off]}, {@code watch.clear}, {@code select [path]}, {@code select.clear},
+ * {@code select.parent}, {@code freecam [on|off]}, {@code goto <x> <y>}, and {@code resetState}.
  *
  * <p>All methods must be called from the game's main thread.
  *
@@ -494,16 +494,45 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
       logger().info("Cleared the watches.");
     });
 
-    register("select", "select <path>", "Selects the object at a scene path such as state.3.0 in the inspector.",
-        args -> {
+    register("select", "select [path]",
+        "Selects the object at a scene path such as state.3.0, or the object under the mouse without a path.", args -> {
           FlixelDebugInspectorPanel inspector = owner.inspector;
           String path = args.getString(0, "");
           if (path.isEmpty()) {
-            logger().warn("Usage: select <path>, for example select state.3.0");
+            Object hit = owner.controls.pickAtMouse();
+            if (hit == null) {
+              logger().warn("Nothing is drawn under the mouse.");
+            } else {
+              inspector.select(hit);
+              logger().info("Selected {}", hit);
+            }
           } else if (inspector.selectPath(path)) {
             logger().info("Selected {}", inspector.getSelected());
           } else {
             logger().warn("No object lives at \"{}\".", path);
+          }
+        });
+
+    register("freecam", "freecam [on|off]", "Turns the free camera (WASD, wheel, right drag) on or off.", args -> {
+      FlixelDebugControlsPanel controls = owner.controls;
+      controls.setFreeCam(args.getBoolean(0, !controls.isFreeCam()));
+      logger().info("Free camera: {}", controls.isFreeCam());
+    });
+
+    register("goto", "goto <x> <y>", "Moves the main camera to center on a world position (turns on the free camera).",
+        args -> {
+          if (args.getArgumentCount() < 2) {
+            logger().warn("Usage: goto <x> <y>, for example goto 640 360");
+            return;
+          }
+          float x = args.getFloat(0, Float.NaN);
+          float y = args.getFloat(1, Float.NaN);
+          if (Float.isNaN(x) || Float.isNaN(y)) {
+            logger().warn("goto needs two numbers, for example goto 640 360");
+          } else if (owner.controls.goTo(x, y)) {
+            logger().info("Camera centered on {}, {}", x, y);
+          } else {
+            logger().warn("There is no camera to move.");
           }
         });
 

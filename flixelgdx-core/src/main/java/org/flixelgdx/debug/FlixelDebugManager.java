@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #logs}: the most recent log lines.</li>
  *   <li>{@link #watches}: live values that you register from game code.</li>
  *   <li>{@link #trackers}: named groups of values.</li>
- *   <li>{@link #controls}: pause, step, hitboxes, and debugger settings.</li>
+ *   <li>{@link #controls}: pause, step, hitboxes, the free camera, picking, and debugger settings.</li>
  *   <li>{@link #console}: a command line with commands that you can register.</li>
  *   <li>{@link #inspector}: select an object and see or edit its properties.</li>
  * </ul>
@@ -116,7 +116,7 @@ public class FlixelDebugManager {
   public final FlixelDebugTrackerPanel trackers;
 
   /**
-   * The control panel: pause, step, hitboxes, and debugger settings.
+   * The control panel: pause, step, hitboxes, the free camera, picking, and debugger settings.
    * <pre>{@code
    * Flixel.debug.controls.setPaused(true);
    * }</pre>
@@ -152,14 +152,15 @@ public class FlixelDebugManager {
 
   /** Creates the debug manager with all of its built-in panels registered. */
   public FlixelDebugManager() {
-    controls = new FlixelDebugControlsPanel();
+    ids = new FlixelDebugObjectIds();
+    inspector = new FlixelDebugInspectorPanel(ids);
+    controls = new FlixelDebugControlsPanel(inspector);
     stats = new FlixelDebugStatsPanel(controls, this);
     logs = new FlixelDebugLogPanel();
     watches = new FlixelDebugWatchPanel();
     trackers = new FlixelDebugTrackerPanel();
     console = new FlixelDebugConsolePanel(this);
-    ids = new FlixelDebugObjectIds();
-    inspector = new FlixelDebugInspectorPanel(ids);
+    inspector.setFocusHandler(controls::goTo);
     FlixelDebugDefaultSections.register(inspector);
     register(stats);
     register(logs);
@@ -237,6 +238,18 @@ public class FlixelDebugManager {
    */
   public void start() {
     logs.attach();
+  }
+
+  /**
+   * Lets the debugger take the input it owns (the free camera and Alt click picking) before the game reads it.
+   *
+   * <p>{@link FlixelGame} calls this every frame while the game runs in debug mode, right after the input devices
+   * are updated and before the game logic runs. It does not allocate.
+   *
+   * @param elapsed Real seconds since the last frame, not scaled by {@code Flixel.timeScale}.
+   */
+  public void updateInput(float elapsed) {
+    controls.updateInput(elapsed);
   }
 
   /**
