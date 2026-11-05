@@ -32,6 +32,7 @@ import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -424,7 +425,7 @@ class FlixelDebugConsolePanelTest {
     }
 
     @Override
-    public void write(FlixelDebugMessageWriter writer) {
+    public void write(@NotNull FlixelDebugMessageWriter writer) {
       console.writeResult(writer);
     }
   }

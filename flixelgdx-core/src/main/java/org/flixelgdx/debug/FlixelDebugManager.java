@@ -293,7 +293,7 @@ public class FlixelDebugManager {
   @Nullable
   public <T extends FlixelDebugPanel> T get(@NotNull String id, @NotNull Class<T> type) {
     FlixelDebugPanel panel = get(id);
-    return panel != null && type.isInstance(panel) ? type.cast(panel) : null;
+    return type.isInstance(panel) ? type.cast(panel) : null;
   }
 
   /**

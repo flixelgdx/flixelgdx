@@ -85,7 +85,7 @@ import java.util.function.Consumer;
 public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
 
   /** The most lines the history keeps; the oldest is dropped first. */
-  public static final int MAX_HISTORY_ENTRIES = 64;
+  public static final int MAX_HISTORY_ENTRIES = 100;
 
   /** The longest command line that is accepted, in characters. */
   public static final int MAX_LINE_CHARS = FlixelDebugProtocol.MAX_COMMAND_CHARS;
