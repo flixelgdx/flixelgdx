@@ -230,7 +230,8 @@ final class DebugProtocolFixtures {
     add("panel_save", data(P_SAVE, begin(),
         str("player.name"), str("\"Kori\""), u8(FlixelDebugProtocol.VALUE_STRING), bool(false),
         str("player.level"), str("12"), u8(FlixelDebugProtocol.VALUE_INT), bool(true),
-        end(2), begin(), str("old.key"), end(1), str("Saved"), bool(false)));
+        end(2), begin(), str("old.key"), end(1), str("Saved"), bool(false),
+        begin(), str("Game/settings"), str("Game/profile1"), str("(not bound)"), end(3), u16(1)));
     add("panel_custom", data(P_CUSTOM, begin(),
         row("speed", 2.5f, true), row("label", "hi", false), end(2),
         begin(), u16(0), str("Reset"), u16(1), str("Spawn"), end(2)));
@@ -261,6 +262,7 @@ final class DebugProtocolFixtures {
     add("action_save_reset_key", action(P_SAVE, FlixelDebugProtocol.SAVE_RESET_KEY, str("player.level")));
     add("action_save_save_now", action(P_SAVE, FlixelDebugProtocol.SAVE_SAVE_NOW));
     add("action_save_reset_all", action(P_SAVE, FlixelDebugProtocol.SAVE_RESET_ALL));
+    add("action_save_select", action(P_SAVE, FlixelDebugProtocol.SAVE_SELECT, u16(1)));
     add("action_custom_press", action(P_CUSTOM, FlixelDebugProtocol.CUSTOM_PRESS, u16(1)));
     add("action_custom_set_property", action(P_CUSTOM, FlixelDebugProtocol.CUSTOM_SET_PROPERTY, u16(0), val(3f)));
   }

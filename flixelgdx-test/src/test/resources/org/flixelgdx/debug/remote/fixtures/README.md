@@ -112,7 +112,7 @@ trackers 3, textures 4, controls 5, console 6, scene 7, inspector 8, save 9, cus
 
 ## panel_save.bin
 
-`u8:4 u16:9 array[ string:"player.name" string:"\"Kori\"" u8:6 bool:false string:"player.level" string:"12" u8:2 bool:true](count 2) array[ string:"old.key"](count 1) string:"Saved" bool:false`
+`u8:4 u16:9 array[ string:"player.name" string:"\"Kori\"" u8:6 bool:false string:"player.level" string:"12" u8:2 bool:true](count 2) array[ string:"old.key"](count 1) string:"Saved" bool:false array[ string:"Game/settings" string:"Game/profile1" string:"(not bound)"](count 3) u16:1`
 
 ## panel_custom.bin
 
@@ -201,6 +201,10 @@ trackers 3, textures 4, controls 5, console 6, scene 7, inspector 8, save 9, cus
 ## action_save_reset_all.bin
 
 `u8:5 u16:9 u8:4`
+
+## action_save_select.bin
+
+`u8:5 u16:9 u8:5 u16:1`
 
 ## action_custom_press.bin
 

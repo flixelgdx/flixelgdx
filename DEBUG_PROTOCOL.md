@@ -508,9 +508,22 @@ Id `save`, kind 10. Payload:
 | removed   | `array<string>` (paths that were removed and not yet saved) |
 | `status`  | `string` |
 | `isError` | `bool` (true when `status` describes a failure) |
+| saves     | `array<string>` (the label of every save the app can pick from, see below) |
+| `selected` | `u16` (the index in `saves` of the save the rows belong to) |
 
 The game sends the payload again whenever something in it changed (it checks about once a second, and right
 after every action), so the app can simply poll or listen.
+
+**Saves.** A game may keep more than one save, such as a settings file and a few profiles. The panel edits one
+of them at a time, and `saves` lists every one the app can switch to with `SELECT`:
+
+- Entry 0 is always the game's main save (`Flixel.save`). The game looks it up again on every refresh, so the
+  entry follows the game when it replaces that save. The other entries are the saves the game listed with
+  `Flixel.debug.save.add(...)`, in the order they were added.
+- A label is `name/slot` for a bound save with a slot, `name` for one without a slot, `(not bound)` for a save
+  that has no name (or was destroyed), and `(no save)` for entry 0 while the game has no main save.
+- `selected` is always a valid index into `saves`. When the game takes the selected save off the list, the panel
+  goes back to entry 0.
 
 **Rows.** The save is a tree of maps, lists, and plain values. The game flattens it into one row per plain value:
 
@@ -537,6 +550,7 @@ after every action), so the app can simply poll or listen.
 | 2    | `RESET_KEY` | `string path` |
 | 3    | `SAVE_NOW`  | none |
 | 4    | `RESET_ALL` | none |
+| 5    | `SELECT`    | `u16 index` (an index into `saves`) |
 
 - `SET` changes a value that already exists and keeps its type. A string may be typed with or without double
   quotes (inside quotes `\"`, `\\`, and `\n` mean a quote, a backslash, and a line break). A boolean must be `true`
@@ -547,6 +561,8 @@ after every action), so the app can simply poll or listen.
 - `SAVE_NOW` writes the data to storage.
 - `RESET_ALL` erases the data and the stored save at once. The app should ask the person to confirm before
   sending it.
+- `SELECT` switches the panel to another save of `saves`. The game refreshes at once and sends the rows of the
+  new save, with its summary in `status`. An index that is out of range is ignored.
 
 Nothing reaches storage until `SAVE_NOW` (or the game's own save call).
 
