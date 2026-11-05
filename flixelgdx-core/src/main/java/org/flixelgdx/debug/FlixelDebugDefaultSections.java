@@ -58,7 +58,6 @@ final class FlixelDebugDefaultSections {
    *
    * @param inspector The panel to register them on.
    */
-  @SuppressWarnings({ "rawtypes", "unchecked" })
   static void register(FlixelDebugInspectorPanel inspector) {
     inspector.register(FlixelBasic.class, "Basic", b -> b
         .intProp("ID", o -> o.id).once()
@@ -114,7 +113,7 @@ final class FlixelDebugDefaultSections {
     });
 
     inspector.register(FlixelText.class, "Text", b -> b
-        .stringProp("Text", (t, out) -> out.concat(t.getTextBuffer()), (t, v) -> t.setText(v))
+        .stringProp("Text", (t, out) -> out.concat(t.getTextBuffer()), FlixelText::setText)
         .intProp("Size", FlixelText::getTextSize, FlixelText::setTextSize)
         .enumProp("Alignment", FlixelText::getAlignment)
         .boolProp("Word wrap", FlixelText::isWordWrap, FlixelText::setWordWrap)
@@ -152,12 +151,12 @@ final class FlixelDebugDefaultSections {
     });
 
     inspector.register(FlixelBasicGroup.class, "Group", b -> b
-        .intProp("Members", g -> count(g))
-        .intProp("Max size", g -> g.getMaxSize(), (g, v) -> g.setMaxSize(v)));
+        .intProp("Members", FlixelDebugDefaultSections::count)
+        .intProp("Max size", FlixelBasicGroup::getMaxSize, FlixelBasicGroup::setMaxSize));
 
     inspector.register(FlixelSpriteGroup.class, "Sprite group", b -> b
-        .intProp("Members", g -> count(g))
-        .intProp("Max size", g -> g.getMaxSize(), (g, v) -> g.setMaxSize(v)));
+        .intProp("Members", FlixelDebugDefaultSections::count)
+        .intProp("Max size", FlixelSpriteGroup::getMaxSize, FlixelSpriteGroup::setMaxSize));
 
     inspector.register(FlixelState.class, "State", b -> b
         .boolProp("Has sub state", s -> s.getSubState() != null)
