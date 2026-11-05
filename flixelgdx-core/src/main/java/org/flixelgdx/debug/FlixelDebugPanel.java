@@ -41,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Panels are registered on {@link FlixelDebugManager} and are looked up by their stable
  * {@linkplain #getId() id}. The built-in panels (stats, logs, watches, trackers, textures, controls, console,
- * inspector, and save)
+ * scene, inspector, and save)
  * are already registered and exposed as fields such as {@code Flixel.debug.stats}. A game can add its own
  * panels with {@link FlixelDebugManager#register(FlixelDebugPanel)}.
  *

@@ -53,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #textures}: loaded textures, their memory use, and thumbnails.</li>
  *   <li>{@link #controls}: pause, step, hitboxes, the free camera, picking, and debugger settings.</li>
  *   <li>{@link #console}: a command line with commands that you can register.</li>
+ *   <li>{@link #scene}: the tree of states, sub states, and groups.</li>
  *   <li>{@link #inspector}: select an object and see or edit its properties.</li>
  *   <li>{@link #save}: view and edit the game's save data.</li>
  * </ul>
@@ -153,6 +154,14 @@ public class FlixelDebugManager {
   public final FlixelDebugConsolePanel console;
 
   /**
+   * The scene panel: the tree of the current state, its open sub states, and their groups.
+   * <pre>{@code
+   * Flixel.debug.scene.refresh();
+   * }</pre>
+   */
+  public final FlixelDebugScenePanel scene;
+
+  /**
    * The inspector panel: select an object and see or edit its properties.
    * <pre>{@code
    * Flixel.debug.inspector.select(player);
@@ -182,6 +191,7 @@ public class FlixelDebugManager {
     textures = new FlixelDebugTexturePanel(ids);
     console = new FlixelDebugConsolePanel(this);
     save = new FlixelDebugSavePanel();
+    scene = new FlixelDebugScenePanel(ids, inspector);
     inspector.setFocusHandler(controls::goTo);
     FlixelDebugDefaultSections.register(inspector);
     register(stats);
@@ -191,6 +201,7 @@ public class FlixelDebugManager {
     register(textures);
     register(controls);
     register(console);
+    register(scene);
     register(inspector);
     register(save);
   }

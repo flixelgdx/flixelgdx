@@ -399,6 +399,17 @@ Id `scene`, kind 8. Payload: a full tree snapshot, `array<node>`:
 
 Trees larger than 65535 nodes are cut by the agent. Parents always appear before their children.
 
+The `label` is the step the object takes in a [scene path](#scene-paths): `state` for the state, `substate` for a
+sub state open on top of its parent, the decimal member index for a member of a group, and the tracked label for an
+extra root. Joining the labels from the root down with dots gives a valid scene path, for example `state.3.0`. Empty
+member slots are not sent, but they keep their index, so a label can skip numbers. An object that was added through
+`track()` and also lives in the state appears once, inside the state, with `trackedRoot` set; a tracked object that is
+not in the state appears as an extra root with `parent` `-1`.
+
+The game builds the tree again about twice a second and sends a snapshot only when its shape changed (an object or a
+group member count changed, a sub state opened or closed, a root was tracked). A moved or edited object does not
+change the shape. `REQUEST_TREE` makes the game send a snapshot even when nothing changed.
+
 Actions:
 
 | Code | Name           | Fields |
