@@ -31,7 +31,6 @@ import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.asset.FlixelJvmAssetManager;
 import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
-import org.flixelgdx.backend.desktop.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
 import org.flixelgdx.backend.desktop.graphics.FlixelStbImage;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
@@ -96,7 +95,7 @@ public final class FlixelDesktopLauncher {
    *
    * <ul>
    *   <li>{@code -Dflixel.mode=debug} (or {@code -Dflixel.debug=true}) starts in
-   *       {@link FlixelRuntimeMode#DEBUG DEBUG}, which enables the debug overlay and diagnostics.</li>
+   *       {@link FlixelRuntimeMode#DEBUG DEBUG}, which enables the remote debugger panels and diagnostics.</li>
    *   <li>{@code -Dflixel.mode=test} starts in {@link FlixelRuntimeMode#TEST TEST}.</li>
    *   <li>No property (the default, and how packaged/published builds run) starts in
    *       {@link FlixelRuntimeMode#RELEASE RELEASE}.</li>
@@ -244,7 +243,6 @@ public final class FlixelDesktopLauncher {
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
 
     Flixel.boot.afterStart(() -> {
-      Flixel.debug.setOverlayFactory(FlixelImGuiDebugOverlay::new);
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
       Flixel.mouse.setMouseIconManager(iconManager);

@@ -37,11 +37,6 @@ dependencies {
     runtimeOnly("org.lwjgl:lwjgl-stb:$lwjglVersion:$classifier")
   }
 
-  api(libs.imgui.binding)
-  runtimeOnly(libs.imgui.natives.linux)
-  runtimeOnly(libs.imgui.natives.macos)
-  runtimeOnly(libs.imgui.natives.windows)
-
   implementation(libs.jetbrains.annotations)
   implementation(libs.jansi)
 

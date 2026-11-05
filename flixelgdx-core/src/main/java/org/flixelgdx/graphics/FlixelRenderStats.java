@@ -21,16 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.gpu;
+package org.flixelgdx.graphics;
 
 /**
- * Per-frame counters the renderer keeps for the debug overlay.
+ * Per-frame counters a graphics backend keeps for the remote debugger.
  *
  * <p>The values describe the last completed frame, except the memory and cache sizes, which are totals. The
  * renderer overwrites the fields in place, so reading them never allocates. All time values are CPU time spent
  * recording and submitting commands; the GPU itself is not timed.
  */
-public final class FlixelGpuStats {
+public final class FlixelRenderStats {
 
   /** Bytes of texture memory currently allocated (an estimate: four bytes per pixel). */
   public long textureBytes;

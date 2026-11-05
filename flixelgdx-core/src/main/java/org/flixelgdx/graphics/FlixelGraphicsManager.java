@@ -568,6 +568,20 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Returns the live renderer counters (draw calls, triangles, memory, and so on) that the remote debugger
+   * shows, or {@code null} when this backend keeps none.
+   *
+   * <p>The returned object is overwritten in place every frame, so reading it never allocates. Do not keep
+   * copies of its values across frames if you need them to stay fixed.
+   *
+   * @return The live stats object, or {@code null} when the backend does not collect statistics.
+   */
+  @Nullable
+  default FlixelRenderStats getStats() {
+    return null;
+  }
+
+  /**
    * Returns the frame-rate cap in frames per second, or {@code 0} when the frame rate is uncapped.
    *
    * @return The configured frame-rate cap, or {@code 0} when no cap is set.

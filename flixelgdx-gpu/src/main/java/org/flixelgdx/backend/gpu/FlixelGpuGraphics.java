@@ -35,6 +35,7 @@ import org.flixelgdx.graphics.FlixelGlobalShaderPipeline;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelRenderStats;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelShaderProgram;
@@ -149,7 +150,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private final FlixelArray<Runnable> mainThreadQueue = new FlixelArray<>();
   private final FlixelGlobalShaderPipeline pipeline = new FlixelGlobalShaderPipeline();
   private final FlixelLongMap<FlixelGpuTexture> textures = new FlixelLongMap<>();
-  private final FlixelGpuStats stats = new FlixelGpuStats();
+  private final FlixelRenderStats stats = new FlixelRenderStats();
   private final FlixelMatrix combined = new FlixelMatrix();
   private final FlixelMatrix compositeOrtho = new FlixelMatrix();
   private final FlixelMatrix identity = new FlixelMatrix();
@@ -1646,12 +1647,13 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   }
 
   /**
-   * Returns the frame counters the debug overlay shows.
+   * Returns the frame counters the remote debugger shows.
    *
    * @return The live stats object.
    */
+  @Override
   @NotNull
-  public FlixelGpuStats getStats() {
+  public FlixelRenderStats getStats() {
     return stats;
   }
 
@@ -1794,7 +1796,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     private long nextLog;
 
     @SuppressWarnings("DefaultLocale")
-    void tick(long now, FlixelGpuStats stats, FlixelGraphicsApi api) {
+    void tick(long now, FlixelRenderStats stats, FlixelGraphicsApi api) {
       if (now < nextLog) {
         return;
       }
