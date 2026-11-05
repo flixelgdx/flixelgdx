@@ -35,7 +35,7 @@ Pausing at a breakpoint blocks the render thread, so the app may look frozen unt
 `FlixelAndroidLauncher.launch(activity, game)` picks the runtime mode for you:
 
 1. If the launch intent has a `flixel.mode` string extra (`debug`, `test` or `release`), that wins.
-2. Otherwise a debuggable app (a normal debug build) starts in `DEBUG`, which enables the debug overlay
+2. Otherwise a debuggable app (a normal debug build) starts in `DEBUG`, which enables the remote debugger
    and diagnostics.
 3. Otherwise the app starts in `RELEASE`.
 

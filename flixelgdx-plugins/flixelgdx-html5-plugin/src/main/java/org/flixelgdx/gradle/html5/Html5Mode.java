@@ -43,7 +43,7 @@ package org.flixelgdx.gradle.html5;
  */
 public enum Html5Mode {
 
-  /** Enables debug overlays, verbose logging, and developer tooling. */
+  /** Enables the remote debugger, verbose logging, and developer tooling. */
   DEBUG,
 
   /** Runs the game in test mode, enabling automated test hooks. */
