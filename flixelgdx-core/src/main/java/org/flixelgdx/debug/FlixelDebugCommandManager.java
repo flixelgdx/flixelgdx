@@ -68,7 +68,7 @@ public class FlixelDebugCommandManager {
 
   /**
    * Regex enforced by {@link #register(String, Consumer)}. A valid command name must
-   * consist of one or more letters and / or periods only; everything else (numbers, hyphens, underscores,
+   * consist of one or more letters and/or periods only; everything else (numbers, hyphens, underscores,
    * whitespace, symbols, etc.) triggers an {@link IllegalArgumentException} from {@link #validate(String)}.
    */
   private static final Pattern VALID_COMMAND_NAME = Pattern.compile("^[a-zA-Z.]+$");

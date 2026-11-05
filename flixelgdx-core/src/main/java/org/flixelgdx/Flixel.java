@@ -602,7 +602,7 @@ public final class Flixel {
    * Flixel.save.bind("MySaveFile", "slot1");
    *
    * // Read and write a high score.
-   * int prevBest = (int) Flixel.save.data.get("highScore", 0);
+   * int prevBest = Flixel.save.getInt("highScore", 0);
    * if (score > prevBest) {
    *   Flixel.save.data.put("highScore", score);
    *   Flixel.save.flush();
@@ -666,13 +666,6 @@ public final class Flixel {
   /**
    * The gamepad and controller input manager.
    *
-   * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link FlixelGamepadInputManager#enabled} to
-   * {@code true} before the game loop starts if your game needs controller support:
-   *
-   * <pre>{@code
-   * Flixel.gamepads.enabled = true;
-   * }</pre>
-   *
    * <p>The gamepad system abstracts physical controllers (Xbox, PlayStation, generic USB) behind
    * logical button and axis tokens from {@link FlixelGamepadButton} and {@link FlixelGamepadAxis}, so
    * the same game code works across different controller layouts without any platform-specific
@@ -688,9 +681,6 @@ public final class Flixel {
    *
    * <p>Example:
    * <pre>{@code
-   * // Opt in to controller support before the game loop starts.
-   * Flixel.gamepads.enabled = true;
-   *
    * // Check if player 1 pressed the A button this frame.
    * if (Flixel.gamepads.justPressed(0, FlixelGamepadButton.A)) {
    *   player.jump();
@@ -1011,7 +1001,6 @@ public final class Flixel {
     gamepads = new FlixelGamepadInputManager();
     sound = new FlixelSoundManager(FlixelSoundManager.defaultFactory);
 
-    // Register default tween pools (pool factories avoid extra allocations when pooling tweens).
     FlixelTween.registerTweenType(FlixelGoalTween.class, () -> new FlixelGoalTween(null))
         .registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null))
         .registerTweenType(FlixelAngleTween.class, () -> new FlixelAngleTween(null))
