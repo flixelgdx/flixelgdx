@@ -42,9 +42,43 @@
  * Flixel.debug.console.execute("god");
  * }</pre>
  *
+ * <h2>Inspecting objects</h2>
+ * <p>The inspector panel shows the properties of one selected object. It shows one section for every registered
+ * class in the object's family tree, most specific class first, so a {@code Player} that extends
+ * {@code FlixelSprite} shows its own section and then the sprite, object, and basic sections. The framework
+ * registers sections for its own classes. Add one for yours:
+ *
+ * <pre>{@code
+ * Flixel.debug.inspector.register(Player.class, "Player", b -> b
+ *     .intProp("Health", Player::getHealth, Player::setHealth)  // With a setter, the row is editable.
+ *     .floatProp("Speed", Player::getSpeed)                     // Without one, it is read-only.
+ *     .boolProp("On ground", Player::isOnGround)
+ *     .enumProp("State", Player::getState)
+ *     .intProp("Id", Player::getId).once());                    // Read once when the player is selected.
+ *
+ * Flixel.debug.inspector.select(player);   // Or click it in the app.
+ * }</pre>
+ *
+ * <p>There is one builder method per value type ({@code boolProp}, {@code intProp}, {@code longProp},
+ * {@code floatProp}, {@code doubleProp}, {@code stringProp}), so a lambda is never ambiguous. Reading values
+ * never allocates, and a getter that throws shows its message in the app instead of a value. See
+ * {@link org.flixelgdx.debug.inspector.FlixelSectionBuilder FlixelSectionBuilder} for all the options.
+ *
  * <h2>Custom panels</h2>
- * <p>Extend {@link org.flixelgdx.debug.FlixelDebugPanelBase FlixelDebugPanelBase} and register the panel
- * with {@link org.flixelgdx.debug.FlixelDebugManager#register(org.flixelgdx.debug.FlixelDebugPanel)}.
+ * <p>For a panel that is not about one object, use a
+ * {@link org.flixelgdx.debug.FlixelDebugCustomPanel FlixelDebugCustomPanel}. Describe its rows and buttons with
+ * the same style of builder, except the getters take no arguments:
+ *
+ * <pre>{@code
+ * Flixel.debug.register(new FlixelDebugCustomPanel("ai", "Enemy AI", p -> p
+ *     .intProp("Active enemies", () -> enemies.countLiving())
+ *     .floatProp("Aggression", () -> ai.aggression, v -> ai.aggression = v)
+ *     .action("Kill all", enemies::killAll)));
+ * }</pre>
+ *
+ * <p>When you need a panel with a completely different payload, extend
+ * {@link org.flixelgdx.debug.FlixelDebugPanelBase FlixelDebugPanelBase} and register it with
+ * {@link org.flixelgdx.debug.FlixelDebugManager#register(org.flixelgdx.debug.FlixelDebugPanel)}.
  *
  * @see org.flixelgdx.debug.FlixelDebugManager
  * @see org.flixelgdx.debug.FlixelDebugPanel

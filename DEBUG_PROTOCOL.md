@@ -393,6 +393,15 @@ Actions:
 | 6    | `SET_PROPERTY`      | `i32 id`, `u16 sectionIndex`, `u16 propertyIndex`, `value` |
 | 7    | `REQUEST_THUMBNAIL` | `i32 id` (object id) |
 
+`SET_PROPERTY` refers to a row by its position in the latest `STATE` the game sent: `sectionIndex` is the
+position in the `array<section>` and `propertyIndex` is the position in that section's rows. The game ignores
+the action when `id` is not the currently selected object, when an index is out of range, or when the row is
+not editable.
+
+The game converts the value by the row's kind. A numeric row (int, long, float, or double) accepts any numeric
+value kind and converts it like a Java cast, a bool row accepts only a bool, and a string row accepts only a
+string. A value of any other kind is ignored and a warning is logged.
+
 ### save
 
 Id `save`, kind 10. Payload:
@@ -428,6 +437,9 @@ Actions:
 |------|----------------|--------|
 | 1    | `PRESS`        | `u16 actionIndex` (taken from the button) |
 | 2    | `SET_PROPERTY` | `u16 propertyIndex` (position in the rows array), `value` |
+
+`SET_PROPERTY` converts the value by the row's kind exactly as the inspector does (see
+[inspector](#inspector)); mismatched kinds and read-only rows are ignored.
 
 ## Versioning
 
