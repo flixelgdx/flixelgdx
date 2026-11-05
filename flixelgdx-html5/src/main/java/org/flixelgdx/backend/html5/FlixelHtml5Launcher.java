@@ -38,6 +38,8 @@ import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
 import org.flixelgdx.backend.html5.logging.FlixelHtml5ConsoleSink;
 import org.flixelgdx.backend.html5.save.FlixelHtml5SaveHandler;
 import org.flixelgdx.backend.html5.text.FlixelHtml5FontRasterizer;
+import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.debug.remote.FlixelDebugEndpoint;
 import org.flixelgdx.logging.FlixelLogSiteMarker;
 import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.text.FlixelFontRegistry;
@@ -70,6 +72,9 @@ import org.teavm.jso.JSBody;
  * {@code ?flixel.mode=test} selects {@link FlixelRuntimeMode#TEST TEST}. With no such parameter the
  * game runs in {@link FlixelRuntimeMode#RELEASE RELEASE}. The web build plugin can bake a default
  * into the generated page, which the URL parameter then overrides.
+ *
+ * <p>In debug mode the game also connects to the remote debugger app on {@code 127.0.0.1:6510}. Add
+ * {@code ?flixel.debugHost=host[:port]} to the address to connect to another computer.
  */
 public final class FlixelHtml5Launcher {
 
@@ -133,10 +138,32 @@ public final class FlixelHtml5Launcher {
 
     Flixel.runtime.setMode(runtimeMode);
 
+    if (runtimeMode == FlixelRuntimeMode.DEBUG) {
+      installDebugger();
+    }
+
     FlixelHtml5Runner runner = new FlixelHtml5Runner(CANVAS_ID, config.getWidth(), config.getHeight(),
         graphics, window, host, input);
     window.setRunner(runner);
     Flixel.start(game, runner);
+  }
+
+  /**
+   * Installs the browser WebSocket transport and the debugger app's address, which the
+   * {@code flixel.debugHost} URL parameter may override.
+   */
+  private static void installDebugger() {
+    String spec = urlDebugHost();
+    FlixelDebugEndpoint endpoint = FlixelDebugEndpoint.tryParse(spec);
+    if (endpoint == null) {
+      if (spec != null && !spec.trim().isEmpty()) {
+        Flixel.warn("Could not read flixel.debugHost '{}'. Use host or host:port. Falling back to {}.", spec,
+            FlixelDebugEndpoint.DEFAULT);
+      }
+      endpoint = FlixelDebugEndpoint.DEFAULT;
+    }
+    FlixelDebugManager.defaultTransport = new FlixelHtml5WebSocketTransport();
+    FlixelDebugManager.defaultEndpoint = endpoint;
   }
 
   /**
@@ -163,4 +190,14 @@ public final class FlixelHtml5Launcher {
       return window.flixelMode || null;
       """)
   private static native String urlMode();
+
+  /**
+   * Reads the debugger app's address from the page URL query string.
+   *
+   * @return The {@code flixel.debugHost} parameter, or {@code null} when it is not present.
+   */
+  @JSBody(script = """
+      return new URLSearchParams(window.location.search).get('flixel.debugHost');
+      """)
+  private static native String urlDebugHost();
 }
