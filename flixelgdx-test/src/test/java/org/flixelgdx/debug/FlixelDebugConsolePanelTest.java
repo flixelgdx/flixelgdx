@@ -158,14 +158,16 @@ class FlixelDebugConsolePanelTest {
   }
 
   @Test
-  void historyKeepsOnlyTheLast64Lines() {
-    for (int i = 0; i < 70; i++) {
+  void historyKeepsOnlyTheNewestLines() {
+    int max = FlixelDebugConsolePanel.MAX_HISTORY_ENTRIES;
+    int total = max + 6;
+    for (int i = 0; i < total; i++) {
       console.run("echo " + i);
     }
     FlixelArray<String> history = (FlixelArray<String>) console.getHistory();
-    assertEquals(FlixelDebugConsolePanel.MAX_HISTORY_ENTRIES, history.getSize());
+    assertEquals(max, history.getSize());
     assertEquals("echo 6", history.get(0));
-    assertEquals("echo 69", history.get(63));
+    assertEquals("echo " + (total - 1), history.get(max - 1));
   }
 
   @Test
