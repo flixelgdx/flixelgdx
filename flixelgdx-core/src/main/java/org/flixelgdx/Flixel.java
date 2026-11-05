@@ -34,9 +34,11 @@ import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelNoopAlerter;
 import org.flixelgdx.backend.FlixelNoopHaptics;
 import org.flixelgdx.backend.FlixelNoopHostIntegration;
+import org.flixelgdx.backend.FlixelNoopProfiler;
 import org.flixelgdx.backend.FlixelNoopRuntimeDevice;
 import org.flixelgdx.backend.FlixelNoopWindow;
 import org.flixelgdx.backend.FlixelPlatform;
+import org.flixelgdx.backend.FlixelProfiler;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.FlixelWindow;
@@ -802,6 +804,30 @@ public final class Flixel {
   public static FlixelHaptics haptics = FlixelNoopHaptics.INSTANCE;
 
   /**
+   * Marks named sections of work so an external profiler can show where time goes.
+   *
+   * <p>The framework already marks its per-frame phases (update, draw, state switches). Add your own
+   * markers around expensive game code to see them next to those. Android installs a real
+   * implementation that feeds the system trace (viewable in Perfetto and the Android Studio
+   * profiler). Other platforms keep the default no-op, so calls are always safe and nearly free.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Flixel.profiler.begin("game.pathfinding");
+   * try {
+   *   findPath();
+   * } finally {
+   *   Flixel.profiler.end();
+   * }
+   * }</pre>
+   *
+   * @see FlixelProfiler
+   */
+  @NotNull
+  public static FlixelProfiler profiler = FlixelNoopProfiler.INSTANCE;
+
+  /**
    * The low-level input backend that reads the keyboard and pointer for the current platform.
    *
    * <p>This is the plumbing beneath {@link #keys}, {@link #mouse}, and {@link #touches}: those
@@ -915,6 +941,9 @@ public final class Flixel {
    */
   @SuppressWarnings("checkstyle:ConstantName")
   private static final float[] worldBounds = { -10000f, -10000f, 20000f, 20000f };
+
+  /** Profiler section name for {@link #switchState}. */
+  private static final String TRACE_SWITCH_STATE = "flixel.switchState";
 
   /** The camera currently being drawn in {@link FlixelDrawable#draw(FlixelBatch)}. */
   @Nullable
@@ -1082,38 +1111,43 @@ public final class Flixel {
   public static void switchState(@NotNull Supplier<FlixelState> stateFactory, boolean clearTweens, boolean clearTimers,
       boolean triggerGC) {
     Objects.requireNonNull(stateFactory, "State factory cannot be null.");
-    FlixelState newState = stateFactory.get();
+    profiler.begin(TRACE_SWITCH_STATE);
+    try {
+      FlixelState newState = stateFactory.get();
 
-    Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
+      Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
 
-    if (!boot.isInitialized()) {
-      throw new IllegalStateException("Flixel has not been initialized yet.");
-    }
-    if (state != null) {
-      state.destroy();
-    }
+      if (!boot.isInitialized()) {
+        throw new IllegalStateException("Flixel has not been initialized yet.");
+      }
+      if (state != null) {
+        state.destroy();
+      }
 
-    if (sound != null) {
-      sound.clearNonPersist();
-    }
-    if (clearTweens) {
-      FlixelTween.cancelActiveTweens();
-      FlixelTween.clearTweenPools();
-    }
-    if (clearTimers) {
-      FlixelTimer.cancelAll();
-    }
-    game.resetCameras();
-    state = Objects.requireNonNull(newState, "State factory must not return null.");
-    state.ensureMembers();
-    state.create();
-    currentStateFactory = stateFactory;
+      if (sound != null) {
+        sound.clearNonPersist();
+      }
+      if (clearTweens) {
+        FlixelTween.cancelActiveTweens();
+        FlixelTween.clearTweenPools();
+      }
+      if (clearTimers) {
+        FlixelTimer.cancelAll();
+      }
+      game.resetCameras();
+      state = Objects.requireNonNull(newState, "State factory must not return null.");
+      state.ensureMembers();
+      state.create();
+      currentStateFactory = stateFactory;
 
-    if (triggerGC) {
-      System.gc();
-    }
+      if (triggerGC) {
+        System.gc();
+      }
 
-    Signals.postStateSwitch.dispatch(new StateSwitchSignalData(state));
+      Signals.postStateSwitch.dispatch(new StateSwitchSignalData(state));
+    } finally {
+      profiler.end();
+    }
   }
 
   /**
