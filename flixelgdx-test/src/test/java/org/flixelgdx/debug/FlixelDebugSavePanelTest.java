@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugSavePanelTest {
@@ -459,6 +460,185 @@ class FlixelDebugSavePanelTest {
   }
 
   @Test
+  void entryZeroIsAlwaysFlixelSaveAndAddedSavesFollowInOrder() {
+    FlixelSave settings = bound("Game", "settings");
+    FlixelSave profile = bound("Game", null);
+
+    panel.add(settings);
+    panel.add(profile);
+
+    assertEquals(3, panel.getSaveCount());
+    assertSame(save, panel.getSaveAt(0));
+    assertSame(settings, panel.getSaveAt(1));
+    assertSame(profile, panel.getSaveAt(2));
+    assertNull(panel.getSaveAt(3));
+    assertNull(panel.getSaveAt(-1));
+    assertEquals(0, panel.getSelectedIndex());
+    assertSame(save, panel.getSave(), "adding a save does not switch to it");
+    Payload payload = payload();
+    assertEquals(List.of("Game/slot1", "Game/settings", "Game"), payload.saves);
+    assertEquals(0, payload.selected);
+  }
+
+  @Test
+  void addingASaveTwiceOrAddingFlixelSaveDoesNothing() {
+    FlixelSave settings = bound("Game", "settings");
+    panel.add(settings);
+    panel.add(settings);
+    panel.add(save);
+    assertEquals(2, panel.getSaveCount());
+    assertEquals(List.of("Game/slot1", "Game/settings"), payload().saves);
+  }
+
+  @Test
+  void entryZeroFollowsFlixelSaveWhenTheGameReplacesIt() {
+    save.data.put("old", 1);
+    FlixelSave replacement = bound("Game", "slot2");
+    replacement.data.put("new", 1);
+
+    assertEquals(List.of("old"), payload().paths());
+    Flixel.save = replacement;
+    Payload payload = payload();
+    assertEquals(List.of("new"), payload.paths());
+    assertEquals(List.of("Game/slot2"), payload.saves);
+
+    Flixel.save = null;
+    payload = payload();
+    assertEquals(List.of("(no save)"), payload.saves);
+    assertTrue(payload.rows.isEmpty());
+  }
+
+  @Test
+  void aSaveThatBecomesFlixelSaveIsListedOnlyOnce() {
+    FlixelSave profile = bound("Game", "profile1");
+    panel.add(profile);
+    Flixel.save = profile;
+    assertEquals(1, panel.getSaveCount());
+    assertEquals(List.of("Game/profile1"), payload().saves);
+  }
+
+  @Test
+  void selectSwitchesTheEditedSaveAndRefreshesAtOnce() {
+    save.data.put("a", 1);
+    FlixelSave profile = bound("Game", "profile1");
+    profile.data.put("b", 2);
+    panel.add(profile);
+    panel.refresh();
+    long revision = panel.getRevision();
+
+    assertTrue(panel.select(1));
+    assertSame(profile, panel.getSave());
+    assertEquals(1, panel.getSelectedIndex());
+    assertTrue(panel.getRevision() > revision);
+    Payload payload = decode();
+    assertEquals(List.of("b"), payload.paths());
+    assertEquals(1, payload.selected);
+    assertTrue(payload.status.contains("Game.profile1"), payload.status);
+    assertTrue(panel.set("b", "3"));
+    assertEquals(3, profile.data.get("b"));
+
+    assertFalse(panel.select(2));
+    assertFalse(panel.select(-1));
+    assertEquals(1, panel.getSelectedIndex());
+
+    assertTrue(panel.select(0));
+    assertSame(save, panel.getSave());
+    assertEquals(List.of("a"), payload().paths());
+  }
+
+  @Test
+  void theSelectedSaveIsComparedWithItsOwnStorage() {
+    save.data.put("coins", 1);
+    save.flush();
+    FlixelSave profile = bound("Game", "profile1");
+    profile.data.put("coins", 1);
+    panel.add(profile);
+
+    assertFalse(payload().row("coins").unsaved);
+    panel.select(1);
+    assertTrue(decode().row("coins").unsaved, "the profile was never written");
+  }
+
+  @Test
+  void setSaveAddsTheSaveAndSelectsIt() {
+    FlixelSave profile = bound("Game", "profile1");
+    panel.setSave(profile);
+    assertEquals(2, panel.getSaveCount());
+    assertEquals(1, panel.getSelectedIndex());
+    panel.setSave(profile);
+    assertEquals(2, panel.getSaveCount());
+
+    panel.setSave(null);
+    assertEquals(0, panel.getSelectedIndex());
+    assertEquals(2, panel.getSaveCount(), "going back to Flixel.save keeps the list");
+  }
+
+  @Test
+  void removingTheSelectedSaveGoesBackToEntryZero() {
+    FlixelSave settings = bound("Game", "settings");
+    FlixelSave profile = bound("Game", "profile1");
+    panel.add(settings);
+    panel.add(profile);
+    panel.select(2);
+
+    assertTrue(panel.remove(settings));
+    assertSame(profile, panel.getSave());
+    assertEquals(1, panel.getSelectedIndex(), "the index moves down with the list");
+
+    assertTrue(panel.remove(profile));
+    assertSame(save, panel.getSave());
+    assertEquals(0, panel.getSelectedIndex());
+    assertFalse(panel.remove(profile));
+    assertFalse(panel.remove(save), "Flixel.save cannot be taken off the list");
+    Payload payload = decode();
+    assertEquals(List.of("Game/slot1"), payload.saves);
+    assertEquals(0, payload.selected);
+  }
+
+  @Test
+  void aDestroyedSaveIsShownAsNotBoundAndCanStillBeSelected() {
+    FlixelSave profile = bound("Game", "profile1");
+    profile.data.put("a", 1);
+    panel.add(profile);
+    profile.destroy();
+
+    assertTrue(panel.select(1));
+    Payload payload = decode();
+    assertEquals(List.of("Game/slot1", "(not bound)"), payload.saves);
+    assertTrue(payload.rows.isEmpty());
+    assertTrue(payload.status.contains("not bound"), payload.status);
+    assertFalse(panel.saveNow());
+  }
+
+  @Test
+  void theSelectActionPicksASave() {
+    FlixelSave profile = bound("Game", "profile1");
+    panel.add(profile);
+
+    DebugTestSupport.send(panel, FlixelDebugProtocol.SAVE_SELECT, w -> w.writeU16(1));
+    assertSame(profile, panel.getSave());
+    DebugTestSupport.send(panel, FlixelDebugProtocol.SAVE_SELECT, w -> w.writeU16(9));
+    assertSame(profile, panel.getSave(), "an index out of range is ignored");
+    DebugTestSupport.send(panel, FlixelDebugProtocol.SAVE_SELECT, w -> w.writeU16(0));
+    assertSame(save, panel.getSave());
+  }
+
+  @Test
+  void theListOnlyChangesTheRevisionWhenALabelChanges() {
+    FlixelSave profile = new FlixelSave(storage);
+    panel.add(profile);
+    panel.update(1.1f);
+    long revision = panel.getRevision();
+    panel.update(1.1f);
+    assertEquals(revision, panel.getRevision());
+
+    profile.bind("Game", "profile1");
+    panel.update(1.1f);
+    assertTrue(panel.getRevision() > revision);
+    assertEquals(List.of("Game/slot1", "Game/profile1"), decode().saves);
+  }
+
+  @Test
   void resetClearsTheRows() {
     save.data.put("coins", 1);
     panel.refresh();
@@ -467,6 +647,12 @@ class FlixelDebugSavePanelTest {
     Payload payload = decode();
     assertTrue(payload.rows.isEmpty());
     assertEquals("", payload.status);
+  }
+
+  private FlixelSave bound(String name, @Nullable String slot) {
+    FlixelSave other = new FlixelSave(storage);
+    other.bind(name, slot);
+    return other;
   }
 
   /** Refreshes the panel the way its one second timer would, then decodes what it would send. */
@@ -493,6 +679,11 @@ class FlixelDebugSavePanelTest {
     }
     payload.status = DebugTestSupport.str(r);
     payload.isError = r.readBool();
+    int saves = r.readCount();
+    for (int i = 0; i < saves; i++) {
+      payload.saves.add(DebugTestSupport.str(r));
+    }
+    payload.selected = r.readU16();
     assertEquals(0, r.getRemaining());
     return payload;
   }
@@ -509,7 +700,9 @@ class FlixelDebugSavePanelTest {
 
     final List<Row> rows = new ArrayList<>();
     final List<String> removed = new ArrayList<>();
+    final List<String> saves = new ArrayList<>();
     String status;
+    int selected;
     boolean isError;
 
     List<String> paths() {

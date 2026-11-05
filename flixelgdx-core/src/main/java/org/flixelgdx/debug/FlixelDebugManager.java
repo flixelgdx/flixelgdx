@@ -141,8 +141,10 @@ public class FlixelDebugManager {
   public final FlixelDebugWatchPanel watches;
 
   /**
-   * The save panel: view and edit the values of {@link Flixel#save}, then save or erase them.
+   * The save panel: view and edit the values of {@link Flixel#save} (or of another listed save), then save or erase
+   * them.
    * <pre>{@code
+   * Flixel.debug.save.add(profile); // Lets the app switch to a second save.
    * Flixel.debug.save.set("player.coins", "999");
    * Flixel.debug.save.saveNow();
    * }</pre>

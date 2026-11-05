@@ -47,12 +47,19 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>What the panel edits</h2>
  *
- * <p>It works on {@link FlixelSave#data} of {@link Flixel#save} (or of the save given to
- * {@link #setSave(FlixelSave)}). The data is a tree of maps, lists, and plain values. The panel flattens it into one
- * row per plain value with a dotted path, such as {@code player.coins} or {@code inventory.2.name} (list elements
- * are named by their index). Keys that are numbers sort by number, other keys sort alphabetically without regard to
- * case, and numbers come first. An empty map or list is a row of its own, shown as {@code {}} or {@code []}. At most
- * {@value #MAX_ROWS} rows are sent.
+ * <p>It works on {@link FlixelSave#data} of one save at a time, picked from a short list. Entry 0 of the list is
+ * always {@link Flixel#save}, looked up again on every refresh, so the panel follows the game when it replaces that
+ * save. Games that keep more than one save (a settings file and a few profiles, for example) {@link #add(FlixelSave)
+ * add} the others, and the debugger app can then switch between them with {@link #select(int)}. Each entry is shown
+ * as {@code name/slot} (or just {@code name} without a slot), as {@code (not bound)} while the save has no name (a
+ * destroyed save has none), or as {@code (no save)} for entry 0 while {@link Flixel#save} is {@code null}.
+ * {@link #setSave(FlixelSave)} adds a save and switches to it in one call.
+ *
+ * <p>The data is a tree of maps, lists, and plain values. The panel flattens it into one row per plain value with a
+ * dotted path, such as {@code player.coins} or {@code inventory.2.name} (list elements are named by their index).
+ * Keys that are numbers sort by number, other keys sort alphabetically without regard to case, and numbers come
+ * first. An empty map or list is a row of its own, shown as {@code {}} or {@code []}. At most {@value #MAX_ROWS} rows
+ * are sent.
  *
  * <h2>Unsaved changes</h2>
  *
@@ -73,6 +80,7 @@ import org.jetbrains.annotations.Nullable;
  *       falls back to the default it passes to calls such as {@code getInt("coins", 0)}.</li>
  *   <li>{@link #saveNow()} writes the data to storage.</li>
  *   <li>{@link #resetAll()} erases the data and the stored save.</li>
+ *   <li>{@link #select(int) select} switches to another save of the list.</li>
  * </ul>
  *
  * <p>Changes are made in memory only; nothing reaches storage until {@link #saveNow()} (or the game's own flush).
@@ -82,6 +90,10 @@ import org.jetbrains.annotations.Nullable;
  * <p>Example:
  *
  * <pre>{@code
+ * FlixelSave profile = new FlixelSave();
+ * profile.bind("Game", "profile1");
+ * Flixel.debug.save.add(profile);                  // The app now lists "Game/profile1" next to Flixel.save.
+ *
  * Flixel.debug.save.set("player.coins", "999");    // The coins row turns "unsaved".
  * Flixel.debug.save.saveNow();                     // Now it matches the stored save again.
  * Flixel.debug.save.resetKey("settings.volume");   // The game uses its own default from now on.
@@ -127,9 +139,14 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
   private final RowList stored = new RowList();
   private final RowList removed = new RowList();
   private final FlixelArray<FlixelArray<Object>> keyScratch = new FlixelArray<>();
+  private final FlixelArray<FlixelSave> extras = new FlixelArray<>();
+  private final FlixelArray<FlixelString> labels = new FlixelArray<>();
 
   @Nullable
   private FlixelSave save;
+
+  @Nullable
+  private FlixelSave lastTarget;
 
   @Nullable
   private Object targetParent;
@@ -140,6 +157,8 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
   private int targetIndex;
   private int unsavedCount;
   private int lastUnsaved;
+  private int labelCount;
+  private int labelSelected;
 
   private boolean statusError;
   private boolean statusFromAction;
@@ -173,6 +192,12 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
    */
   public void refresh() {
     FlixelSave target = getSave();
+    if (target != lastTarget) {
+      // Another save (or a new Flixel.save) is edited now, so the stored copy belongs to the old one.
+      lastTarget = target;
+      storedValid = false;
+    }
+    rebuildLabels();
     rows.clear();
     removed.clear();
     unsavedCount = 0;
@@ -249,7 +274,7 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
     if (!locate(target.data, path, 0, 0)) {
       return fail("There is no value at \"" + path + "\".");
     }
-    remove();
+    removeTarget();
     refresh();
     return succeed("Removed " + path + ". The game uses its default.");
   }
@@ -290,7 +315,70 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
   }
 
   /**
-   * Writes the rows, the removed paths, the status line, and the error flag.
+   * Adds a save to the list the debugger app can pick from, without switching to it.
+   *
+   * <p>Adding a save that is already listed, or {@link Flixel#save} itself (which is always entry 0), does nothing.
+   * The save is kept until {@link #remove(FlixelSave)} is called, even after it is destroyed; a destroyed save is
+   * simply shown as {@code (not bound)}.
+   *
+   * <pre>{@code
+   * FlixelSave settings = new FlixelSave();
+   * settings.bind("Game", "settings");
+   * Flixel.debug.save.add(settings);
+   * }</pre>
+   *
+   * @param save The save to list.
+   */
+  public void add(@NotNull FlixelSave save) {
+    if (save == null || save == Flixel.save || extras.contains(save, true)) {
+      return;
+    }
+    extras.add(save);
+    rebuildLabels();
+    refreshSignature();
+  }
+
+  /**
+   * Takes a save off the list.
+   *
+   * <p>When it was the save being edited, the panel goes back to entry 0 ({@link Flixel#save}). {@link Flixel#save}
+   * itself always stays as entry 0.
+   *
+   * @param save The save to take off.
+   * @return {@code true} when the save was listed by {@link #add(FlixelSave)} or {@link #setSave(FlixelSave)}.
+   */
+  public boolean remove(@NotNull FlixelSave save) {
+    if (save == null || !extras.removeValue(save, true)) {
+      return false;
+    }
+    if (this.save == save) {
+      choose(null);
+    } else {
+      rebuildLabels();
+      refreshSignature();
+    }
+    return true;
+  }
+
+  /**
+   * Switches the panel to another save of the list and refreshes at once.
+   *
+   * <p>Index 0 is {@link Flixel#save}; the others are the saves given to {@link #add(FlixelSave)}, in the order they
+   * were added.
+   *
+   * @param index The position in the list, from 0 to {@link #getSaveCount()} minus one.
+   * @return {@code true} when the index was valid.
+   */
+  public boolean select(int index) {
+    if (index < 0 || index >= getSaveCount()) {
+      return false;
+    }
+    choose(index == 0 ? null : getSaveAt(index));
+    return true;
+  }
+
+  /**
+   * Writes the rows, the removed paths, the status line, the error flag, the list of saves, and the selected index.
    *
    * @param writer The writer positioned after the panel index.
    */
@@ -311,6 +399,12 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
     }
     writer.endArray(removed.count);
     writer.writeString(status).writeBool(statusError);
+    writer.beginArray();
+    for (int i = 0; i < labelCount; i++) {
+      writer.writeString(labels.get(i));
+    }
+    writer.endArray(labelCount);
+    writer.writeU16(labelSelected);
   }
 
   @Override
@@ -327,6 +421,7 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
       }
       case FlixelDebugProtocol.SAVE_SAVE_NOW -> saveNow();
       case FlixelDebugProtocol.SAVE_RESET_ALL -> resetAll();
+      case FlixelDebugProtocol.SAVE_SELECT -> select(reader.readU16());
       default -> {
       }
     }
@@ -342,6 +437,8 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
     status.clear();
     statusError = false;
     unsavedCount = 0;
+    lastTarget = null;
+    rebuildLabels();
     signature = 0L;
     timer = REFRESH_INTERVAL;
     markChanged();
@@ -633,7 +730,57 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
     for (int i = 0; i < status.length(); i++) {
       hash = hash * 31L + status.charAt(i);
     }
-    return hash * 31L + (statusError ? 1L : 0L);
+    hash = hash * 31L + (statusError ? 1L : 0L);
+    for (int i = 0; i < labelCount; i++) {
+      FlixelString label = labels.get(i);
+      // The length keeps "ab" + "c" apart from "a" + "bc".
+      hash = hash * 31L + label.length();
+      for (int c = 0; c < label.length(); c++) {
+        hash = hash * 31L + label.charAt(c);
+      }
+    }
+    return (hash * 31L + labelCount) * 31L + labelSelected;
+  }
+
+  /** Switches to a save (or to {@link Flixel#save} for {@code null}) and refreshes with the new save's summary. */
+  private void choose(@Nullable FlixelSave next) {
+    save = next;
+    storedValid = false;
+    statusFromAction = false;
+    refresh();
+  }
+
+  /** Builds the label of every listed save into the reused strings and remembers which one is selected. */
+  private void rebuildLabels() {
+    FlixelSave main = Flixel.save;
+    labelCount = 0;
+    addLabel(main);
+    for (int i = 0; i < extras.getSize(); i++) {
+      FlixelSave entry = extras.get(i);
+      if (entry != main) {
+        addLabel(entry);
+      }
+    }
+    labelSelected = getSelectedIndex();
+  }
+
+  private void addLabel(@Nullable FlixelSave entry) {
+    if (labelCount == labels.getSize()) {
+      labels.add(new FlixelString(16));
+    }
+    FlixelString label = labels.get(labelCount++);
+    label.clear();
+    if (entry == null) {
+      label.concat("(no save)");
+    } else if (!entry.isBound()) {
+      label.concat("(not bound)");
+    } else {
+      label.concat(entry.getName());
+      String slot = entry.getSlot();
+      if (slot != null && !slot.isEmpty()) {
+        label.concat('/').concat(slot);
+      }
+    }
   }
 
   private static long rowsHash(RowList list) {
@@ -757,7 +904,7 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
   }
 
   @SuppressWarnings("unchecked")
-  private void remove() {
+  private void removeTarget() {
     if (targetParent instanceof FlixelArray<?> list) {
       list.removeIndex(targetIndex);
     } else if (targetParent instanceof FlixelMap<?, ?> map) {
@@ -850,7 +997,72 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
   }
 
   /**
-   * Returns the save that is edited: the one given to {@link #setSave(FlixelSave)}, or else {@link Flixel#save}.
+   * Returns how many saves the debugger app can pick from, counting {@link Flixel#save} as entry 0.
+   *
+   * @return The number of listed saves, always at least 1.
+   */
+  public int getSaveCount() {
+    FlixelSave main = Flixel.save;
+    int count = 1;
+    for (int i = 0; i < extras.getSize(); i++) {
+      if (extras.get(i) != main) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Returns one save of the list.
+   *
+   * <p>A save that was added and later became {@link Flixel#save} is only listed once, as entry 0.
+   *
+   * @param index The position in the list. Index 0 is {@link Flixel#save}.
+   * @return The save, or {@code null} when the index is out of range or entry 0 is asked for while
+   *     {@link Flixel#save} is {@code null}.
+   */
+  @Nullable
+  public FlixelSave getSaveAt(int index) {
+    FlixelSave main = Flixel.save;
+    if (index == 0) {
+      return main;
+    }
+    int at = 0;
+    for (int i = 0; i < extras.getSize(); i++) {
+      FlixelSave entry = extras.get(i);
+      if (entry != main && ++at == index) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Returns the position of the edited save in the list.
+   *
+   * @return The index, where 0 means {@link Flixel#save}.
+   */
+  public int getSelectedIndex() {
+    FlixelSave main = Flixel.save;
+    if (save == null || save == main) {
+      return 0;
+    }
+    int at = 0;
+    for (int i = 0; i < extras.getSize(); i++) {
+      FlixelSave entry = extras.get(i);
+      if (entry == main) {
+        continue;
+      }
+      at++;
+      if (entry == save) {
+        return at;
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Returns the save that is edited: the selected entry of the list, or {@link Flixel#save} for entry 0.
    *
    * @return The save, or {@code null} when there is none.
    */
@@ -862,12 +1074,19 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
   /**
    * Edits another save instead of {@link Flixel#save}, for example a second slot kept by the game.
    *
+   * <p>The save is {@link #add(FlixelSave) added} to the list when it is not listed yet, then selected, and the panel
+   * refreshes at once. Passing {@link Flixel#save} or {@code null} selects entry 0, which keeps following
+   * {@link Flixel#save} when the game replaces it.
+   *
    * @param save The save to edit, or {@code null} to go back to {@link Flixel#save}.
    */
   public void setSave(@Nullable FlixelSave save) {
-    this.save = save;
-    storedValid = false;
-    timer = REFRESH_INTERVAL;
+    if (save == null || save == Flixel.save) {
+      choose(null);
+      return;
+    }
+    add(save);
+    choose(save);
   }
 
   /**

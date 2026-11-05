@@ -121,6 +121,7 @@ public final class FlixelDebugProtocol {
   public static final int SAVE_RESET_KEY = 2;
   public static final int SAVE_SAVE_NOW = 3;
   public static final int SAVE_RESET_ALL = 4;
+  public static final int SAVE_SELECT = 5;
 
   public static final int CUSTOM_PRESS = 1;
   public static final int CUSTOM_SET_PROPERTY = 2;

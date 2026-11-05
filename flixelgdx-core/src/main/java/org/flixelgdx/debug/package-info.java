@@ -82,7 +82,8 @@
  * <p>The save panel ({@link org.flixelgdx.debug.FlixelDebugSavePanel FlixelDebugSavePanel}) shows every value of
  * {@code Flixel.save} as a row, marks the ones that differ from what is stored, and lets you change a value, remove
  * one, write the save, or erase it, all from the debugger app or from code with
- * {@code Flixel.debug.save.set("player.coins", "999")}.
+ * {@code Flixel.debug.save.set("player.coins", "999")}. Games that keep more than one save list the others with
+ * {@code Flixel.debug.save.add(profile)}, and the app can then switch between them.
  *
  * <h2>Custom panels</h2>
  * <p>For a panel that is not about one object, use a
