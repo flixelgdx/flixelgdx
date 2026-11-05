@@ -129,7 +129,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
   private static final long VERTEX_RING_BYTES = 4L << 20;
   private static final long UNIFORM_RING_BYTES = 1L << 20;
-  private static final long INDEX_RING_BYTES = 1L << 20;
   private static final int MAX_LEVELS = 16;
   private static final int SPARE = MAX_LEVELS;
   private static final int GLOBALS_FLOATS = FlixelWgsl.GLOBALS_SIZE / 4;
@@ -203,7 +202,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private GpuBuffer quadIndices;
   private FlixelGpuRing vertexRing;
   private FlixelGpuRing uniformRing;
-  private FlixelGpuRing indexRing;
   private FlixelGpuPipelines pipelines;
   private FlixelGpuShaderProgram spriteProgram;
   private FlixelGpuTexture opaqueTexture;
@@ -287,7 +285,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     pipelines = new FlixelGpuPipelines(device);
     vertexRing = new FlixelGpuRing(device, GpuBufferUsage.VERTEX, VERTEX_RING_BYTES, "flixel vertices");
     uniformRing = new FlixelGpuRing(device, GpuBufferUsage.UNIFORM, UNIFORM_RING_BYTES, "flixel uniforms");
-    indexRing = new FlixelGpuRing(device, GpuBufferUsage.INDEX, INDEX_RING_BYTES, "flixel overlay indices");
     quadIndices = createQuadIndexBuffer();
 
     spriteProgram = pipelines.createSpriteProgram(SPRITE_SHADER, this);
@@ -544,7 +541,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     }
     vertexRing.reset();
     uniformRing.reset();
-    indexRing.reset();
     ringEpoch++;
     encoder = encoder == null ? device.createCommandEncoder(null) : device.createCommandEncoder(null, encoder);
     passOpen = false;
@@ -605,7 +601,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     stats.uniformBytes = (int) uniformRing.getAllocator().getUsed();
     stats.pipelines = pipelines.getPipelineCount();
     stats.textures = textures.getSize();
-    stats.ringBytes = VERTEX_RING_BYTES + UNIFORM_RING_BYTES + INDEX_RING_BYTES;
+    stats.ringBytes = VERTEX_RING_BYTES + UNIFORM_RING_BYTES;
     frameActive = false;
     if (statsEnabled) {
       statsLog.tick(end, stats, api);
@@ -735,7 +731,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     encoder = device.createCommandEncoder(null, encoder);
     vertexRing.reset();
     uniformRing.reset();
-    indexRing.reset();
     ringEpoch++;
   }
 
@@ -1366,111 +1361,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     return spriteProgram;
   }
 
-  /**
-   * Starts a draw into the back buffer for the debug overlay.
-   *
-   * <p>Call after the game's frame has been drawn. It makes sure the scene has been composited and the back
-   * buffer is the target, and resets the viewport and scissor to the whole window.
-   *
-   * @return {@code true} when overlay draws can follow, {@code false} when this frame is not being rendered.
-   */
-  public boolean beginOverlay() {
-    if (!frameActive) {
-      return false;
-    }
-    if (sceneActive) {
-      endScene();
-    }
-    while (depth > 1) {
-      popTarget();
-    }
-    viewX[0] = 0;
-    viewY[0] = 0;
-    viewW[0] = backBufferWidth;
-    viewH[0] = backBufferHeight;
-    cutEnabled[0] = false;
-    stateDirty = true;
-    return true;
-  }
-
-  /**
-   * Copies vertices into the vertex ring for an overlay draw.
-   *
-   * @param data The vertex bytes, from position to limit. The remaining count must be a multiple of four.
-   * @return The ring offset, or {@code -1} when the ring is full; call {@link #restartCommands()} and try again.
-   */
-  public long writeOverlayVertices(@NotNull ByteBuffer data) {
-    return frameActive ? vertexRing.write(queue, data, 4) : -1L;
-  }
-
-  /**
-   * Copies indices into the overlay index ring.
-   *
-   * @param data The index bytes, from position to limit. The remaining count must be a multiple of four.
-   * @return The ring offset, or {@code -1} when the ring is full; call {@link #restartCommands()} and try again.
-   */
-  public long writeOverlayIndices(@NotNull ByteBuffer data) {
-    return frameActive ? indexRing.write(queue, data, 4) : -1L;
-  }
-
-  /**
-   * Draws indexed triangles in the sprite vertex layout into the back buffer, with the normal blend mode.
-   *
-   * @param texture The texture to sample.
-   * @param vertexOffset The offset returned by {@link #writeOverlayVertices(ByteBuffer)}.
-   * @param vertexBytes The byte size of the vertices.
-   * @param indexOffset The offset returned by {@link #writeOverlayIndices(ByteBuffer)}.
-   * @param indexBytes The byte size of the indices.
-   * @param index32 Whether the indices are 32-bit instead of 16-bit.
-   * @param firstIndex The first index to draw, counted in indices.
-   * @param indexCount The number of indices to draw.
-   * @param projection The matrix mapping the overlay's coordinates to clip space.
-   * @param clipX The scissor rectangle's left edge in pixels.
-   * @param clipY The scissor rectangle's top edge in pixels.
-   * @param clipW The scissor rectangle's width in pixels.
-   * @param clipH The scissor rectangle's height in pixels.
-   */
-  public void drawOverlay(@NotNull FlixelGpuTexture texture, long vertexOffset, long vertexBytes, long indexOffset,
-      long indexBytes, boolean index32, int firstIndex, int indexCount, @NotNull FlixelMatrix projection, int clipX,
-      int clipY, int clipW, int clipH) {
-    if (!frameActive || texture.isDestroyed()) {
-      return;
-    }
-    GpuRenderPipeline gpuPipeline = pipelines.get(FlixelGpuBlend.NORMAL, levelFormat[0], spriteProgram);
-    if (gpuPipeline == null) {
-      return;
-    }
-    System.arraycopy(projection.val, 0, globals, 0, 16);
-    globals[16] = texture.getGpuWidth();
-    globals[17] = texture.getGpuHeight();
-    globals[18] = 1f / Math.max(1, texture.getGpuWidth());
-    globals[19] = 1f / Math.max(1, texture.getGpuHeight());
-    long globalsOffset = uniformRing.write(queue, globals, GLOBALS_FLOATS, uniformAlignment);
-    if (globalsOffset < 0L) {
-      return;
-    }
-    ensurePass();
-    applyState();
-    if (gpuPipeline != lastPipeline) {
-      pass.setPipeline(gpuPipeline);
-      lastPipeline = gpuPipeline;
-    }
-    dynamicOffset[0] = (int) globalsOffset;
-    pass.setBindGroup(0, texture.bindGroup(), dynamicOffset, 1);
-    pass.setVertexBuffer(0, vertexRing.getBuffer(), vertexOffset, vertexBytes);
-    pass.setIndexBuffer(indexRing.getBuffer(), index32 ? GpuIndexFormat.UINT32 : GpuIndexFormat.UINT16, indexOffset,
-        indexBytes);
-    int w = levelWidth[0];
-    int h = levelHeight[0];
-    int sx = clamp(clipX, 0, w - 1);
-    int sy = clamp(clipY, 0, h - 1);
-    pass.setScissorRect(sx, sy, clamp(clipW, 1, w - sx), clamp(clipH, 1, h - sy));
-    pass.drawIndexed(indexCount, 1, firstIndex, 0, 0);
-    stateDirty = true;
-    stats.draws++;
-    stats.triangles += indexCount / 3;
-  }
-
   @NotNull
   @Override
   public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
@@ -1616,7 +1506,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     quadIndices.release();
     vertexRing.release();
     uniformRing.release();
-    indexRing.release();
     if (headlessView != null) {
       headlessView.release();
       headlessTexture.release();
