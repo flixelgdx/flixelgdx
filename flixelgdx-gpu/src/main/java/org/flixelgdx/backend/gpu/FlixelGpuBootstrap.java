@@ -137,7 +137,8 @@ public final class FlixelGpuBootstrap {
 
   private void onLost(GpuDevice lostDevice, GpuDeviceLostReason reason, String message) {
     if (reason == GpuDeviceLostReason.DESTROYED) {
-      LOG.warn("The GPU device was destroyed ({}): {}", reason, message);
+      // A destroyed device is the normal result of shutting down, so it only needs a debug line.
+      LOG.debug("The GPU device was destroyed ({}): {}", reason, message);
     } else {
       LOG.error("The GPU device was lost ({}): {}", reason, message);
     }
@@ -253,8 +254,8 @@ public final class FlixelGpuBootstrap {
    * Sets a callback for when the device is lost (a GPU reset, a driver crash, or the device being destroyed on
    * purpose). Takes effect only if called before {@link #start()}.
    *
-   * <p>The loss reason and message are always logged (an error, or a warning when the device was destroyed on
-   * purpose), whether or not a callback is set.
+   * <p>The loss reason and message are always logged (an error, or a debug line when the device was destroyed on
+   * purpose, such as during shutdown), whether or not a callback is set.
    *
    * <p>With the mode used here, the callback runs from {@code instance.processEvents()}, on the thread that calls
    * it. A platform that wants to survive a lost device checks a flag set by this callback once per frame.
