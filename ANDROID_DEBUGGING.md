@@ -49,6 +49,26 @@ adb shell am start -n <package>/<activity> -e flixel.mode debug
 An unknown value logs a warning and falls back to the default described above. To force a mode no matter
 what, call `FlixelAndroidLauncher.launch(activity, game, FlixelRuntimeMode.DEBUG)`.
 
+## Using the remote debugger app
+
+A game in `DEBUG` mode connects to the remote debugger app on `127.0.0.1:6510`, and every game gets the `INTERNET`
+permission from the framework for this. On a phone, `127.0.0.1` is the phone itself, so forward the port over USB
+first (run it again after you reconnect the cable or restart `adb`):
+
+```sh
+adb reverse tcp:6510 tcp:6510
+```
+
+The app on your PC then answers at the phone's `127.0.0.1:6510`. The game retries every two seconds, so the order in
+which you start the app and the game does not matter. For an emulator or a phone on the same network, skip the forward
+and name the PC instead:
+
+```sh
+adb shell am start -n <package>/<activity> -e flixel.debugHost 192.168.1.20:6510
+```
+
+The extra takes `host` or `host:port`. Release builds never open a connection.
+
 ## Profiling with trace sections
 
 The framework marks its per-frame phases in the Android system trace, so they appear as labeled bars:
