@@ -43,11 +43,8 @@ import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.debug.FlixelDebugCommandManager;
 import org.flixelgdx.debug.FlixelDebugManager;
-import org.flixelgdx.debug.FlixelDebugOverlay;
-import org.flixelgdx.debug.FlixelDebugWatchManager;
-import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
+import org.flixelgdx.debug.FlixelDebugPanel;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.file.FlixelNoopFiles;
 import org.flixelgdx.functional.FlixelAntialiasable;
@@ -100,7 +97,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -140,7 +136,7 @@ import java.util.function.Supplier;
  *   </li>
  *   <li>
  *     <b>Logging and Debugging:</b>
- *     Centralizes log output through {@link #log}, and supplies tools for in-game watches and performance tracking.
+ *     Centralizes log output through {@link #log}, and supplies tools for watches and performance tracking.
  *   </li>
  *   <li>
  *     <b>Camera and Drawing Context:</b>
@@ -236,8 +232,8 @@ public final class Flixel {
   /**
    * The default logger used for game diagnostics and debugging output.
    *
-   * <p>The logger formats each message once and hands it to its sinks: the console, the in-game debug
-   * overlay, and optionally a persistent log file. It supports four severity levels:
+   * <p>The logger formats each message once and hands it to its sinks: the console, the remote
+   * debugger's log panel, and optionally a persistent log file. It supports four severity levels:
    * {@link FlixelLogger#debug(Object) debug}, {@link FlixelLogger#info(Object) info},
    * {@link FlixelLogger#warn(Object) warn}, and {@link FlixelLogger#error(Object) error}, and it
    * throws away messages below its minimum level before doing any work for them.
@@ -385,7 +381,7 @@ public final class Flixel {
    * <p>Example:
    * <pre>{@code
    * Flixel.boot.beforeStart(() -> FlixelSoundManager.defaultFactory = myFactory);
-   * Flixel.boot.afterStart(() -> Flixel.debug.commands.register("reload", args -> reload()));
+   * Flixel.boot.afterStart(() -> Flixel.debug.console.register("reload", args -> reload()));
    * }</pre>
    */
   @NotNull
@@ -516,72 +512,43 @@ public final class Flixel {
   public static FlixelAssetManager assets = FlixelNoopAssetManager.INSTANCE;
 
   /**
-   * The debug watch manager for the game.
-   *
-   * <p>A watch is a named, live value that the debug overlay displays while the game runs. Watches
-   * are an efficient way to inspect frame-by-frame state (player position, health, physics
-   * variables) without scattering temporary log statements throughout your code.
-   *
-   * <p>Add a watch with a name and a supplier lambda; the overlay calls the supplier every frame
-   * to refresh the displayed value. Remove watches you no longer need to keep the overlay clean.
-   * Suppliers are never called when the overlay is hidden, so there is no runtime cost in release
-   * builds.
-   *
-   * <p>Example:
-   * <pre>{@code
-   * // Show the player's position live in the debug overlay.
-   * Flixel.watch.add("Player X", player::getX);
-   * Flixel.watch.add("Player Y", player::getY);
-   * Flixel.watch.add("Total Score", () -> orbs + gemsAmount);
-   *
-   * // Remove a watch when it is no longer needed.
-   * Flixel.watch.remove("Player X");
-   * }</pre>
-   */
-  @NotNull
-  public static FlixelDebugWatchManager watch;
-
-  /**
    * The central debug manager for the game.
    *
-   * <p>The debug manager is the primary interface to FlixelGDX's built-in debugging toolset. It
-   * bridges game code and the active {@link FlixelDebugOverlay} without requiring a direct
-   * reference to the overlay or even knowing whether one is installed. All methods are safe to
-   * call in any build and no-op gracefully when the game is not running in debug mode.
+   * <p>The debug manager is the primary interface to FlixelGDX's built-in debugging toolset. The tools are
+   * <em>panels</em>: small pieces that sample data from the running game and encode it for the remote
+   * debugger app. Panels only run while the game is in debug mode, so every call below is safe in any
+   * build and costs nothing in release builds.
    *
    * <p>Key capabilities:
    * <ul>
    *   <li>
-   *     <b>Visibility toggle:</b> Call {@link FlixelDebugOverlay#toggleVisible()} or
-   *     {@link FlixelDebugOverlay#setVisible(boolean)} to show or hide the overlay at runtime.
+   *     <b>Watches:</b> {@link FlixelDebugManager#watches} shows named, live values. Add one with a name and a
+   *     getter, for example {@code Flixel.debug.watches.addFloat("Player X", player::getX)}.
    *   </li>
    *   <li>
-   *     <b>Draw debug:</b> {@link FlixelDebugOverlay#setDrawDebug(boolean)} enables bounding-box
-   *     and collision-shape visualization over every live object in the current state.
+   *     <b>Hitboxes and pausing:</b> {@link FlixelDebugManager#controls} turns on bounding-box and
+   *     collision-shape visualization over every live object, and pauses or steps the game.
    *   </li>
    *   <li>
-   *     <b>Custom commands:</b> Register interactive console commands with
-   *     {@link FlixelDebugCommandManager#register(String, Consumer)} to run
-   *     arbitrary game code from the debug overlay's input line.
+   *     <b>Custom commands:</b> {@link FlixelDebugManager#console} runs interactive commands that you register
+   *     with {@code register(...)}, to run arbitrary game code from the debugger's command line.
+   *   </li>
+   *   <li>
+   *     <b>Your own panels:</b> {@link FlixelDebugManager#register(FlixelDebugPanel)}
+   *     adds a panel that shows anything you like.
    *   </li>
    * </ul>
    *
-   * <p>The overlay itself is created by a factory set before the game starts. Desktop launchers
-   * typically supply a richer overlay (for example, one built with Dear ImGui), while headless or
-   * web builds fall back to {@link FlixelHeadlessDebugOverlay}. Use
-   * {@link FlixelDebugManager#setOverlayFactory} to install a custom factory before
-   * {@link #start(FlixelGame, FlixelGameRunner)}.
-   *
    * <p>Example:
    * <pre>{@code
-   * // Show the debug overlay when the game starts (debug mode only).
-   * Flixel.debug.overlay.setVisible(true);
+   * // Show the player's position live in the debugger (debug mode only).
+   * Flixel.debug.watches.addFloat("Player X", player::getX);
    *
    * // Draw bounding boxes over all objects.
-   * Flixel.debug.overlay.setDrawDebug(true);
+   * Flixel.debug.controls.setHitboxes(true);
    *
    * // Register a custom console command.
-   * Flixel.debug.commands.register("god", args -> player.setInvincible(true));
+   * Flixel.debug.console.register("god", args -> player.setInvincible(true));
    * }</pre>
    */
   @NotNull
@@ -930,8 +897,6 @@ public final class Flixel {
    * The raw platform delta is clamped to [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] first, then multiplied by
    * this value before being stored in the active game and passed to {@code update()}. All systems that read
    * {@link #getElapsed()} (such as physics, animations, tweens, timers, and camera follow) are affected uniformly.
-   *
-   * <p>The debug overlay's Controls panel exposes a slider for this value at runtime (range 0.1x to 4.0x).
    */
   public static float timeScale = 1f;
 
@@ -1022,7 +987,6 @@ public final class Flixel {
 
     // Initialize the core systems.
     keys = new FlixelKeyInputManager();
-    watch = new FlixelDebugWatchManager();
     debug = new FlixelDebugManager();
     save = new FlixelSave();
     mouse = new FlixelMouseInputManager();

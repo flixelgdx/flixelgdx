@@ -31,7 +31,6 @@ import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.asset.FlixelJvmAssetManager;
 import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
-import org.flixelgdx.backend.desktop.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
 import org.flixelgdx.backend.desktop.graphics.FlixelStbImage;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
@@ -44,6 +43,7 @@ import org.flixelgdx.backend.desktop.runtime.FlixelJvmRuntimeDevice;
 import org.flixelgdx.backend.desktop.save.FlixelJvmSaveHandler;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
 import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
+import org.flixelgdx.backend.jvm.FlixelJvmDebugger;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.logging.FlixelLogger;
@@ -96,11 +96,14 @@ public final class FlixelDesktopLauncher {
    *
    * <ul>
    *   <li>{@code -Dflixel.mode=debug} (or {@code -Dflixel.debug=true}) starts in
-   *       {@link FlixelRuntimeMode#DEBUG DEBUG}, which enables the debug overlay and diagnostics.</li>
+   *       {@link FlixelRuntimeMode#DEBUG DEBUG}, which enables the remote debugger panels and diagnostics.</li>
    *   <li>{@code -Dflixel.mode=test} starts in {@link FlixelRuntimeMode#TEST TEST}.</li>
    *   <li>No property (the default, and how packaged/published builds run) starts in
    *       {@link FlixelRuntimeMode#RELEASE RELEASE}.</li>
    * </ul>
+   *
+   * <p>In debug mode the game also connects to the remote debugger app on {@code 127.0.0.1:6510}. Add
+   * {@code -Dflixel.debugHost=host[:port]} to connect to another computer.
    *
    * <p>Because the flag lives in the launch command (for example a Gradle {@code debug} run task) and
    * not in code, there is nothing to remember to remove before publishing: a shipped build simply runs
@@ -244,13 +247,17 @@ public final class FlixelDesktopLauncher {
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
 
     Flixel.boot.afterStart(() -> {
-      Flixel.debug.setOverlayFactory(FlixelImGuiDebugOverlay::new);
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
       Flixel.mouse.setMouseIconManager(iconManager);
     });
 
     Flixel.runtime.setMode(runtimeMode);
+
+    if (runtimeMode == FlixelRuntimeMode.DEBUG) {
+      // The remote debugger app. -Dflixel.debugHost=host[:port] points the game somewhere other than this computer.
+      FlixelJvmDebugger.install(System.getProperty(FlixelJvmDebugger.HOST_KEY));
+    }
 
     Flixel.start(game, runner);
     if (AnsiConsole.isInstalled()) {

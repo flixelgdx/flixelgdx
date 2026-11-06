@@ -70,6 +70,31 @@ public interface FlixelTexture extends FlixelDestroyable {
   int getHeight();
 
   /**
+   * Returns how much GPU memory this texture takes, as far as the backend knows.
+   *
+   * <p>The debugger shows it in its texture list. The default assumes 4 bytes per pixel (RGBA8) and a single
+   * level, which is exact for ordinary textures. Backends override it for compressed textures and mipmaps.
+   *
+   * @return The size in bytes.
+   */
+  default long getByteSize() {
+    return (long) getWidth() * getHeight() * 4L;
+  }
+
+  /**
+   * Returns the name of this texture's pixel format, for display only.
+   *
+   * <p>The default is {@code "RGBA8"}. Backends that keep textures compressed return the name of the compressed
+   * format. Do not parse the text; its values are not part of the API.
+   *
+   * @return A short format name.
+   */
+  @NotNull
+  default String getFormat() {
+    return "RGBA8";
+  }
+
+  /**
    * Returns whether this texture samples with smooth (linear) filtering.
    *
    * @return {@code true} for linear filtering, {@code false} for crisp nearest-neighbor sampling.

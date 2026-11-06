@@ -53,6 +53,7 @@ final class DebugProtocolFixtures {
   static final int P_INSPECTOR = 8;
   static final int P_SAVE = 9;
   static final int P_CUSTOM = 10;
+  static final int P_VIEWPORT = 11;
 
   static final byte[] PNG_BYTES = { (byte) 0x89, 'P', 'N', 'G' };
   static final byte[] THUMB_BYTES = { 9, 8, 7 };
@@ -174,7 +175,8 @@ final class DebugProtocolFixtures {
         panel(P_INSPECTOR, "inspector", "Inspector", FlixelDebugProtocol.KIND_INSPECTOR),
         panel(P_SAVE, "save", "Save", FlixelDebugProtocol.KIND_SAVE),
         panel(P_CUSTOM, "custom.demo", "Demo", FlixelDebugProtocol.KIND_CUSTOM),
-        end(11));
+        panel(P_VIEWPORT, "viewport", "Viewport", FlixelDebugProtocol.KIND_VIEWPORT),
+        end(12));
     add("msg_ping", u8(FlixelDebugProtocol.MSG_PING), i64(1234567890123L));
     add("msg_pong", u8(FlixelDebugProtocol.MSG_PONG), i64(1234567890123L));
 
@@ -230,10 +232,20 @@ final class DebugProtocolFixtures {
     add("panel_save", data(P_SAVE, begin(),
         str("player.name"), str("\"Kori\""), u8(FlixelDebugProtocol.VALUE_STRING), bool(false),
         str("player.level"), str("12"), u8(FlixelDebugProtocol.VALUE_INT), bool(true),
-        end(2), begin(), str("old.key"), end(1), str("Saved"), bool(false)));
+        end(2), begin(), str("old.key"), end(1), str("Saved"), bool(false),
+        begin(), str("Game/settings"), str("Game/profile1"), str("(not bound)"), end(3), u16(1)));
     add("panel_custom", data(P_CUSTOM, begin(),
         row("speed", 2.5f, true), row("label", "hi", false), end(2),
         begin(), u16(0), str("Reset"), u16(1), str("Spawn"), end(2)));
+    add("panel_viewport", data(P_VIEWPORT,
+        u8(0), u8(2), f32(320f), f32(180f), f32(2f), f32(100.5f), f32(-40f),
+        bool(true), bool(false), bool(true), i32(3),
+        begin(), str("FlixelSprite"), str("FlixelSpriteGroup"), end(2),
+        begin(),
+        i32(2), f32(10f), f32(20f), f32(64f), f32(32f), u16(1),
+        u8(FlixelDebugProtocol.VIEWPORT_BOX_GROUP | FlixelDebugProtocol.VIEWPORT_BOX_INACTIVE),
+        i32(3), f32(-8.5f), f32(150.25f), f32(16f), f32(16f), u16(0), u8(FlixelDebugProtocol.VIEWPORT_BOX_SELECTED),
+        end(2)));
 
     add("action_logs_clear", action(P_LOGS, FlixelDebugProtocol.LOGS_CLEAR));
     add("action_textures_request_thumbnail",
@@ -261,6 +273,15 @@ final class DebugProtocolFixtures {
     add("action_save_reset_key", action(P_SAVE, FlixelDebugProtocol.SAVE_RESET_KEY, str("player.level")));
     add("action_save_save_now", action(P_SAVE, FlixelDebugProtocol.SAVE_SAVE_NOW));
     add("action_save_reset_all", action(P_SAVE, FlixelDebugProtocol.SAVE_RESET_ALL));
+    add("action_save_select", action(P_SAVE, FlixelDebugProtocol.SAVE_SELECT, u16(1)));
+    add("action_viewport_set_camera", action(P_VIEWPORT, FlixelDebugProtocol.VIEWPORT_SET_CAMERA, u8(1)));
+    add("action_viewport_pick", action(P_VIEWPORT, FlixelDebugProtocol.VIEWPORT_PICK, f32(40.5f), f32(30f)));
+    add("action_viewport_move",
+        action(P_VIEWPORT, FlixelDebugProtocol.VIEWPORT_MOVE, i32(2), f32(16f), f32(-4.25f)));
+    add("action_viewport_pan", action(P_VIEWPORT, FlixelDebugProtocol.VIEWPORT_PAN, f32(-12f), f32(8.5f)));
+    add("action_viewport_zoom",
+        action(P_VIEWPORT, FlixelDebugProtocol.VIEWPORT_ZOOM, f32(1.25f), f32(160f), f32(90f)));
+    add("action_viewport_reset_camera", action(P_VIEWPORT, FlixelDebugProtocol.VIEWPORT_RESET_CAMERA));
     add("action_custom_press", action(P_CUSTOM, FlixelDebugProtocol.CUSTOM_PRESS, u16(1)));
     add("action_custom_set_property", action(P_CUSTOM, FlixelDebugProtocol.CUSTOM_SET_PROPERTY, u16(0), val(3f)));
   }

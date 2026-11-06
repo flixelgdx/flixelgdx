@@ -15,6 +15,8 @@ The project is split into several modules, each serving a specific purpose.
 - **`flixelgdx-ios`**: Planned backend for iOS mobile devices. Not supported yet. Currently only fail-fasts when attempted to be used.
 - **`flixelgdx-gpu`**: The one WebGPU renderer every platform shares. It implements core's graphics abstractions (sprite batch, textures, render targets, shaders, the global shader chain) on top of `jwebgpu-api` only, so it contains no desktop, Android or web types. Each platform supplies a jwebgpu backend, a surface for its window and a device, and hands them to `FlixelGpuGraphics`.
 
+- **`flixelgdx-jvm`**: JVM-only code that desktop and Android share, kept out of core because core is also compiled for the browser. Today it holds the `java.net.Socket` WebSocket client (`FlixelSocketWebSocketTransport`) that connects a game in debug mode to the remote debugger app. It only uses Java APIs that Android has. `flixelgdx-desktop` and `flixelgdx-android` depend on it; `flixelgdx-html5` does not, and uses the browser's own `WebSocket` instead.
+
 ### Plugins (inside [`flixelgdx-plugins`](flixelgdx-plugins/))
 
 - **`flixelgdx-basisu-plugin`**: Bundles Basis Universal binaries for each OS and applies `.ktx2` compression for every `.png` asset on Android. At runtime the Android backend transcodes each file to ASTC or ETC2 (whatever the GPU supports) through `FlixelKtx2` in `flixelgdx-gpu`, so textures stay compressed in GPU memory.

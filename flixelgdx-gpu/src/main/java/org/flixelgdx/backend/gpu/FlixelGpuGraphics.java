@@ -35,6 +35,8 @@ import org.flixelgdx.graphics.FlixelGlobalShaderPipeline;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelPixelReadback;
+import org.flixelgdx.graphics.FlixelRenderStats;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelShaderProgram;
@@ -52,6 +54,7 @@ import io.github.stringdotjar.jwebgpu.GpuBindGroup;
 import io.github.stringdotjar.jwebgpu.GpuBuffer;
 import io.github.stringdotjar.jwebgpu.GpuBufferDescriptor;
 import io.github.stringdotjar.jwebgpu.GpuBufferUsage;
+import io.github.stringdotjar.jwebgpu.GpuCallbackMode;
 import io.github.stringdotjar.jwebgpu.GpuCommandBuffer;
 import io.github.stringdotjar.jwebgpu.GpuCommandEncoder;
 import io.github.stringdotjar.jwebgpu.GpuCompositeAlphaMode;
@@ -61,6 +64,8 @@ import io.github.stringdotjar.jwebgpu.GpuFeatureName;
 import io.github.stringdotjar.jwebgpu.GpuIndexFormat;
 import io.github.stringdotjar.jwebgpu.GpuLimits;
 import io.github.stringdotjar.jwebgpu.GpuLoadOp;
+import io.github.stringdotjar.jwebgpu.GpuMapAsyncStatus;
+import io.github.stringdotjar.jwebgpu.GpuMapMode;
 import io.github.stringdotjar.jwebgpu.GpuPresentMode;
 import io.github.stringdotjar.jwebgpu.GpuQueue;
 import io.github.stringdotjar.jwebgpu.GpuRenderPassColorAttachment;
@@ -73,6 +78,7 @@ import io.github.stringdotjar.jwebgpu.GpuSurfaceCapabilities;
 import io.github.stringdotjar.jwebgpu.GpuSurfaceConfiguration;
 import io.github.stringdotjar.jwebgpu.GpuSurfaceGetCurrentTextureStatus;
 import io.github.stringdotjar.jwebgpu.GpuSurfaceTexture;
+import io.github.stringdotjar.jwebgpu.GpuTexelCopyBufferInfo;
 import io.github.stringdotjar.jwebgpu.GpuTexelCopyBufferLayout;
 import io.github.stringdotjar.jwebgpu.GpuTexelCopyTextureInfo;
 import io.github.stringdotjar.jwebgpu.GpuTexture;
@@ -128,7 +134,12 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
   private static final long VERTEX_RING_BYTES = 4L << 20;
   private static final long UNIFORM_RING_BYTES = 1L << 20;
-  private static final long INDEX_RING_BYTES = 1L << 20;
+
+  /** The largest staging buffer a texture readback may use, which is 128 MB. */
+  private static final long MAX_READBACK_BYTES = 128L << 20;
+
+  /** WebGPU requires the rows of a texture-to-buffer copy to start at multiples of this many bytes. */
+  private static final int READBACK_ROW_ALIGNMENT = 256;
   private static final int MAX_LEVELS = 16;
   private static final int SPARE = MAX_LEVELS;
   private static final int GLOBALS_FLOATS = FlixelWgsl.GLOBALS_SIZE / 4;
@@ -149,7 +160,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private final FlixelArray<Runnable> mainThreadQueue = new FlixelArray<>();
   private final FlixelGlobalShaderPipeline pipeline = new FlixelGlobalShaderPipeline();
   private final FlixelLongMap<FlixelGpuTexture> textures = new FlixelLongMap<>();
-  private final FlixelGpuStats stats = new FlixelGpuStats();
+  private final FlixelRenderStats stats = new FlixelRenderStats();
   private final FlixelMatrix combined = new FlixelMatrix();
   private final FlixelMatrix compositeOrtho = new FlixelMatrix();
   private final FlixelMatrix identity = new FlixelMatrix();
@@ -202,7 +213,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private GpuBuffer quadIndices;
   private FlixelGpuRing vertexRing;
   private FlixelGpuRing uniformRing;
-  private FlixelGpuRing indexRing;
   private FlixelGpuPipelines pipelines;
   private FlixelGpuShaderProgram spriteProgram;
   private FlixelGpuTexture opaqueTexture;
@@ -213,6 +223,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private GpuRenderPipeline lastPipeline;
 
   private int deviceEpoch;
+  private int pendingReadbacks;
   private int uniformAlignment = 256;
   private int backBufferWidth;
   private int backBufferHeight;
@@ -286,7 +297,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     pipelines = new FlixelGpuPipelines(device);
     vertexRing = new FlixelGpuRing(device, GpuBufferUsage.VERTEX, VERTEX_RING_BYTES, "flixel vertices");
     uniformRing = new FlixelGpuRing(device, GpuBufferUsage.UNIFORM, UNIFORM_RING_BYTES, "flixel uniforms");
-    indexRing = new FlixelGpuRing(device, GpuBufferUsage.INDEX, INDEX_RING_BYTES, "flixel overlay indices");
     quadIndices = createQuadIndexBuffer();
 
     spriteProgram = pipelines.createSpriteProgram(SPRITE_SHADER, this);
@@ -519,6 +529,11 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
   @Override
   public void beginFrame() {
+    Runnable pump = eventPump;
+    if (pendingReadbacks > 0 && pump != null) {
+      // Let finished texture readbacks call back. The pump is the GPU instance's event processing.
+      pump.run();
+    }
     synchronized (mainThreadQueue) {
       for (int i = 0; i < mainThreadQueue.getSize(); i++) {
         mainThreadQueue.get(i).run();
@@ -543,7 +558,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     }
     vertexRing.reset();
     uniformRing.reset();
-    indexRing.reset();
     ringEpoch++;
     encoder = encoder == null ? device.createCommandEncoder(null) : device.createCommandEncoder(null, encoder);
     passOpen = false;
@@ -604,7 +618,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     stats.uniformBytes = (int) uniformRing.getAllocator().getUsed();
     stats.pipelines = pipelines.getPipelineCount();
     stats.textures = textures.getSize();
-    stats.ringBytes = VERTEX_RING_BYTES + UNIFORM_RING_BYTES + INDEX_RING_BYTES;
+    stats.ringBytes = VERTEX_RING_BYTES + UNIFORM_RING_BYTES;
     frameActive = false;
     if (statsEnabled) {
       statsLog.tick(end, stats, api);
@@ -734,7 +748,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     encoder = device.createCommandEncoder(null, encoder);
     vertexRing.reset();
     uniformRing.reset();
-    indexRing.reset();
     ringEpoch++;
   }
 
@@ -757,6 +770,99 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   @Override
   public FlixelTexture createTexture(@NotNull FlixelImage image) {
     return new FlixelGpuTexture(this, image);
+  }
+
+  @Override
+  public boolean supportsReadPixels() {
+    return device != null;
+  }
+
+  /**
+   * Copies a rectangle of a texture back to the CPU.
+   *
+   * <p>The texture is copied into a buffer the CPU can map. WebGPU needs every row of that buffer to start at a
+   * multiple of 256 bytes, so the buffer is wider than the picture and the callback receives the padded row size.
+   * The copy is queued behind everything already submitted, then {@code mapAsync} waits for it. On desktop and
+   * Android the callback runs when {@link #beginFrame()} pumps the GPU's events, which happens every frame while a
+   * request is pending, so the answer arrives within a few frames. In the browser the callback arrives on its own.
+   *
+   * <p>Compressed (block) textures cannot be read this way and report {@code null} pixels. The callback is always
+   * called exactly once, and always on the thread that pumps events.
+   *
+   * @param texture A texture created by this renderer.
+   * @param x Left edge of the rectangle in pixels. Clamped to the texture.
+   * @param y Top edge of the rectangle in pixels. Clamped to the texture.
+   * @param width Width of the rectangle in pixels. Clamped to the texture.
+   * @param height Height of the rectangle in pixels. Clamped to the texture.
+   * @param callback Receives the pixels, valid only during the call, or {@code null}.
+   */
+  @Override
+  public void readPixels(@NotNull FlixelTexture texture, int x, int y, int width, int height,
+      @NotNull FlixelPixelReadback callback) {
+    if (device == null || !(texture instanceof FlixelGpuTexture source) || source.isDestroyed()
+        || source.isCompressed()) {
+      callback.onPixels(null, 0, 0, 0);
+      return;
+    }
+    int left = Math.max(0, Math.min(x, source.getWidth() - 1));
+    int top = Math.max(0, Math.min(y, source.getHeight() - 1));
+    int w = Math.max(1, Math.min(width, source.getWidth() - left));
+    int h = Math.max(1, Math.min(height, source.getHeight() - top));
+    int rowBytes = (w * 4 + READBACK_ROW_ALIGNMENT - 1) / READBACK_ROW_ALIGNMENT * READBACK_ROW_ALIGNMENT;
+    long size = (long) rowBytes * h;
+    if (size > MAX_READBACK_BYTES) {
+      LOG.warn("A {}x{} readback needs {} bytes, which is more than the {} byte limit.", w, h, size,
+          MAX_READBACK_BYTES);
+      callback.onPixels(null, 0, 0, 0);
+      return;
+    }
+    GpuBuffer staging;
+    synchronized (gpuLock) {
+      GpuBufferDescriptor descriptor = new GpuBufferDescriptor();
+      descriptor.label = "flixel readback";
+      descriptor.usage = GpuBufferUsage.COPY_DST | GpuBufferUsage.MAP_READ;
+      descriptor.size = size;
+      staging = device.createBuffer(descriptor);
+
+      GpuTexelCopyTextureInfo from = new GpuTexelCopyTextureInfo();
+      from.texture = source.getGpuTexture();
+      from.origin.x = left;
+      from.origin.y = top;
+      from.aspect = GpuTextureAspect.ALL;
+      GpuTexelCopyBufferInfo to = new GpuTexelCopyBufferInfo();
+      to.buffer = staging;
+      to.layout.bytesPerRow = rowBytes;
+      to.layout.rowsPerImage = h;
+      GpuExtent3D extent = new GpuExtent3D();
+      extent.width = w;
+      extent.height = h;
+      extent.depthOrArrayLayers = 1;
+
+      GpuCommandEncoder copy = device.createCommandEncoder(null);
+      copy.copyTextureToBuffer(from, to, extent);
+      GpuCommandBuffer finished = copy.finish(null);
+      queue.submit(new GpuCommandBuffer[] { finished }, 1);
+
+      GpuCallbackMode mode = eventPump != null ? GpuCallbackMode.ALLOW_PROCESS_EVENTS
+          : GpuCallbackMode.ALLOW_SPONTANEOUS;
+      pendingReadbacks++;
+      staging.mapAsync(GpuMapMode.READ, 0L, size, mode, (status, message) -> {
+        pendingReadbacks--;
+        try {
+          if (status == GpuMapAsyncStatus.SUCCESS) {
+            callback.onPixels(staging.getConstMappedRange(0L, size), w, h, rowBytes);
+          } else {
+            LOG.warn("Reading back a texture failed: {} {}", status, message);
+            callback.onPixels(null, 0, 0, 0);
+          }
+        } finally {
+          if (status == GpuMapAsyncStatus.SUCCESS) {
+            staging.unmap();
+          }
+          staging.destroy();
+        }
+      });
+    }
   }
 
   @Nullable
@@ -847,7 +953,9 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     synchronized (gpuLock) {
       textureDescriptor.reset();
       textureDescriptor.label = "flixel texture";
-      textureDescriptor.usage = GpuTextureUsage.TEXTURE_BINDING | GpuTextureUsage.COPY_DST | extraUsage;
+      // COPY_SRC lets tools such as the debugger read the pixels back (see readPixels).
+      textureDescriptor.usage = GpuTextureUsage.TEXTURE_BINDING | GpuTextureUsage.COPY_DST
+          | GpuTextureUsage.COPY_SRC | extraUsage;
       textureDescriptor.dimension = GpuTextureDimension.D2;
       textureDescriptor.size.width = width;
       textureDescriptor.size.height = height;
@@ -1365,111 +1473,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     return spriteProgram;
   }
 
-  /**
-   * Starts a draw into the back buffer for the debug overlay.
-   *
-   * <p>Call after the game's frame has been drawn. It makes sure the scene has been composited and the back
-   * buffer is the target, and resets the viewport and scissor to the whole window.
-   *
-   * @return {@code true} when overlay draws can follow, {@code false} when this frame is not being rendered.
-   */
-  public boolean beginOverlay() {
-    if (!frameActive) {
-      return false;
-    }
-    if (sceneActive) {
-      endScene();
-    }
-    while (depth > 1) {
-      popTarget();
-    }
-    viewX[0] = 0;
-    viewY[0] = 0;
-    viewW[0] = backBufferWidth;
-    viewH[0] = backBufferHeight;
-    cutEnabled[0] = false;
-    stateDirty = true;
-    return true;
-  }
-
-  /**
-   * Copies vertices into the vertex ring for an overlay draw.
-   *
-   * @param data The vertex bytes, from position to limit. The remaining count must be a multiple of four.
-   * @return The ring offset, or {@code -1} when the ring is full; call {@link #restartCommands()} and try again.
-   */
-  public long writeOverlayVertices(@NotNull ByteBuffer data) {
-    return frameActive ? vertexRing.write(queue, data, 4) : -1L;
-  }
-
-  /**
-   * Copies indices into the overlay index ring.
-   *
-   * @param data The index bytes, from position to limit. The remaining count must be a multiple of four.
-   * @return The ring offset, or {@code -1} when the ring is full; call {@link #restartCommands()} and try again.
-   */
-  public long writeOverlayIndices(@NotNull ByteBuffer data) {
-    return frameActive ? indexRing.write(queue, data, 4) : -1L;
-  }
-
-  /**
-   * Draws indexed triangles in the sprite vertex layout into the back buffer, with the normal blend mode.
-   *
-   * @param texture The texture to sample.
-   * @param vertexOffset The offset returned by {@link #writeOverlayVertices(ByteBuffer)}.
-   * @param vertexBytes The byte size of the vertices.
-   * @param indexOffset The offset returned by {@link #writeOverlayIndices(ByteBuffer)}.
-   * @param indexBytes The byte size of the indices.
-   * @param index32 Whether the indices are 32-bit instead of 16-bit.
-   * @param firstIndex The first index to draw, counted in indices.
-   * @param indexCount The number of indices to draw.
-   * @param projection The matrix mapping the overlay's coordinates to clip space.
-   * @param clipX The scissor rectangle's left edge in pixels.
-   * @param clipY The scissor rectangle's top edge in pixels.
-   * @param clipW The scissor rectangle's width in pixels.
-   * @param clipH The scissor rectangle's height in pixels.
-   */
-  public void drawOverlay(@NotNull FlixelGpuTexture texture, long vertexOffset, long vertexBytes, long indexOffset,
-      long indexBytes, boolean index32, int firstIndex, int indexCount, @NotNull FlixelMatrix projection, int clipX,
-      int clipY, int clipW, int clipH) {
-    if (!frameActive || texture.isDestroyed()) {
-      return;
-    }
-    GpuRenderPipeline gpuPipeline = pipelines.get(FlixelGpuBlend.NORMAL, levelFormat[0], spriteProgram);
-    if (gpuPipeline == null) {
-      return;
-    }
-    System.arraycopy(projection.val, 0, globals, 0, 16);
-    globals[16] = texture.getGpuWidth();
-    globals[17] = texture.getGpuHeight();
-    globals[18] = 1f / Math.max(1, texture.getGpuWidth());
-    globals[19] = 1f / Math.max(1, texture.getGpuHeight());
-    long globalsOffset = uniformRing.write(queue, globals, GLOBALS_FLOATS, uniformAlignment);
-    if (globalsOffset < 0L) {
-      return;
-    }
-    ensurePass();
-    applyState();
-    if (gpuPipeline != lastPipeline) {
-      pass.setPipeline(gpuPipeline);
-      lastPipeline = gpuPipeline;
-    }
-    dynamicOffset[0] = (int) globalsOffset;
-    pass.setBindGroup(0, texture.bindGroup(), dynamicOffset, 1);
-    pass.setVertexBuffer(0, vertexRing.getBuffer(), vertexOffset, vertexBytes);
-    pass.setIndexBuffer(indexRing.getBuffer(), index32 ? GpuIndexFormat.UINT32 : GpuIndexFormat.UINT16, indexOffset,
-        indexBytes);
-    int w = levelWidth[0];
-    int h = levelHeight[0];
-    int sx = clamp(clipX, 0, w - 1);
-    int sy = clamp(clipY, 0, h - 1);
-    pass.setScissorRect(sx, sy, clamp(clipW, 1, w - sx), clamp(clipH, 1, h - sy));
-    pass.drawIndexed(indexCount, 1, firstIndex, 0, 0);
-    stateDirty = true;
-    stats.draws++;
-    stats.triangles += indexCount / 3;
-  }
-
   @NotNull
   @Override
   public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
@@ -1615,7 +1618,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     quadIndices.release();
     vertexRing.release();
     uniformRing.release();
-    indexRing.release();
     if (headlessView != null) {
       headlessView.release();
       headlessTexture.release();
@@ -1646,12 +1648,13 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   }
 
   /**
-   * Returns the frame counters the debug overlay shows.
+   * Returns the frame counters the remote debugger shows.
    *
    * @return The live stats object.
    */
+  @Override
   @NotNull
-  public FlixelGpuStats getStats() {
+  public FlixelRenderStats getStats() {
     return stats;
   }
 
@@ -1794,7 +1797,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     private long nextLog;
 
     @SuppressWarnings("DefaultLocale")
-    void tick(long now, FlixelGpuStats stats, FlixelGraphicsApi api) {
+    void tick(long now, FlixelRenderStats stats, FlixelGraphicsApi api) {
       if (now < nextLog) {
         return;
       }

@@ -38,6 +38,7 @@ dependencies {
   api(project(":flixelgdx-gpu"))
   api(libs.jwebgpu.jni)
   api(project(":flixelgdx-miniaudio"))
+  api(project(":flixelgdx-jvm"))
   api(libs.multidex)
   implementation(libs.androidx.activity)
   implementation(libs.jetbrains.annotations)

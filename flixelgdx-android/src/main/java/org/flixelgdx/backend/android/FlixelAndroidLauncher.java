@@ -40,6 +40,7 @@ import org.flixelgdx.backend.android.runtime.FlixelAndroidRuntimeDevice;
 import org.flixelgdx.backend.android.save.FlixelAndroidSaveHandler;
 import org.flixelgdx.backend.android.text.FlixelAndroidFontRasterizer;
 import org.flixelgdx.backend.gpu.FlixelGpuKtx2Loader;
+import org.flixelgdx.backend.jvm.FlixelJvmDebugger;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.graphics.FlixelViewport;
@@ -99,6 +100,10 @@ public final class FlixelAndroidLauncher {
    *       {@link FlixelRuntimeMode#DEBUG DEBUG}.</li>
    *   <li>Otherwise the app starts in {@link FlixelRuntimeMode#RELEASE RELEASE}.</li>
    * </ul>
+   *
+   * <p>In debug mode the game also connects to the remote debugger app on {@code 127.0.0.1:6510}; run
+   * {@code adb reverse tcp:6510 tcp:6510} so a USB device reaches the PC, or pass
+   * {@code -e flixel.debugHost <host[:port]>} to name another computer.
    *
    * <p>Because the choice follows the build type, a release build that you publish lands in release
    * mode without any code change. To force a specific mode, call
@@ -198,6 +203,13 @@ public final class FlixelAndroidLauncher {
         new ActivityLifecycleHandler(activity, runner, gamepadProvider));
 
     Flixel.runtime.setMode(runtimeMode);
+
+    if (runtimeMode == FlixelRuntimeMode.DEBUG) {
+      // The remote debugger app. A flixel.debugHost intent extra (host or host:port) replaces 127.0.0.1:6510, which
+      // reaches the PC through "adb reverse tcp:6510 tcp:6510".
+      Intent intent = activity.getIntent();
+      FlixelJvmDebugger.install(intent == null ? null : intent.getStringExtra(FlixelJvmDebugger.HOST_KEY));
+    }
 
     Flixel.boot.afterStart(() -> {
       Flixel.touches.enabled = true;

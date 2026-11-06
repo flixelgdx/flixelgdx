@@ -39,7 +39,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * Utility methods used by the debug overlay for recursively traversing the state's object
+ * Utility methods used by the debugger panels for recursively traversing the state's object
  * tree (counting active members, iterating {@link FlixelDebugDrawable} instances for bounding-box drawing, etc.).
  *
  * <p>Recursion descends into any member that implements {@link FlixelGroupable}, which

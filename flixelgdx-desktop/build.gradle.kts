@@ -15,6 +15,7 @@ dependencies {
   api(project(":flixelgdx-core"))
   api(project(":flixelgdx-gpu"))
   api(project(":flixelgdx-miniaudio"))
+  api(project(":flixelgdx-jvm"))
 
   // The WebGPU backend for the desktop (Java FFM) plus the Dawn library of every desktop platform, so a packaged
   // game runs anywhere. Each natives jar is a few MB; a game that ships to fewer platforms can exclude the rest.
@@ -36,11 +37,6 @@ dependencies {
     runtimeOnly("org.lwjgl:lwjgl-sdl:$lwjglVersion:$classifier")
     runtimeOnly("org.lwjgl:lwjgl-stb:$lwjglVersion:$classifier")
   }
-
-  api(libs.imgui.binding)
-  runtimeOnly(libs.imgui.natives.linux)
-  runtimeOnly(libs.imgui.natives.macos)
-  runtimeOnly(libs.imgui.natives.windows)
 
   implementation(libs.jetbrains.annotations)
   implementation(libs.jansi)

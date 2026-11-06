@@ -31,8 +31,6 @@ import io.github.stringdotjar.jwebgpu.GpuBufferUsage;
 import io.github.stringdotjar.jwebgpu.GpuDevice;
 import io.github.stringdotjar.jwebgpu.GpuQueue;
 
-import java.nio.ByteBuffer;
-
 /**
  * One big GPU buffer that a frame fills from front to back, plus the bookkeeping that tells where the next free
  * byte is.
@@ -100,22 +98,6 @@ public final class FlixelGpuRing {
     long at = allocator.allocate(byteCount, alignment);
     if (at >= 0L) {
       queue.writeBuffer(buffer, at, data, 0, byteCount);
-    }
-    return at;
-  }
-
-  /**
-   * Copies the remaining bytes of a buffer into the ring. The remaining count must be a multiple of four.
-   *
-   * @param queue The queue to write through.
-   * @param data The source bytes, from its position to its limit.
-   * @param alignment The required alignment of the destination offset in bytes.
-   * @return The byte offset the data was written to, or {@code -1} when the ring is full.
-   */
-  public long write(@NotNull GpuQueue queue, @NotNull ByteBuffer data, int alignment) {
-    long at = allocator.allocate(data.remaining(), alignment);
-    if (at >= 0L) {
-      queue.writeBuffer(buffer, at, data);
     }
     return at;
   }

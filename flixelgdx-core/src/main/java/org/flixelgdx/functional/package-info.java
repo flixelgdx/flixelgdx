@@ -53,6 +53,12 @@
  * interfaces like {@link org.flixelgdx.functional.supplier.FloatSupplier FloatSupplier} that
  * return primitives without boxing, for use in tween targets and other hot-path callbacks.
  *
+ * <h2>Primitive functions and consumers</h2>
+ * <p>The {@link org.flixelgdx.functional.function function} and
+ * {@link org.flixelgdx.functional.consumer consumer} sub-packages hold the primitive interfaces Java does not
+ * ship, such as {@link org.flixelgdx.functional.function.ToFloatFunction ToFloatFunction} and
+ * {@link org.flixelgdx.functional.consumer.FloatConsumer FloatConsumer}.
+ *
  * @see org.flixelgdx.functional.IFlixelBasic
  * @see org.flixelgdx.FlixelBasic
  */

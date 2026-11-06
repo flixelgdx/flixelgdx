@@ -26,7 +26,6 @@ package org.flixelgdx.input.keyboard;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.collections.FlixelIntSet;
-import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelKeyboardListener;
@@ -55,6 +54,9 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
 
   /** Order keys were pressed (chronological), so {@link #firstPressed()} returns the first key held. */
   private final FlixelIntArray pressedOrder = new FlixelIntArray();
+
+  /** Keys the game must not see, which is used by tools such as the debugger's free camera. */
+  private final FlixelIntSet blockedKeys = new FlixelIntSet();
 
   /** Whether keyboard input is currently enabled. When false, all key checks return false. */
   public boolean enabled = true;
@@ -112,20 +114,30 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
   }
 
   /**
-   * Returns whether the given key is currently held down. Returns {@code false} when the active
-   * debug overlay reports that another UI layer (typically the imgui debugger console) is
-   * capturing keyboard input, so typing in a debug text field cannot leak into game-side input
-   * (e.g. an {@code ui_accept} action bound to {@code ENTER}).
+   * Returns whether the given key is currently held down.
    *
    * @param key The key to check if it is pressed (for example {@link FlixelKey#A}).
-   * @return {@code true} if the key is pressed and input is enabled and not suppressed by UI.
+   * @return {@code true} if the key is pressed and input is enabled.
    */
   public boolean pressed(int key) {
-    if (!enabled || isCapturedByDebugUI()) {
+    return !isBlocked(key) && rawPressed(key);
+  }
+
+  /**
+   * Returns whether the given key is currently held down, even when the key is {@linkplain #block(int) blocked}.
+   *
+   * <p>This is for tools that take keys away from the game (the debugger's free camera, for example) and
+   * still need to read them. Game code should use {@link #pressed(int)}.
+   *
+   * @param key The key to check.
+   * @return {@code true} if the key is pressed and input is enabled.
+   */
+  public boolean rawPressed(int key) {
+    if (!enabled) {
       return false;
     }
     if (key == FlixelKey.ANY) {
-      return currentPressedKeys.getSize() > 0;
+      return anyUnblocked(currentPressedKeys);
     }
     if (!isValidKeycode(key)) {
       return false;
@@ -134,23 +146,34 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
   }
 
   /**
-   * Returns whether the given key was just pressed this frame. Returns {@code false} while the
-   * active debug overlay reports that another UI layer is capturing keyboard input. Uses the
+   * Returns whether the given key was just pressed this frame. Uses the
    * same {@code current} vs {@code previous} key sets as {@link #justReleased(int)} and
    * {@link #firstJustPressed()} so "just" transitions stay reliable on all backends (for
    * example, the web backend where a raw "just pressed" poll is not dependable).
    *
    * @param key key code
-   * @return {@code true} if the key was just pressed and input is enabled and not suppressed by UI.
+   * @return {@code true} if the key was just pressed and input is enabled.
    */
   public boolean justPressed(int key) {
-    if (!enabled || isCapturedByDebugUI()) {
+    return !isBlocked(key) && rawJustPressed(key);
+  }
+
+  /**
+   * Returns whether the given key was just pressed this frame, even when the key is
+   * {@linkplain #block(int) blocked}.
+   *
+   * @param key The key to check.
+   * @return {@code true} if the key was just pressed and input is enabled.
+   * @see #rawPressed(int)
+   */
+  public boolean rawJustPressed(int key) {
+    if (!enabled) {
       return false;
     }
     if (key == FlixelKey.ANY) {
       for (FlixelIntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext;) {
         int pressedKey = it.next();
-        if (!previousPressedKeys.contains(pressedKey)) {
+        if (!previousPressedKeys.contains(pressedKey) && !isBlocked(pressedKey)) {
           return true;
         }
       }
@@ -163,21 +186,32 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
   }
 
   /**
-   * Returns whether the given key was just released this frame. Returns {@code false} while the
-   * active debug overlay reports that another UI layer is capturing keyboard input.
+   * Returns whether the given key was just released this frame.
    *
    * @param key key code
    * @return {@code true} if the key was pressed last frame and is not pressed now, and input is
-   *   enabled and not suppressed by UI.
+   *   enabled.
    */
   public boolean justReleased(int key) {
-    if (!enabled || isCapturedByDebugUI()) {
+    return !isBlocked(key) && rawJustReleased(key);
+  }
+
+  /**
+   * Returns whether the given key was just released this frame, even when the key is
+   * {@linkplain #block(int) blocked}.
+   *
+   * @param key The key to check.
+   * @return {@code true} if the key was pressed last frame and is not pressed now, and input is enabled.
+   * @see #rawPressed(int)
+   */
+  public boolean rawJustReleased(int key) {
+    if (!enabled) {
       return false;
     }
     if (key == FlixelKey.ANY) {
       for (FlixelIntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext;) {
         int pressedKey = it.next();
-        if (!currentPressedKeys.contains(pressedKey)) {
+        if (!currentPressedKeys.contains(pressedKey) && !isBlocked(pressedKey)) {
           return true;
         }
       }
@@ -187,16 +221,6 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
       return false;
     }
     return previousPressedKeys.contains(key) && !currentPressedKeys.contains(key);
-  }
-
-  /**
-   * Returns {@code true} when the active {@link FlixelDebugOverlay} reports that another UI
-   * layer is consuming keyboard input. Used by {@link #pressed(int)},
-   * {@link #justPressed(int)}, and {@link #justReleased(int)} to suppress game-level input
-   * while debug UI text fields are focused.
-   */
-  private static boolean isCapturedByDebugUI() {
-    return Flixel.debug != null && Flixel.debug.overlay.isKeyboardCapturedByUI();
   }
 
   /**
@@ -495,31 +519,35 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
 
   /**
    * Returns the key code that was pressed first (chronologically) among those currently held,
-   * or {@link FlixelKey#NONE} if none. Returns {@link FlixelKey#NONE} while the active debug
-   * overlay reports that another UI layer is capturing keyboard input.
+   * or {@link FlixelKey#NONE} if none.
    *
    * @return First pressed key code, or {@link FlixelKey#NONE} if none.
    */
   public int firstPressed() {
-    if (isCapturedByDebugUI() || !enabled || pressedOrder.getSize() == 0) {
+    if (!enabled) {
       return FlixelKey.NONE;
     }
-    return pressedOrder.first();
+    for (int i = 0, n = pressedOrder.getSize(); i < n; i++) {
+      int key = pressedOrder.get(i);
+      if (!isBlocked(key)) {
+        return key;
+      }
+    }
+    return FlixelKey.NONE;
   }
 
   /**
    * Returns the first key code that was just pressed this frame, or {@link FlixelKey#NONE} if none.
-   * Returns {@link FlixelKey#NONE} while the debug UI is capturing keyboard input.
    *
    * @return First just-pressed key code, or {@link FlixelKey#NONE} if none.
    */
   public int firstJustPressed() {
-    if (isCapturedByDebugUI() || !enabled) {
+    if (!enabled) {
       return FlixelKey.NONE;
     }
     for (FlixelIntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext;) {
       int key = it.next();
-      if (!previousPressedKeys.contains(key)) {
+      if (!previousPressedKeys.contains(key) && !isBlocked(key)) {
         return key;
       }
     }
@@ -528,21 +556,71 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
 
   /**
    * Returns the first key code that was just released this frame, or {@link FlixelKey#NONE} if none.
-   * Returns {@link FlixelKey#NONE} while the debug UI is capturing keyboard input.
    *
    * @return First just-released key code, or {@link FlixelKey#NONE} if none.
    */
   public int firstJustReleased() {
-    if (isCapturedByDebugUI() || !enabled) {
+    if (!enabled) {
       return FlixelKey.NONE;
     }
     for (FlixelIntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext;) {
       int key = it.next();
-      if (!currentPressedKeys.contains(key)) {
+      if (!currentPressedKeys.contains(key) && !isBlocked(key)) {
         return key;
       }
     }
     return FlixelKey.NONE;
+  }
+
+  /**
+   * Hides a key from the game until {@link #unblock(int)} is called.
+   *
+   * <p>A blocked key reads as released from {@link #pressed(int)}, {@link #justPressed(int)},
+   * {@link #justReleased(int)}, and the {@code any...} and {@code first...} helpers. The {@code raw...}
+   * methods still see it. Blocking is meant for tools, so a tool that blocks a key must unblock it again.
+   *
+   * @param key The key to hide. Invalid codes are ignored.
+   */
+  public void block(int key) {
+    if (isValidKeycode(key)) {
+      blockedKeys.add(key);
+    }
+  }
+
+  /**
+   * Shows a key to the game again.
+   *
+   * @param key The key to show.
+   */
+  public void unblock(int key) {
+    blockedKeys.remove(key);
+  }
+
+  /** Shows every blocked key to the game again. */
+  public void unblockAll() {
+    blockedKeys.clear();
+  }
+
+  /**
+   * Returns whether a key is hidden from the game.
+   *
+   * @param key The key to check.
+   * @return {@code true} if the key was blocked with {@link #block(int)}.
+   */
+  public boolean isBlocked(int key) {
+    return blockedKeys.getSize() > 0 && blockedKeys.contains(key);
+  }
+
+  private boolean anyUnblocked(FlixelIntSet keys) {
+    if (blockedKeys.getSize() == 0) {
+      return keys.getSize() > 0;
+    }
+    for (FlixelIntSet.IntSetIterator it = keys.iterator(); it.hasNext;) {
+      if (!blockedKeys.contains(it.next())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

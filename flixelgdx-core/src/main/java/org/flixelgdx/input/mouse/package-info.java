@@ -100,16 +100,6 @@
  * }
  * }</pre>
  *
- * <h2>Debug UI suppression</h2>
- *
- * <p>When the active {@link org.flixelgdx.debug.FlixelDebugOverlay FlixelDebugOverlay} reports
- * that a UI panel is capturing mouse input,
- * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#pressed(int) pressed()},
- * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#justPressed(int) justPressed()}, and
- * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#justReleased(int) justReleased()}
- * return {@code false} automatically. This prevents clicks inside a debug panel from triggering
- * game behavior at the same time.
- *
  * <h2>Moving the pointer</h2>
  *
  * <p>Desktop games can move the pointer with

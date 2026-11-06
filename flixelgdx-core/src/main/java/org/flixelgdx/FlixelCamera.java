@@ -1454,26 +1454,62 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
-   * Converts window coordinates (pixels, y measured downward from the window's top) into world
-   * coordinates, writing the result in place.
+   * Converts window coordinates into world coordinates, writing the result in place.
    *
-   * @param screenCoords In: window coordinates; out: world coordinates.
+   * <p>Window coordinates are pixels measured from the window's top-left corner, with y growing
+   * downward. The result is the world position that is drawn under that pixel for an object with a
+   * scroll factor of {@code 1}, so it already accounts for {@link #scrollX}, {@link #scrollY}, zoom,
+   * and the current shake. This is the space objects are positioned in, which makes it the right one
+   * for checking whether a pointer is over an object.
+   *
+   * <pre>{@code
+   * // Find the world point under the mouse, even while the camera is scrolled.
+   * FlixelVector point = new FlixelVector(Flixel.mouse.getScreenX(), Flixel.mouse.getScreenY());
+   * camera.unproject(point);
+   * }</pre>
+   *
+   * @param screenCoords In: window coordinates in pixels; out: world coordinates (scroll factor 1).
    * @return The same vector, for chaining.
+   * @see #unprojectToView(FlixelVector)
    */
   @NotNull
   public FlixelVector unproject(@NotNull FlixelVector screenCoords) {
+    viewport.unproject(screenCoords);
+    screenCoords.x += getViewX();
+    screenCoords.y += getViewY();
+    return screenCoords;
+  }
+
+  /**
+   * Converts window coordinates into this camera's view (batch) coordinates, writing the result in
+   * place.
+   *
+   * <p>View space is the space objects are drawn in before the projection: {@code 0, 0} is the top
+   * left corner of what the camera shows. It matches {@link #worldToViewX(float, float)} and
+   * {@link #worldToViewY(float, float)}. Most code wants {@link #unproject(FlixelVector)} instead.
+   *
+   * @param screenCoords In: window coordinates in pixels; out: view coordinates.
+   * @return The same vector, for chaining.
+   */
+  @NotNull
+  public FlixelVector unprojectToView(@NotNull FlixelVector screenCoords) {
     return viewport.unproject(screenCoords);
   }
 
   /**
-   * Converts world coordinates into window coordinates (pixels, y measured downward from the
-   * window's top). This is the inverse of {@link #unproject(FlixelVector)}.
+   * Converts world coordinates into window coordinates, writing the result in place.
    *
-   * @param worldCoords In: world coordinates; out: window coordinates.
+   * <p>The input is a world position for an object with a scroll factor of {@code 1}, and the
+   * output is the window pixel it is drawn at, measured from the window's top-left corner with y
+   * growing downward. This is the exact inverse of {@link #unproject(FlixelVector)}.
+   *
+   * @param worldCoords In: world coordinates (scroll factor 1); out: window coordinates in pixels.
    * @return The same vector, for chaining.
    */
   @NotNull
   public FlixelVector project(@NotNull FlixelVector worldCoords) {
+    worldCoords.x -= getViewX();
+    worldCoords.y -= getViewY();
     return viewport.project(worldCoords);
   }
 

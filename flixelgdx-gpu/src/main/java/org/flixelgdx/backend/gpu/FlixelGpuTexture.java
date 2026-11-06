@@ -72,6 +72,8 @@ public class FlixelGpuTexture implements FlixelTexture {
 
   private int epoch;
 
+  private String format = "RGBA8";
+
   private boolean smooth;
   private boolean destroyed;
   private boolean compressed;
@@ -128,6 +130,7 @@ public class FlixelGpuTexture implements FlixelTexture {
     this.extraUsage = 0L;
     this.byteSize = image.getByteSize();
     this.compressed = image.getFormat().isCompressed();
+    this.format = image.getFormat().name();
     this.epoch = graphics.getDeviceEpoch();
     this.texture = graphics.createRawTexture(gpuWidth, gpuHeight, image.getFormat().getGpuFormat(), image.getLevels(),
         0L);
@@ -254,6 +257,7 @@ public class FlixelGpuTexture implements FlixelTexture {
    *
    * @return The size in bytes.
    */
+  @Override
   public long getByteSize() {
     return byteSize;
   }
@@ -264,6 +268,12 @@ public class FlixelGpuTexture implements FlixelTexture {
    *
    * @return The GPU width in pixels.
    */
+  @NotNull
+  @Override
+  public String getFormat() {
+    return format;
+  }
+
   public int getGpuWidth() {
     return gpuWidth;
   }

@@ -220,7 +220,8 @@ class FlixelDebugProtocolTest {
     sb.append("is a `u16` count followed by the elements; `value:KIND:x` is a property value (kind byte then data);\n");
     sb.append(
         "`\\u{XXXX}` is a Unicode code point written as UTF-8. Panel indices used: stats 0, logs 1, watches 2,\n");
-    sb.append("trackers 3, textures 4, controls 5, console 6, scene 7, inspector 8, save 9, custom 10.\n\n");
+    sb.append("trackers 3, textures 4, controls 5, console 6, scene 7, inspector 8, save 9, custom 10,\n");
+    sb.append("viewport 11.\n\n");
     for (Map.Entry<String, Op[]> e : DebugProtocolFixtures.ALL.entrySet()) {
       sb.append("## ").append(e.getKey()).append(".bin\n\n`").append(describe(e.getValue())).append("`\n\n");
     }

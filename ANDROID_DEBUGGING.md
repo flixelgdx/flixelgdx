@@ -35,7 +35,7 @@ Pausing at a breakpoint blocks the render thread, so the app may look frozen unt
 `FlixelAndroidLauncher.launch(activity, game)` picks the runtime mode for you:
 
 1. If the launch intent has a `flixel.mode` string extra (`debug`, `test` or `release`), that wins.
-2. Otherwise a debuggable app (a normal debug build) starts in `DEBUG`, which enables the debug overlay
+2. Otherwise a debuggable app (a normal debug build) starts in `DEBUG`, which enables the remote debugger
    and diagnostics.
 3. Otherwise the app starts in `RELEASE`.
 
@@ -48,6 +48,31 @@ adb shell am start -n <package>/<activity> -e flixel.mode debug
 
 An unknown value logs a warning and falls back to the default described above. To force a mode no matter
 what, call `FlixelAndroidLauncher.launch(activity, game, FlixelRuntimeMode.DEBUG)`.
+
+## Using the remote debugger app
+
+A game in `DEBUG` mode connects to the remote debugger app on `127.0.0.1:6510`, and every game gets the `INTERNET`
+permission from the framework for this. On a phone, `127.0.0.1` is the phone itself, so forward the port over USB
+first (run it again after you reconnect the cable or restart `adb`):
+
+```sh
+adb reverse tcp:6510 tcp:6510
+```
+
+The app on your PC then answers at the phone's `127.0.0.1:6510`. The game retries every two seconds, so the order in
+which you start the app and the game does not matter. For an emulator or a phone on the same network, skip the forward
+and name the PC instead:
+
+```sh
+adb shell am start -n <package>/<activity> -e flixel.debugHost 192.168.1.20:6510
+```
+
+The extra takes `host` or `host:port`. Release builds never open a connection.
+
+A phone has no keyboard or mouse for the debugger's own shortcuts (Alt + Click to pick, F4 for the free camera). Use
+the app's **Viewport** panel instead: it shows a live map of what the game's camera draws, so you can tap an object
+to select it, drag it to move it, and drag or pinch the map to fly the camera. Code can do the same through
+`Flixel.debug.viewport`.
 
 ## Profiling with trace sections
 

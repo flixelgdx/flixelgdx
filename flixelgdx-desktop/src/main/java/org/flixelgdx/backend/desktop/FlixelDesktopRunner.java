@@ -207,15 +207,6 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
 
     gamepads.openConnected();
 
-    // The debug overlay's command line needs text-input events (which carry composed characters,
-    // separate from raw key events). Only debug builds have that overlay, so keep text input off
-    // otherwise to avoid triggering an IME where it is not wanted. This request is permanent for
-    // the session; a focused UI text box layers its own startTextInput()/stopTextInput() calls on
-    // top of it through the shared request counter in FlixelBaseInputDevice.
-    if (Flixel.isDebugMode()) {
-      input.startTextInput();
-    }
-
     refreshMonitors(); // Fill in the monitors at startup.
     game.create();
 

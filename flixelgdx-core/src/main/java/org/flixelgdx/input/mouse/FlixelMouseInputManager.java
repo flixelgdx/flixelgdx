@@ -27,7 +27,6 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
-import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelMouseListener;
@@ -84,6 +83,12 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   private final boolean[] justReleased = new boolean[MAX_BUTTON + 1];
   private final boolean[] prevPressed = new boolean[MAX_BUTTON + 1];
 
+  /** Buttons whose current press was taken by a tool; cleared when the button is released. */
+  private final boolean[] consumed = new boolean[MAX_BUTTON + 1];
+
+  /** Buttons a tool keeps from the game until it unblocks them. */
+  private final boolean[] blocked = new boolean[MAX_BUTTON + 1];
+
   @Nullable
   private FlixelCamera worldCamera;
 
@@ -92,6 +97,8 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
 
   /** When {@code false}, all queries return inactive state. */
   public boolean enabled = true;
+
+  private boolean scrollBlocked;
 
   /** Creates a new mouse input manager with all buttons in the released state. */
   public FlixelMouseInputManager() {}
@@ -124,6 +131,12 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
       boolean cur = Flixel.input.isButtonPressed(i);
       justPressed[i] = cur && !prevPressed[i];
       justReleased[i] = !cur && prevPressed[i];
+      if (consumed[i] && !cur) {
+        // The tool that took this press is done with it; the release belongs to that press, so the game
+        // does not see it either.
+        consumed[i] = false;
+        justReleased[i] = false;
+      }
     }
     recomputeWorld();
   }
@@ -397,7 +410,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * @return The accumulated horizontal scroll delta for the current frame.
    */
   public float getScrollDeltaX() {
-    return scrollDeltaX;
+    return scrollBlocked ? 0f : scrollDeltaX;
   }
 
   /**
@@ -408,52 +421,148 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * @return The accumulated vertical scroll delta for the current frame.
    */
   public float getScrollDeltaY() {
+    return scrollBlocked ? 0f : scrollDeltaY;
+  }
+
+  /**
+   * Returns the vertical scroll of this frame even when scrolling is {@linkplain #setScrollBlocked(boolean) blocked}.
+   *
+   * <p>This is for tools that take the wheel away from the game. Game code should use {@link #getScrollDeltaY()}.
+   *
+   * @return The accumulated vertical scroll delta for the current frame.
+   */
+  public float getRawScrollDeltaY() {
     return scrollDeltaY;
   }
 
   /**
-   * Returns whether the given mouse button is held down. Returns {@code false} while the active
-   * debug overlay reports that another UI layer (typically the imgui debugger) is capturing
-   * mouse input, so clicking inside an imgui window cannot leak into game logic.
+   * Returns whether the given mouse button is held down.
    *
    * @param button Button index (e.g. {@code 0} for left mouse button).
-   * @return {@code true} if the button is pressed and input is enabled and not suppressed by UI.
+   * @return {@code true} if the button is pressed and input is enabled.
    */
   public boolean pressed(int button) {
-    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON
-        && Flixel.input.isButtonPressed(button);
+    return rawPressed(button) && !hidden(button);
   }
 
   /**
-   * Returns whether the given mouse button was just pressed this frame. Returns {@code false}
-   * while the debug UI reports that another UI layer is capturing mouse input.
+   * Returns whether the given mouse button was just pressed this frame.
    *
    * @param button Button index.
-   * @return {@code true} if the button was just pressed and input is enabled and not suppressed.
+   * @return {@code true} if the button was just pressed and input is enabled.
    */
   public boolean justPressed(int button) {
-    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON && justPressed[button];
+    return rawJustPressed(button) && !hidden(button);
   }
 
   /**
-   * Returns whether the given mouse button was just released this frame. Returns {@code false}
-   * while the debug UI reports that another UI layer is capturing mouse input.
+   * Returns whether the given mouse button was just released this frame.
    *
    * @param button Button index.
-   * @return {@code true} if the button was just released and input is enabled and not suppressed.
+   * @return {@code true} if the button was just released and input is enabled.
    */
   public boolean justReleased(int button) {
-    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON && justReleased[button];
+    return rawJustReleased(button) && !hidden(button);
   }
 
   /**
-   * Returns {@code true} when the active {@link FlixelDebugOverlay} reports that another UI
-   * layer is consuming mouse input. Used by {@link #pressed(int)}, {@link #justPressed(int)},
-   * and {@link #justReleased(int)} to suppress game-level input while the cursor is over a
-   * debug UI panel.
+   * Returns whether the given mouse button is held down, even when a tool hides it from the game.
+   *
+   * <p>This is for tools such as the debugger. Game code should use {@link #pressed(int)}.
+   *
+   * @param button Button index.
+   * @return {@code true} if the button is pressed and input is enabled.
+   * @see #consume(int)
+   * @see #setBlocked(int, boolean)
    */
-  private static boolean isCapturedByDebugUI() {
-    return Flixel.debug != null && Flixel.debug.overlay.isMouseCapturedByUI();
+  public boolean rawPressed(int button) {
+    return enabled && button >= 0 && button <= MAX_BUTTON && Flixel.input.isButtonPressed(button);
+  }
+
+  /**
+   * Returns whether the given mouse button was just pressed this frame, even when a tool hides it from the game.
+   *
+   * @param button Button index.
+   * @return {@code true} if the button was just pressed and input is enabled.
+   * @see #rawPressed(int)
+   */
+  public boolean rawJustPressed(int button) {
+    return enabled && button >= 0 && button <= MAX_BUTTON && justPressed[button];
+  }
+
+  /**
+   * Returns whether the given mouse button was just released this frame, even when a tool hides it from the game.
+   *
+   * <p>The release of a press that was {@linkplain #consume(int) consumed} is not reported, because
+   * {@link #update()} drops it.
+   *
+   * @param button Button index.
+   * @return {@code true} if the button was just released and input is enabled.
+   * @see #rawPressed(int)
+   */
+  public boolean rawJustReleased(int button) {
+    return enabled && button >= 0 && button <= MAX_BUTTON && justReleased[button];
+  }
+
+  /**
+   * Hides the current press of a button from the game, so a tool can use a click without the game also reacting
+   * to it.
+   *
+   * <p>The game sees the button as released until the player lets go of it, and it never sees the matching
+   * release. Call this after {@link #update()} and before the game's own update reads the mouse. It only has an
+   * effect while the button is held. {@link #rawPressed(int)} and the other {@code raw...} methods are not affected.
+   *
+   * @param button Button index.
+   */
+  public void consume(int button) {
+    if (button >= 0 && button <= MAX_BUTTON && Flixel.input.isButtonPressed(button)) {
+      consumed[button] = true;
+    }
+  }
+
+  /**
+   * Hides a button from the game, or shows it again.
+   *
+   * <p>Unlike {@link #consume(int)} this lasts until it is undone, which suits a tool that owns a button for a
+   * while (the debugger's free camera owns the right button). A tool that blocks a button must unblock it again.
+   *
+   * @param button Button index.
+   * @param blocked {@code true} to hide the button from the game.
+   */
+  public void setBlocked(int button, boolean blocked) {
+    if (button >= 0 && button <= MAX_BUTTON) {
+      this.blocked[button] = blocked;
+    }
+  }
+
+  /**
+   * Returns whether a button is hidden from the game by {@link #setBlocked(int, boolean)}.
+   *
+   * @param button Button index.
+   * @return {@code true} if the button is blocked.
+   */
+  public boolean isBlocked(int button) {
+    return button >= 0 && button <= MAX_BUTTON && blocked[button];
+  }
+
+  /**
+   * Hides the scroll wheel from the game, or shows it again.
+   *
+   * <p>While blocked, {@link #getScrollDeltaX()} and {@link #getScrollDeltaY()} return {@code 0}. The raw scroll
+   * stays available through {@link #getRawScrollDeltaY()}.
+   *
+   * @param scrollBlocked {@code true} to hide the wheel from the game.
+   */
+  public void setScrollBlocked(boolean scrollBlocked) {
+    this.scrollBlocked = scrollBlocked;
+  }
+
+  public boolean isScrollBlocked() {
+    return scrollBlocked;
+  }
+
+  private boolean hidden(int button) {
+    return consumed[button] || blocked[button];
   }
 
   /**

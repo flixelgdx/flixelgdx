@@ -27,6 +27,7 @@ import org.flixelgdx.debug.FlixelDebugDrawable;
 import org.flixelgdx.functional.FlixelPhysical;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.util.FlixelDirectionFlags;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The base class for all visual/spatial objects in Flixel. Extends {@link FlixelBasic} with
@@ -1158,6 +1159,16 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
    */
   public void setDebugBoundingBoxColor(float[] rgba) {
     this.debugColorOverride = rgba;
+  }
+
+  /**
+   * Returns the custom debug bounding box color set with {@link #setDebugBoundingBoxColor(float[])}.
+   *
+   * @return The 4-element {@code [r, g, b, a]} array, or {@code null} when the color is chosen automatically.
+   */
+  @Nullable
+  public float[] getDebugBoundingBoxColorOverride() {
+    return debugColorOverride;
   }
 
   @Override

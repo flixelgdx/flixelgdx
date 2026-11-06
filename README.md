@@ -147,6 +147,34 @@ add(sparks);
 sparks.start(true, 0f, 20); // Burst 20 sparks at once.
 ```
 
+### Remote Debugger
+
+A game running in debug mode streams its internals to a separate desktop debugger app: frame times and memory, the
+log, live watches, loaded textures, the scene tree, a property inspector with editing, a command console, the save
+data, and a live map of the screen that lets you pick objects, drag them, and fly the camera from the app (handy on a
+phone, which has no keyboard or mouse). Register your own values and panels with a line each:
+
+```java
+Flixel.debug.watches.addFloat("Player X", player::getX);
+Flixel.debug.console.register("god", "god [on|off]", "Makes the player invincible.", args -> {
+  player.setInvincible(args.getBoolean(0, true));
+});
+```
+
+Start the game in debug mode (`-Dflixel.mode=debug` on desktop, `?flixel.mode=debug` on the web, or any debuggable
+Android build) and it connects to the debugger app on `127.0.0.1:6510` by itself. Nothing runs, and nothing is sent, in
+release builds. The game is the WebSocket client and retries every two seconds, so you can start the app before or after
+the game.
+
+| Platform | Reach another computer with |
+|----------|-----------------------------|
+| Desktop  | `-Dflixel.debugHost=host[:port]` |
+| Android  | `adb shell am start ... -e flixel.debugHost host[:port]`, or `adb reverse tcp:6510 tcp:6510` for a USB device (see [Debugging on Android](ANDROID_DEBUGGING.md)) |
+| Web      | `?flixel.debugHost=host[:port]` in the page address |
+
+A page served over `https` may only reach `localhost`, so keep the debugger app on the computer that runs the browser.
+The wire format is in the [Remote Debug Protocol](DEBUG_PROTOCOL.md).
+
 ### Performant Collection System
 
 FlixelGDX contains a large, performant-first collection system designed to be simple while being safe to use in hot loops,

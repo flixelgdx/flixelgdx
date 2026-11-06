@@ -24,6 +24,7 @@
 package org.flixelgdx.input.mouse;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.graphics.FlixelViewport;
 import org.flixelgdx.input.FlixelInputDevice;
@@ -94,6 +95,57 @@ class FlixelMouseInputManagerTest {
       assertEquals(7, m.getScreenX());
       assertEquals(9, m.getScreenY());
       assertEquals(3, device.warps);
+    } finally {
+      Flixel.input = previous;
+    }
+  }
+
+  @Test
+  void worldPositionIncludesTheCameraScroll() {
+    FlixelInputDevice previous = Flixel.input;
+    Flixel.input = new WarpableDevice();
+    try {
+      FlixelCamera cam = new FlixelCamera(400, 300);
+      cam.getViewport().setScreenBounds(0, 0, 400, 300);
+      cam.setZoom(2f);
+      cam.scrollX = 500f;
+      cam.scrollY = 200f;
+      cam.applyCameraTransform();
+      FlixelMouseInputManager m = new FlixelMouseInputManager();
+      m.setWorldCamera(cam);
+
+      m.setScreenPosition(120f, 60f);
+
+      FlixelVector view = cam.unprojectToView(new FlixelVector(120f, 60f));
+      assertEquals(view.x + cam.scrollX + cam.getViewMarginX(), m.getWorldX(), 1e-3f);
+      assertEquals(view.y + cam.scrollY + cam.getViewMarginY(), m.getWorldY(), 1e-3f);
+      assertEquals(500f + 100f + 60f, m.getWorldX(), 1e-3f);
+      assertEquals(m.getWorldX(), m.getWorldX(cam), 1e-6f);
+    } finally {
+      Flixel.input = previous;
+    }
+  }
+
+  @Test
+  void setWorldPositionPutsThePointerOverThatWorldPoint() {
+    FlixelInputDevice previous = Flixel.input;
+    Flixel.input = new WarpableDevice();
+    try {
+      FlixelCamera cam = new FlixelCamera(400, 300);
+      cam.getViewport().setScreenBounds(0, 0, 400, 300);
+      cam.scrollX = 1000f;
+      cam.scrollY = 50f;
+      cam.applyCameraTransform();
+      FlixelMouseInputManager m = new FlixelMouseInputManager();
+      m.setWorldCamera(cam);
+
+      m.setWorldPosition(1123f, 0f, cam);
+      assertEquals(123, m.getScreenX());
+      assertEquals(1123f, m.getWorldX(), 1e-3f);
+
+      m.setWorldX(1300f);
+      assertEquals(300, m.getScreenX());
+      assertEquals(1300f, m.getWorldX(), 1e-3f);
     } finally {
       Flixel.input = previous;
     }

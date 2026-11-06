@@ -367,6 +367,35 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Returns whether {@link #readPixels(FlixelTexture, int, int, int, int, FlixelPixelReadback)} can copy pixels
+   * back from the GPU on this backend.
+   *
+   * @return {@code true} when pixel readback is available. The default is {@code false}.
+   */
+  default boolean supportsReadPixels() {
+    return false;
+  }
+
+  /**
+   * Copies a rectangle of a texture back from the GPU, so tools such as the debugger can show a thumbnail of it.
+   *
+   * <p>The copy is asynchronous: this method returns right away and the callback runs later. A backend that cannot
+   * read pixels (see {@link #supportsReadPixels()}) calls the callback straight away with {@code null}. Reading a
+   * texture is slow compared with drawing it, so use it only for tools, never in a game loop.
+   *
+   * @param texture The texture to read, which must have been created by this backend.
+   * @param x Left edge of the rectangle in pixels. Clamped to the texture.
+   * @param y Top edge of the rectangle in pixels. Clamped to the texture.
+   * @param width Width of the rectangle in pixels. Clamped to the texture.
+   * @param height Height of the rectangle in pixels. Clamped to the texture.
+   * @param callback Receives the pixels, or {@code null} when they could not be read.
+   */
+  default void readPixels(@NotNull FlixelTexture texture, int x, int y, int width, int height,
+      @NotNull FlixelPixelReadback callback) {
+    callback.onPixels(null, 0, 0, 0);
+  }
+
+  /**
    * Uploads a CPU-side image to a new GPU texture.
    *
    * @param image The pixels to upload.
@@ -565,6 +594,20 @@ public interface FlixelGraphicsManager {
    */
   default int getFps() {
     return 0;
+  }
+
+  /**
+   * Returns the live renderer counters (draw calls, triangles, memory, and so on) that the remote debugger
+   * shows, or {@code null} when this backend keeps none.
+   *
+   * <p>The returned object is overwritten in place every frame, so reading it never allocates. Do not keep
+   * copies of its values across frames if you need them to stay fixed.
+   *
+   * @return The live stats object, or {@code null} when the backend does not collect statistics.
+   */
+  @Nullable
+  default FlixelRenderStats getStats() {
+    return null;
   }
 
   /**

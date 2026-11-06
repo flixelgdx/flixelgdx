@@ -25,8 +25,6 @@ package org.flixelgdx;
 
 import org.flixelgdx.asset.FlixelNoopAssetManager;
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.debug.FlixelDebugOverlay;
-import org.flixelgdx.debug.FlixelNoopDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
@@ -63,7 +61,7 @@ import java.util.function.Supplier;
  *
  * <ol>
  *   <li>{@link #create()} - called once when the rendering surface is ready. Initializes input,
- *       cameras, the batch, the debug overlay, and the initial state.</li>
+ *       cameras, the batch, the debugger, and the initial state.</li>
  *   <li>{@link #update(float)} - called every frame to update and tick game logic.
  *   <li>{@link #draw(FlixelBatch)} - called every frame to render graphics.
  *   <li>{@link #destroy()} - called when the game closes. Releases all framework resources. Call
@@ -95,9 +93,8 @@ import java.util.function.Supplier;
  * top of all game cameras each frame. The overlay uses its own camera whose scroll is always zero,
  * so members placed at {@code (x, y)} always appear at those design-resolution coordinates
  * regardless of what the active game camera is doing. Enable and disable the overlay with
- * {@link #enableGlobalOverlay(boolean)}. The overlay is completely separate from
- * {@link FlixelDebugOverlay} and does not appear in debug mode unless you
- * explicitly enable it.
+ * {@link #enableGlobalOverlay(boolean)}. The overlay is completely separate from the
+ * remote debugger and does not appear in debug mode unless you explicitly enable it.
  *
  * <h2>Signals</h2>
  *
@@ -233,6 +230,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** When true, skips gameplay/state/camera follow updates (debug pause). */
   private boolean gamePaused = false;
 
+  /** When true, the next update runs even though the game is paused. Set by {@link #stepFrame()}. */
+  private boolean stepPending;
+
   /** When true, the global overlay group is updated and drawn on top of all game cameras each frame. */
   private boolean overlayEnabled;
 
@@ -341,8 +341,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.input.addTouchListener(Flixel.touches);
 
     if (Flixel.isDebugMode()) {
-      FlixelDebugOverlay overlay = Flixel.debug.createOverlay();
-      Flixel.log.addSink(overlay.getLogSink());
+      Flixel.debug.start();
     }
 
     Flixel.switchState(initialStateFactory, true, true, true);
@@ -361,8 +360,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (overlayCamera != null && overlayEnabled) {
       overlayCamera.update(width, height, overlayCamera.centerCameraOnResize);
     }
-
-    Flixel.debug.overlay.resize(width, height);
 
     FlixelState state = Flixel.state;
     if (state != null) {
@@ -398,7 +395,15 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.gamepads.update();
     FlixelActionSets.update(elapsed);
 
-    if (!gamePaused && shouldUpdate) {
+    if (Flixel.isDebugMode() && Flixel.debug != null) {
+      // Before the game logic runs, so a click or key the debugger takes is already hidden from the game.
+      Flixel.debug.updateInput(rawElapsed);
+    }
+
+    boolean stepping = gamePaused && stepPending;
+    stepPending = false;
+
+    if ((!gamePaused || stepping) && shouldUpdate) {
       Flixel.profiler.begin(TRACE_UPDATE_TWEENS);
       try {
         FlixelTween.updateTweens(elapsed);
@@ -447,7 +452,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
 
     if (Flixel.isDebugMode()) {
-      Flixel.debug.overlay.update(elapsed);
+      Flixel.debug.update(rawElapsed);
     }
 
     postUpdateData.set(elapsed);
@@ -590,8 +595,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 
-    Flixel.debug.overlay.drawBoundingBoxes(Flixel.cameras.getItems());
-    Flixel.debug.overlay.draw();
+    if (Flixel.isDebugMode()) {
+      Flixel.debug.controls.drawBoundingBoxes(Flixel.cameras.getItems());
+    }
 
     if (!Flixel.window.isTransparencyActive() && Flixel.config.isTransparentFramebuffer()) {
       Flixel.graphics.forceOpaqueAlpha();
@@ -663,8 +669,22 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     this.gamePaused = gamePaused;
   }
 
+  /**
+   * Lets a paused game run exactly one more update, then stay paused.
+   *
+   * <p>The step happens during the next call to {@link #update(float)}, and only that one. Calling this
+   * while the game is not paused does nothing, and calling it twice before the update runs still
+   * results in one step. The debugger uses it for the "step one frame" button.
+   */
+  public void stepFrame() {
+    if (gamePaused) {
+      stepPending = true;
+    }
+  }
+
   private void snapshotCamerasForDebugPause() {
-    if (Flixel.cameras.getSize() == 0) {
+    if (Flixel.cameras.getSize() == 0 || isDebugFreeCamActive()) {
+      // The free camera owns the camera and puts it back itself when it is turned off.
       debugPauseCameraScroll = null;
       debugPauseCameraZoom = null;
       return;
@@ -680,8 +700,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
   }
 
+  private static boolean isDebugFreeCamActive() {
+    return Flixel.debug != null && Flixel.debug.controls.isFreeCamActive();
+  }
+
   private void restoreCamerasAfterDebugPause() {
-    if (debugPauseCameraScroll == null || debugPauseCameraZoom == null) {
+    if (debugPauseCameraScroll == null || debugPauseCameraZoom == null || isDebugFreeCamActive()) {
       debugPauseCameraScroll = null;
       debugPauseCameraZoom = null;
       return;
@@ -819,9 +843,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     onSuspended();
     Flixel.Signals.preGameClose.dispatch();
 
-    Flixel.log.removeSink(Flixel.debug.overlay.getLogSink());
-    Flixel.debug.overlay.destroy();
-    Flixel.debug.overlay = FlixelNoopDebugOverlay.INSTANCE;
+    Flixel.debug.dispose();
 
     Flixel.gamepads.reset();
 
@@ -864,6 +886,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
     gamePaused = false;
+    stepPending = false;
     stateLifecyclePauseDispatched = false;
     suspended = false;
 
