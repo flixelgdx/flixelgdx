@@ -135,7 +135,7 @@ public final class FlixelDebugThumbnails {
       return; // The queue was cleared while the read was running.
     }
     inFlight.removeIndex(slot);
-    FlixelLogger log = Flixel.log.tagged("FlixelDebug");
+    FlixelLogger log = Flixel.log.tagged("Debugger/Thumbnails");
     if (rgba == null) {
       log.warn("Could not read the pixels for thumbnail {}.", id);
       return;

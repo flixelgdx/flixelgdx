@@ -75,7 +75,7 @@ import java.util.function.ToLongFunction;
  */
 public abstract class FlixelDebugProperty<T> {
 
-  private static final String TAG = "FlixelDebug";
+  private static final String TAG = "Debugger/Inspector";
 
   private long longValue;
   private double doubleValue;
