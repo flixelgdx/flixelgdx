@@ -29,6 +29,7 @@ import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.debug.remote.FlixelDebugTransport;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
@@ -246,7 +247,7 @@ public class FlixelSocketWebSocketTransport implements FlixelDebugTransport {
       } catch (IOException | RuntimeException e) {
         if (!failureLogged && !isCloseRequested()) {
           failureLogged = true;
-          LOG.debug("Could not reach the remote debugger at {}:{} ({}). Trying again every {} ms.", host, port,
+          LOG.warn("Could not reach the remote debugger at {}:{} ({}). Trying again every {} ms.", host, port,
               e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName(), reconnectMillis);
         }
       }
@@ -347,6 +348,13 @@ public class FlixelSocketWebSocketTransport implements FlixelDebugTransport {
         throw new IOException("The handshake answer is too long.");
       }
     }
+    String accept = getAccept(head);
+    if (accept == null || !accept.equals(acceptFor(key))) {
+      throw new IOException("The server sent a wrong Sec-WebSocket-Accept.");
+    }
+  }
+
+  private static @Nullable String getAccept(StringBuilder head) throws IOException {
     String[] lines = head.toString().split("\r\n");
     String[] status = lines[0].split(" ");
     if (status.length < 2 || !status[0].startsWith("HTTP/1.") || !"101".equals(status[1])) {
@@ -359,9 +367,7 @@ public class FlixelSocketWebSocketTransport implements FlixelDebugTransport {
         accept = lines[i].substring(colon + 1).trim();
       }
     }
-    if (accept == null || !accept.equals(acceptFor(key))) {
-      throw new IOException("The server sent a wrong Sec-WebSocket-Accept.");
-    }
+    return accept;
   }
 
   private static boolean endsWithBlankLine(StringBuilder text) {
