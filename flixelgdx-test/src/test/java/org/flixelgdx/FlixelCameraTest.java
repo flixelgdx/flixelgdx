@@ -159,6 +159,69 @@ class FlixelCameraTest {
   }
 
   @Test
+  void zoomedLockonCentersTheVisibleAreaOnTarget() {
+    camera.setZoom(2f);
+    camera.follow(stub(500, 350, 0, 0), FollowStyle.LOCKON);
+    camera.update(DELTA);
+    assertEquals(500f, visibleLeft(camera) + camera.getViewWidth() / 2f, EPS);
+    assertEquals(350f, visibleTop(camera) + camera.getViewHeight() / 2f, EPS);
+  }
+
+  @Test
+  void zoomedUpdateScrollKeepsTheVisibleAreaInsideBounds() {
+    camera.setZoom(2f);
+    camera.setScrollBoundsRect(0, 0, 2000, 1000);
+
+    camera.scrollX = -5000f;
+    camera.scrollY = -5000f;
+    camera.updateScroll();
+    assertEquals(0f, visibleLeft(camera), EPS, "the level's left edge must be reachable");
+    assertEquals(0f, visibleTop(camera), EPS, "the level's top edge must be reachable");
+
+    camera.scrollX = 5000f;
+    camera.scrollY = 5000f;
+    camera.updateScroll();
+    assertEquals(2000f, visibleLeft(camera) + camera.getViewWidth(), EPS);
+    assertEquals(1000f, visibleTop(camera) + camera.getViewHeight(), EPS);
+  }
+
+  @Test
+  void zoomedFollowTracksTargetNearTheStartOfTheLevel() {
+    // At zoom 3 the old clamp kept the camera pinned until the target was far into the level.
+    camera.setZoom(3f);
+    camera.setScrollBoundsRect(0, 0, 2000, 1000);
+    camera.follow(stub(150, 120, 0, 0), FollowStyle.LOCKON);
+    camera.update(DELTA);
+    assertEquals(150f, visibleLeft(camera) + camera.getViewWidth() / 2f, EPS);
+    assertEquals(120f, visibleTop(camera) + camera.getViewHeight() / 2f, EPS);
+  }
+
+  @Test
+  void zoomedTopdownKeepsCameraStillWhenTargetIsInsideDeadzone() {
+    camera = new FlixelCamera(300, 300);
+    camera.setZoom(2f);
+    camera.focusOn(500f, 500f);
+    float startX = camera.scrollX;
+    float startY = camera.scrollY;
+    // The view is 150 units wide and centered on 500, so 510 is well inside the TOPDOWN zone.
+    camera.follow(stub(510, 490, 0, 0), FollowStyle.TOPDOWN);
+    camera.update(DELTA);
+    assertEquals(startX, camera.scrollX, EPS, "camera must not scroll when target is inside the deadzone");
+    assertEquals(startY, camera.scrollY, EPS);
+  }
+
+  @Test
+  void zoomedTopdownMovesToDeadzoneEdge() {
+    camera = new FlixelCamera(300, 300);
+    camera.setZoom(2f);
+    camera.focusOn(500f, 500f);
+    // The TOPDOWN zone is the middle third of the 150 unit view: 475 to 525 in world X.
+    camera.follow(stub(400, 500, 0, 0), FollowStyle.TOPDOWN);
+    camera.update(DELTA);
+    assertEquals(400f, visibleLeft(camera) + camera.deadzone.x, EPS);
+  }
+
+  @Test
   void unprojectAddsTheScrollToTheViewPosition() {
     showOnScreen(camera);
     camera.scrollX = 250f;
@@ -207,6 +270,14 @@ class FlixelCameraTest {
 
     assertEquals(123f, point.x, 1e-3f);
     assertEquals(77f, point.y, 1e-3f);
+  }
+
+  private static float visibleLeft(FlixelCamera cam) {
+    return cam.scrollX + cam.getViewMarginX();
+  }
+
+  private static float visibleTop(FlixelCamera cam) {
+    return cam.scrollY + cam.getViewMarginY();
   }
 
   private static void showOnScreen(FlixelCamera cam) {
