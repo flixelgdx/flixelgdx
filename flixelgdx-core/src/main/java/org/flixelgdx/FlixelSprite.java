@@ -61,9 +61,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Rendering model</h2>
  * <p>Each frame the sprite converts its world position through the active camera to a screen
- * coordinate, then adds {@link #offsetX}/{@link #offsetY} to get the final draw point. Offset
+ * coordinate, then subtracts {@link #offsetX}/{@link #offsetY} to get the final draw point. Offset
  * shifts the visible artwork relative to the hitbox without moving the physics body - useful for
- * centering asymmetric artwork on a hitbox. {@link #originX}/{@link #originY} sets the pivot used
+ * centering asymmetric artwork on a hitbox.
+ *
+ * <p>Positive values move the artwork left and up. {@link #originX}/{@link #originY} sets the pivot used
  * for rotation and scale; call {@link #setOriginCenter()} after every hitbox resize to keep the
  * pivot centered. {@link #scaleX}/{@link #scaleY} multiply each drawn frame's pixel dimensions.
  *
@@ -140,10 +142,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /** Y component of the rotation/scale origin point. */
   protected float originY = 0f;
 
-  /** The offset from the sprite's position to its graphic. */
+  /** How far the graphic is drawn to the left of the sprite's position. */
   protected float offsetX = 0f;
 
-  /** The offset from the sprite's position to its graphic. */
+  /** How far the graphic is drawn above the sprite's position. */
   protected float offsetY = 0f;
 
   /** The color tint applied when drawing this sprite. */
@@ -548,8 +550,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
-    float drawLeft = wx + offsetX;
-    float drawTop = wy + offsetY;
+    float drawLeft = wx - offsetX;
+    float drawTop = wy - offsetY;
     // Use the actual graphic dimensions for culling rather than the hitbox, since the hitbox may
     // have been shrunk independently (e.g. via setSize()) while the visible sprite remains larger.
     float cullW = f.originalWidth * Math.abs(scaleX);
@@ -600,8 +602,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     int insetX = FlixelFrame.regionInsetX(srcW, regW, f.offsetX, isFlippedX);
     int insetY = FlixelFrame.regionInsetY(srcH, regH, f.offsetY, isFlippedY);
 
-    float drawX = wx + offsetX + insetX + srcW * (scaleX - 1) * 0.5f;
-    float drawY = wy + offsetY + insetY + srcH * (scaleY - 1) * 0.5f;
+    float drawX = wx - offsetX + insetX + srcW * (scaleX - 1) * 0.5f;
+    float drawY = wy - offsetY + insetY + srcH * (scaleY - 1) * 0.5f;
 
     // Rotate/scale around the source box's center, expressed relative to the region's top-left
     // corner (the origin that the batch.draw(...) overload below measures from).
@@ -612,8 +614,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     if (clipEnabled) {
       // Flush before changing scissor state so previously batched sprites are not retroactively clipped.
       batch.flush();
-      float clipViewX = wx + offsetX + clipRectX;
-      float clipViewY = wy + offsetY + clipRectY;
+      float clipViewX = wx - offsetX + clipRectX;
+      float clipViewY = wy - offsetY + clipRectY;
       cam.getViewport().projectToScissor(clipViewX, clipViewY, clipRectWidth, clipRectHeight, tempClipBounds);
       Flixel.graphics.setScissor(
           Math.round(tempClipBounds.x), Math.round(tempClipBounds.y),
@@ -947,11 +949,12 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Sets both graphic offset components at once.
    *
    * <p>Offset shifts the visible artwork relative to the hitbox position without moving the physics
-   * body. A common use is to nudge artwork that does not perfectly align with its hitbox after
-   * trimming (for example, centering a 64x64 sprite on a 32x32 hitbox: {@code setOffset(-16, -16)}).
+   * body. The offset is subtracted from the draw position, so positive values move the artwork
+   * left and up. A common use is to center artwork on a smaller hitbox. For example, a 64x64
+   * sprite with a 32x32 hitbox is centered with {@code setOffset(16, 16)}.
    *
-   * @param x Horizontal offset in pixels.
-   * @param y Vertical offset in pixels.
+   * @param x How far left to draw the graphic, in pixels.
+   * @param y How far up to draw the graphic, in pixels.
    */
   public void setOffset(float x, float y) {
     this.offsetX = x;
