@@ -61,10 +61,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Rendering model</h2>
  * <p>Each frame the sprite converts its world position through the active camera to a screen
- * coordinate, then subtracts {@link #offsetX}/{@link #offsetY} to get the final draw point, the same
- * way HaxeFlixel does. Offset shifts the visible artwork relative to the hitbox without moving the
- * physics body - useful for centering asymmetric artwork on a hitbox. Positive values move the
- * artwork left and up. {@link #originX}/{@link #originY} sets the pivot used
+ * coordinate, then subtracts {@link #offsetX}/{@link #offsetY} to get the final draw point. Offset
+ * shifts the visible artwork relative to the hitbox without moving the physics body - useful for
+ * centering asymmetric artwork on a hitbox.
+ *
+ * <p>Positive values move the artwork left and up. {@link #originX}/{@link #originY} sets the pivot used
  * for rotation and scale; call {@link #setOriginCenter()} after every hitbox resize to keep the
  * pivot centered. {@link #scaleX}/{@link #scaleY} multiply each drawn frame's pixel dimensions.
  *
@@ -948,9 +949,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Sets both graphic offset components at once.
    *
    * <p>Offset shifts the visible artwork relative to the hitbox position without moving the physics
-   * body. The offset is subtracted from the draw position (like HaxeFlixel), so positive values
-   * move the artwork left and up. A common use is to center artwork on a smaller hitbox. For
-   * example, a 64x64 sprite with a 32x32 hitbox is centered with {@code setOffset(16, 16)}.
+   * body. The offset is subtracted from the draw position, so positive values move the artwork
+   * left and up. A common use is to center artwork on a smaller hitbox. For example, a 64x64
+   * sprite with a 32x32 hitbox is centered with {@code setOffset(16, 16)}.
    *
    * @param x How far left to draw the graphic, in pixels.
    * @param y How far up to draw the graphic, in pixels.

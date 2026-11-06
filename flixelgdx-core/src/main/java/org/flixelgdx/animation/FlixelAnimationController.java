@@ -315,8 +315,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * clips are usually authored on differently sized canvases, so their anchors do not line up when
    * you switch between them. Nudge each clip by a hand-tuned amount so they all share a common ground
    * line. The offset is <em>subtracted</em> from the draw position, so positive {@code x} moves the
-   * graphic left and positive {@code y} moves it up (matching {@link FlixelSprite#setOffset} and
-   * HaxeFlixel).
+   * graphic left and positive {@code y} moves it up.
    *
    * <p>The feature is opt-in. Until the first {@code addOffset} call the controller never touches the
    * sprite's offset; afterwards it owns it, and playing a clip with no registered offset resets the

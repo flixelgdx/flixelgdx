@@ -40,13 +40,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Checks where {@link FlixelSprite#draw(FlixelBatch)} places the graphic relative to the hitbox.
- *
- * <p>The offset is subtracted from the draw position, the same way HaxeFlixel does it, so a positive
- * offset moves the artwork left and up. This lives in {@code org.flixelgdx} so it can set the draw
- * camera directly through the package-private {@link Flixel#setDrawCamera(FlixelCamera)}.
- */
 class FlixelSpriteOffsetTest {
 
   private static final float EPS = 1e-4f;
