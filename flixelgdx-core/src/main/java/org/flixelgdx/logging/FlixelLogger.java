@@ -118,9 +118,16 @@ public interface FlixelLogger {
    *
    * <p>Keep the result in a {@code private static final} field instead of calling this repeatedly.
    *
+   * <p>Tags can be nested with a slash, from the general area to the specific part, much like folders
+   * in a path. The framework does this itself: {@code Save/Desktop} is the desktop part of saving, and
+   * {@code Debugger/Agent} is the agent part of the remote debugger. Nesting is only a naming habit;
+   * the slash has no special meaning to the logger, but it makes related messages easy to spot and
+   * filter together.
+   *
    * <p>Example:
    * <pre>{@code
    * private static final FlixelLogger LOG = Flixel.log.tagged("Pathfinding");
+   * private static final FlixelLogger GRID_LOG = Flixel.log.tagged("Pathfinding/Grid");
    * }</pre>
    *
    * @param tag The tag to print, or {@code null} for none.
