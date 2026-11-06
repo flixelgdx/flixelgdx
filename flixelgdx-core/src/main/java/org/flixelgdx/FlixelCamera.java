@@ -588,6 +588,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /**
    * Clamps {@link #scrollX} and {@link #scrollY} to the configured scroll bounds.
+   *
+   * <p>The bounds describe the part of the world the camera is allowed to show, so the clamp keeps
+   * the visible area (which starts at {@code scrollX + getViewMarginX()} when zoomed) inside them.
    * Called automatically each frame by {@link #update(float)}.
    */
   public void updateScroll() {
@@ -596,20 +599,25 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     float vw = viewport.getWorldWidth() / zoom;
     float vh = viewport.getWorldHeight() / zoom;
 
+    // The bounds limit what the camera shows, and when zoomed the visible area starts at
+    // scrollX + getViewMarginX() rather than at scrollX, so the margins are part of the clamp.
+    float mx = getViewMarginX();
+    float my = getViewMarginY();
+
     // Max is applied before min so that when the level is smaller than the view, the min
     // (left/top) edge wins and the camera stays pinned to the start of the level instead
     // of oscillating between minScroll and maxScroll - vw.
-    if (!Float.isNaN(maxScrollX) && scrollX + vw > maxScrollX) {
-      scrollX = maxScrollX - vw;
+    if (!Float.isNaN(maxScrollX) && scrollX + mx + vw > maxScrollX) {
+      scrollX = maxScrollX - vw - mx;
     }
-    if (!Float.isNaN(minScrollX) && scrollX < minScrollX) {
-      scrollX = minScrollX;
+    if (!Float.isNaN(minScrollX) && scrollX + mx < minScrollX) {
+      scrollX = minScrollX - mx;
     }
-    if (!Float.isNaN(maxScrollY) && scrollY + vh > maxScrollY) {
-      scrollY = maxScrollY - vh;
+    if (!Float.isNaN(maxScrollY) && scrollY + my + vh > maxScrollY) {
+      scrollY = maxScrollY - vh - my;
     }
-    if (!Float.isNaN(minScrollY) && scrollY < minScrollY) {
-      scrollY = minScrollY;
+    if (!Float.isNaN(minScrollY) && scrollY + my < minScrollY) {
+      scrollY = minScrollY - my;
     }
   }
 
@@ -1180,9 +1188,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     float desiredY;
 
     if (deadzone != null) {
-      float dzLeft = scrollX + deadzone.x;
+      // The deadzone is measured from the visible area's top-left corner, which sits one view
+      // margin past the scroll position when the camera is zoomed.
+      float dzLeft = scrollX + getViewMarginX() + deadzone.x;
       float dzRight = dzLeft + deadzone.width;
-      float dzTop = scrollY + deadzone.y;
+      float dzTop = scrollY + getViewMarginY() + deadzone.y;
       float dzBottom = dzTop + deadzone.height;
 
       if (tx < dzLeft) {
