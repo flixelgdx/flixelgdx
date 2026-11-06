@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.backend;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Default {@link FlixelProfiler} used on platforms without a trace facility.
  *
@@ -34,7 +36,7 @@ public enum FlixelNoopProfiler implements FlixelProfiler {
   INSTANCE;
 
   @Override
-  public void begin(String name) {}
+  public void begin(@NotNull String name) {}
 
   @Override
   public void end() {}

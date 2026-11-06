@@ -327,13 +327,4 @@ public class FlixelShader extends FlixelBasic {
   public boolean isCompiled() {
     return program != null && program.isValid();
   }
-
-  /**
-   * Returns whether this shader compiled without errors and is ready to use.
-   *
-   * @return {@code true} if the shader compiled successfully and is ready to use.
-   */
-  public boolean getCompiled() {
-    return isCompiled();
-  }
 }

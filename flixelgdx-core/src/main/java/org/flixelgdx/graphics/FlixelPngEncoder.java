@@ -144,8 +144,7 @@ public final class FlixelPngEncoder {
    *
    * @return The encoder's output buffer.
    */
-  @NotNull
-  public byte[] getBytes() {
+  public byte @NotNull [] getBytes() {
     return out;
   }
 
@@ -185,8 +184,8 @@ public final class FlixelPngEncoder {
       out = new byte[total];
     }
     int at = 0;
-    for (int i = 0; i < SIGNATURE.length; i++) {
-      out[at++] = SIGNATURE[i];
+    for (byte b : SIGNATURE) {
+      out[at++] = b;
     }
 
     at = beginChunk(at, 13, IHDR);
