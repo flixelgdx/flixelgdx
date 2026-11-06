@@ -63,7 +63,7 @@ import io.github.stringdotjar.jwebgpu.GpuSurface;
  */
 public final class FlixelGpuBootstrap {
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics/Device");
   private static final GpuFeatureName[] COMPRESSION_FEATURES = {
       GpuFeatureName.TEXTURE_COMPRESSION_BC,
       GpuFeatureName.TEXTURE_COMPRESSION_ETC2,

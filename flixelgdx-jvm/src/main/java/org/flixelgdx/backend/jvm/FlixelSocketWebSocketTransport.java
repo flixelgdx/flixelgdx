@@ -128,7 +128,7 @@ public class FlixelSocketWebSocketTransport implements FlixelDebugTransport {
   private static final int KIND_TEXT = 2;
   private static final String GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Debugger");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Debugger/Transport");
 
   private final Object lock = new Object();
   private final FlixelDebugMessageQueue outbound = new FlixelDebugMessageQueue(OUTBOUND_CAPACITY, 4096);

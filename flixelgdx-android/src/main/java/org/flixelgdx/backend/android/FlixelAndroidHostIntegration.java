@@ -65,7 +65,7 @@ import android.webkit.MimeTypeMap;
  */
 public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
 
-  private final FlixelLogger log = Flixel.log.tagged("Host");
+  private final FlixelLogger log = Flixel.log.tagged("Host/Android");
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
   private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
   private final Activity activity;

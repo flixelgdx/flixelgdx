@@ -63,7 +63,7 @@ public class FlixelHtml5Window implements FlixelWindow {
   @Nullable
   private FlixelHtml5Runner runner;
 
-  private final FullscreenDeferred onDeferred = () -> Flixel.log.tagged("Html5").debug(
+  private final FullscreenDeferred onDeferred = () -> Flixel.log.tagged("Html5/Window").debug(
       "Fullscreen needs a user gesture, so it will start on the next click, tap, or key press.");
 
   private int width;

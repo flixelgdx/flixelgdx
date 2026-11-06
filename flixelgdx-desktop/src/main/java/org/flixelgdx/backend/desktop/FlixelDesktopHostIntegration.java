@@ -70,7 +70,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
 
   private static final String OS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
 
-  private final FlixelLogger log = Flixel.log.tagged("Host");
+  private final FlixelLogger log = Flixel.log.tagged("Host/Desktop");
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
 
   @Override

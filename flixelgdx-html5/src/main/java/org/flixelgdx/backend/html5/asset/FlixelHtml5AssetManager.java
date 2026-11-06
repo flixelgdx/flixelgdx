@@ -86,7 +86,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
   private static final int MAX_CONCURRENT_DECODES = 6;
 
   private static final String[] IMAGE_EXTENSIONS = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
-  private static final FlixelLogger LOG = Flixel.log.tagged("Html5");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Assets/Html5");
 
   /** Images currently being fetched and decoded (a Promise is in flight for each key). */
   @NotNull

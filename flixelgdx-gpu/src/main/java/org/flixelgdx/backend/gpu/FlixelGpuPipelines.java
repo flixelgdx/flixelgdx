@@ -87,7 +87,7 @@ import io.github.stringdotjar.jwebgpu.GpuVertexStepMode;
  */
 public final class FlixelGpuPipelines {
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics/Shaders");
 
   private final FlixelLongMap<GpuRenderPipeline> cache = new FlixelLongMap<>();
   private final GpuDevice device;
