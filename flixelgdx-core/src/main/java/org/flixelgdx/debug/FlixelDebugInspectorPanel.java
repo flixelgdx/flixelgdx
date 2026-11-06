@@ -112,7 +112,7 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   /** How deep a parent search goes, which also protects against a group that contains itself. */
   private static final int MAX_DEPTH = 64;
 
-  private static final String TAG = "FlixelDebug";
+  private static final String TAG = "Debugger/Inspector";
 
   private float refreshTimer;
   private float sweepTimer;

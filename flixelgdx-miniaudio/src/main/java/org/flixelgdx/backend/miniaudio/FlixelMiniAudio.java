@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelMiniAudio {
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Audio");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Audio/MiniAudio");
 
   @Nullable
   private static FlixelMiniAudioLoader loader;

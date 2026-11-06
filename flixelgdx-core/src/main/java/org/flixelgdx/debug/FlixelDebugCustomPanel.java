@@ -65,7 +65,7 @@ public class FlixelDebugCustomPanel extends FlixelDebugPanelBase {
   /** Seconds between revision bumps, which is how often the app is offered fresh values. */
   private static final float REFRESH_INTERVAL = 0.1f;
 
-  private static final String TAG = "FlixelDebug";
+  private static final String TAG = "Debugger/CustomPanel";
 
   private final FlixelPanelBuilder builder = new FlixelPanelBuilder();
   private final FlixelDebugValue value = new FlixelDebugValue();

@@ -93,7 +93,7 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
   /** The value {@link #run(CharSequence)} returns for a blank line, which neither runs nor fails. */
   public static final int RESULT_IGNORED = -1;
 
-  private static final String TAG = "FlixelDebug";
+  private static final String TAG = "Debugger/Console";
 
   private final FlixelDebugManager owner;
   private final FlixelArray<Command> commands = new FlixelArray<>();

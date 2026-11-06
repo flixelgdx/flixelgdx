@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelMiniAudioFactory implements FlixelSoundFactory {
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Audio");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Audio/MiniAudio");
 
   /** Native miniaudio engine handle. */
   private final long engine;

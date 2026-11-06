@@ -52,7 +52,7 @@ import io.github.stringdotjar.jwebgpu.GpuTextureView;
  */
 public class FlixelGpuTexture implements FlixelTexture {
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics/Textures");
 
   private final long id;
   private final long extraUsage;

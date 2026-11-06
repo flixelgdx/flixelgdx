@@ -110,7 +110,7 @@ public final class FlixelDebugAgent {
   private static final float MAX_TIMER = 10f;
   private static final long NEVER = -1L;
 
-  private static final FlixelLogger LOG = Flixel.log.tagged("Debugger");
+  private static final FlixelLogger LOG = Flixel.log.tagged("Debugger/Agent");
 
   private final FlixelDebugMessageWriter writer = new FlixelDebugMessageWriter();
   private final FlixelDebugMessageReader reader = new FlixelDebugMessageReader();
