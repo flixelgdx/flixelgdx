@@ -43,7 +43,7 @@ import java.util.Comparator;
 
 /**
  * Playback state and clip registration for {@link FlixelSprite} animations. Obtain a controller with
- * {@link FlixelSprite#ensureAnimation()} (or assign one directly), then call {@code sprite.ensureAnimation().addSparrowAtlas(...)},
+ * {@link FlixelSprite#ensureAnimation()} (or assign one directly), then call {@code sprite.ensureAnimation().addSparrowFrames(...)},
  * {@code .playAnimation(...)}, etc. Decouples animation timing from rendering and physics.
  *
  * <p>Optionally link a {@link FlixelAnimationStateMachine} via {@link #setStateMachine} so the

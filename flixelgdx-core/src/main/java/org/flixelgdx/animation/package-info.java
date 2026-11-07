@@ -18,7 +18,7 @@
  * sprite = new FlixelSprite();
  * FlixelAnimationController anim = sprite.ensureAnimation();
  * // One-liner assuming hero.png and hero.xml exist next to each other in the same folder.
- * anim.addSparrowAtlas(Flixel.files.internal("images/hero"));
+ * anim.addSparrowFrames(Flixel.files.internal("images/hero"));
  * anim.addByPrefix("idle",   "hero_idle_",   12, true);
  * anim.addByPrefix("run",    "hero_run_",    24, true);
  * anim.addByPrefix("attack", "hero_attack_", 24, false);

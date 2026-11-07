@@ -73,17 +73,18 @@ The framework contains a wide set of animation utilities for Sparrow spritesheet
 out-of-the-box support for the Better Texture Atlas extension:
 
 ```java
-// A simple sparrow atlas being loaded and parsed automatically.
+// A Sparrow atlas loaded and parsed automatically. "images/player" points at
+// images/player.png and images/player.xml sitting next to each other.
 FlixelSprite sparrow = new FlixelSprite();
 sparrow.ensureAnimation();
-sparrow.animation.addSparrowAtlas(Flixel.files.internal("sparrow-folder"));
+sparrow.animation.addSparrowFrames(Flixel.files.internal("images/player"));
 sparrow.animation.addByPrefix("walk", "PLAYER WALKING0", 24, false);
 sparrow.animation.play("walk");
 
 // An Adobe Animate rig sprite. Note how a Sparrow can also be mixed with it as well. 
 FlixelAnimateSprite atlas = new FlixelAnimateSprite();
 atlas.addSpritemapAndAnimation(Flixel.files.internal("atlas-folder"));
-atlas.animation.addSparrowAtlas(Flixel.files.internal("sparrow-folder"));
+atlas.animation.addSparrowFrames(Flixel.files.internal("images/player"));
 atlas.animation.play("jump");  // Play an animation from the rig just like how you would for Sparrows.
 ```
 

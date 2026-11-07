@@ -483,7 +483,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
     FlixelAnimateRig.Clip clip = activeRig.getClip(clipName);
     if (clip == null) {
-      // Not a rig clip: a Sparrow clip merged via addSparrowAtlas() (or any non-rig atlas clip)
+      // Not a rig clip: a Sparrow clip merged via addSparrowFrames() (or any non-rig atlas clip)
       // renders through the standard frame path off currentFrame.
       super.draw(batch);
       return;

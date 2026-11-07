@@ -57,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * reference-counted by {@link FlixelAssetManager}).
  * {@link #makeGraphic(int, int, FlixelColor)} generates a solid-color rectangle on the fly and
  * owns the resulting texture. For Sparrow XML atlases, call
- * {@link #ensureAnimation()}{@code .addSparrowAtlas(...)} instead of loading the texture directly.
+ * {@link #ensureAnimation()}{@code .addSparrowFrames(...)} instead of loading the texture directly.
  *
  * <h2>Rendering model</h2>
  * <p>Each frame the sprite converts its world position through the active camera to a screen
