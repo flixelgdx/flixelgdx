@@ -247,17 +247,7 @@ public final class FlixelKtx2 {
   }
 
   private FlixelGpuCompressedImage slice(ByteBuffer container, int supported) {
-    FlixelGpuBlockFormat format = FlixelGpuBlockFormat.fromVkFormat(vkFormat);
-    if (format == null) {
-      throw new IllegalArgumentException("The KTX2 pixel format (Vulkan format " + vkFormat + ") is not supported.");
-    }
-    if (supercompression != SUPERCOMPRESSION_NONE) {
-      throw new IllegalArgumentException("Only Basis Universal KTX2 files can be supercompressed, but this "
-          + format + " file uses supercompression scheme " + supercompression + ".");
-    }
-    if (!has(supported, format)) {
-      throw new IllegalArgumentException("This GPU does not support " + format + " textures.");
-    }
+    FlixelGpuBlockFormat format = getGpuBlockFormat(supported);
     int levels = usableLevels(format, width, height, levelOffsets.length);
     int[] offsets = new int[levels];
     int[] sizes = new int[levels];
@@ -271,6 +261,21 @@ public final class FlixelKtx2 {
       sizes[level] = expected;
     }
     return new FlixelGpuCompressedImage(container, format, width, height, offsets, sizes);
+  }
+
+  private @NotNull FlixelGpuBlockFormat getGpuBlockFormat(int supported) {
+    FlixelGpuBlockFormat format = FlixelGpuBlockFormat.fromVkFormat(vkFormat);
+    if (format == null) {
+      throw new IllegalArgumentException("The KTX2 pixel format (Vulkan format " + vkFormat + ") is not supported.");
+    }
+    if (supercompression != SUPERCOMPRESSION_NONE) {
+      throw new IllegalArgumentException("Only Basis Universal KTX2 files can be supercompressed, but this "
+          + format + " file uses supercompression scheme " + supercompression + ".");
+    }
+    if (!has(supported, format)) {
+      throw new IllegalArgumentException("This GPU does not support " + format + " textures.");
+    }
+    return format;
   }
 
   private FlixelGpuCompressedImage transcode(ByteBuffer container, int supported,
