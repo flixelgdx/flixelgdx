@@ -199,6 +199,30 @@ class FlixelDebugPickerTest {
   }
 
   @Test
+  void hitboxModeMeasuresAndHitsTheHitboxOnly() {
+    FlixelSprite sprite = new FlixelSprite(10f, 10f);
+    sprite.setRegion(new FlixelFrame(new FlixelNoopTexture(32, 16)));
+    sprite.setSize(4f, 4f);
+    sprite.setOffset(5f, 3f);
+    sprite.setScale(2f);
+    sprite.setAngle(30f);
+    state.add(sprite);
+    picker.setHitboxes(true);
+
+    assertTrue(picker.isHitboxes());
+    assertTrue(picker.computeBounds(sprite, cam));
+    assertEquals(10f, picker.getBoundsLeft(), 1e-4f);
+    assertEquals(10f, picker.getBoundsTop(), 1e-4f);
+    assertEquals(4f, picker.getBoundsWidth(), 1e-4f);
+    assertEquals(4f, picker.getBoundsHeight(), 1e-4f);
+    assertSame(sprite, picker.pickInCamera(cam, 12f, 12f));
+    assertNull(picker.pickInCamera(cam, 30f, 20f), "inside the graphic but outside the hitbox");
+
+    picker.setHitboxes(false);
+    assertSame(sprite, picker.pickInCamera(cam, 30f, 20f));
+  }
+
+  @Test
   void objectsOnlyCountOnTheCamerasTheyAreDrawnOn() {
     FlixelCamera second = new FlixelCamera(400, 300);
     Flixel.cameras.add(second);

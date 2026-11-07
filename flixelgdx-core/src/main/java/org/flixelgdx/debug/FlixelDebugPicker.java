@@ -50,7 +50,8 @@ import org.jetbrains.annotations.Nullable;
  * the object's own scroll factor (so parallax layers are hit where they are drawn). Only objects that exist, are
  * visible, and are drawn on that camera count. Sprites are tested against the area they are drawn in (their graphic
  * with its offset and scale, widened to the bounding box when rotated), other objects against their hitbox.
- * Groups are searched member by member, last member first, and a hidden or removed group hides its members.
+ * With {@link #setHitboxes(boolean)} turned on, every object is tested against its hitbox instead, sprites
+ * included. Groups are searched member by member, last member first, and a hidden or removed group hides its members.
  *
  * <p>The same walk is shared with anything else that needs "every object drawn on this camera", such as the
  * {@linkplain FlixelDebugViewportPanel viewport panel} that sends a map of the screen to the debugger app. Call
@@ -87,6 +88,8 @@ public class FlixelDebugPicker {
 
   @Nullable
   private Object hit;
+
+  private boolean hitboxes;
 
   /** Creates a picker. */
   public FlixelDebugPicker() {}
@@ -184,7 +187,8 @@ public class FlixelDebugPicker {
    *
    * <p>A sprite with a graphic is measured the way {@link FlixelSprite#draw} places it: from its position plus
    * its offset, as wide and tall as its graphic frame times its scale, and widened to the bounding box when it is
-   * rotated. Any other object, and a sprite without a graphic, uses its hitbox. The result is stored in this picker
+   * rotated. Any other object, and a sprite without a graphic, uses its hitbox. While {@link #isHitboxes()} is
+   * {@code true}, every object uses its hitbox, placed with its scroll factor. The result is stored in this picker
    * and read with {@link #getBoundsLeft()}, {@link #getBoundsTop()}, {@link #getBoundsWidth()}, and
    * {@link #getBoundsHeight()}.
    *
@@ -197,7 +201,7 @@ public class FlixelDebugPicker {
     float top = cam.worldToViewY(object.getY(), object.getScrollY());
     float width = object.getWidth();
     float height = object.getHeight();
-    if (object instanceof FlixelSprite sprite) {
+    if (!hitboxes && object instanceof FlixelSprite sprite) {
       FlixelFrame frame = sprite.getFrame();
       if (frame != null) {
         // Mirror FlixelSprite.draw(): the whole source box is scaled around its center and then anchored so its
@@ -317,6 +321,24 @@ public class FlixelDebugPicker {
 
   public float getBoundsHeight() {
     return boundsHeight;
+  }
+
+  public boolean isHitboxes() {
+    return hitboxes;
+  }
+
+  /**
+   * Sets whether objects are measured and hit by their hitbox instead of the area they are drawn in.
+   *
+   * <p>A hitbox is the collision box ({@link FlixelObject#getWidth()} and {@link FlixelObject#getHeight()} at the
+   * object's position). It does not follow a sprite's offset, scale, angle, or animation frame, so it only changes
+   * when the game moves the object or resizes its hitbox. The {@linkplain FlixelDebugViewportPanel viewport panel}
+   * turns this on so the debugger app shows and picks the same boxes the game collides with.
+   *
+   * @param hitboxes {@code true} to use hitboxes, or {@code false} to use the drawn area (the default).
+   */
+  public void setHitboxes(boolean hitboxes) {
+    this.hitboxes = hitboxes;
   }
 
   /**
