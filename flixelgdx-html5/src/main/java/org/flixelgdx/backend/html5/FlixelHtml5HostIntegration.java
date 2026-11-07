@@ -150,7 +150,8 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
       @NotNull FlixelFileSaveListener listener,
       @NotNull String... extensions) {
     String[] exts = FlixelFilePickerHelpers.normalize(extensions);
-    saveBlob(Int8Array.copyFromJavaArray(data), FlixelFilePickerHelpers.withExtension(name, exts), String.join(",", exts),
+    saveBlob(Int8Array.copyFromJavaArray(data), FlixelFilePickerHelpers.withExtension(name, exts),
+        String.join(",", exts),
         listener::onSave);
   }
 
