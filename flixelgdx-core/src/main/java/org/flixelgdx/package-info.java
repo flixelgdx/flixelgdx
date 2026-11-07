@@ -774,7 +774,7 @@
  *   @Override
  *   public void update(float elapsed) {
  *     super.update(elapsed);
- *     if (getY() < -getHeight()) {
+ *     if (getY() < 0 - getHeight()) {
  *       kill(); // Off the top of the screen: back in the toy box.
  *     }
  *   }
@@ -1049,11 +1049,11 @@
  * <h2>16. Cameras</h2>
  *
  * <p>The game starts with one camera that covers the whole window. Get it with
- * {@code Flixel.cameras.get(0)}. Moving a camera does not move the objects in the world; it moves
+ * {@code Flixel.cameras.first()}. Moving a camera does not move the objects in the world; it moves
  * <em>the view</em>, the same way a film camera pans across a set.
  *
  * <pre>{@code
- * FlixelCamera camera = Flixel.cameras.get(0);
+ * FlixelCamera camera = Flixel.cameras.first();
  *
  * // Follow the player, with a style suited to the genre.
  * camera.follow(player, FlixelCamera.FollowStyle.PLATFORMER);
@@ -1085,7 +1085,8 @@
  *
  * <pre>{@code
  * FlixelCamera hud = new FlixelCamera(Flixel.getDesignWidth(), Flixel.getDesignHeight());
- * hud.bgColor.a = 0f;           // Transparent, so the world shows through.
+ * hud.bgColor.setAlpha(0f);      // Transparent, so the world shows through.
+ * hud.useBgAlphaBlending = true; // Don't forget this to allow the alpha value to render properly!
  * hud.defaultDrawTarget = false; // World objects stay on the main camera.
  * Flixel.cameras.add(hud);
  *
@@ -1341,10 +1342,10 @@
  *   <dd>Put it on a HUD camera, or for a quick fix use {@code setScrollFactor(0f, 0f)}.</dd>
  *
  *   <dt>...make the camera follow the player?</dt>
- *   <dd>{@code Flixel.cameras.get(0).follow(player, FlixelCamera.FollowStyle.PLATFORMER);}</dd>
+ *   <dd>{@code Flixel.cameras.first().follow(player, FlixelCamera.FollowStyle.PLATFORMER);}</dd>
  *
  *   <dt>...shake the screen?</dt>
- *   <dd>{@code Flixel.cameras.get(0).shake(0.01f, 0.25f);}</dd>
+ *   <dd>{@code Flixel.cameras.first().shake(0.01f, 0.25f);}</dd>
  *
  *   <dt>...fade out between screens?</dt>
  *   <dd>A camera {@code fade(...)} with a callback that calls {@code Flixel.switchState(...)}
@@ -1405,7 +1406,7 @@
  *       service or add a platform.</li>
  * </ul>
  *
- * <p>Happy game making!
+ * <p>Have fun creating! Now go make something great.
  *
  * @see org.flixelgdx.Flixel
  * @see org.flixelgdx.FlixelGame
