@@ -26,6 +26,7 @@ package org.flixelgdx.debug;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;

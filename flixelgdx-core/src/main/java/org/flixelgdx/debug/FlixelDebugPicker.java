@@ -30,6 +30,8 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
+import org.flixelgdx.debug.panels.FlixelDebugViewportPanel;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.group.FlixelGroupable;
@@ -50,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
  * the object's own scroll factor (so parallax layers are hit where they are drawn). Only objects that exist, are
  * visible, and are drawn on that camera count. Sprites are tested against the area they are drawn in (their graphic
  * with its offset and scale, widened to the bounding box when rotated), other objects against their hitbox.
+ * With {@link #hitboxes} turned on, every object is tested against its hitbox instead, sprites included.
  * Groups are searched member by member, last member first, and a hidden or removed group hides its members.
  *
  * <p>The same walk is shared with anything else that needs "every object drawn on this camera", such as the
@@ -84,6 +87,16 @@ public class FlixelDebugPicker {
 
   private final FlixelVector point = new FlixelVector();
   private final Visitor hitTest = this::testHit;
+
+  /**
+   * Sets whether objects are measured and hit by their hitbox instead of the area they are drawn in.
+   *
+   * <p>A hitbox is the collision box ({@link FlixelObject#getWidth()} and {@link FlixelObject#getHeight()} at the
+   * object's position). It does not follow a sprite's offset, scale, angle, or animation frame, so it only changes
+   * when the game moves the object or resizes its hitbox. The {@linkplain FlixelDebugViewportPanel viewport panel}
+   * turns this on so the debugger app shows and picks the same boxes the game collides with.
+   */
+  public boolean hitboxes;
 
   @Nullable
   private Object hit;
@@ -184,7 +197,8 @@ public class FlixelDebugPicker {
    *
    * <p>A sprite with a graphic is measured the way {@link FlixelSprite#draw} places it: from its position plus
    * its offset, as wide and tall as its graphic frame times its scale, and widened to the bounding box when it is
-   * rotated. Any other object, and a sprite without a graphic, uses its hitbox. The result is stored in this picker
+   * rotated. Any other object, and a sprite without a graphic, uses its hitbox. While {@link #hitboxes} is
+   * {@code true}, every object uses its hitbox, placed with its scroll factor. The result is stored in this picker
    * and read with {@link #getBoundsLeft()}, {@link #getBoundsTop()}, {@link #getBoundsWidth()}, and
    * {@link #getBoundsHeight()}.
    *
@@ -197,7 +211,7 @@ public class FlixelDebugPicker {
     float top = cam.worldToViewY(object.getY(), object.getScrollY());
     float width = object.getWidth();
     float height = object.getHeight();
-    if (object instanceof FlixelSprite sprite) {
+    if (!hitboxes && object instanceof FlixelSprite sprite) {
       FlixelFrame frame = sprite.getFrame();
       if (frame != null) {
         // Mirror FlixelSprite.draw(): the whole source box is scaled around its center and then anchored so its
@@ -250,8 +264,8 @@ public class FlixelDebugPicker {
   private boolean walkLevel(FlixelState level, FlixelCamera cam, boolean topFirst, Visitor visitor, int levels) {
     FlixelState sub = level.getSubState();
     boolean top = sub == null || levels + 1 >= FlixelDebugPaths.MAX_DEPTH;
-    // The open sub state is drawn last, so it is on top. A state below it only counts while it still draws
-    // behind the sub state.
+    // The open substate is drawn last, so it is on top. A state below it only counts while it still draws
+    // behind the substate.
     boolean drawn = top || level.persistentDraw;
     if (topFirst) {
       return (!top && walkLevel(sub, cam, true, visitor, levels + 1))
@@ -272,14 +286,18 @@ public class FlixelDebugPicker {
     int size = members.getSize();
     for (int k = 0; k < size; k++) {
       Object member = members.get(topFirst ? size - 1 - k : k);
-      if (member == null) {
-        continue;
-      }
-      if (member instanceof IFlixelBasic basic && (!basic.isExists() || !basic.isVisible())) {
-        continue;
-      }
-      if (member instanceof FlixelBasic basic && !isDrawnOn(basic, cam)) {
-        continue;
+      switch (member) {
+        case null -> {
+          continue;
+        }
+        case IFlixelBasic basic when (!basic.isExists() || !basic.isVisible()) -> {
+          continue;
+        }
+        case FlixelBasic basic when !isDrawnOn(basic, cam) -> {
+          continue;
+        }
+        default -> {
+        }
       }
       // Children are drawn after their parent, so they are on top of it.
       if (topFirst) {

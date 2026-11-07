@@ -29,6 +29,8 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
+import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
+import org.flixelgdx.debug.panels.FlixelDebugScenePanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.group.FlixelSpriteGroup;

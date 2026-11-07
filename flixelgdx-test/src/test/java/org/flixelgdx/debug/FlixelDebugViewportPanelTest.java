@@ -30,8 +30,12 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
+import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
+import org.flixelgdx.debug.panels.FlixelDebugViewportPanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
+import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelNoopTexture;
 import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
@@ -206,6 +210,31 @@ class FlixelDebugViewportPanelTest {
     assertSame(below, debug.inspector.getSelected());
     DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(390f).writeF32(290f));
     assertNull(debug.inspector.getSelected());
+  }
+
+  @Test
+  void spriteBoxesAndPicksUseTheHitboxInsteadOfTheDrawnGraphic() {
+    FlixelSprite sprite = new FlixelSprite(100f, 100f);
+    sprite.setRegion(new FlixelFrame(new FlixelNoopTexture(32, 32)));
+    sprite.setSize(10f, 14f);
+    sprite.setOffset(3f, 2f);
+    sprite.setScale(3f);
+    sprite.setAngle(45f);
+    state.add(sprite);
+
+    Snapshot s = Snapshot.read(viewport);
+
+    Box box = s.boxes.get(s.indexOf(debug.ids.peek(sprite)));
+    assertEquals(100f, box.x, EPS, "offset, scale, and angle do not move the hitbox");
+    assertEquals(100f, box.y, EPS);
+    assertEquals(10f, box.w, EPS);
+    assertEquals(14f, box.h, EPS);
+
+    // Inside the scaled graphic but outside the hitbox.
+    DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(130f).writeF32(130f));
+    assertNull(debug.inspector.getSelected());
+    DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(105f).writeF32(110f));
+    assertSame(sprite, debug.inspector.getSelected());
   }
 
   @Test

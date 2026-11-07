@@ -26,6 +26,7 @@ package org.flixelgdx.debug;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelIntArray;
+import org.flixelgdx.debug.panels.FlixelDebugPanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelPngEncoder;

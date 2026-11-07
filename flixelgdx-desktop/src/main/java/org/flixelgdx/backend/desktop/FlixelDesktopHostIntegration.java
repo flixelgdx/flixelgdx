@@ -32,7 +32,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
-import org.flixelgdx.file.FlixelFilePicker;
+import org.flixelgdx.file.FlixelFilePickerHelpers;
 import org.flixelgdx.file.FlixelFileSaveListener;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.signal.FlixelSignal;
@@ -231,17 +231,17 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
    * Shows SDL's asynchronous open dialog and delivers the result on the main thread.
    *
    * <p>SDL may call back from another thread, so the paths are read inside the callback and the
-   * listener is notified through {@link FlixelFilePicker#deliver}. The native callback and filter
+   * listener is notified through {@link FlixelFilePickerHelpers#deliver}. The native callback and filter
    * memory are released from a queued task after the callback has returned.
    */
   private void showFileDialog(FlixelFilePickListener listener, String[] extensions, boolean many) {
-    final String[] exts = FlixelFilePicker.normalize(extensions);
+    final String[] exts = FlixelFilePickerHelpers.normalize(extensions);
     final SDL_DialogFileCallback[] callback = new SDL_DialogFileCallback[1];
     final ByteBuffer[] strings = new ByteBuffer[2];
     try {
       final SDL_DialogFileFilter.Buffer filters = createFilters(exts, strings);
       callback[0] = SDL_DialogFileCallback.create((userdata, fileList, filter) -> {
-        FlixelFile[] result = FlixelFilePicker.NO_FILES;
+        FlixelFile[] result = FlixelFilePickerHelpers.NO_FILES;
         if (fileList != 0L) {
           int count = 0;
           while (MemoryUtil.memGetAddress(fileList + (long) count * Long.BYTES) != 0L) {
@@ -253,7 +253,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
             result[i] = Flixel.files.absolute(path);
           }
         }
-        FlixelFilePicker.deliver(listener, result);
+        FlixelFilePickerHelpers.deliver(listener, result);
         Flixel.graphics.queueMainThread(() -> {
           callback[0].free();
           if (filters != null) {
@@ -266,7 +266,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
       SDLDialog.SDL_ShowOpenFileDialog(callback[0], 0L, 0L, filters, (CharSequence) null, many);
     } catch (Throwable t) {
       log.error("Failed to open the file picker.", t);
-      FlixelFilePicker.deliver(listener, FlixelFilePicker.NO_FILES);
+      FlixelFilePickerHelpers.deliver(listener, FlixelFilePickerHelpers.NO_FILES);
     }
   }
 
@@ -279,7 +279,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
    * {@link #showFileDialog(FlixelFilePickListener, String[], boolean)}.
    */
   private void showSaveDialog(byte[] data, String name, FlixelFileSaveListener listener, String[] extensions) {
-    final String[] exts = FlixelFilePicker.normalize(extensions);
+    final String[] exts = FlixelFilePickerHelpers.normalize(extensions);
     final SDL_DialogFileCallback[] callback = new SDL_DialogFileCallback[1];
     final ByteBuffer[] strings = new ByteBuffer[2];
     try {
@@ -288,13 +288,13 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
         boolean saved = false;
         long first = fileList != 0L ? MemoryUtil.memGetAddress(fileList) : 0L;
         if (first != 0L) {
-          String path = FlixelFilePicker.withExtension(MemoryUtil.memUTF8(first), exts);
+          String path = FlixelFilePickerHelpers.withExtension(MemoryUtil.memUTF8(first), exts);
           saved = Flixel.files.absolute(path).writeBytes(data);
           if (!saved) {
             log.error("Failed to save the file to \"{}\".", path);
           }
         }
-        FlixelFilePicker.deliver(listener, saved);
+        FlixelFilePickerHelpers.deliver(listener, saved);
         Flixel.graphics.queueMainThread(() -> {
           callback[0].free();
           if (filters != null) {
@@ -307,14 +307,14 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
       SDLDialog.SDL_ShowSaveFileDialog(callback[0], 0L, 0L, filters, name);
     } catch (Throwable t) {
       log.error("Failed to open the save dialog.", t);
-      FlixelFilePicker.deliver(listener, false);
+      FlixelFilePickerHelpers.deliver(listener, false);
     }
   }
 
   /**
    * Builds SDL's native filter list for the given extensions.
    *
-   * @param exts Extensions from {@link FlixelFilePicker#normalize(String[])}.
+   * @param exts Extensions from {@link FlixelFilePickerHelpers#normalize(String[])}.
    * @param strings Receives the two native strings the filter points at, so the caller can free
    *     them later. Both stay {@code null} when there is no filter.
    * @return The native filter buffer, or {@code null} when every file is allowed.

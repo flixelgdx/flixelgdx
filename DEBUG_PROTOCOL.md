@@ -602,9 +602,9 @@ Other bits are reserved and are 0.
 **View space.** Every position is in the view space of the camera: `0, 0` is the top left corner of what the
 camera shows and the visible area is `viewWidth` by `viewHeight`. Each object is placed with its own scroll factor,
 so parallax layers and objects fixed to the screen are where they appear. To draw the map, scale the view to the
-size of your canvas; no camera math is needed. A box is the area the object is drawn in (a sprite's graphic with its
-offset and scale, widened to the bounding box when it is rotated; other objects use their hitbox), which is exactly
-what a click hits. The box `id` is the same object id that [scene](#scene) and [inspector](#inspector) use.
+size of your canvas; no camera math is needed. A box is the object's **hitbox** (its collision box, the same one the
+game outlines when hitboxes are on), not the area its graphic covers, so a sprite's offset, scale, angle, and
+animation frame do not change it. `PICK` tests the same hitboxes, so a tap selects exactly the box under it. The box `id` is the same object id that [scene](#scene) and [inspector](#inspector) use.
 
 **Which objects.** Boxes are listed in draw order, bottom first, so the last box that contains a point is the one
 on top. Only objects that exist, are visible, are drawn on the camera, and touch the visible area are listed, and an
@@ -629,8 +629,9 @@ Actions:
 
 - `SET_CAMERA` chooses the camera the map shows and the camera actions act on. While the index is past the end of
   the camera list, the game shows the main camera (index 0) and says so in `camera`.
-- `PICK` selects the topmost object drawn at that point of the view in the inspector, the same way `Alt + Click`
-  does in the game. When nothing is drawn there, the selection is cleared.
+- `PICK` selects the topmost object whose hitbox contains that point of the view in the inspector. It searches in
+  the same order as `Alt + Click` in the game, but `Alt + Click` tests the drawn graphic instead. When no hitbox
+  contains the point, the selection is cleared.
 - `MOVE` moves an object by a distance in world units. It is a distance, not a position, so updates that arrive late
   or close together add up instead of fighting. Any object with a position can be moved, selected or not, and a
   group moves its members with it. An unknown id or an object without a position is ignored. For a drag, send the

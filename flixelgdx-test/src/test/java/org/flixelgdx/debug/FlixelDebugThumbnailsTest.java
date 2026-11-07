@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.debug.ReadbackTestSupport.FakeTexture;
 import org.flixelgdx.debug.ReadbackTestSupport.ReadbackGraphics;
+import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;

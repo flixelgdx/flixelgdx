@@ -21,12 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug;
+package org.flixelgdx.debug.panels;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.graphics.FlixelBatch;

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug;
+package org.flixelgdx.debug.panels;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -30,6 +30,10 @@ import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.debug.FlixelDebugObjectIds;
+import org.flixelgdx.debug.FlixelDebugPaths;
+import org.flixelgdx.debug.FlixelDebugThumbnails;
 import org.flixelgdx.debug.inspector.FlixelDebugSection;
 import org.flixelgdx.debug.inspector.FlixelDebugValue;
 import org.flixelgdx.debug.inspector.FlixelSectionBuilder;

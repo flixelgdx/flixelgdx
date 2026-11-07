@@ -31,6 +31,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.debug.InspectorTestSupport.Row;
 import org.flixelgdx.debug.InspectorTestSupport.State;
+import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.group.FlixelSpriteGroup;

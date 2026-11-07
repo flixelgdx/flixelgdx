@@ -27,6 +27,7 @@ import org.flixelgdx.collections.FlixelIdentityMap;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.collections.FlixelIntMap;
 import org.flixelgdx.collections.FlixelIntSet;
+import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
 import org.flixelgdx.functional.FlixelExistable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -27,9 +27,9 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelVersion;
 import org.flixelgdx.backend.FlixelPlatform;
-import org.flixelgdx.debug.FlixelDebugLogPanel;
 import org.flixelgdx.debug.FlixelDebugManager;
-import org.flixelgdx.debug.FlixelDebugPanel;
+import org.flixelgdx.debug.panels.FlixelDebugLogPanel;
+import org.flixelgdx.debug.panels.FlixelDebugPanel;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 

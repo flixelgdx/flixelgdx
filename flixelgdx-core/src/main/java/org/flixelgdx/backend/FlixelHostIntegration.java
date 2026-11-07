@@ -27,7 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
-import org.flixelgdx.file.FlixelFilePicker;
+import org.flixelgdx.file.FlixelFilePickerHelpers;
 import org.flixelgdx.file.FlixelFileSaveListener;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.signal.FlixelSignal;
@@ -194,7 +194,7 @@ public interface FlixelHostIntegration {
    * @param listener Receives the result; see {@link #pickFile(FlixelFilePickListener, String...)}.
    */
   default void pickFile(@NotNull FlixelFilePickListener listener) {
-    pickFile(listener, FlixelFilePicker.NO_FILTER);
+    pickFile(listener, FlixelFilePickerHelpers.NO_FILTER);
   }
 
   /**
@@ -223,7 +223,7 @@ public interface FlixelHostIntegration {
    * @param extensions The allowed extensions; empty allows any file.
    */
   default void pickFile(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
-    listener.onPick(FlixelFilePicker.NO_FILES);
+    listener.onPick(FlixelFilePickerHelpers.NO_FILES);
   }
 
   /**
@@ -234,7 +234,7 @@ public interface FlixelHostIntegration {
    * @param listener Receives the result; see {@link #pickFiles(FlixelFilePickListener, String...)}.
    */
   default void pickFiles(@NotNull FlixelFilePickListener listener) {
-    pickFiles(listener, FlixelFilePicker.NO_FILTER);
+    pickFiles(listener, FlixelFilePickerHelpers.NO_FILTER);
   }
 
   /**
@@ -258,7 +258,7 @@ public interface FlixelHostIntegration {
    * @param extensions The allowed extensions; empty allows any file.
    */
   default void pickFiles(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
-    listener.onPick(FlixelFilePicker.NO_FILES);
+    listener.onPick(FlixelFilePickerHelpers.NO_FILES);
   }
 
   /**
@@ -271,7 +271,7 @@ public interface FlixelHostIntegration {
    * @param name The suggested file name, such as {@code "level.json"}.
    */
   default void saveFile(byte @NotNull [] data, @NotNull String name) {
-    saveFile(data, name, FlixelFileSaveListener.NONE, FlixelFilePicker.NO_FILTER);
+    saveFile(data, name, FlixelFileSaveListener.NONE, FlixelFilePickerHelpers.NO_FILTER);
   }
 
   /**
@@ -298,7 +298,7 @@ public interface FlixelHostIntegration {
    * @param listener Receives whether the data was saved.
    */
   default void saveFile(byte @NotNull [] data, @NotNull String name, @NotNull FlixelFileSaveListener listener) {
-    saveFile(data, name, listener, FlixelFilePicker.NO_FILTER);
+    saveFile(data, name, listener, FlixelFilePickerHelpers.NO_FILTER);
   }
 
   /**
@@ -312,7 +312,7 @@ public interface FlixelHostIntegration {
    * @param listener Receives whether the data was saved.
    */
   default void saveFile(@NotNull String data, @NotNull String name, @NotNull FlixelFileSaveListener listener) {
-    saveFile(data, name, listener, FlixelFilePicker.NO_FILTER);
+    saveFile(data, name, listener, FlixelFilePickerHelpers.NO_FILTER);
   }
 
   /**
