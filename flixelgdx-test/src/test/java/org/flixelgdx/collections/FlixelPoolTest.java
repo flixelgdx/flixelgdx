@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.collections;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,7 +40,7 @@ class FlixelPoolTest {
     FlixelPool<Item> pool() {
       return new FlixelPool<>() {
         @Override
-        protected Item newObject() {
+        protected @NotNull Item newObject() {
           created++;
           return new Item();
         }
@@ -108,7 +109,7 @@ class FlixelPoolTest {
     FlixelPool<Item> pool =
         new FlixelPool<>(1, 2) {
           @Override
-          protected Item newObject() {
+          protected @NotNull Item newObject() {
             return new Item();
           }
         };
@@ -167,7 +168,7 @@ class FlixelPoolTest {
     FlixelPool<Item> pool =
         new FlixelPool<>(2) {
           @Override
-          protected Item newObject() {
+          protected @NotNull Item newObject() {
             counter.created++;
             return new Item();
           }
