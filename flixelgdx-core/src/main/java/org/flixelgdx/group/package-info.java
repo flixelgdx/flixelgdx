@@ -37,11 +37,14 @@
  * <h2>Basic group usage</h2>
  * <p>The most common pattern is to add a
  * {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup} inside a
- * {@link org.flixelgdx.FlixelState FlixelState} and populate it with your objects:
+ * {@link org.flixelgdx.FlixelState FlixelState} and populate it with your objects.
+ * {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup} is abstract, so you create one
+ * with an anonymous subclass. The empty braces {@code {}} after the constructor call are what
+ * make that subclass; leaving them out is a compile error.
  *
  * <pre>{@code
  * // Inside a FlixelState:
- * FlixelBasicGroup<FlixelSprite> enemies = new FlixelBasicGroup<>(FlixelSprite[]::new);
+ * FlixelBasicGroup<FlixelSprite> enemies = new FlixelBasicGroup<>(FlixelSprite[]::new) {};
  * add(enemies);
  *
  * // Spawn an enemy:
@@ -67,19 +70,30 @@
  * pool of rubber ducks: you grab a duck that is not in the water, clean it up, and throw
  * it back in rather than buying a new one each time.
  *
+ * <p>When no dead member is available, {@link org.flixelgdx.group.FlixelBasicGroup#recycle()
+ * recycle()} asks the group to build a new one by calling {@code createMemberForRecycle()}. The
+ * default version returns {@code null}, so override it in your anonymous subclass to tell the
+ * group how to make a fresh member:
+ *
  * <pre>{@code
  * // Set a cap so the pool never grows past 50 bullets:
- * FlixelBasicGroup<FlixelSprite> bullets = new FlixelBasicGroup<>(FlixelSprite[]::new, 50);
+ * FlixelBasicGroup<FlixelSprite> bullets = new FlixelBasicGroup<>(FlixelSprite[]::new, 50) {
+ *   @Override
+ *   protected FlixelSprite createMemberForRecycle() {
+ *     return new FlixelSprite().makeGraphic(8, 8, FlixelColor.YELLOW);
+ *   }
+ * };
  * add(bullets);
  *
- * // Fire a bullet (reuses a dead one, or does nothing when at capacity):
+ * // Fire a bullet (reuses a dead one, makes a new one if there is room, or returns null when
+ * // the group is full of living bullets):
  * FlixelSprite bullet = bullets.recycle();
  * if (bullet != null) {
  *   bullet.setPosition(playerX, playerY);
  * }
  *
- * // When a bullet goes off-screen, kill it so recycle() can pick it up later:
- * if (bullet.getX() > screenWidth) {
+ * // Later, when a bullet goes off-screen, kill it so recycle() can pick it up again:
+ * if (bullet != null && bullet.getX() > screenWidth) {
  *   bullet.kill();
  * }
  * }</pre>
