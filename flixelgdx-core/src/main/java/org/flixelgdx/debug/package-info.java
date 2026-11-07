@@ -2,7 +2,7 @@
  * Debugger panels and commands for FlixelGDX.
  *
  * <p>The debugger is a set of <strong>panels</strong>. Each panel (a
- * {@link org.flixelgdx.debug.FlixelDebugPanel FlixelDebugPanel}) samples one kind of data from the
+ * {@link org.flixelgdx.debug.panels.FlixelDebugPanel FlixelDebugPanel}) samples one kind of data from the
  * running game and encodes it for the remote debugger app, which connects over a WebSocket and works the
  * same on every platform. See {@code DEBUG_PROTOCOL.md} at the repository root for the wire format.
  *
@@ -69,24 +69,24 @@
  * object is outlined in yellow. Press F4 (or type {@code freecam} in the console) to fly the camera with W, A, S, D,
  * the arrow keys, the mouse wheel, and the right mouse button, without the game reacting to those inputs. The
  * {@code goto <x> <y>} command moves the camera to a spot in the world, and {@code select <path>} selects the
- * object at a scene path such as {@code state.3.0}. See {@link org.flixelgdx.debug.FlixelDebugControlsPanel
+ * object at a scene path such as {@code state.3.0}. See {@link org.flixelgdx.debug.panels.FlixelDebugControlsPanel
  * FlixelDebugControlsPanel} and {@link org.flixelgdx.debug.FlixelDebugPaths FlixelDebugPaths}.
  *
  * <h2>The viewport from the app</h2>
  * <p>On a phone there is no keyboard or mouse for picking and the free camera. The viewport panel
- * ({@link org.flixelgdx.debug.FlixelDebugViewportPanel FlixelDebugViewportPanel}) sends the debugger app a live map
+ * ({@link org.flixelgdx.debug.panels.FlixelDebugViewportPanel FlixelDebugViewportPanel}) sends the debugger app a live map
  * of every object a camera draws, so you can tap an object in the app to select it, drag it to move it, and drag or
  * pinch the map to fly the camera. The same actions work from code, for example
  * {@code Flixel.debug.viewport.pan(0f, -100f)}.
  *
  * <h2>Textures</h2>
- * <p>The texture panel ({@link org.flixelgdx.debug.FlixelDebugTexturePanel FlixelDebugTexturePanel}) lists every
+ * <p>The texture panel ({@link org.flixelgdx.debug.panels.FlixelDebugTexturePanel FlixelDebugTexturePanel}) lists every
  * loaded texture with its size, GPU memory, the number of sprites using it, and a duplicate flag. The app can ask
  * for a small PNG thumbnail of a texture, and of the selected sprite in the inspector, when the graphics backend can
  * read textures back from the GPU. See {@link org.flixelgdx.debug.FlixelDebugThumbnails FlixelDebugThumbnails}.
  *
  * <h2>Editing the save</h2>
- * <p>The save panel ({@link org.flixelgdx.debug.FlixelDebugSavePanel FlixelDebugSavePanel}) shows every value of
+ * <p>The save panel ({@link org.flixelgdx.debug.panels.FlixelDebugSavePanel FlixelDebugSavePanel}) shows every value of
  * {@code Flixel.save} as a row, marks the ones that differ from what is stored, and lets you change a value, remove
  * one, write the save, or erase it, all from the debugger app or from code with
  * {@code Flixel.debug.save.set("player.coins", "999")}. Games that keep more than one save list the others with
@@ -94,7 +94,7 @@
  *
  * <h2>Custom panels</h2>
  * <p>For a panel that is not about one object, use a
- * {@link org.flixelgdx.debug.FlixelDebugCustomPanel FlixelDebugCustomPanel}. Describe its rows and buttons with
+ * {@link org.flixelgdx.debug.panels.FlixelDebugCustomPanel FlixelDebugCustomPanel}. Describe its rows and buttons with
  * the same style of builder, except the getters take no arguments:
  *
  * <pre>{@code
@@ -105,10 +105,12 @@
  * }</pre>
  *
  * <p>When you need a panel with a completely different payload, extend
- * {@link org.flixelgdx.debug.FlixelDebugPanelBase FlixelDebugPanelBase} and register it with
- * {@link org.flixelgdx.debug.FlixelDebugManager#register(org.flixelgdx.debug.FlixelDebugPanel)}.
+ * {@link org.flixelgdx.debug.panels.FlixelDebugPanelBase FlixelDebugPanelBase} and register it with
+ * {@link org.flixelgdx.debug.FlixelDebugManager#register(FlixelDebugPanel)}.
  *
  * @see org.flixelgdx.debug.FlixelDebugManager
- * @see org.flixelgdx.debug.FlixelDebugPanel
+ * @see org.flixelgdx.debug.panels.FlixelDebugPanel
  */
 package org.flixelgdx.debug;
+
+import org.flixelgdx.debug.panels.FlixelDebugPanel;

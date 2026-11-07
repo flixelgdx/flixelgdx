@@ -32,7 +32,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
-import org.flixelgdx.file.FlixelFilePicker;
+import org.flixelgdx.file.FlixelFilePickerHelpers;
 import org.flixelgdx.file.FlixelFileSaveListener;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.signal.FlixelSignal;
@@ -103,10 +103,10 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
       @NotNull FlixelFileSaveListener listener,
       @NotNull String... extensions) {
     if (FlixelAndroidPickerActivity.isPending()) {
-      FlixelFilePicker.deliver(listener, false);
+      FlixelFilePickerHelpers.deliver(listener, false);
       return;
     }
-    final String[] exts = FlixelFilePicker.normalize(extensions);
+    final String[] exts = FlixelFilePickerHelpers.normalize(extensions);
     String type = exts.length > 0 ? MimeTypeMap.getSingleton().getMimeTypeFromExtension(exts[0]) : null;
     FlixelAndroidPickerActivity.setPending(uris -> {
       boolean saved = false;
@@ -120,18 +120,18 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
           log.error("Failed to save the file.", e);
         }
       }
-      FlixelFilePicker.deliver(listener, saved);
+      FlixelFilePickerHelpers.deliver(listener, saved);
     });
     try {
       Intent intent = new Intent(activity, FlixelAndroidPickerActivity.class);
-      intent.putExtra(FlixelAndroidPickerActivity.EXTRA_SAVE_NAME, FlixelFilePicker.withExtension(name, exts));
+      intent.putExtra(FlixelAndroidPickerActivity.EXTRA_SAVE_NAME, FlixelFilePickerHelpers.withExtension(name, exts));
       intent.putExtra(FlixelAndroidPickerActivity.EXTRA_SAVE_TYPE,
           type != null ? type : FlixelAndroidPickerActivity.BINARY_TYPE);
       activity.startActivity(intent);
     } catch (RuntimeException e) {
       log.error("Failed to open the save dialog.", e);
       FlixelAndroidPickerActivity.setPending(null);
-      FlixelFilePicker.deliver(listener, false);
+      FlixelFilePickerHelpers.deliver(listener, false);
     }
   }
 
@@ -168,10 +168,10 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
 
   private void showPicker(FlixelFilePickListener listener, String[] extensions, boolean many) {
     if (FlixelAndroidPickerActivity.isPending()) {
-      FlixelFilePicker.deliver(listener, FlixelFilePicker.NO_FILES);
+      FlixelFilePickerHelpers.deliver(listener, FlixelFilePickerHelpers.NO_FILES);
       return;
     }
-    final String[] exts = FlixelFilePicker.normalize(extensions);
+    final String[] exts = FlixelFilePickerHelpers.normalize(extensions);
     String[] types = new String[exts.length];
     boolean allKnown = true;
     MimeTypeMap map = MimeTypeMap.getSingleton();
@@ -208,7 +208,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
           String last = uris[i].getLastPathSegment();
           name = last != null ? last : "file";
         }
-        if (filterByName && !FlixelFilePicker.matches(name, exts)) {
+        if (filterByName && !FlixelFilePickerHelpers.matches(name, exts)) {
           continue;
         }
         files[count++] = new FlixelAndroidUriFile(resolver, uris[i], name, size);
@@ -218,7 +218,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
         System.arraycopy(files, 0, trimmed, 0, count);
         files = trimmed;
       }
-      FlixelFilePicker.deliver(listener, files);
+      FlixelFilePickerHelpers.deliver(listener, files);
     });
     try {
       Intent intent = new Intent(activity, FlixelAndroidPickerActivity.class);
@@ -230,7 +230,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
     } catch (RuntimeException e) {
       log.error("Failed to open the file picker.", e);
       FlixelAndroidPickerActivity.setPending(null);
-      FlixelFilePicker.deliver(listener, FlixelFilePicker.NO_FILES);
+      FlixelFilePickerHelpers.deliver(listener, FlixelFilePickerHelpers.NO_FILES);
     }
   }
 }

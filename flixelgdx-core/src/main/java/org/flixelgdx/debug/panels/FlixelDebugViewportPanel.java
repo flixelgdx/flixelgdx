@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug;
+package org.flixelgdx.debug.panels;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -29,6 +29,9 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelObjectIntMap;
+import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.debug.FlixelDebugObjectIds;
+import org.flixelgdx.debug.FlixelDebugPicker;
 import org.flixelgdx.debug.remote.FlixelDebugAgent;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
@@ -55,15 +58,14 @@ import org.jetbrains.annotations.Nullable;
  * world size divided by its zoom. Because each object is placed with its own scroll factor, parallax layers and
  * screen-fixed objects land exactly where they appear. Each box has the object's
  * {@linkplain FlixelDebugObjectIds id} (the same id the scene and inspector panels use), its hitbox (measured
- * by {@link FlixelDebugPicker#computeBounds(FlixelObject, FlixelCamera)} with
- * {@linkplain FlixelDebugPicker#setHitboxes(boolean) hitbox mode} on, so a box is exactly what a tap hits), its
- * type name, and a few flags.
+ * by {@link FlixelDebugPicker#computeBounds(FlixelObject, FlixelCamera)} with {@linkplain #hitboxes hitbox mode} on,
+ * so a box is exactly what a tap hits), its type name, and a few flags.
  *
  * <p>A box is the object's collision box, the same one the game outlines when hitboxes are on, not the area its
  * graphic covers. It does not change when a sprite is scaled, rotated, offset, or plays an animation, only when
- * the object moves or its hitbox is resized (for example with {@link FlixelSprite#updateHitbox()}). Boxes come in draw order, bottom first, and only objects that touch the view are
- * listed. At most {@value #MAX_BOXES} boxes are sent; when more objects are on screen, the ones drawn on top are
- * kept.
+ * the object moves or its hitbox is resized (for example with {@link FlixelSprite#updateHitbox()}). Boxes come in
+ * draw order, bottom first, and only objects that touch the view are listed. At most {@value #MAX_BOXES} boxes
+ * are sent; when more objects are on screen, the ones drawn on top are kept.
  *
  * <h2>Sampling</h2>
  *
@@ -155,7 +157,7 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
     this.controls = controls;
     this.inspector = inspector;
     this.ids = inspector.getIds();
-    picker.setHitboxes(true);
+    picker.hitboxes = true;
   }
 
   @Override

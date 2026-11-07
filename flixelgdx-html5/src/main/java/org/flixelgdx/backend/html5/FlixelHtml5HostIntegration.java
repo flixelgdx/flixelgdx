@@ -32,7 +32,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
-import org.flixelgdx.file.FlixelFilePicker;
+import org.flixelgdx.file.FlixelFilePickerHelpers;
 import org.flixelgdx.file.FlixelFileSaveListener;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
@@ -149,8 +149,8 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
       @NotNull String name,
       @NotNull FlixelFileSaveListener listener,
       @NotNull String... extensions) {
-    String[] exts = FlixelFilePicker.normalize(extensions);
-    saveBlob(Int8Array.copyFromJavaArray(data), FlixelFilePicker.withExtension(name, exts), String.join(",", exts),
+    String[] exts = FlixelFilePickerHelpers.normalize(extensions);
+    saveBlob(Int8Array.copyFromJavaArray(data), FlixelFilePickerHelpers.withExtension(name, exts), String.join(",", exts),
         listener::onSave);
   }
 
@@ -240,7 +240,7 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   }
 
   private static void showFilePicker(FlixelFilePickListener listener, String[] extensions, boolean many) {
-    String[] exts = FlixelFilePicker.normalize(extensions);
+    String[] exts = FlixelFilePickerHelpers.normalize(extensions);
     StringBuilder accept = new StringBuilder();
     for (int i = 0; i < exts.length; i++) {
       if (i > 0) {

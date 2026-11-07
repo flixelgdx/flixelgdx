@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.debug;
 
+import org.flixelgdx.debug.panels.FlixelDebugPanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 

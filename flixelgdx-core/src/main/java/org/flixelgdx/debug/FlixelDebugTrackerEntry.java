@@ -24,6 +24,7 @@
 package org.flixelgdx.debug;
 
 import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.debug.panels.FlixelDebugTrackerPanel;
 
 /**
  * Abstract base for custom entries shown in the debugger's <b>Trackers</b> panel.

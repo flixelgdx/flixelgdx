@@ -30,6 +30,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.inspector.FlixelSectionBuilder;
+import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.group.FlixelSpriteGroup;

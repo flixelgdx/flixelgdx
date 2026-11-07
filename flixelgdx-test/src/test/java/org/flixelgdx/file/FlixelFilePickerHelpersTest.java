@@ -34,45 +34,45 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelFilePickerTest {
+class FlixelFilePickerHelpersTest {
 
   @Test
   void normalizeStripsDotsAndCase() {
     assertArrayEquals(new String[] { "png", "jpg", "ogg" },
-        FlixelFilePicker.normalize(new String[] { ".PNG", "*.jpg", "  Ogg " }));
+        FlixelFilePickerHelpers.normalize(new String[] { ".PNG", "*.jpg", "  Ogg " }));
   }
 
   @Test
   void normalizeDropsBlankAndNullEntries() {
-    assertArrayEquals(new String[] { "txt" }, FlixelFilePicker.normalize(new String[] { "", null, " ", "txt" }));
+    assertArrayEquals(new String[] { "txt" }, FlixelFilePickerHelpers.normalize(new String[] { "", null, " ", "txt" }));
   }
 
   @Test
   void normalizeWildcardMeansAnyFile() {
-    assertSame(FlixelFilePicker.NO_FILTER, FlixelFilePicker.normalize(new String[] { "png", "*" }));
-    assertSame(FlixelFilePicker.NO_FILTER, FlixelFilePicker.normalize(new String[] { "*" }));
+    assertSame(FlixelFilePickerHelpers.NO_FILTER, FlixelFilePickerHelpers.normalize(new String[] { "png", "*" }));
+    assertSame(FlixelFilePickerHelpers.NO_FILTER, FlixelFilePickerHelpers.normalize(new String[] { "*" }));
   }
 
   @Test
   void normalizeEmptyOrNullMeansAnyFile() {
-    assertSame(FlixelFilePicker.NO_FILTER, FlixelFilePicker.normalize(null));
-    assertSame(FlixelFilePicker.NO_FILTER, FlixelFilePicker.normalize(new String[0]));
-    assertSame(FlixelFilePicker.NO_FILTER, FlixelFilePicker.normalize(new String[] { "", null }));
+    assertSame(FlixelFilePickerHelpers.NO_FILTER, FlixelFilePickerHelpers.normalize(null));
+    assertSame(FlixelFilePickerHelpers.NO_FILTER, FlixelFilePickerHelpers.normalize(new String[0]));
+    assertSame(FlixelFilePickerHelpers.NO_FILTER, FlixelFilePickerHelpers.normalize(new String[] { "", null }));
   }
 
   @Test
   void matchesComparesExtensionsIgnoringCase() {
     String[] exts = { "png", "jpg" };
-    assertTrue(FlixelFilePicker.matches("hero.PNG", exts));
-    assertTrue(FlixelFilePicker.matches("a.b.jpg", exts));
-    assertFalse(FlixelFilePicker.matches("hero.gif", exts));
-    assertFalse(FlixelFilePicker.matches("png", exts));
-    assertFalse(FlixelFilePicker.matches("hero.", exts));
+    assertTrue(FlixelFilePickerHelpers.matches("hero.PNG", exts));
+    assertTrue(FlixelFilePickerHelpers.matches("a.b.jpg", exts));
+    assertFalse(FlixelFilePickerHelpers.matches("hero.gif", exts));
+    assertFalse(FlixelFilePickerHelpers.matches("png", exts));
+    assertFalse(FlixelFilePickerHelpers.matches("hero.", exts));
   }
 
   @Test
   void matchesAcceptsEverythingWithoutFilter() {
-    assertTrue(FlixelFilePicker.matches("anything", FlixelFilePicker.NO_FILTER));
+    assertTrue(FlixelFilePickerHelpers.matches("anything", FlixelFilePickerHelpers.NO_FILTER));
   }
 
   @Test
@@ -96,12 +96,12 @@ class FlixelFilePickerTest {
   @Test
   void withExtensionAddsFirstExtensionOnlyWhenMissing() {
     String[] exts = { "json", "txt" };
-    assertEquals("level.json", FlixelFilePicker.withExtension("level", exts));
-    assertEquals("/home/me/level.json", FlixelFilePicker.withExtension("/home/me/level", exts));
-    assertEquals("C:\\saves.d\\level.json", FlixelFilePicker.withExtension("C:\\saves.d\\level", exts));
-    assertEquals("level.txt", FlixelFilePicker.withExtension("level.txt", exts));
-    assertEquals("level.png", FlixelFilePicker.withExtension("level.png", exts));
-    assertEquals("level", FlixelFilePicker.withExtension("level", FlixelFilePicker.NO_FILTER));
+    assertEquals("level.json", FlixelFilePickerHelpers.withExtension("level", exts));
+    assertEquals("/home/me/level.json", FlixelFilePickerHelpers.withExtension("/home/me/level", exts));
+    assertEquals("C:\\saves.d\\level.json", FlixelFilePickerHelpers.withExtension("C:\\saves.d\\level", exts));
+    assertEquals("level.txt", FlixelFilePickerHelpers.withExtension("level.txt", exts));
+    assertEquals("level.png", FlixelFilePickerHelpers.withExtension("level.png", exts));
+    assertEquals("level", FlixelFilePickerHelpers.withExtension("level", FlixelFilePickerHelpers.NO_FILTER));
   }
 
   @Test

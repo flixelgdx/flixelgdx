@@ -25,6 +25,7 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.debug.InspectorTestSupport.Custom;
+import org.flixelgdx.debug.panels.FlixelDebugCustomPanel;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogLevel;

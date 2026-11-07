@@ -28,6 +28,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelCamera.FollowStyle;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
+import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.input.FlixelInputDevice;

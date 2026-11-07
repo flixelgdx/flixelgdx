@@ -25,6 +25,7 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
+import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
 
 /**
  * Interface for objects that can draw a debug bounding box when hitboxes are

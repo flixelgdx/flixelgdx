@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.debug;
 
+import org.flixelgdx.debug.panels.FlixelDebugPanelBase;
+import org.flixelgdx.debug.panels.FlixelDebugStatsPanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.jetbrains.annotations.NotNull;

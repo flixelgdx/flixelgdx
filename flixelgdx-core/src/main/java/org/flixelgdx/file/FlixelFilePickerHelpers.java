@@ -36,7 +36,7 @@ import java.util.Locale;
  * <p>Game code normally never needs this class. Backends use it to clean up the extension filter
  * the game passed in and to hand results back on the main thread.
  */
-public final class FlixelFilePicker {
+public final class FlixelFilePickerHelpers {
 
   /** Shared empty filter meaning "any file may be chosen". */
   public static final String[] NO_FILTER = new String[0];
@@ -44,7 +44,7 @@ public final class FlixelFilePicker {
   /** Shared empty result delivered on cancel or failure. */
   public static final FlixelFile[] NO_FILES = new FlixelFile[0];
 
-  private FlixelFilePicker() {}
+  private FlixelFilePickerHelpers() {}
 
   /**
    * Cleans an extension filter so every backend sees the same format.

@@ -30,6 +30,7 @@ import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelBaseAssetManager;
 import org.flixelgdx.debug.ReadbackTestSupport.FakeTexture;
 import org.flixelgdx.debug.ReadbackTestSupport.ReadbackGraphics;
+import org.flixelgdx.debug.panels.FlixelDebugTexturePanel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;

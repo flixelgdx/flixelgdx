@@ -207,9 +207,8 @@ class FlixelDebugPickerTest {
     sprite.setScale(2f);
     sprite.setAngle(30f);
     state.add(sprite);
-    picker.setHitboxes(true);
+    picker.hitboxes = true;
 
-    assertTrue(picker.isHitboxes());
     assertTrue(picker.computeBounds(sprite, cam));
     assertEquals(10f, picker.getBoundsLeft(), 1e-4f);
     assertEquals(10f, picker.getBoundsTop(), 1e-4f);
@@ -218,7 +217,7 @@ class FlixelDebugPickerTest {
     assertSame(sprite, picker.pickInCamera(cam, 12f, 12f));
     assertNull(picker.pickInCamera(cam, 30f, 20f), "inside the graphic but outside the hitbox");
 
-    picker.setHitboxes(false);
+    picker.hitboxes = false;
     assertSame(sprite, picker.pickInCamera(cam, 30f, 20f));
   }
 
