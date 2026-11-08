@@ -26,11 +26,26 @@ package org.flixelgdx.debug;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.debug.panels.*;
+import org.flixelgdx.debug.feeds.FlixelDebugCapture;
+import org.flixelgdx.debug.feeds.FlixelDebugConsole;
+import org.flixelgdx.debug.feeds.FlixelDebugControls;
+import org.flixelgdx.debug.feeds.FlixelDebugFeed;
+import org.flixelgdx.debug.feeds.FlixelDebugInput;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
+import org.flixelgdx.debug.feeds.FlixelDebugLogs;
+import org.flixelgdx.debug.feeds.FlixelDebugSave;
+import org.flixelgdx.debug.feeds.FlixelDebugScene;
+import org.flixelgdx.debug.feeds.FlixelDebugStats;
+import org.flixelgdx.debug.feeds.FlixelDebugTextures;
+import org.flixelgdx.debug.feeds.FlixelDebugTrackers;
+import org.flixelgdx.debug.feeds.FlixelDebugViewport;
+import org.flixelgdx.debug.feeds.FlixelDebugWatches;
+import org.flixelgdx.debug.panels.FlixelDebugDefaultPanels;
 import org.flixelgdx.debug.remote.FlixelDebugAgent;
 import org.flixelgdx.debug.remote.FlixelDebugEndpoint;
 import org.flixelgdx.debug.remote.FlixelDebugTransport;
 import org.flixelgdx.debug.remote.FlixelNoopDebugTransport;
+import org.flixelgdx.debug.ui.FlixelDebugPanels;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.jetbrains.annotations.NotNull;
@@ -44,11 +59,15 @@ import org.jetbrains.annotations.Nullable;
  * exposed as the static field {@link Flixel#debug}, mirroring how {@link Flixel#sound},
  * {@link Flixel#assets}, and friends work.
  *
- * <p>The debugger is made of <strong>panels</strong>. A panel samples one kind of data from the game
- * (performance numbers, log lines, watched values, and so on) and knows how to encode it for the
- * remote debugger app. Think of the manager as the front desk of a hospital: it keeps the list of
- * departments (the panels), makes sure each one gets a turn every frame, and lets staff look one up by
- * name. The built-in panels are ready-made fields:
+ * <p>The debugger is made of two layers. Think of a hospital: the <strong>feeds</strong> are the departments that do
+ * the actual work (measuring, recording, changing things), and the <strong>panels</strong> are the screens in the
+ * waiting room that show what the departments report and let visitors press buttons. The manager is the front desk
+ * that owns both.
+ *
+ * <h2>Feeds</h2>
+ *
+ * <p>Each feed samples one kind of data from the game and holds the logic to change it. Game code talks to them
+ * through these fields:
  *
  * <ul>
  *   <li>{@link #stats}: frame rate, frame time, draw calls, memory, and the camera.</li>
@@ -66,7 +85,13 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #input}: keys, pointer, scroll, and text injected on behalf of the debugger app.</li>
  * </ul>
  *
- * <p>Example:
+ * <p>Feeds also send their data, in a fixed format, to programs that subscribe to it, such as the app's tools for
+ * AI agents.
+ *
+ * <h2>Panels</h2>
+ *
+ * <p>{@link #panels} lists every tab the debugger app shows. Every panel is built by the game out of widgets, the
+ * built-in ones included, so you can redesign, replace, or remove any of them, or add your own, and the app follows:
  *
  * <pre>{@code
  * Flixel.debug.watches.addFloat("Player X", player::getX);
@@ -79,24 +104,25 @@ import org.jetbrains.annotations.Nullable;
  * Flixel.debug.inspector.register(Player.class, "Player", b -> b
  *     .intProp("Health", Player::getHealth, Player::setHealth));
  *
- * // Add a panel with rows and buttons.
- * Flixel.debug.register(new FlixelDebugCustomPanel("ai", "Enemy AI", p -> p
- *     .intProp("Active enemies", () -> enemies.countLiving())
- *     .action("Kill all", enemies::killAll)));
+ * // Add a panel of your own.
+ * Flixel.debug.panels.register(new FlixelDebugPanel("game.ai", "Enemy AI", FlixelDebugUi.column(
+ *     new FlixelDebugProperties().section("AI", s -> s
+ *         .intProp("Active enemies", enemies::countLiving)
+ *         .floatProp("Aggression", () -> ai.aggression, v -> ai.aggression = v)),
+ *     FlixelDebugUi.button("Kill all", enemies::killAll))));
  *
- * // Add a fully custom panel and find it again later.
- * Flixel.debug.register(new ScorePanel());
- * ScorePanel score = Flixel.debug.get("custom.score", ScorePanel.class);
+ * // Replace a built-in panel with your own design under the same id.
+ * Flixel.debug.panels.replace(new MySavePanel());
  * }</pre>
  *
- * <p>Panels are only updated while the game runs in debug mode, so they cost nothing in release builds.
+ * <p>Feeds and panels are only updated while the game runs in debug mode, so they cost nothing in release builds.
  *
  * <h2>The remote debugger app</h2>
  *
- * <p>In debug mode the manager also runs a {@link FlixelDebugAgent} that sends the panels to the debugger app over
- * the installed {@link FlixelDebugTransport}. A platform launcher installs the transport and the address of the app
- * in {@link #defaultTransport} and {@link #defaultEndpoint} before the game starts. Without a transport the agent
- * does not run.
+ * <p>In debug mode the manager also runs a {@link FlixelDebugAgent} that talks to the debugger app over the installed
+ * {@link FlixelDebugTransport}. A platform launcher installs the transport and the address of the app in
+ * {@link #defaultTransport} and {@link #defaultEndpoint} before the game starts. Without a transport the agent does
+ * not run.
  *
  * <h2>Thread safety</h2>
  *
@@ -122,30 +148,30 @@ public class FlixelDebugManager {
 
   /**
    * Extra {@link FlixelBatch} instances registered by game code via {@link #trackBatch(FlixelBatch)}.
-   * The framework's own batch is counted separately by the stats panel, so only user-supplied
+   * The framework's own batch is counted separately by the stats feed, so only user-supplied
    * batches live here.
    */
   private final FlixelArray<FlixelBatch> trackedBatches = new FlixelArray<>(false, 4);
 
-  /** Every registered panel, in registration order. */
-  private final FlixelArray<FlixelDebugPanel> panels = new FlixelArray<>();
+  /** Every feed, in the order of the feed list sent to the app. */
+  private final FlixelArray<FlixelDebugFeed> feeds = new FlixelArray<>();
 
-  /** The performance panel: frame rate, frame time, draw calls, memory, and the camera. */
-  public final FlixelDebugStatsPanel stats;
+  /** The performance feed: frame rate, frame time, draw calls, memory, and the camera. */
+  public final FlixelDebugStats stats;
 
-  /** The log panel: the most recent log lines. */
-  public final FlixelDebugLogPanel logs;
+  /** The log feed: the most recent log lines. */
+  public final FlixelDebugLogs logs;
 
   /**
-   * The watch panel: live values shown in the debugger.
+   * The watch feed: live values shown in the debugger.
    * <pre>{@code
    * Flixel.debug.watches.addInt("Score", () -> score);
    * }</pre>
    */
-  public final FlixelDebugWatchPanel watches;
+  public final FlixelDebugWatches watches;
 
   /**
-   * The save panel: view and edit the values of {@link Flixel#save} (or of another listed save), then save or erase
+   * The save feed: view and edit the values of {@link Flixel#save} (or of another listed save), then save or erase
    * them.
    * <pre>{@code
    * Flixel.debug.save.add(profile); // Lets the app switch to a second save.
@@ -153,81 +179,81 @@ public class FlixelDebugManager {
    * Flixel.debug.save.saveNow();
    * }</pre>
    */
-  public final FlixelDebugSavePanel save;
+  public final FlixelDebugSave save;
 
   /**
-   * The viewport panel: a live map of every object a camera draws, so the debugger app can pick objects, drag
+   * The viewport feed: a live map of every object a camera draws, so the debugger app can pick objects, drag
    * them, and fly the camera without the device's keyboard or mouse.
    * <pre>{@code
    * Flixel.debug.viewport.setCameraIndex(1);
    * Flixel.debug.viewport.pan(50f, 0f);
    * }</pre>
    */
-  public final FlixelDebugViewportPanel viewport;
+  public final FlixelDebugViewport viewport;
 
   /**
-   * The capture panel: a picture of the game's finished frame on request, for the debugger app.
+   * The capture feed: a picture of the game's finished frame on request, for the debugger app.
    * <pre>{@code
    * Flixel.debug.capture.request(1, 640);
    * }</pre>
    */
-  public final FlixelDebugCapturePanel capture;
+  public final FlixelDebugCapture capture;
 
   /**
-   * The input panel: presses keys, moves and clicks a pointer, scrolls, and types text in the game on behalf of the
+   * The input feed: presses keys, moves and clicks a pointer, scrolls, and types text in the game on behalf of the
    * debugger app, through the same input managers real input uses.
    * <pre>{@code
    * Flixel.debug.input.key(FlixelKey.SPACE, true);
    * Flixel.debug.input.click(Flixel.debug.ids.idOf(playButton), FlixelMouseButton.LEFT);
    * }</pre>
    */
-  public final FlixelDebugInputPanel input;
+  public final FlixelDebugInput input;
 
-  /** The tracker panel: named groups of values. */
-  public final FlixelDebugTrackerPanel trackers;
+  /** The tracker feed: named groups of values. */
+  public final FlixelDebugTrackers trackers;
 
   /**
-   * The texture panel: every loaded texture with its size, GPU memory, users, and a thumbnail on request.
+   * The texture feed: every loaded texture with its size, GPU memory, users, and a thumbnail on request.
    * <pre>{@code
    * Flixel.debug.textures.refresh();
    * long bytes = Flixel.debug.textures.getTotalBytes();
    * }</pre>
    */
-  public final FlixelDebugTexturePanel textures;
+  public final FlixelDebugTextures textures;
 
   /**
-   * The control panel: pause, step, hitboxes, the free camera, picking, and debugger settings.
+   * The control feed: pause, step, hitboxes, the free camera, picking, and debugger settings.
    * <pre>{@code
    * Flixel.debug.controls.setPaused(true);
    * }</pre>
    */
-  public final FlixelDebugControlsPanel controls;
+  public final FlixelDebugControls controls;
 
   /**
-   * The console panel. Register custom commands and run command lines through it:
+   * The console feed. Register custom commands and run command lines through it:
    * <pre>{@code
    * Flixel.debug.console.register("god", args -> player.setInvincible(true));
    * Flixel.debug.console.execute("god");
    * }</pre>
    */
-  public final FlixelDebugConsolePanel console;
+  public final FlixelDebugConsole console;
 
   /**
-   * The scene panel: the tree of the current state, its open sub states, and their groups.
+   * The scene feed: the tree of the current state, its open sub states, and their groups.
    * <pre>{@code
    * Flixel.debug.scene.refresh();
    * }</pre>
    */
-  public final FlixelDebugScenePanel scene;
+  public final FlixelDebugScene scene;
 
   /**
-   * The inspector panel: select an object and see or edit its properties.
+   * The inspector feed: select an object and see or edit its properties.
    * <pre>{@code
    * Flixel.debug.inspector.select(player);
    * Flixel.debug.inspector.register(Player.class, "Player", b -> b.intProp("Health", Player::getHealth));
    * }</pre>
    */
-  public final FlixelDebugInspectorPanel inspector;
+  public final FlixelDebugInspector inspector;
 
   /**
    * The registry that gives objects the numeric ids the debugger app refers to them by. The inspector and the
@@ -235,109 +261,57 @@ public class FlixelDebugManager {
    */
   public final FlixelDebugObjectIds ids;
 
-  /** Goes up whenever a panel is registered or unregistered. */
-  private long panelRevision;
+  /**
+   * Every panel the debugger app shows, the built-in ones included. Register, replace, or remove panels here.
+   * <pre>{@code
+   * Flixel.debug.panels.register(new EnemyPanel(enemies));
+   * Flixel.debug.panels.unregister("trackers");
+   * }</pre>
+   */
+  public final FlixelDebugPanels panels;
 
   private FlixelDebugTransport transport = defaultTransport;
   private FlixelDebugEndpoint endpoint = defaultEndpoint;
   private FlixelDebugAgent agent;
   private boolean started;
 
-  /** Creates the debug manager with all of its built-in panels registered. */
+  /** Creates the debug manager with all of its feeds and built-in panels. */
   public FlixelDebugManager() {
     ids = new FlixelDebugObjectIds();
-    inspector = new FlixelDebugInspectorPanel(ids);
-    controls = new FlixelDebugControlsPanel(inspector);
-    stats = new FlixelDebugStatsPanel(controls, this);
-    logs = new FlixelDebugLogPanel();
-    watches = new FlixelDebugWatchPanel();
-    trackers = new FlixelDebugTrackerPanel();
-    textures = new FlixelDebugTexturePanel(ids);
-    console = new FlixelDebugConsolePanel(this);
-    save = new FlixelDebugSavePanel();
-    scene = new FlixelDebugScenePanel(ids, inspector);
-    viewport = new FlixelDebugViewportPanel(controls, inspector);
-    capture = new FlixelDebugCapturePanel();
-    input = new FlixelDebugInputPanel(viewport, ids);
+    inspector = new FlixelDebugInspector(ids);
+    controls = new FlixelDebugControls(inspector);
+    stats = new FlixelDebugStats(controls, this);
+    logs = new FlixelDebugLogs();
+    watches = new FlixelDebugWatches();
+    trackers = new FlixelDebugTrackers();
+    textures = new FlixelDebugTextures(ids);
+    console = new FlixelDebugConsole(this);
+    save = new FlixelDebugSave();
+    scene = new FlixelDebugScene(ids, inspector);
+    viewport = new FlixelDebugViewport(controls, inspector);
+    capture = new FlixelDebugCapture();
+    input = new FlixelDebugInput(viewport, ids);
     inspector.setFocusHandler(controls::goTo);
     FlixelDebugDefaultSections.register(inspector);
-    register(stats);
-    register(logs);
-    register(watches);
-    register(trackers);
-    register(textures);
-    register(controls);
-    register(console);
-    register(scene);
-    register(inspector);
-    register(save);
-    register(viewport);
-    register(capture);
-    register(input);
+    feeds.add(stats);
+    feeds.add(logs);
+    feeds.add(watches);
+    feeds.add(trackers);
+    feeds.add(textures);
+    feeds.add(controls);
+    feeds.add(console);
+    feeds.add(scene);
+    feeds.add(inspector);
+    feeds.add(save);
+    feeds.add(viewport);
+    feeds.add(capture);
+    feeds.add(input);
+    panels = new FlixelDebugPanels(this);
+    FlixelDebugDefaultPanels.addTo(this);
   }
 
   /**
-   * Registers a panel. The panel is updated every frame from now on and listed to the debugger app.
-   *
-   * @param panel The panel to add.
-   * @param <T> The panel type, so the call can be chained: {@code ScorePanel p = Flixel.debug.register(new ScorePanel())}.
-   * @return The same panel.
-   * @throws IllegalArgumentException If a panel with the same id is already registered.
-   */
-  public <T extends FlixelDebugPanel> T register(@NotNull T panel) {
-    if (indexOf(panel.getId()) >= 0) {
-      throw new IllegalArgumentException("A debug panel with the id '" + panel.getId() + "' is already registered.");
-    }
-    panels.add(panel);
-    panelRevision++;
-    return panel;
-  }
-
-  /**
-   * Removes a panel.
-   *
-   * @param id The id of the panel to remove.
-   * @return The removed panel, or {@code null} when no panel has that id.
-   */
-  @Nullable
-  public FlixelDebugPanel unregister(@NotNull String id) {
-    int index = indexOf(id);
-    if (index < 0) {
-      return null;
-    }
-    FlixelDebugPanel removed = panels.removeIndex(index);
-    panelRevision++;
-    return removed;
-  }
-
-  /**
-   * Finds a panel by id.
-   *
-   * @param id The id to look for.
-   * @return The panel, or {@code null} when no panel has that id.
-   */
-  @Nullable
-  public FlixelDebugPanel get(@NotNull String id) {
-    int index = indexOf(id);
-    return index >= 0 ? panels.get(index) : null;
-  }
-
-  /**
-   * Finds a panel by id and checks its type.
-   *
-   * @param id The id to look for.
-   * @param type The class the panel must be an instance of.
-   * @param <T> The panel type.
-   * @return The panel, or {@code null} when no panel has that id or it is not a {@code type}.
-   */
-  @Nullable
-  public <T extends FlixelDebugPanel> T get(@NotNull String id, @NotNull Class<T> type) {
-    FlixelDebugPanel panel = get(id);
-    return type.isInstance(panel) ? type.cast(panel) : null;
-  }
-
-  /**
-   * Starts the debugger for a running game: the log panel begins to collect messages.
+   * Starts the debugger for a running game: the log feed begins to collect messages.
    *
    * <p>{@link FlixelGame} calls this when it starts in debug mode. When a transport is installed, this also opens
    * the connection to the debugger app (in the background).
@@ -371,7 +345,7 @@ public class FlixelDebugManager {
   }
 
   /**
-   * Updates every enabled panel once.
+   * Updates every enabled feed, then every open panel, then talks to the debugger app.
    *
    * <p>{@link FlixelGame} calls this every frame while the game runs in debug mode, even while the game is
    * paused. It does not allocate.
@@ -379,20 +353,21 @@ public class FlixelDebugManager {
    * @param elapsed Real seconds since the last frame, not scaled by {@code Flixel.timeScale}.
    */
   public void update(float elapsed) {
-    for (int i = 0; i < panels.getSize(); i++) {
-      FlixelDebugPanel panel = panels.get(i);
-      if (panel.isEnabled()) {
-        panel.update(elapsed);
+    for (int i = 0, n = feeds.getSize(); i < n; i++) {
+      FlixelDebugFeed feed = feeds.get(i);
+      if (feed.isEnabled()) {
+        feed.update(elapsed);
       }
     }
+    panels.update(elapsed);
     if (agent != null) {
       agent.update(elapsed);
     }
   }
 
   /**
-   * Shuts the debugger down with the game: the log panel stops collecting messages and every panel is
-   * reset.
+   * Shuts the debugger down with the game: the log feed stops collecting messages, every feed is reset, and every
+   * panel is closed.
    *
    * <p>{@link FlixelGame} calls this when it is destroyed.
    */
@@ -400,14 +375,15 @@ public class FlixelDebugManager {
     started = false;
     stopAgent();
     logs.detach();
-    for (int i = 0; i < panels.getSize(); i++) {
-      panels.get(i).reset();
+    for (int i = 0, n = feeds.getSize(); i < n; i++) {
+      feeds.get(i).reset();
     }
+    panels.closeAll();
   }
 
   /**
    * Registers a {@link FlixelBatch} whose {@link FlixelBatch#getRenderCalls()} will be included in
-   * the debugger's total render-call count shown in the stats panel. The framework's own batch is
+   * the debugger's total render-call count of the stats feed. The framework's own batch is
    * already counted automatically; call this for any additional batches your game creates.
    *
    * <p>Registering a batch that is already tracked is a no-op. The batch must remain valid (not
@@ -482,15 +458,6 @@ public class FlixelDebugManager {
     }
   }
 
-  private int indexOf(String id) {
-    for (int i = 0, n = panels.getSize(); i < n; i++) {
-      if (panels.get(i).getId().equals(id)) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
   public FlixelArray<FlixelBatch> getTrackedBatches() {
     return trackedBatches;
   }
@@ -526,35 +493,39 @@ public class FlixelDebugManager {
   }
 
   /**
-   * Returns how many panels are registered. Together with {@link #getPanel(int)} this walks the panels in
-   * registration order without creating an iterator.
+   * Returns how many feeds exist. Together with {@link #getFeed(int)} this walks the feeds in order without creating
+   * an iterator.
    *
-   * @return The panel count.
+   * @return The feed count.
    */
-  public int getPanelCount() {
-    return panels.getSize();
+  public int getFeedCount() {
+    return feeds.getSize();
   }
 
   /**
-   * Returns the panel at the given position in registration order.
+   * Returns the feed at the given position.
    *
-   * @param index A position from 0 to {@link #getPanelCount()} minus 1.
-   * @return The panel.
+   * @param index A position from 0 to {@link #getFeedCount()} minus 1.
+   * @return The feed.
    */
   @NotNull
-  public FlixelDebugPanel getPanel(int index) {
-    return panels.get(index);
+  public FlixelDebugFeed getFeed(int index) {
+    return feeds.get(index);
   }
 
   /**
-   * Returns a number that goes up whenever a panel is registered or unregistered.
+   * Finds a feed by id.
    *
-   * <p>The network agent compares it with the value it saw last and re-sends the panel list when it
-   * differs.
-   *
-   * @return The panel list revision.
+   * @param id The id to look for, for example {@code "scene"}.
+   * @return The feed, or {@code null} when no feed has that id.
    */
-  public long getPanelRevision() {
-    return panelRevision;
+  @Nullable
+  public FlixelDebugFeed getFeed(@NotNull String id) {
+    for (int i = 0, n = feeds.getSize(); i < n; i++) {
+      if (feeds.get(i).getId().equals(id)) {
+        return feeds.get(i);
+      }
+    }
+    return null;
   }
 }

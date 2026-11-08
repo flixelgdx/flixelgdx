@@ -12,15 +12,17 @@ and assert the same values.
 
 Current version: **1.0**.
 
+
 ## Table of contents
 
 1. [Transport](#transport)
 2. [Encoding](#encoding)
 3. [Messages](#messages)
-4. [Property values](#property-values)
-5. [Built-in panels](#built-in-panels)
-6. [Custom panels](#custom-panels)
-7. [Versioning](#versioning)
+4. [Values](#values)
+5. [Panels](#panels)
+6. [Widgets](#widgets)
+7. [Feeds](#feeds)
+8. [Versioning](#versioning)
 
 ---
 
@@ -45,8 +47,25 @@ Connection flow:
 
 1. The game connects and sends `HELLO`.
 2. The app replies with `HELLO_ACK`. If the major versions differ, the app closes the connection.
-3. The game sends `PANEL_LIST`, then `PANEL_DATA` messages for panels.
-4. The app sends `PING` about once a second; the game answers each with `PONG`.
+3. The game sends `PANEL_LIST` and `FEED_LIST`.
+4. The app sends `PANEL_OPEN` for every panel it shows and `FEED_SUBSCRIBE` for every feed it needs.
+5. The game sends a `PANEL_TREE` for every open panel, then `PANEL_PATCH` messages whenever an open panel changes,
+   and `FEED_DATA` messages for subscribed feeds.
+6. The app sends `PANEL_EVENT` when a person uses a widget and `FEED_ACTION` when a tool (such as an AI agent)
+   asks the game for something.
+7. The app sends `PING` about once a second; the game answers each with `PONG`.
+
+### Panels and feeds
+
+The game talks to the app through two separate channels:
+
+- **Panels** are the user interface. The game builds every panel, the built-in ones included, out of
+  [widgets](#widgets) and decides what every button, row, and checkbox does. The app only draws what it is told and
+  reports what the person did. It has no built-in knowledge of any panel, so a game can replace, remove, or add
+  panels freely.
+- **Feeds** are typed data for programs, such as the app's tools for AI agents. A feed has a fixed format (the scene
+  tree, the viewport boxes, the save rows, and so on) and fixed actions. Feeds have no user interface meaning, so
+  replacing a panel never breaks a tool that reads a feed. A feed only sends data while the app subscribes to it.
 
 ## Encoding
 
@@ -68,19 +87,27 @@ All numbers are **little-endian**.
 There is no padding and no alignment. A "row" or "entry" below is just its fields written one after
 another.
 
+
 ## Messages
 
 Every message starts with a `u8` **message type**.
 
-| Code | Name           | Direction     | Purpose |
-|------|----------------|---------------|---------|
-| 1    | `HELLO`        | game to app   | First message of every connection. |
-| 2    | `HELLO_ACK`    | app to game   | Answers `HELLO`. |
-| 3    | `PANEL_LIST`   | game to app   | The panels that currently exist. |
-| 4    | `PANEL_DATA`   | game to app   | A payload for one panel. |
-| 5    | `PANEL_ACTION` | app to game   | A user action for one panel. |
-| 6    | `PING`         | app to game   | Round-trip probe. |
-| 7    | `PONG`         | game to app   | Echo of `PING`. |
+| Code | Name             | Direction     | Purpose |
+|------|------------------|---------------|---------|
+| 1    | `HELLO`          | game to app   | First message of every connection. |
+| 2    | `HELLO_ACK`      | app to game   | Answers `HELLO`. |
+| 3    | `FEED_LIST`      | game to app   | The feeds that exist. |
+| 4    | `FEED_DATA`      | game to app   | A payload for one feed. |
+| 5    | `FEED_ACTION`    | app to game   | An action for one feed. |
+| 6    | `PING`           | app to game   | Round-trip probe. |
+| 7    | `PONG`           | game to app   | Echo of `PING`. |
+| 8    | `PANEL_LIST`     | game to app   | The panels that currently exist. |
+| 9    | `PANEL_TREE`     | game to app   | The whole widget tree of one panel. |
+| 10   | `PANEL_PATCH`    | game to app   | Changes to the widgets of one panel. |
+| 11   | `PANEL_EVENT`    | app to game   | Something the person did with a widget. |
+| 12   | `PANEL_OPEN`     | app to game   | Starts or stops the updates of one panel. |
+| 13   | `FEED_SUBSCRIBE` | app to game   | Starts or stops the data of one feed. |
+| 14   | `APP_REQUEST`    | game to app   | Asks the app to show a panel, reset its layout, and so on. |
 
 ### HELLO (1)
 
@@ -104,68 +131,44 @@ Every message starts with a `u8` **message type**.
 
 The app closes the connection when the majors differ. Minors may differ freely.
 
-### PANEL_LIST (3)
-
-`array<panel>`, where each panel is:
-
-| Field        | Type     | Notes |
-|--------------|----------|-------|
-| `index`      | `u16`    | Used by all later messages to refer to this panel. |
-| `id`         | `string` | Stable identifier, for example `stats` or `custom.player`. |
-| `name`       | `string` | Display name. |
-| `kind`       | `u8`     | A panel kind (see below). |
-
-The list is re-sent whenever panels are registered or unregistered. Indices may change between lists,
-so always match panels by `id`.
-
-Panel kinds:
-
-| Code | Name        | Built-in `id` | Payload |
-|------|-------------|---------------|---------|
-| 0    | `CUSTOM`    | any           | [Custom panels](#custom-panels) |
-| 1    | `STATS`     | `stats`       | [stats](#stats) |
-| 2    | `LOGS`      | `logs`        | [logs](#logs) |
-| 3    | `WATCHES`   | `watches`     | [watches](#watches) |
-| 4    | `TRACKERS`  | `trackers`    | [trackers](#trackers) |
-| 5    | `TEXTURES`  | `textures`    | [textures](#textures) |
-| 6    | `CONTROLS`  | `controls`    | [controls](#controls) |
-| 7    | `CONSOLE`   | `console`     | [console](#console) |
-| 8    | `SCENE`     | `scene`       | [scene](#scene) |
-| 9    | `INSPECTOR` | `inspector`   | [inspector](#inspector) |
-| 10   | `SAVE`      | `save`        | [save](#save) |
-| 11   | `VIEWPORT`  | `viewport`    | [viewport](#viewport) |
-| 12   | `CAPTURE`   | `capture`     | [capture](#capture) |
-| 13   | `INPUT`     | `input`       | [input](#input) |
-
-### PANEL_DATA (4)
-
-| Field   | Type  |
-|---------|-------|
-| `panel` | `u16` (panel index) |
-| payload | defined by the panel kind |
-
-### PANEL_ACTION (5)
-
-| Field    | Type  |
-|----------|-------|
-| `panel`  | `u16` (panel index) |
-| `action` | `u8` action code (defined per panel kind) |
-| payload  | defined by the action; empty when the action lists no fields |
-
-Action codes are scoped to the panel kind, so `1` means different things on different panels.
-
 ### PING (6) and PONG (7)
+
+`PING`:
+
+| Field   | Type  | Notes |
+|---------|-------|-------|
+| `nonce` | `i64` | |
+| `rttMs` | `f32` | The round trip the app measured for the previous `PING`, in milliseconds, or `-1` when it has none yet. |
+
+`PONG`:
 
 | Field   | Type  |
 |---------|-------|
 | `nonce` | `i64` |
 
 The app sends `PING` about once a second with any nonce it likes (a timestamp works well). The game
-answers with `PONG` carrying the same nonce. The app measures the round trip itself.
+answers with `PONG` carrying the same nonce. The app measures the round trip itself and tells the game the result
+in the next `PING`, so the game's own panels can show it.
 
-## Property values
+### APP_REQUEST (14)
 
-Inspector rows, watches, trackers, save rows, and custom panels share one value encoding.
+| Field     | Type | Notes |
+|-----------|------|-------|
+| `request` | `u8` | Below. |
+| fields    |      | Defined by the request. |
+
+| Code | Name           | Fields | What the app does |
+|------|----------------|--------|-------------------|
+| 1    | `SHOW_PANEL`   | `string id` | Shows the panel with that id and brings it to the front. |
+| 2    | `HIDE_PANEL`   | `string id` | Closes the panel with that id (the person can open it again). |
+| 3    | `RESET_LAYOUT` | none | Puts every panel back where its `dock` says. |
+| 4    | `NOTIFY`       | `u8 tone`, `string text` | Shows a short message to the person. `tone` is a [tone](#style). |
+
+An unknown id is ignored.
+
+## Values
+
+Widget properties, event arguments, inspector rows, watches, trackers, and save rows share one value encoding.
 
 A **value** is a `u8` kind followed by the data:
 
@@ -178,16 +181,381 @@ A **value** is a `u8` kind followed by the data:
 | 5    | `DOUBLE` | `f64` |
 | 6    | `STRING` | `string` |
 | 7    | `ERROR`  | `string` message; used when reading the value threw an exception |
+| 8    | `NULL`   | nothing; "no value" |
+| 9    | `BYTES`  | `bytes` |
+| 10   | `LIST`   | `array<value>`; the items may have different kinds |
 
 A **property row** is `string name`, `value`, `bool editable`.
 
 `ERROR` values are only ever sent by the game. The app never sends them.
 
-## Built-in panels
+Below, `LIST [a, b, c]` means a `LIST` value whose items are `a`, `b`, and `c` in that order, and `LIST<x>` means a
+`LIST` value whose items are all `x`. A reader treats a missing item at the end of a list as its default and ignores
+extra items at the end, so later versions can add items.
 
-Unless a panel says otherwise, it has a single payload kind and no subtype byte. A panel with more than
+## Panels
+
+A panel is one dockable tab of the app. The game builds its content as a tree of [widgets](#widgets) and sends it;
+the app draws the tree and sends back what the person does. All logic lives in the game.
+
+### PANEL_LIST (8)
+
+`array<panel>`, where each panel is:
+
+| Field   | Type     | Notes |
+|---------|----------|-------|
+| `index` | `u16`    | Used by all later panel messages to refer to this panel. |
+| `id`    | `string` | Stable identifier, for example `logs` or `my.enemies`. |
+| `title` | `string` | The name on the panel's tab. |
+| `dock`  | `u8`     | Where the panel goes the first time: `0` the middle, `1` left, `2` right, `3` bottom. |
+| `shown` | `bool`   | Whether the panel is shown the first time the app sees its id. |
+
+The list is re-sent whenever panels are registered, unregistered, or replaced. Indices may change between lists,
+so always match panels by `id`. `dock` and `shown` only matter for an id the app has never placed; after that the
+app's saved layout wins.
+
+**After every `PANEL_LIST` the game treats every panel as closed.** The app answers each list with a `PANEL_OPEN`
+for every panel it shows.
+
+### PANEL_OPEN (12)
+
+| Field   | Type   |
+|---------|--------|
+| `panel` | `u16`  |
+| `open`  | `bool` |
+
+An open panel is updated and sent; a closed one is not. Opening a panel makes the game send its `PANEL_TREE` (in the
+next frame), even when the panel was already open, so the app can also use it to ask for a fresh tree. The app keeps
+a panel open while it is visible, and may also open it for a tool that reads it.
+
+### PANEL_TREE (9)
+
+| Field   | Type     |
+|---------|----------|
+| `panel` | `u16`    |
+| `root`  | `widget` |
+
+A `widget` is:
+
+| Field      | Type            | Notes |
+|------------|-----------------|-------|
+| `type`     | `u8`            | A [widget type](#widget-types). |
+| `id`       | `i32`           | Positive and unique inside the panel. |
+| `name`     | `string`        | An optional stable name for tools, for example `pause`. Empty when the widget has none. |
+| props      | `array<prop>`   | `u8 key`, `value`. Only properties that differ from their default are sent. |
+| children   | `array<widget>` | Empty for widgets that hold no other widgets. |
+
+A tree replaces everything the app knew about the panel. A widget keeps its `id` for as long as it exists, so the
+app can carry over what only the app knows (scroll position, expanded tree nodes, half-typed text, column order)
+from the old tree to the new one by matching ids. The game sends a new tree when it adds or removes widgets and a
+patch when it only changes properties.
+
+### PANEL_PATCH (10)
+
+| Field   | Type        |
+|---------|-------------|
+| `panel` | `u16`       |
+| ops     | `array<op>` |
+
+An `op` is `i32 widget`, `u8 code`, `u8 key`, `value`:
+
+| Code | Name     | Meaning |
+|------|----------|---------|
+| 1    | `SET`    | The value replaces the property. |
+| 2    | `APPEND` | The value is a `LIST`; its items are added to the end of the property, which is a `LIST` too. When the widget has a `LIMIT`, the app then drops items from the front until at most `LIMIT` remain. |
+
+Ops apply in order. An op for an unknown widget id is ignored. A patch never arrives before the panel's first tree.
+
+### PANEL_EVENT (11)
+
+| Field    | Type           |
+|----------|----------------|
+| `panel`  | `u16`          |
+| `widget` | `i32`          |
+| `event`  | `u8`           |
+| args     | `array<value>` |
+
+| Code | Name       | Args | Sent by |
+|------|------------|------|---------|
+| 1    | `CLICK`    | none | `BUTTON` |
+| 2    | `CHANGE`   | the new `VALUE` (or `TEXT` for a text box) | `CHECKBOX`, `TOGGLE`, `DROPDOWN`, `TEXT_BOX`, `NUMBER`, `SLIDER`, `COLOR`, `TABS`, `EXPANDER`, `SPLIT` |
+| 3    | `SUBMIT`   | `STRING text` | `TEXT_BOX` (Enter) |
+| 4    | `SELECT`   | `LONG id`, or `NULL` when the selection was cleared | `TABLE`, `TREE` |
+| 5    | `ACTIVATE` | `LONG id` | `TABLE`, `TREE` (double click or Enter on an item) |
+| 6    | `MENU`     | `LONG id`, `INT item` (the position in `MENU`) | `TABLE`, `TREE` |
+| 7    | `EDIT`     | `INT section`, `INT row`, the new value | `PROPERTIES` |
+| 8    | `PICK`     | `FLOAT x`, `FLOAT y` (view units) | `CANVAS` |
+| 9    | `DRAG`     | `LONG id`, `FLOAT dx`, `FLOAT dy` (view units) | `CANVAS` |
+| 10   | `PAN`      | `FLOAT dx`, `FLOAT dy` (view units) | `CANVAS` |
+| 11   | `ZOOM`     | `FLOAT factor`, `FLOAT x`, `FLOAT y` (view units) | `CANVAS` |
+
+The app shows the result of an input right away (a ticked checkbox stays ticked) and does not wait for the game. When
+the game does not accept a value, it sends the property again with the value it kept, and the app shows that. An
+event for an unknown widget, or with arguments of the wrong kind, is ignored.
+
+## Widgets
+
+### Common properties
+
+| Key | Name      | Value    | Default | Meaning |
+|-----|-----------|----------|---------|---------|
+| 1   | `VISIBLE` | `BOOL`   | true    | A hidden widget takes no space. |
+| 2   | `ENABLED` | `BOOL`   | true    | A disabled widget is drawn dimmed and sends no events. |
+| 3   | `TOOLTIP` | `STRING` | empty   | Shown when the pointer rests on the widget. |
+| 4   | `WIDTH`   | `FLOAT`  | 0       | Preferred width in device-independent pixels; `0` sizes to the content. |
+| 5   | `HEIGHT`  | `FLOAT`  | 0       | Preferred height; `0` sizes to the content. |
+| 6   | `GROW`    | `FLOAT`  | 0       | Inside a `STACK`, the share of the leftover space this child takes. `0` takes none. |
+| 7   | `STYLE`   | `INT`    | 0       | See [Style](#style). |
+
+### Style
+
+`STYLE` is a set of bits:
+
+| Bits | Meaning |
+|------|---------|
+| 0-3  | The **tone**: `0` normal, `1` muted, `2` accent, `3` success, `4` warning, `5` error. |
+| 4    | Bold. |
+| 5    | Monospaced font. |
+| 6    | Heading (a larger, bold font for titles). |
+| 7    | Italic. |
+| 8    | `TREE` nodes only: the node starts expanded. |
+
+The app picks the actual colors and fonts so that every panel matches its theme.
+
+### Widget-specific properties
+
+| Key | Name              | Value |
+|-----|-------------------|-------|
+| 16  | `TEXT`            | `STRING` |
+| 17  | `VALUE`           | depends on the widget |
+| 18  | `ITEMS`           | `LIST`, depends on the widget |
+| 19  | `MIN`             | `DOUBLE` |
+| 20  | `MAX`             | `DOUBLE` |
+| 21  | `STEP`            | `DOUBLE` |
+| 22  | `PLACEHOLDER`     | `STRING` |
+| 23  | `HORIZONTAL`      | `BOOL` |
+| 24  | `SPACING`         | `FLOAT` |
+| 25  | `COLUMNS`         | `LIST`, depends on the widget |
+| 26  | `SELECTED`        | `LONG` (`-1` for none) |
+| 27  | `MENU`            | `LIST<STRING>` |
+| 28  | `LIMIT`           | `INT` |
+| 29  | `FOLLOW`          | `BOOL` |
+| 30  | `FILTER`          | `INT` (a widget id) |
+| 31  | `SORT`            | `INT` |
+| 32  | `IMAGE`           | `BYTES` (a PNG) or `NULL` |
+| 33  | `SCALE`           | `FLOAT` |
+| 34  | `SMOOTH`          | `BOOL` |
+| 35  | `MULTILINE`       | `BOOL` |
+| 36  | `READ_ONLY`       | `BOOL` |
+| 37  | `CLEAR_ON_SUBMIT` | `BOOL` |
+| 38  | `HISTORY`         | `INT` |
+| 39  | `COMPLETIONS`     | `LIST` |
+| 40  | `CONFIRM`         | `STRING` |
+| 41  | `EXPANDED`        | `BOOL` |
+| 42  | `LIVE`            | `BOOL` |
+| 43  | `DECIMALS`        | `INT` |
+| 44  | `SERIES`          | `LIST` |
+| 45  | `SAMPLES`         | `LIST` |
+| 46  | `VIEW`            | `LIST [FLOAT width, FLOAT height]` |
+| 47  | `SHAPES`          | `LIST` |
+| 48  | `INTERACT`        | `INT` |
+| 49  | `SECTIONS`        | `LIST` |
+| 50  | `WRAP`            | `BOOL` |
+
+A property that a widget type does not list below is ignored for that type. Unknown keys are ignored.
+
+### Widget types
+
+| Code | Name        | Children | Properties and events |
+|------|-------------|----------|-----------------------|
+| 1    | `STACK`     | any      | Lays the children out in a line, top to bottom, or left to right when `HORIZONTAL` is true, with `SPACING` between them (default 6). A child with a `GROW` above 0 stretches. |
+| 2    | `WRAP`      | any      | Lays the children out left to right and starts a new line when the width runs out. `SPACING` (default 6). |
+| 3    | `GRID`      | any      | Puts the children in cells, row by row. `COLUMNS` is a `LIST<STRING>` of column sizes: `auto` (as wide as the widest cell), `*` or `2*` (a share of the leftover width), or a number of pixels such as `120`. `SPACING` (default 6). |
+| 4    | `SPLIT`     | 2        | Two children with a bar between them that the person can drag. Side by side when `HORIZONTAL` is true, otherwise one above the other. `VALUE` (`DOUBLE`, default 0.5) is the share of the first child. Sends `CHANGE` with the new share when the person lets go of the bar. |
+| 5    | `TABS`      | any      | One page per child. `ITEMS` is a `LIST<STRING>` of page titles in child order. `VALUE` (`INT`) is the open page. Sends `CHANGE` when the person opens another page. |
+| 6    | `SCROLL`    | 1        | Scrolls its child when it is taller (or wider) than the space it gets. |
+| 7    | `EXPANDER`  | 1        | A header (`TEXT`) that shows or hides its child. `EXPANDED` (default true). Sends `CHANGE` with the new `BOOL`. |
+| 8    | `LABEL`     | none     | `TEXT`. `WRAP` breaks long text into lines (default false: long text is cut with an ellipsis). The person can select and copy the text. |
+| 9    | `BUTTON`    | none     | `TEXT`. Sends `CLICK`. When `CONFIRM` is not empty the app first asks the person that question and only sends `CLICK` on yes. |
+| 10   | `CHECKBOX`  | none     | `TEXT`, `VALUE` (`BOOL`). Sends `CHANGE`. |
+| 11   | `TOGGLE`    | none     | A button that stays pressed. `TEXT`, `VALUE` (`BOOL`). Sends `CHANGE`. |
+| 12   | `DROPDOWN`  | none     | `ITEMS` (`LIST<STRING>`), `VALUE` (`INT`, the chosen item, `-1` for none). Sends `CHANGE` with the `INT`. |
+| 13   | `TEXT_BOX`  | none     | See [Text boxes](#text-boxes). |
+| 14   | `NUMBER`    | none     | A number field with up and down buttons. `VALUE`, `MIN`, `MAX`, `STEP` (all `DOUBLE`), `DECIMALS` (`INT`, default 2; `0` for whole numbers). Sends `CHANGE` with a `DOUBLE`. |
+| 15   | `SLIDER`    | none     | `VALUE`, `MIN` (default 0), `MAX` (default 1), `STEP` (`0` for any value). Sends `CHANGE` with a `DOUBLE` when the person lets go of the thumb, or on each arrow key. |
+| 16   | `PROGRESS`  | none     | A bar. `VALUE` (`DOUBLE`, 0 to 1) and `TEXT` drawn over the bar. |
+| 17   | `IMAGE`     | none     | `IMAGE` (a PNG, or `NULL` for none). `SCALE` (default 1; `0` fits the image into the widget). `SMOOTH` (default false: pixel art stays sharp). |
+| 18   | `SEPARATOR` | none     | A thin line. |
+| 19   | `TABLE`     | none     | See [Tables](#tables). |
+| 20   | `TREE`      | none     | See [Trees](#trees). |
+| 21   | `PROPERTIES`| none     | See [Property grids](#property-grids). |
+| 22   | `GRAPH`     | none     | See [Graphs](#graphs). |
+| 23   | `CANVAS`    | none     | See [Canvases](#canvases). |
+| 24   | `COLOR`     | none     | A color picker. `VALUE` (`INT`, `0xAARRGGBB`). Sends `CHANGE` with the `INT`. |
+
+A widget of an unknown type is drawn as nothing, together with its children.
+
+### Text boxes
+
+`TEXT_BOX` properties:
+
+- `TEXT`: the text. The app keeps what the person typed until the game sets `TEXT` again.
+- `PLACEHOLDER`: shown while the box is empty.
+- `MULTILINE`: allows line breaks. A multiline box never sends `SUBMIT`.
+- `READ_ONLY`: the person can select and copy but not type.
+- `LIVE`: sends `CHANGE` with the text as the person types (the app may wait up to 150 ms between changes).
+  Without it, the box only sends `SUBMIT`.
+- `CLEAR_ON_SUBMIT`: empties the box after `SUBMIT`.
+- `HISTORY`: the number of submitted lines Up and Down bring back (`0`, the default, turns it off).
+- `COMPLETIONS`: a `LIST` of `LIST [STRING name, STRING usage, STRING description]`. When it is not empty, the box
+  behaves like a command line: the first word of the text is matched against the names as a case-insensitive
+  prefix and the matches (or the usage and description of a single match) are shown under the box; Tab completes
+  the name, and repeated Tab or Shift+Tab cycles through several matches.
+
+### Tables
+
+`TABLE` properties:
+
+- `COLUMNS`: `LIST` of `LIST [STRING title, FLOAT width, INT flags]`. A `width` of `0` shares the leftover width.
+  Flags: `1` the person can sort by this column, `2` align to the right, `4` monospaced font.
+- `ITEMS`: the rows, a `LIST` of `LIST [LONG id, INT style, LIST cells, STRING detail]`.
+  - `id` is the row's identity in `SELECT`, `ACTIVATE`, and `MENU`.
+  - `style` is a [style](#style) for the whole row.
+  - A cell is any value and is shown as text. A cell can also be `LIST [STRING text, value sortKey]` to show one
+    thing and sort by another (for example `"64 x 64"` sorted by the pixel count).
+  - `detail` is extra text (for example a stack trace), shown as a tooltip. Empty when there is none.
+- `SELECTED`: the selected row id, `-1` for none.
+- `MENU`: the items of the right-click menu of a row. The app always adds `Copy row` and, for a row with a detail,
+  `Copy detail`, which it handles itself.
+- `LIMIT`: the most rows kept after an `APPEND`.
+- `FOLLOW`: keeps the newest row in view after an `APPEND` while the person has not scrolled away from it.
+- `FILTER`: the id of a `TEXT_BOX` in the same panel. The app hides the rows in which no cell contains that box's text
+  (ignoring case).
+- `SORT`: the column the rows are sorted by, counting from 1; negative sorts descending; `0` keeps the game's order.
+  When the person clicks a sortable header, the app sorts by it on its own.
+
+Sorting and filtering only change what the app shows. Events always carry row ids.
+
+### Trees
+
+`TREE` properties:
+
+- `ITEMS`: the nodes, a `LIST` of `LIST [LONG id, LONG parent, STRING text, STRING detail, INT style, LIST badges]`.
+  `parent` is `-1` for a root, and parents always come before their children. `detail` is drawn muted after the
+  text. A badge is `LIST [STRING text, INT tone]`, drawn as a small colored tag. Style bit 8 expands the node the
+  first time the app sees its id; after that the app remembers what the person expanded.
+- `SELECTED`, `MENU`, and `FILTER` work like in a table. A filtered tree keeps the parents of every matching node.
+
+### Property grids
+
+`PROPERTIES` shows named values in sections, like an object inspector.
+
+- `SECTIONS`: a `LIST` of `LIST [STRING title, BOOL expanded, LIST rows]`. A row is
+  `LIST [STRING name, value, BOOL editable]`.
+- An editable row gets an editor that fits its value: a checkbox for `BOOL`, a number field for `INT`, `LONG`,
+  `FLOAT`, and `DOUBLE`, and a text field for `STRING`. An `ERROR` value is shown in the error tone and is never
+  editable.
+- When the person changes a value, the app sends `EDIT` with the section index, the row index, and the new value of
+  the row's kind.
+
+### Graphs
+
+`GRAPH` draws lines over time.
+
+- `TEXT`: the title.
+- `SERIES`: a `LIST` of `LIST [STRING name, INT color, STRING unit]`. `color` is `0xAARRGGBB`, or `0` to let the app
+  pick. The latest value of every series is shown next to the title with its unit.
+- `SAMPLES`: a `LIST` of samples, oldest first, where a sample is a `LIST<FLOAT>` with one value per series. The game
+  adds samples with `APPEND`.
+- `LIMIT`: the most samples kept (default 120).
+- `MIN` and `MAX`: the range of the vertical axis. A missing value, or `NaN`, makes the app fit the axis to the data.
+
+### Canvases
+
+`CANVAS` draws boxes in a 2D view, like a map of a game camera.
+
+- `VIEW`: the size of the view in view units. The app scales it to fit the widget and keeps its aspect ratio.
+- `IMAGE`: an optional picture drawn under the shapes, stretched over the whole view. `SMOOTH` as for `IMAGE`.
+- `SHAPES`: a `LIST` of `LIST [LONG id, FLOAT x, FLOAT y, FLOAT width, FLOAT height, INT style, STRING label]`, in
+  drawing order, bottom first. Positions are in view units with `0, 0` at the top left. Style bits: `0-3` the tone,
+  `4` a thick outline (for a selection), `5` a dashed outline, `6` dimmed, `7` filled. The app shows the label of the
+  topmost shape under the pointer.
+- `INTERACT`: what the person may do, as bits:
+
+| Bit | Value | Gesture | Event |
+|-----|-------|---------|-------|
+| 0   | 1     | Left click | `PICK` with the point in view units. |
+| 1   | 2     | Left drag on a shape | `DRAG` with the movement since the last `DRAG`, in view units. The app moves the shape on its own while dragging, until the next `SHAPES` arrives. |
+| 2   | 4     | Right or middle drag | `PAN` with the movement of the pointer since the last `PAN`, in view units. |
+| 3   | 8     | Mouse wheel | `ZOOM` with the factor (`1.25` per notch in, `0.8` per notch out) and the point under the pointer. |
+
+## Feeds
+
+A feed is typed game data for programs. Every feed has a fixed `kind` that defines its payloads and actions below.
+Feeds send nothing until the app subscribes to them, so a person who only looks at panels pays nothing for them.
+
+### FEED_LIST (3)
+
+`array<feed>`, where each feed is:
+
+| Field   | Type     | Notes |
+|---------|----------|-------|
+| `index` | `u16`    | Used by all later feed messages to refer to this feed. |
+| `id`    | `string` | Stable identifier, for example `scene`. |
+| `kind`  | `u8`     | A feed kind (see below). |
+
+The list is sent once per connection, right after `HELLO_ACK`. Every feed starts unsubscribed.
+
+Feed kinds (code `0` is reserved):
+
+| Code | Name        | `id`        | Payload |
+|------|-------------|-------------|---------|
+| 1    | `STATS`     | `stats`     | [stats](#stats) |
+| 2    | `LOGS`      | `logs`      | [logs](#logs) |
+| 3    | `WATCHES`   | `watches`   | [watches](#watches) |
+| 4    | `TRACKERS`  | `trackers`  | [trackers](#trackers) |
+| 5    | `TEXTURES`  | `textures`  | [textures](#textures) |
+| 6    | `CONTROLS`  | `controls`  | [controls](#controls) |
+| 7    | `CONSOLE`   | `console`   | [console](#console) |
+| 8    | `SCENE`     | `scene`     | [scene](#scene) |
+| 9    | `INSPECTOR` | `inspector` | [inspector](#inspector) |
+| 10   | `SAVE`      | `save`      | [save](#save) |
+| 11   | `VIEWPORT`  | `viewport`  | [viewport](#viewport) |
+| 12   | `CAPTURE`   | `capture`   | [capture](#capture) |
+| 13   | `INPUT`     | `input`     | [input](#input) |
+
+### FEED_SUBSCRIBE (13)
+
+| Field  | Type   |
+|--------|--------|
+| `feed` | `u16`  |
+| `on`   | `bool` |
+
+Subscribing makes the game send the feed's whole current state (for `logs`, the backlog) and then keep it up to
+date. Unsubscribing stops it. Actions work whether or not the feed is subscribed.
+
+### FEED_DATA (4)
+
+| Field  | Type  |
+|--------|-------|
+| `feed` | `u16` (feed index) |
+| payload | defined by the feed kind |
+
+### FEED_ACTION (5)
+
+| Field    | Type  |
+|----------|-------|
+| `feed`   | `u16` (feed index) |
+| `action` | `u8` action code (defined per feed kind) |
+| payload  | defined by the action; empty when the action lists no fields |
+
+Action codes are scoped to the feed kind, so `1` means different things on different feeds. The game treats every
+feed action as coming from a tool, not a person: objects a feed action selects, moves, edits, or clicks are marked as
+touched by an agent, and the game's own panels show that mark.
+
+Unless a feed says otherwise, it has a single payload kind and no subtype byte. A feed with more than
 one payload kind starts every payload with a `u8` **subtype**; this is the pattern for `textures`,
-`console`, and `inspector`.
+`console`, `inspector`, and `capture`.
 
 Arrays are `u16`-counted, see [Encoding](#encoding). A "text" cell below that is not specified as
 a value is a plain `string`.
@@ -251,7 +619,7 @@ Line:
 | `stack`    | `string` | Stack trace; may be empty. |
 
 Log levels: `0` Debug, `1` Info, `2` Warn, `3` Error. The value `255` (`DEFAULT`) is only used by the
-`controls` panel to mean "no override".
+`controls` feed to mean "no override".
 
 Actions:
 
@@ -310,7 +678,7 @@ What the fields mean:
 - `duplicate` is true for every texture of a group of two or more that were loaded from the same file path.
 
 Only textures that belong to a graphic tracked by the asset manager are listed. Textures the framework creates for
-itself (the font atlas, render targets) are not. The game rebuilds the list about once a second while the panel is
+itself (the font atlas, render targets) are not. The game rebuilds the list about once a second while the feed is
 enabled and sends it again only when something in it changed.
 
 `THUMBNAIL` payload: `u8 subtype=2`, `i32 id`, `i32 width`, `i32 height`, `bytes png`.
@@ -347,7 +715,7 @@ touching the game. Turning it on saves the camera's scroll,
 zoom, scroll bounds, and follow target and stops following; turning it off restores them exactly. It pans at 600
 screen pixels per second (4 times that with Shift), zooms by 1.25 per wheel notch between 0.1 and 10, and runs on real
 time, so it works while the game is paused. The keys and the right mouse button it uses are hidden from the game
-while it is on. `Alt + Click` selects the topmost object drawn under the mouse on the `inspector` panel and the game
+while it is on. `Alt + Click` selects the topmost object drawn under the mouse in the `inspector` feed and the game
 does not receive that click. The selected object is outlined in yellow in the game window even when hitboxes are
 off.
 
@@ -525,7 +893,7 @@ Id `save`, kind 10. Payload:
 The game sends the payload again whenever something in it changed (it checks about once a second, and right
 after every action), so the app can simply poll or listen.
 
-**Saves.** A game may keep more than one save, such as a settings file and a few profiles. The panel edits one
+**Saves.** A game may keep more than one save, such as a settings file and a few profiles. The feed edits one
 of them at a time, and `saves` lists every one the app can switch to with `SELECT`:
 
 - Entry 0 is always the game's main save (`Flixel.save`). The game looks it up again on every refresh, so the
@@ -533,7 +901,7 @@ of them at a time, and `saves` lists every one the app can switch to with `SELEC
   `Flixel.debug.save.add(...)`, in the order they were added.
 - A label is `name/slot` for a bound save with a slot, `name` for one without a slot, `(not bound)` for a save
   that has no name (or was destroyed), and `(no save)` for entry 0 while the game has no main save.
-- `selected` is always a valid index into `saves`. When the game takes the selected save off the list, the panel
+- `selected` is always a valid index into `saves`. When the game takes the selected save off the list, the feed
   goes back to entry 0.
 
 **Rows.** The save is a tree of maps, lists, and plain values. The game flattens it into one row per plain value:
@@ -572,7 +940,7 @@ of them at a time, and `saves` lists every one the app can switch to with `SELEC
 - `SAVE_NOW` writes the data to storage.
 - `RESET_ALL` erases the data and the stored save at once. The app should ask the person to confirm before
   sending it.
-- `SELECT` switches the panel to another save of `saves`. The game refreshes at once and sends the rows of the
+- `SELECT` switches the feed to another save of `saves`. The game refreshes at once and sends the rows of the
   new save, with its summary in `status`. An index that is out of range is ignored.
 
 Nothing reaches storage until `SAVE_NOW` (or the game's own save call).
@@ -745,7 +1113,7 @@ Actions:
   way the game reads input: `pressed`, `rawPressed`, `justPressed`, `justReleased`, `firstPressed`, and keyboard listeners.
 - `POINTER` moves (phase `0`), presses (`1`), or releases (`2`) a pointer. `button` is `0` left, `1` right, or `2` middle
   (3 and 4 are the extra buttons) and is used by phases `1` and `2`; a press and a release also move the pointer to the
-  position first. The position is in the **view space** of the camera that the [viewport](#viewport) panel shows
+  position first. The position is in the **view space** of the camera that the [viewport](#viewport) feed shows
   (`SET_CAMERA`), the same space as its boxes. The game converts it to window pixels, so `Flixel.mouse.getWorldX(camera)`
   lands on the point within a pixel of rounding. The pointer stays where it was put until the real mouse moves or the
   app disconnects.
@@ -775,32 +1143,15 @@ agent can press `W` to walk the player while the free camera is on.
 **Disconnect.** When the connection to the app is lost, the game releases every key and button it was holding, hands the
 pointer back to the real mouse, and empties the queue, so nothing stays stuck.
 
-## Custom panels
-
-A panel with kind `CUSTOM` (0) is registered by game code and has any `id`. Payload:
-
-| Field    | Type |
-|----------|------|
-| rows     | `array<property row>` |
-| buttons  | `array<button>`: `u16 actionIndex`, `string label` |
-
-Actions:
-
-| Code | Name           | Fields |
-|------|----------------|--------|
-| 1    | `PRESS`        | `u16 actionIndex` (taken from the button) |
-| 2    | `SET_PROPERTY` | `u16 propertyIndex` (position in the rows array), `value` |
-
-`SET_PROPERTY` converts the value by the row's kind exactly as the inspector does (see
-[inspector](#inspector)); mismatched kinds and read-only rows are ignored.
 
 ## Versioning
 
 The version is `major.minor`, starting at **1.0**.
 
-- A **minor** bump only adds fields at the **end** of payloads, or adds new message types, panel kinds,
-  subtypes, or action codes. Readers **must ignore trailing bytes** they do not understand and **must ignore
-  unknown action codes, subtypes, and panel kinds**.
+- A **minor** bump only adds fields at the **end** of payloads, or adds new message types, feed kinds,
+  subtypes, action codes, app requests, widget types, property keys, or events. Readers **must ignore trailing
+  bytes** they do not understand and **must ignore unknown action codes, subtypes, feed kinds, app requests, widget
+  types, property keys, and events**.
 - A **major** bump may break compatibility. The app closes the connection when the majors differ.
 - Codes are never reused. A retired code stays reserved forever.
 
@@ -809,8 +1160,9 @@ The version is `major.minor`, starting at **1.0**.
 Test vectors are in `flixelgdx-test/src/test/resources/org/flixelgdx/debug/remote/fixtures/`:
 
 - `msg_*.bin`: whole messages (including the message type byte).
-- `panel_*.bin`: whole `PANEL_DATA` messages.
-- `action_*.bin`: whole `PANEL_ACTION` messages.
+- `feed_*.bin`: whole `FEED_DATA` messages.
+- `action_*.bin`: whole `FEED_ACTION` messages.
+- `panel_*.bin`: whole `PANEL_LIST`, `PANEL_TREE`, `PANEL_PATCH`, `PANEL_EVENT`, and `PANEL_OPEN` messages.
 - `value_*.bin`: a single value with no message header.
 
 The folder's `README.md` lists the exact values every file encodes.
