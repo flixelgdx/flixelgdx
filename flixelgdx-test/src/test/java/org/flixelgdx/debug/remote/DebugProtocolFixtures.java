@@ -54,6 +54,8 @@ final class DebugProtocolFixtures {
   static final int P_SAVE = 9;
   static final int P_CUSTOM = 10;
   static final int P_VIEWPORT = 11;
+  static final int P_CAPTURE = 12;
+  static final int P_INPUT = 13;
 
   static final byte[] PNG_BYTES = { (byte) 0x89, 'P', 'N', 'G' };
   static final byte[] THUMB_BYTES = { 9, 8, 7 };
@@ -160,9 +162,9 @@ final class DebugProtocolFixtures {
     add("value_string_unicode", val(UNICODE));
     add("value_error", err("getter threw"));
 
-    add("msg_hello", u8(FlixelDebugProtocol.MSG_HELLO), u16(1), u16(0), str("desktop"), str("Linux 6.17 amd64"),
+    add("msg_hello", u8(FlixelDebugProtocol.MSG_HELLO), u16(1), u16(1), str("desktop"), str("Linux 6.17 amd64"),
         i32(1280), i32(720), str("Demo Game"), str("1.2.3"));
-    add("msg_hello_ack", u8(FlixelDebugProtocol.MSG_HELLO_ACK), u16(1), u16(0));
+    add("msg_hello_ack", u8(FlixelDebugProtocol.MSG_HELLO_ACK), u16(1), u16(1));
     add("msg_panel_list", u8(FlixelDebugProtocol.MSG_PANEL_LIST), begin(),
         panel(P_STATS, "stats", "Stats", FlixelDebugProtocol.KIND_STATS),
         panel(P_LOGS, "logs", "Logs", FlixelDebugProtocol.KIND_LOGS),
@@ -176,7 +178,9 @@ final class DebugProtocolFixtures {
         panel(P_SAVE, "save", "Save", FlixelDebugProtocol.KIND_SAVE),
         panel(P_CUSTOM, "custom.demo", "Demo", FlixelDebugProtocol.KIND_CUSTOM),
         panel(P_VIEWPORT, "viewport", "Viewport", FlixelDebugProtocol.KIND_VIEWPORT),
-        end(12));
+        panel(P_CAPTURE, "capture", "Capture", FlixelDebugProtocol.KIND_CAPTURE),
+        panel(P_INPUT, "input", "Input", FlixelDebugProtocol.KIND_INPUT),
+        end(14));
     add("msg_ping", u8(FlixelDebugProtocol.MSG_PING), i64(1234567890123L));
     add("msg_pong", u8(FlixelDebugProtocol.MSG_PONG), i64(1234567890123L));
 
@@ -246,6 +250,12 @@ final class DebugProtocolFixtures {
         u8(FlixelDebugProtocol.VIEWPORT_BOX_GROUP | FlixelDebugProtocol.VIEWPORT_BOX_INACTIVE),
         i32(3), f32(-8.5f), f32(150.25f), f32(16f), f32(16f), u16(0), u8(FlixelDebugProtocol.VIEWPORT_BOX_SELECTED),
         end(2)));
+    add("panel_capture_state", data(P_CAPTURE, u8(FlixelDebugProtocol.CAPTURE_STATE), bool(true)));
+    add("panel_capture_image", data(P_CAPTURE, u8(FlixelDebugProtocol.CAPTURE_IMAGE),
+        i32(7), i32(2), i32(1), bytes(PNG_BYTES)));
+    add("panel_input_state", data(P_INPUT, u8(FlixelDebugProtocol.INPUT_FLAG_KEYS
+        | FlixelDebugProtocol.INPUT_FLAG_POINTER | FlixelDebugProtocol.INPUT_FLAG_SCROLL
+        | FlixelDebugProtocol.INPUT_FLAG_TEXT | FlixelDebugProtocol.INPUT_FLAG_TOUCH)));
 
     add("action_logs_clear", action(P_LOGS, FlixelDebugProtocol.LOGS_CLEAR));
     add("action_textures_request_thumbnail",
@@ -282,6 +292,13 @@ final class DebugProtocolFixtures {
     add("action_viewport_zoom",
         action(P_VIEWPORT, FlixelDebugProtocol.VIEWPORT_ZOOM, f32(1.25f), f32(160f), f32(90f)));
     add("action_viewport_reset_camera", action(P_VIEWPORT, FlixelDebugProtocol.VIEWPORT_RESET_CAMERA));
+    add("action_capture_request", action(P_CAPTURE, FlixelDebugProtocol.CAPTURE_REQUEST, i32(7), u16(640)));
+    add("action_input_key", action(P_INPUT, FlixelDebugProtocol.INPUT_KEY, bool(true), i32(62)));
+    add("action_input_pointer", action(P_INPUT, FlixelDebugProtocol.INPUT_POINTER,
+        u8(FlixelDebugProtocol.INPUT_POINTER_DOWN), u8(0), f32(40.5f), f32(30.25f)));
+    add("action_input_scroll", action(P_INPUT, FlixelDebugProtocol.INPUT_SCROLL, f32(-2.5f)));
+    add("action_input_text", action(P_INPUT, FlixelDebugProtocol.INPUT_TEXT, str(UNICODE)));
+    add("action_input_click_object", action(P_INPUT, FlixelDebugProtocol.INPUT_CLICK_OBJECT, i32(12), u8(0)));
     add("action_custom_press", action(P_CUSTOM, FlixelDebugProtocol.CUSTOM_PRESS, u16(1)));
     add("action_custom_set_property", action(P_CUSTOM, FlixelDebugProtocol.CUSTOM_SET_PROPERTY, u16(0), val(3f)));
   }

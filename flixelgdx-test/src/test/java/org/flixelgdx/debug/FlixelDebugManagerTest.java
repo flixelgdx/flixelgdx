@@ -51,12 +51,13 @@ class FlixelDebugManagerTest {
   void builtInPanelsAreRegisteredInOrder() {
     String[] ids = {
         "stats", "logs", "watches", "trackers", "textures", "controls", "console", "scene", "inspector", "save",
-        "viewport" };
+        "viewport", "capture", "input" };
     int[] kinds = {
         FlixelDebugProtocol.KIND_STATS, FlixelDebugProtocol.KIND_LOGS, FlixelDebugProtocol.KIND_WATCHES,
         FlixelDebugProtocol.KIND_TRACKERS, FlixelDebugProtocol.KIND_TEXTURES, FlixelDebugProtocol.KIND_CONTROLS,
         FlixelDebugProtocol.KIND_CONSOLE, FlixelDebugProtocol.KIND_SCENE, FlixelDebugProtocol.KIND_INSPECTOR,
-        FlixelDebugProtocol.KIND_SAVE, FlixelDebugProtocol.KIND_VIEWPORT };
+        FlixelDebugProtocol.KIND_SAVE, FlixelDebugProtocol.KIND_VIEWPORT, FlixelDebugProtocol.KIND_CAPTURE,
+        FlixelDebugProtocol.KIND_INPUT };
     assertEquals(ids.length, manager.getPanelCount());
     for (int i = 0; i < ids.length; i++) {
       assertEquals(ids[i], manager.getPanel(i).getId());
@@ -71,6 +72,8 @@ class FlixelDebugManagerTest {
     assertSame(manager.console, manager.get("console"));
     assertSame(manager.scene, manager.get("scene"));
     assertSame(manager.inspector, manager.get("inspector"));
+    assertSame(manager.capture, manager.get("capture"));
+    assertSame(manager.input, manager.get("input"));
     assertSame(manager.save, manager.get("save"));
     assertSame(manager.viewport, manager.get("viewport"));
   }
@@ -98,7 +101,7 @@ class FlixelDebugManagerTest {
     manager.register(new CountingPanel("custom.count"));
     assertThrows(IllegalArgumentException.class, () -> manager.register(new CountingPanel("custom.count")));
     assertThrows(IllegalArgumentException.class, () -> manager.register(new CountingPanel("stats")));
-    assertEquals(12, manager.getPanelCount());
+    assertEquals(14, manager.getPanelCount());
   }
 
   @Test

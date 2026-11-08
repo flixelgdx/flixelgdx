@@ -9,7 +9,7 @@ Do not edit it by hand. Notation: `type:value` fields appear in wire order; `arr
 is a `u16` count followed by the elements; `value:KIND:x` is a property value (kind byte then data);
 `\u{XXXX}` is a Unicode code point written as UTF-8. Panel indices used: stats 0, logs 1, watches 2,
 trackers 3, textures 4, controls 5, console 6, scene 7, inspector 8, save 9, custom 10,
-viewport 11.
+viewport 11, capture 12, input 13.
 
 ## value_bool.bin
 
@@ -45,15 +45,15 @@ viewport 11.
 
 ## msg_hello.bin
 
-`u8:1 u16:1 u16:0 string:"desktop" string:"Linux 6.17 amd64" i32:1280 i32:720 string:"Demo Game" string:"1.2.3"`
+`u8:1 u16:1 u16:1 string:"desktop" string:"Linux 6.17 amd64" i32:1280 i32:720 string:"Demo Game" string:"1.2.3"`
 
 ## msg_hello_ack.bin
 
-`u8:2 u16:1 u16:0`
+`u8:2 u16:1 u16:1`
 
 ## msg_panel_list.bin
 
-`u8:3 array[ u16:0 string:"stats" string:"Stats" u8:1 u16:1 string:"logs" string:"Logs" u8:2 u16:2 string:"watches" string:"Watches" u8:3 u16:3 string:"trackers" string:"Trackers" u8:4 u16:4 string:"textures" string:"Textures" u8:5 u16:5 string:"controls" string:"Controls" u8:6 u16:6 string:"console" string:"Console" u8:7 u16:7 string:"scene" string:"Scene" u8:8 u16:8 string:"inspector" string:"Inspector" u8:9 u16:9 string:"save" string:"Save" u8:10 u16:10 string:"custom.demo" string:"Demo" u8:0 u16:11 string:"viewport" string:"Viewport" u8:11](count 12)`
+`u8:3 array[ u16:0 string:"stats" string:"Stats" u8:1 u16:1 string:"logs" string:"Logs" u8:2 u16:2 string:"watches" string:"Watches" u8:3 u16:3 string:"trackers" string:"Trackers" u8:4 u16:4 string:"textures" string:"Textures" u8:5 u16:5 string:"controls" string:"Controls" u8:6 u16:6 string:"console" string:"Console" u8:7 u16:7 string:"scene" string:"Scene" u8:8 u16:8 string:"inspector" string:"Inspector" u8:9 u16:9 string:"save" string:"Save" u8:10 u16:10 string:"custom.demo" string:"Demo" u8:0 u16:11 string:"viewport" string:"Viewport" u8:11 u16:12 string:"capture" string:"Capture" u8:12 u16:13 string:"input" string:"Input" u8:13](count 14)`
 
 ## msg_ping.bin
 
@@ -122,6 +122,18 @@ viewport 11.
 ## panel_viewport.bin
 
 `u8:4 u16:11 u8:0 u8:2 f32:320.0 f32:180.0 f32:2.0 f32:100.5 f32:-40.0 bool:true bool:false bool:true i32:3 array[ string:"FlixelSprite" string:"FlixelSpriteGroup"](count 2) array[ i32:2 f32:10.0 f32:20.0 f32:64.0 f32:32.0 u16:1 u8:6 i32:3 f32:-8.5 f32:150.25 f32:16.0 f32:16.0 u16:0 u8:1](count 2)`
+
+## panel_capture_state.bin
+
+`u8:4 u16:12 u8:1 bool:true`
+
+## panel_capture_image.bin
+
+`u8:4 u16:12 u8:2 i32:7 i32:2 i32:1 bytes:[-119, 80, 78, 71]`
+
+## panel_input_state.bin
+
+`u8:4 u16:13 u8:31`
 
 ## action_logs_clear.bin
 
@@ -234,6 +246,30 @@ viewport 11.
 ## action_viewport_reset_camera.bin
 
 `u8:5 u16:11 u8:6`
+
+## action_capture_request.bin
+
+`u8:5 u16:12 u8:1 i32:7 u16:640`
+
+## action_input_key.bin
+
+`u8:5 u16:13 u8:1 bool:true i32:62`
+
+## action_input_pointer.bin
+
+`u8:5 u16:13 u8:2 u8:1 u8:0 f32:40.5 f32:30.25`
+
+## action_input_scroll.bin
+
+`u8:5 u16:13 u8:3 f32:-2.5`
+
+## action_input_text.bin
+
+`u8:5 u16:13 u8:4 string:"h\u{E9}llo \u{4E16}\u{754C} \u{1F600}"`
+
+## action_input_click_object.bin
+
+`u8:5 u16:13 u8:5 i32:12 u8:0`
 
 ## action_custom_press.bin
 
