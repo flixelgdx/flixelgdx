@@ -745,9 +745,10 @@ Actions:
 - `SCROLL` turns the mouse wheel. A positive amount scrolls down, like a wheel turned towards the user.
 - `TEXT` is delivered as typed characters (the way text from a keyboard arrives), so text boxes receive it. It presses no
   key, so use `KEY` for Enter, Backspace, and arrows. Text longer than 1000 characters is cut.
-- `CLICK_OBJECT` clicks the center of the object's [viewport](#viewport) box on the camera the viewport shows: the
-  pointer moves there, `button` goes down, and in the next frame it goes up. An unknown `id`, or an object that is not on
-  that camera when the click runs, does nothing.
+- `CLICK_OBJECT` clicks the center of the object's box (the same box [viewport](#viewport) reports) on the first camera
+  that draws the object: the camera the viewport shows is tried first, then the other cameras in order. The pointer moves
+  to that spot in window pixels, `button` goes down, and in the next frame it goes up. An unknown `id`, or an object that
+  no camera draws when the click runs, does nothing (the game logs a warning).
 
 **Timing.** The game puts actions in a queue of at most 256 entries and applies it once per frame, before it reads the
 input devices. A key or button transition needs a frame of its own, or `justPressed` and `justReleased` would never be

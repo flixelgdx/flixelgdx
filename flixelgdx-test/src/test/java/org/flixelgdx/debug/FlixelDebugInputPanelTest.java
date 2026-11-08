@@ -268,6 +268,34 @@ class FlixelDebugInputPanelTest {
   }
 
   @Test
+  void clickingAnObjectOnAnotherCameraUsesThatCamera() {
+    FlixelCamera hud = new FlixelCamera(400, 300);
+    hud.getViewport().setScreenBounds(0, 0, 400, 300);
+    hud.defaultDrawTarget = false;
+    cam.defaultDrawTarget = false;
+    Flixel.cameras.add(hud);
+    FlixelObject button = new FlixelObject(30f, 40f, 20f, 10f);
+    button.cameras = new FlixelCamera[] { hud };
+    Flixel.state.add(button);
+    assertEquals(0, debug.viewport.getCameraIndex(), "the viewport shows the other camera");
+
+    input.click(debug.ids.idOf(button), FlixelMouseButton.LEFT);
+    frame();
+    assertTrue(mouse.justPressed(FlixelMouseButton.LEFT));
+    assertEquals(40f, mouse.getWorldX(hud), 1f);
+    assertEquals(45f, mouse.getWorldY(hud), 1f);
+    endFrame();
+    frame();
+    assertTrue(mouse.justReleased(FlixelMouseButton.LEFT));
+    endFrame();
+
+    button.cameras = new FlixelCamera[0];
+    input.click(debug.ids.idOf(button), FlixelMouseButton.LEFT);
+    frame();
+    assertFalse(mouse.pressed(FlixelMouseButton.LEFT), "no camera draws it now");
+  }
+
+  @Test
   void clickingAnUnknownObjectDoesNothing() {
     input.click(9999, FlixelMouseButton.LEFT);
     frame();

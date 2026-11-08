@@ -24,6 +24,7 @@
 package org.flixelgdx.debug.panels;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.debug.FlixelDebugManager;
@@ -257,9 +258,10 @@ public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
    * Queues a click on the middle of an object's box: the pointer moves there, the button goes down, and in the
    * next frame it goes up, so {@code justPressed} and {@code justReleased} both fire.
    *
-   * <p>The box is the one the {@linkplain FlixelDebugViewportPanel viewport panel} shows for the object on its
-   * camera, measured when the click is applied. An unknown id, or an object that is not on that camera at that
-   * time, makes the click do nothing.
+   * <p>The box is measured when the click is applied, on the first camera that draws the object: the
+   * {@linkplain FlixelDebugViewportPanel viewport panel}'s camera, then the other cameras in order. The pointer is
+   * placed at that camera's position in window pixels. An unknown id, or an object that no camera draws, makes the
+   * click do nothing and logs a warning.
    *
    * @param id The object's id from {@link FlixelDebugObjectIds}.
    * @param button A {@link FlixelMouseButton} code.
@@ -394,8 +396,10 @@ public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
       return true;
     }
     Object target = ids.get(firsts[i]);
-    FlixelCamera cam = viewport.getShownCamera();
-    if (target == null || cam == null || !picker.measure(target, cam)) {
+    FlixelCamera cam = target != null ? findCamera(target) : null;
+    if (cam == null) {
+      Flixel.log.tagged("Debugger/Input").warn("CLICK_OBJECT {}: no camera draws the object, so it was ignored.",
+          firsts[i]);
       pop();
       return false;
     }
@@ -406,6 +410,26 @@ public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
     press(button, true);
     stages[i] = 1;
     return true;
+  }
+
+  /** Returns the camera that draws the object, trying the viewport's camera first, then the others in order. */
+  private FlixelCamera findCamera(Object target) {
+    FlixelCamera shown = viewport.getShownCamera();
+    if (shown != null && drawsOn(target, shown)) {
+      return shown;
+    }
+    for (int k = 0, n = Flixel.cameras.getSize(); k < n; k++) {
+      FlixelCamera other = Flixel.cameras.get(k);
+      if (other != shown && other != null && drawsOn(target, other)) {
+        return other;
+      }
+    }
+    return null;
+  }
+
+  private boolean drawsOn(Object target, FlixelCamera cam) {
+    return (!(target instanceof FlixelBasic basic) || FlixelDebugPicker.isDrawnOn(basic, cam))
+        && picker.measure(target, cam);
   }
 
   private void movePointer(int x, int y) {
