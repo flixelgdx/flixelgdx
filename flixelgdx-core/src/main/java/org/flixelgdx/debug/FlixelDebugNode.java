@@ -27,6 +27,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.debug.panels.FlixelDebugScenePanel;
 import org.flixelgdx.debug.panels.FlixelDebugViewportPanel;
+import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.group.FlixelGroupable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -50,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  *       selects it, when {@link #getDebugBounds(FlixelCamera, float[])} returns {@code true}.</li>
  *   <li>The remote {@code CLICK_OBJECT} action clicks the center of that box.</li>
  *   <li>It can be moved from the viewport when it also implements
- *       {@link org.flixelgdx.functional.FlixelPositional}.</li>
+ *       {@link FlixelPositional}.</li>
  * </ul>
  *
  * <p>When an object implements this interface, it wins over {@link FlixelGroupable} for its children and over

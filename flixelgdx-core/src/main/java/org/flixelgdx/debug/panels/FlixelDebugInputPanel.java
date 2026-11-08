@@ -33,6 +33,7 @@ import org.flixelgdx.debug.remote.FlixelDebugAgent;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
+import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
@@ -187,7 +188,7 @@ public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
   /**
    * Queues a key press or release.
    *
-   * @param key A {@link org.flixelgdx.input.keyboard.FlixelKey} code. Invalid codes are ignored.
+   * @param key A {@link FlixelKey} code. Invalid codes are ignored.
    * @param down {@code true} to press, {@code false} to release.
    * @return {@code true} when the action was queued.
    */

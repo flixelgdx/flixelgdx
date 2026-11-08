@@ -25,6 +25,7 @@ package org.flixelgdx.input;
 
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.input.keyboard.FlixelKey;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
 
 /**
  * Base {@link FlixelInputDevice} that owns listener registration and event dispatch so backends
@@ -141,7 +142,7 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
    * reports through polling, so use {@code Flixel.keys.injectKey(...)}, which keeps the key manager's own state in
    * step and then calls this.
    *
-   * @param keycode The {@link org.flixelgdx.input.keyboard.FlixelKey} code.
+   * @param keycode The {@link FlixelKey} code.
    */
   public void injectKeyDown(int keycode) {
     dispatchKeyDown(keycode);
@@ -150,7 +151,7 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
   /**
    * Delivers a key release to every keyboard listener as if the user had released it.
    *
-   * @param keycode The {@link org.flixelgdx.input.keyboard.FlixelKey} code.
+   * @param keycode The {@link FlixelKey} code.
    * @see #injectKeyDown(int)
    */
   public void injectKeyUp(int keycode) {
@@ -170,7 +171,7 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
   /**
    * Delivers a mouse button press to every mouse listener.
    *
-   * @param button The {@link org.flixelgdx.input.mouse.FlixelMouseButton} code.
+   * @param button The {@link FlixelMouseButton} code.
    * @param x The pointer's horizontal position in window pixels.
    * @param y The pointer's vertical position in window pixels.
    * @see #injectKeyDown(int)
@@ -182,7 +183,7 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
   /**
    * Delivers a mouse button release to every mouse listener.
    *
-   * @param button The {@link org.flixelgdx.input.mouse.FlixelMouseButton} code.
+   * @param button The {@link FlixelMouseButton} code.
    * @param x The pointer's horizontal position in window pixels.
    * @param y The pointer's vertical position in window pixels.
    * @see #injectKeyDown(int)
