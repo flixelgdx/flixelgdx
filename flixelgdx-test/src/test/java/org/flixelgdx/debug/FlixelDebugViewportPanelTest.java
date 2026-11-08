@@ -140,8 +140,7 @@ class FlixelDebugViewportPanelTest {
     FlixelSprite member = new FlixelSprite(10f, 10f);
     member.setSize(40f, 40f);
     group.add(member);
-    // A sprite group has no size of its own unless it is given one, and only objects with a size get a box.
-    group.setSize(60f, 60f);
+    // The sprite group has no size of its own, so its box is the area around its members.
     state.add(hidden);
     state.add(gone);
     state.add(asleep);
@@ -161,6 +160,11 @@ class FlixelDebugViewportPanelTest {
     int groupIndex = s.indexOf(debug.ids.peek(group));
     assertTrue(groupIndex >= 0 && groupIndex < s.indexOf(debug.ids.peek(member)), "a group is drawn below members");
     assertEquals(FlixelDebugProtocol.VIEWPORT_BOX_GROUP, s.boxes.get(groupIndex).flags);
+    Box around = s.boxes.get(groupIndex);
+    assertEquals(10f, around.x, EPS);
+    assertEquals(10f, around.y, EPS);
+    assertEquals(40f, around.w, EPS);
+    assertEquals(40f, around.h, EPS);
   }
 
   @Test

@@ -71,6 +71,9 @@ import org.jetbrains.annotations.Nullable;
  * draw order, bottom first, and only objects that touch the view are listed. At most {@value #MAX_BOXES} boxes
  * are sent; when more objects are on screen, the ones drawn on top are kept.
  *
+ * <p>A group ({@link FlixelGroupable}) has the box around its drawn members instead of a hitbox of its own, so
+ * every group, from a sprite group to a game's custom group, is outlined around what it holds.
+ *
  * <p>Objects that are neither a {@link FlixelObject} nor a group can still have a box: a
  * {@link FlixelDebugNode} measures itself in the camera's view space, and its children are walked like group
  * members. Picking, the selection outline, and moving (when the node has a position) use the same box.

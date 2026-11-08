@@ -34,6 +34,7 @@ import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
 import org.flixelgdx.debug.panels.FlixelDebugViewportPanel;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +54,8 @@ import org.jetbrains.annotations.Nullable;
  * with its offset and scale, widened to the bounding box when rotated), other objects against their hitbox.
  * With {@link #hitboxes} turned on, every object is tested against its hitbox instead, sprites included.
  * Groups and {@link FlixelDebugNode}s are searched child by child, last child first, and a hidden or removed
- * group hides its members.
+ * group hides its members. A group itself covers the area around all of its drawn members, so a point between
+ * two members that is not on any of them hits the group.
  *
  * <p>The same walk is shared with anything else that needs "every object drawn on this camera", such as the
  * {@linkplain FlixelDebugViewportPanel viewport panel} that sends a map of the screen to the debugger app. Call
@@ -245,8 +247,11 @@ public class FlixelDebugPicker {
    * Works out the area any walkable object covers on a camera, in the camera's view space.
    *
    * <p>A {@link FlixelDebugNode} measures itself through {@link FlixelDebugNode#getDebugBounds(FlixelCamera,
-   * float[])}. A {@link FlixelObject} is measured by {@link #computeBounds(FlixelObject, FlixelCamera)}. Anything
-   * else has no area. The result is read with {@link #getBoundsLeft()}, {@link #getBoundsTop()},
+   * float[])}. A {@link FlixelGroupable} covers the smallest box around the areas of its members that are drawn on
+   * the camera (the same members {@link #forEachDrawn(FlixelCamera, boolean, Visitor)} visits), so a group is
+   * outlined around what it holds even when it has no size of its own. A group with nothing drawn falls back to
+   * its own hitbox when it is a {@link FlixelObject}. Any other {@link FlixelObject} is measured by
+   * {@link #computeBounds(FlixelObject, FlixelCamera)}. Anything else has no area. The result is read with {@link #getBoundsLeft()}, {@link #getBoundsTop()},
    * {@link #getBoundsWidth()}, and {@link #getBoundsHeight()}. This does not allocate.
    *
    * @param node The object to measure.
@@ -255,6 +260,10 @@ public class FlixelDebugPicker {
    *     meaningful.
    */
   public boolean measure(@NotNull Object node, @NotNull FlixelCamera cam) {
+    return measure(node, cam, 0);
+  }
+
+  private boolean measure(Object node, FlixelCamera cam, int depth) {
     if (node instanceof FlixelDebugNode debug) {
       if (!debug.getDebugBounds(cam, nodeBounds)) {
         return false;
@@ -265,7 +274,51 @@ public class FlixelDebugPicker {
       boundsHeight = nodeBounds[3];
       return boundsWidth > 0f && boundsHeight > 0f;
     }
+    if (node instanceof FlixelGroupable<?> && measureMembers(node, cam, depth)) {
+      return true;
+    }
     return node instanceof FlixelObject object && computeBounds(object, cam);
+  }
+
+  /** Measures a group as the smallest box around its drawn members, nested groups included. */
+  private boolean measureMembers(Object group, FlixelCamera cam, int depth) {
+    if (depth >= FlixelDebugPaths.MAX_DEPTH) {
+      return false;
+    }
+    float left = Float.POSITIVE_INFINITY;
+    float top = Float.POSITIVE_INFINITY;
+    float right = Float.NEGATIVE_INFINITY;
+    float bottom = Float.NEGATIVE_INFINITY;
+    int size = FlixelDebugNodes.childCount(group);
+    for (int k = 0; k < size; k++) {
+      Object member = FlixelDebugNodes.child(group, k);
+      // Measuring a member overwrites the stored bounds, so the running box is kept in locals.
+      if (!isShown(member, cam) || !measure(member, cam, depth + 1)) {
+        continue;
+      }
+      left = Math.min(left, boundsLeft);
+      top = Math.min(top, boundsTop);
+      right = Math.max(right, boundsLeft + boundsWidth);
+      bottom = Math.max(bottom, boundsTop + boundsHeight);
+    }
+    if (left >= right || top >= bottom) {
+      return false;
+    }
+    boundsLeft = left;
+    boundsTop = top;
+    boundsWidth = right - left;
+    boundsHeight = bottom - top;
+    return true;
+  }
+
+  /** Returns whether a member is drawn on a camera: it exists, is visible, and draws on that camera. */
+  private static boolean isShown(@Nullable Object member, FlixelCamera cam) {
+    return switch (member) {
+      case null -> false;
+      case IFlixelBasic basic when (!basic.isExists() || !basic.isVisible()) -> false;
+      case FlixelBasic basic when !isDrawnOn(basic, cam) -> false;
+      default -> true;
+    };
   }
 
   /**
@@ -310,18 +363,8 @@ public class FlixelDebugPicker {
     int size = FlixelDebugNodes.childCount(node);
     for (int k = 0; k < size; k++) {
       Object member = FlixelDebugNodes.child(node, topFirst ? size - 1 - k : k);
-      switch (member) {
-        case null -> {
-          continue;
-        }
-        case IFlixelBasic basic when (!basic.isExists() || !basic.isVisible()) -> {
-          continue;
-        }
-        case FlixelBasic basic when !isDrawnOn(basic, cam) -> {
-          continue;
-        }
-        default -> {
-        }
+      if (!isShown(member, cam)) {
+        continue;
       }
       // Children are drawn after their parent, so they are on top of it.
       if (topFirst) {

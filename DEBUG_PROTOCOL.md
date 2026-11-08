@@ -613,10 +613,14 @@ camera shows and the visible area is `viewWidth` by `viewHeight`. Each object is
 so parallax layers and objects fixed to the screen are where they appear. To draw the map, scale the view to the
 size of your canvas; no camera math is needed. A box is the object's **hitbox** (its collision box, the same one the
 game outlines when hitboxes are on), not the area its graphic covers, so a sprite's offset, scale, angle, and
-animation frame do not change it. The one exception is the selected box (flag bit 0): it is the area the object's
+animation frame do not change it. One exception is the selected box (flag bit 0): it is the area the object's
 graphic covers (its offset, scale, and frame, widened to the bounding box when rotated), the same area the game
 outlines in yellow, so both show the same selection outline. `PICK` always tests hitboxes, so a tap selects the
-hitbox under it even where the selected box is larger. The box `id` is the same object id that [scene](#scene) and [inspector](#inspector) use.
+hitbox under it even where the selected box is larger. A group (any `FlixelGroupable`) is the other exception: its
+box is the smallest box around the boxes of its members that are drawn on the camera (nested groups included), so
+it outlines what it holds even when it has no size of its own. A group with nothing drawn uses its own hitbox when
+it has one, and otherwise has no box. `PICK` treats that box like any other, so the space between members selects
+the group. The box `id` is the same object id that [scene](#scene) and [inspector](#inspector) use.
 
 **Debug nodes.** An object that implements `FlixelDebugNode` (see [scene](#scene)) measures its own box in the
 camera's view space instead of using a hitbox, and returns no box when it is not drawn on that camera. Its children are
