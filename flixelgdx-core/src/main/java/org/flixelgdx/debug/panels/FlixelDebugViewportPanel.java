@@ -522,6 +522,17 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
   }
 
   /**
+   * Returns the camera the map shows right now: the chosen one, or the main camera while the chosen index is past
+   * the end of the camera list.
+   *
+   * @return The camera, or {@code null} when the game has no camera.
+   */
+  @Nullable
+  public FlixelCamera getShownCamera() {
+    return shownCamera();
+  }
+
+  /**
    * Returns the type name a box index from the type table stands for.
    *
    * @param typeIndex A type index of a box.

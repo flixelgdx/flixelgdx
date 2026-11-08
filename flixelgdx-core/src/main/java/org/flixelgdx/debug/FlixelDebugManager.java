@@ -62,6 +62,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #inspector}: select an object and see or edit its properties.</li>
  *   <li>{@link #save}: view and edit the game's save data.</li>
  *   <li>{@link #viewport}: a live map of what a camera shows, with remote picking, moving, and camera flying.</li>
+ *   <li>{@link #capture}: a picture of the finished game frame on request.</li>
+ *   <li>{@link #input}: keys, pointer, scroll, and text injected on behalf of the debugger app.</li>
  * </ul>
  *
  * <p>Example:
@@ -163,6 +165,24 @@ public class FlixelDebugManager {
    */
   public final FlixelDebugViewportPanel viewport;
 
+  /**
+   * The capture panel: a picture of the game's finished frame on request, for the debugger app.
+   * <pre>{@code
+   * Flixel.debug.capture.request(1, 640);
+   * }</pre>
+   */
+  public final FlixelDebugCapturePanel capture;
+
+  /**
+   * The input panel: presses keys, moves and clicks a pointer, scrolls, and types text in the game on behalf of the
+   * debugger app, through the same input managers real input uses.
+   * <pre>{@code
+   * Flixel.debug.input.key(FlixelKey.SPACE, true);
+   * Flixel.debug.input.click(Flixel.debug.ids.idOf(playButton), FlixelMouseButton.LEFT);
+   * }</pre>
+   */
+  public final FlixelDebugInputPanel input;
+
   /** The tracker panel: named groups of values. */
   public final FlixelDebugTrackerPanel trackers;
 
@@ -237,6 +257,8 @@ public class FlixelDebugManager {
     save = new FlixelDebugSavePanel();
     scene = new FlixelDebugScenePanel(ids, inspector);
     viewport = new FlixelDebugViewportPanel(controls, inspector);
+    capture = new FlixelDebugCapturePanel();
+    input = new FlixelDebugInputPanel(viewport, ids);
     inspector.setFocusHandler(controls::goTo);
     FlixelDebugDefaultSections.register(inspector);
     register(stats);
@@ -250,6 +272,8 @@ public class FlixelDebugManager {
     register(inspector);
     register(save);
     register(viewport);
+    register(capture);
+    register(input);
   }
 
   /**
@@ -322,6 +346,16 @@ public class FlixelDebugManager {
     logs.attach();
     started = true;
     startAgent();
+  }
+
+  /**
+   * Applies the input that the debugger app queued (keys, pointer, scroll, and text) to the input managers.
+   *
+   * <p>{@link FlixelGame} calls this every frame while the game runs in debug mode, before the input devices are
+   * read, so the game sees injected input like real input. It does not allocate. See {@link #input}.
+   */
+  public void applyInput() {
+    input.applyQueued();
   }
 
   /**
