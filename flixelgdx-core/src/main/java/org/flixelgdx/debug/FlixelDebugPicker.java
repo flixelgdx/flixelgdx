@@ -34,7 +34,6 @@ import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
 import org.flixelgdx.debug.panels.FlixelDebugViewportPanel;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelFrame;
-import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
