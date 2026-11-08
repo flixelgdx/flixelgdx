@@ -217,6 +217,10 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private FlixelGpuShaderProgram spriteProgram;
   private FlixelGpuTexture opaqueTexture;
   private FlixelGpuRenderTarget sceneTarget;
+
+  /** The caller waiting for the next finished frame, or {@code null}. See {@link #captureScene}. */
+  @Nullable
+  private FlixelPixelReadback pendingCapture;
   private FlixelImageDecoder decoder;
   private volatile FlixelBasisTranscoder basisTranscoder;
   private Runnable eventPump;
@@ -252,6 +256,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private boolean windowedRenderResolution;
   private boolean renderSmooth = true;
   private boolean sceneActive;
+  private boolean sceneDrawn;
   private boolean sceneTargetDirty;
   private boolean statsEnabled;
   private boolean ringWarned;
@@ -562,6 +567,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     encoder = encoder == null ? device.createCommandEncoder(null) : device.createCommandEncoder(null, encoder);
     passOpen = false;
     sceneActive = false;
+    sceneDrawn = false;
     depth = 1;
     initLevel(0, surfaceView, surfaceFormat, backBufferWidth, backBufferHeight, null);
     setClear(0, 0f, 0f, 0f, 1f);
@@ -607,6 +613,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     finishLevel(0);
     endPass();
     submitCommands();
+    finishCapture();
     long presentStart = System.nanoTime();
     if (surface != null) {
       surface.present();
@@ -863,6 +870,54 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
         }
       });
     }
+  }
+
+  @Override
+  public boolean supportsCapture() {
+    return device != null;
+  }
+
+  /**
+   * Keeps the scene of the next finished frame and copies it back to the CPU.
+   *
+   * <p>The renderer normally draws the scene straight onto the window's back buffer, which cannot be read back.
+   * While a capture is waiting, the next frame draws the scene into its own render target instead (the same one
+   * it uses for a render resolution), copies the target to the window as usual, and, right after that frame's
+   * commands are submitted, reads the target back with {@link #readPixels}. That makes the picture exactly the
+   * scene the game drew, before anything that is drawn on the window afterwards (such as the debugger's outlines),
+   * and costs one extra full-screen copy for that single frame.
+   *
+   * <p>A second call before the first finished answers the first callback with {@code null}. The callback is
+   * called exactly once, on the thread that pumps the GPU's events.
+   *
+   * @param callback Receives the pixels, valid only during the call, or {@code null}.
+   */
+  @Override
+  public void captureScene(@NotNull FlixelPixelReadback callback) {
+    if (device == null) {
+      callback.onPixels(null, 0, 0, 0);
+      return;
+    }
+    FlixelPixelReadback older = pendingCapture;
+    pendingCapture = callback;
+    if (older != null) {
+      older.onPixels(null, 0, 0, 0);
+    }
+  }
+
+  /** Reads the scene target back when a capture is waiting and the frame that just ended drew into it. */
+  private void finishCapture() {
+    FlixelPixelReadback callback = pendingCapture;
+    if (callback == null) {
+      return;
+    }
+    pendingCapture = null;
+    FlixelGpuRenderTarget target = sceneTarget;
+    if (!sceneDrawn || target == null) {
+      callback.onPixels(null, 0, 0, 0);
+      return;
+    }
+    readPixels(target.getTexture(), 0, 0, sceneWidth, sceneHeight, callback);
   }
 
   @Nullable
@@ -1157,7 +1212,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     }
     int width = sceneSize(true);
     int height = sceneSize(false);
-    if (width == backBufferWidth && height == backBufferHeight) {
+    if (width == backBufferWidth && height == backBufferHeight && pendingCapture == null) {
       disposeSceneTarget();
       return;
     }
@@ -1191,6 +1246,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     finishLevel(0);
     endPass();
     sceneActive = false;
+    sceneDrawn = true;
     FlixelGpuRenderTarget scene = sceneTarget;
     copyLevel(SPARE, 0);
     viewX[0] = 0;

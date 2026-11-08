@@ -214,6 +214,47 @@ class FlixelGpuSmokeTest {
   }
 
   @Test
+  void aSceneCaptureReadsTheFrameDrawnAfterTheRequestAndAnOlderRequestGetsNoPixels() {
+    assertTrue(graphics.supportsCapture());
+    int[] calls = new int[2];
+    int[] shape = new int[3];
+    boolean[] hadPixels = new boolean[2];
+    graphics.getDevice().pushErrorScope(GpuErrorFilter.VALIDATION);
+    graphics.captureScene((rgba, width, height, rowBytes) -> {
+      calls[0]++;
+      hadPixels[0] = rgba != null;
+    });
+    graphics.captureScene((rgba, width, height, rowBytes) -> {
+      calls[1]++;
+      hadPixels[1] = rgba != null;
+      shape[0] = width;
+      shape[1] = height;
+      shape[2] = rowBytes;
+    });
+    assertEquals(1, calls[0], "asking again answers the older request with no pixels");
+    assertFalse(hadPixels[0]);
+
+    long deadline = System.nanoTime() + 5_000_000_000L;
+    while (calls[1] == 0 && System.nanoTime() < deadline) {
+      graphics.beginFrame();
+      graphics.clear(0f, 0f, 0f, 1f);
+      graphics.beginScene();
+      graphics.endScene();
+      graphics.endFrame();
+    }
+    assertEquals(1, calls[1], "the callback runs exactly once");
+    assertTrue(hadPixels[1], "the scene was copied back");
+    assertEquals(graphics.getBackBufferWidth(), shape[0]);
+    assertEquals(graphics.getBackBufferHeight(), shape[1]);
+    assertTrue(shape[2] >= shape[0] * 4);
+    assertNull(popValidationError());
+    graphics.beginFrame();
+    graphics.beginScene();
+    graphics.endFrame();
+    assertEquals(1, calls[1], "a later frame does not capture again");
+  }
+
+  @Test
   void aReadbackOfADestroyedTextureReportsNoPixels() {
     FlixelTexture texture = solid(4);
     texture.destroy();

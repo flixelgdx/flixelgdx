@@ -41,7 +41,7 @@ package org.flixelgdx.debug.remote;
 public final class FlixelDebugProtocol {
 
   public static final int VERSION_MAJOR = 1;
-  public static final int VERSION_MINOR = 0;
+  public static final int VERSION_MINOR = 1;
 
   public static final int DEFAULT_PORT = 6510;
   public static final int RECONNECT_MILLIS = 2000;
@@ -71,6 +71,8 @@ public final class FlixelDebugProtocol {
   public static final int KIND_INSPECTOR = 9;
   public static final int KIND_SAVE = 10;
   public static final int KIND_VIEWPORT = 11;
+  public static final int KIND_CAPTURE = 12;
+  public static final int KIND_INPUT = 13;
 
   public static final int VALUE_BOOL = 1;
   public static final int VALUE_INT = 2;
@@ -133,6 +135,27 @@ public final class FlixelDebugProtocol {
   public static final int VIEWPORT_BOX_SELECTED = 1;
   public static final int VIEWPORT_BOX_GROUP = 2;
   public static final int VIEWPORT_BOX_INACTIVE = 4;
+
+  public static final int CAPTURE_STATE = 1;
+  public static final int CAPTURE_IMAGE = 2;
+  public static final int CAPTURE_REQUEST = 1;
+  public static final int CAPTURE_MIN_SIDE = 64;
+  public static final int CAPTURE_MAX_SIDE = 2048;
+
+  public static final int INPUT_KEY = 1;
+  public static final int INPUT_POINTER = 2;
+  public static final int INPUT_SCROLL = 3;
+  public static final int INPUT_TEXT = 4;
+  public static final int INPUT_CLICK_OBJECT = 5;
+  public static final int INPUT_POINTER_MOVE = 0;
+  public static final int INPUT_POINTER_DOWN = 1;
+  public static final int INPUT_POINTER_UP = 2;
+  public static final int INPUT_FLAG_KEYS = 1;
+  public static final int INPUT_FLAG_POINTER = 2;
+  public static final int INPUT_FLAG_SCROLL = 4;
+  public static final int INPUT_FLAG_TEXT = 8;
+  public static final int INPUT_FLAG_TOUCH = 16;
+  public static final int INPUT_MAX_TEXT_CHARS = 1000;
 
   public static final int CUSTOM_PRESS = 1;
   public static final int CUSTOM_SET_PROPERTY = 2;
