@@ -276,6 +276,29 @@ class FlixelGpuSmokeTest {
   }
 
   @Test
+  void sequentialReadbacksReuseOneBufferUntilItIsReleased() {
+    FlixelTexture texture = solid(16);
+    ByteBuffer[] seen = new ByteBuffer[3];
+    for (int n = 0; n < seen.length; n++) {
+      int slot = n;
+      boolean[] done = new boolean[1];
+      graphics.readPixels(texture, 0, 0, 16, 16, (rgba, width, height, rowBytes) -> {
+        seen[slot] = rgba;
+        done[0] = true;
+      });
+      long deadline = System.nanoTime() + 5_000_000_000L;
+      while (!done[0] && System.nanoTime() < deadline) {
+        graphics.beginFrame();
+        graphics.endFrame();
+      }
+      assertTrue(done[0]);
+    }
+    assertTrue(seen[0] != null && seen[0] == seen[1] && seen[1] == seen[2], "the same buffer is reused");
+    graphics.releaseReadbackBuffers();
+    texture.destroy();
+  }
+
+  @Test
   void aReadbackOfADestroyedTextureReportsNoPixels() {
     FlixelTexture texture = solid(4);
     texture.destroy();

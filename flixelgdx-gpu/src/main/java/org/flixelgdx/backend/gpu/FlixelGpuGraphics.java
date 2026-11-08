@@ -219,6 +219,10 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private FlixelGpuTexture opaqueTexture;
   private FlixelGpuRenderTarget sceneTarget;
 
+  /** The reusable copy of the latest readback. It is only valid during the callback that receives it. */
+  @Nullable
+  private ByteBuffer readbackCopy;
+
   /** The caller waiting for the next finished frame, or {@code null}. See {@link #captureScene}. */
   @Nullable
   private FlixelPixelReadback pendingCapture;
@@ -870,6 +874,11 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   }
 
   @Override
+  public void releaseReadbackBuffers() {
+    readbackCopy = null;
+  }
+
+  @Override
   public boolean supportsCapture() {
     return device != null;
   }
@@ -930,7 +939,15 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     ByteBuffer pixels = null;
     try {
       if (status == GpuMapAsyncStatus.SUCCESS) {
-        ByteBuffer copy = ByteBuffer.allocateDirect((int) size);
+        ByteBuffer copy = readbackCopy;
+        if (copy == null || copy.capacity() < size) {
+          // Drop the old one first so a big buffer never exists twice. Allocating a multi-megabyte direct buffer for
+          // every readback exhausts the heap of the web backend, so the buffer is kept and only ever grows.
+          readbackCopy = null;
+          copy = ByteBuffer.allocateDirect((int) size);
+          readbackCopy = copy;
+        }
+        copy.clear().limit((int) size);
         if (staging.readMappedRange(0L, copy) == GpuStatus.SUCCESS) {
           pixels = copy;
         } else {

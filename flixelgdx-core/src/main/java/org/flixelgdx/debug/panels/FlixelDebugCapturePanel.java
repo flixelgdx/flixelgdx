@@ -87,7 +87,7 @@ public class FlixelDebugCapturePanel extends FlixelDebugPanelBase {
   /** Seconds after which an open request is given up on. */
   public static final float TIMEOUT_SECONDS = 10f;
 
-  private final FlixelPngEncoder encoder = new FlixelPngEncoder();
+  private FlixelPngEncoder encoder = new FlixelPngEncoder();
 
   private float waited;
   private int requestId;
@@ -185,6 +185,8 @@ public class FlixelDebugCapturePanel extends FlixelDebugPanelBase {
 
   @Override
   public void reset() {
+    // A new encoder lets the big buffers of the old one go. One encoder is reused for every capture otherwise.
+    encoder = new FlixelPngEncoder();
     generation++;
     open = false;
     ready = false;

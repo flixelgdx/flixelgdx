@@ -396,6 +396,15 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Frees the memory a backend keeps between pixel readbacks.
+   *
+   * <p>A backend reuses one buffer for every readback, because allocating a large buffer each time can exhaust
+   * the heap on some platforms. Tools call this when they are done (for example when the debugger disconnects)
+   * so the buffer does not stay allocated. The next readback allocates it again. The default does nothing.
+   */
+  default void releaseReadbackBuffers() {}
+
+  /**
    * Returns whether {@link #captureScene(FlixelPixelReadback)} can capture the finished game frame on this
    * backend.
    *
