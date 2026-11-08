@@ -45,11 +45,11 @@ viewport 11, capture 12, input 13.
 
 ## msg_hello.bin
 
-`u8:1 u16:1 u16:1 string:"desktop" string:"Linux 6.17 amd64" i32:1280 i32:720 string:"Demo Game" string:"1.2.3"`
+`u8:1 u16:1 u16:0 string:"desktop" string:"Linux 6.17 amd64" i32:1280 i32:720 string:"Demo Game" string:"1.2.3"`
 
 ## msg_hello_ack.bin
 
-`u8:2 u16:1 u16:1`
+`u8:2 u16:1 u16:0`
 
 ## msg_panel_list.bin
 

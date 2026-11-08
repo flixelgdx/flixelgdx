@@ -10,7 +10,7 @@ The Java implementation lives in `org.flixelgdx.debug.remote` (`FlixelDebugProto
 with a README listing the exact values each file encodes. An app implementation should copy that folder
 and assert the same values.
 
-Current version: **1.1**.
+Current version: **1.0**.
 
 ## Table of contents
 
@@ -790,10 +790,6 @@ Actions:
 ## Versioning
 
 The version is `major.minor`, starting at **1.0**.
-
-- **1.1** added the `capture` (12) and `input` (13) panel kinds, and `FlixelDebugNode` support in `scene` and `viewport`
-  (no wire change). A 1.0 app ignores the two new panel kinds, and a 1.0 game simply never lists them, so a 1.1 app
-  must treat both panels as optional.
 
 - A **minor** bump only adds fields at the **end** of payloads, or adds new message types, panel kinds,
   subtypes, or action codes. Readers **must ignore trailing bytes** they do not understand and **must ignore

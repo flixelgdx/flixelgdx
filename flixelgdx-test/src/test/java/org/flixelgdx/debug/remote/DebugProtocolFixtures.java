@@ -162,9 +162,9 @@ final class DebugProtocolFixtures {
     add("value_string_unicode", val(UNICODE));
     add("value_error", err("getter threw"));
 
-    add("msg_hello", u8(FlixelDebugProtocol.MSG_HELLO), u16(1), u16(1), str("desktop"), str("Linux 6.17 amd64"),
+    add("msg_hello", u8(FlixelDebugProtocol.MSG_HELLO), u16(1), u16(0), str("desktop"), str("Linux 6.17 amd64"),
         i32(1280), i32(720), str("Demo Game"), str("1.2.3"));
-    add("msg_hello_ack", u8(FlixelDebugProtocol.MSG_HELLO_ACK), u16(1), u16(1));
+    add("msg_hello_ack", u8(FlixelDebugProtocol.MSG_HELLO_ACK), u16(1), u16(0));
     add("msg_panel_list", u8(FlixelDebugProtocol.MSG_PANEL_LIST), begin(),
         panel(P_STATS, "stats", "Stats", FlixelDebugProtocol.KIND_STATS),
         panel(P_LOGS, "logs", "Logs", FlixelDebugProtocol.KIND_LOGS),
