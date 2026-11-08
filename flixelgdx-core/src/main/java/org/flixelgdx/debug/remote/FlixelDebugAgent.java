@@ -219,6 +219,9 @@ public final class FlixelDebugAgent {
     helloPending = false;
     resetState();
     manager.stats.setAgentRates(0f, 0f);
+    // Nobody is waiting for a picture any more, so let the big capture buffers go.
+    manager.capture.reset();
+    Flixel.graphics.releaseReadbackBuffers();
     LOG.warn("Lost the connection to the remote debugger. Waiting for it to come back.");
   }
 
