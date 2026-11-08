@@ -1406,7 +1406,7 @@
  *       service or add a platform.</li>
  * </ul>
  *
- * <p>Have fun creating! Now go make something great.
+ * <p>Have fun creating! Now go make something great. <3
  *
  * @see org.flixelgdx.Flixel
  * @see org.flixelgdx.FlixelGame
