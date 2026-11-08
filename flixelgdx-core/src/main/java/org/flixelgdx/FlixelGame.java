@@ -388,7 +388,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
 
-    if (Flixel.isDebugMode() && Flixel.debug != null) {
+    if (Flixel.isDebugMode()) {
       // Input a remote tool injected is applied first, so the managers below see it like real input.
       Flixel.debug.applyInput();
     }
@@ -400,7 +400,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.gamepads.update();
     FlixelActionSets.update(elapsed);
 
-    if (Flixel.isDebugMode() && Flixel.debug != null) {
+    if (Flixel.isDebugMode()) {
       // Before the game logic runs, so a click or key the debugger takes is already hidden from the game.
       Flixel.debug.updateInput(rawElapsed);
     }
@@ -631,7 +631,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @see #endFrame()
    */
   public float advanceTime(float rawDelta) {
-    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
+    float rawClamped = Math.clamp(rawDelta, Flixel.MIN_ELAPSED, Flixel.MAX_ELAPSED);
     rawElapsed = rawClamped;
     elapsed = rawClamped * Flixel.timeScale;
     return elapsed;
