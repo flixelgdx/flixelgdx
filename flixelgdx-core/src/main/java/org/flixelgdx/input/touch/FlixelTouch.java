@@ -72,6 +72,7 @@ public final class FlixelTouch {
   public int pointer;
 
   boolean pressed;
+  boolean injected;
   boolean justPressed;
   boolean justReleased;
   boolean dragging;

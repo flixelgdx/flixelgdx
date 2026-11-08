@@ -28,6 +28,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -70,11 +71,18 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   @NotNull
   public FlixelMouseIconManager icons = FlixelNoopMouseIconManager.INSTANCE;
 
+  private int injectedX;
+  private int injectedY;
+  private int realX;
+  private int realY;
   private int screenX;
   private int screenY;
 
   private float worldX;
   private float worldY;
+
+  private float injectedScrollX;
+  private float injectedScrollY;
 
   private float scrollDeltaX;
   private float scrollDeltaY;
@@ -89,6 +97,8 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   /** Buttons a tool keeps from the game until it unblocks them. */
   private final boolean[] blocked = new boolean[MAX_BUTTON + 1];
 
+  private final boolean[] injected = new boolean[MAX_BUTTON + 1];
+
   @Nullable
   private FlixelCamera worldCamera;
 
@@ -99,6 +109,10 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   public boolean enabled = true;
 
   private boolean scrollBlocked;
+
+  private boolean injectedPointer;
+
+  private boolean forwarding;
 
   /** Creates a new mouse input manager with all buttons in the released state. */
   public FlixelMouseInputManager() {}
@@ -115,6 +129,10 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
 
   @Override
   public void scrolled(float amountX, float amountY) {
+    if (forwarding) {
+      // This is an injected scroll coming back through the device. It was already counted in injectScroll(...).
+      return;
+    }
     scrollDeltaX += amountX;
     scrollDeltaY += amountY;
   }
@@ -125,10 +143,14 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
     if (!enabled) {
       return;
     }
-    screenX = Flixel.input.getX();
-    screenY = Flixel.input.getY();
+    if (injectedPointer && (Flixel.input.getX() != realX || Flixel.input.getY() != realY)) {
+      // The real mouse moved, so the person at the keyboard takes the pointer back.
+      injectedPointer = false;
+    }
+    screenX = injectedPointer ? injectedX : Flixel.input.getX();
+    screenY = injectedPointer ? injectedY : Flixel.input.getY();
     for (int i = 0; i <= MAX_BUTTON; i++) {
-      boolean cur = Flixel.input.isButtonPressed(i);
+      boolean cur = isDown(i);
       justPressed[i] = cur && !prevPressed[i];
       justReleased[i] = !cur && prevPressed[i];
       if (consumed[i] && !cur) {
@@ -190,10 +212,12 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   @Override
   public void endFrame() {
     for (int i = 0; i <= MAX_BUTTON; i++) {
-      prevPressed[i] = Flixel.input.isButtonPressed(i);
+      prevPressed[i] = isDown(i);
     }
     scrollDeltaX = 0f;
     scrollDeltaY = 0f;
+    injectedScrollX = 0f;
+    injectedScrollY = 0f;
   }
 
   public int getScreenX() {
@@ -410,7 +434,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * @return The accumulated horizontal scroll delta for the current frame.
    */
   public float getScrollDeltaX() {
-    return scrollBlocked ? 0f : scrollDeltaX;
+    return (scrollBlocked ? 0f : scrollDeltaX) + injectedScrollX;
   }
 
   /**
@@ -421,7 +445,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * @return The accumulated vertical scroll delta for the current frame.
    */
   public float getScrollDeltaY() {
-    return scrollBlocked ? 0f : scrollDeltaY;
+    return (scrollBlocked ? 0f : scrollDeltaY) + injectedScrollY;
   }
 
   /**
@@ -476,7 +500,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * @see #setBlocked(int, boolean)
    */
   public boolean rawPressed(int button) {
-    return enabled && button >= 0 && button <= MAX_BUTTON && Flixel.input.isButtonPressed(button);
+    return enabled && button >= 0 && button <= MAX_BUTTON && isDown(button);
   }
 
   /**
@@ -515,7 +539,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * @param button Button index.
    */
   public void consume(int button) {
-    if (button >= 0 && button <= MAX_BUTTON && Flixel.input.isButtonPressed(button)) {
+    if (button >= 0 && button <= MAX_BUTTON && isDown(button)) {
       consumed[button] = true;
     }
   }
@@ -562,7 +586,121 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   }
 
   private boolean hidden(int button) {
-    return consumed[button] || blocked[button];
+    return !injected[button] && (consumed[button] || blocked[button]);
+  }
+
+  private boolean isDown(int button) {
+    return injected[button] || Flixel.input.isButtonPressed(button);
+  }
+
+  /**
+   * Moves the pointer on behalf of a tool, so the game sees the mouse at that spot.
+   *
+   * <p>From the next {@link #update()} on, {@link #getScreenX()}, {@link #getWorldX()}, and
+   * {@link #getWorldX(FlixelCamera)} (and the matching Y methods) report the injected position instead of the
+   * real one, and every {@link FlixelMouseListener} gets a {@code mouseMoved} (or {@code mouseDragged} while an
+   * injected button is held). The injected position stays until {@link #releaseInjected()} or until the real
+   * mouse moves, whichever comes first.
+   *
+   * @param x The horizontal position in window pixels.
+   * @param y The vertical position in window pixels.
+   */
+  public void injectPosition(int x, int y) {
+    if (!injectedPointer) {
+      realX = Flixel.input.getX();
+      realY = Flixel.input.getY();
+    }
+    injectedPointer = true;
+    injectedX = x;
+    injectedY = y;
+    if (Flixel.input instanceof FlixelBaseInputDevice device) {
+      if (anyInjected()) {
+        device.injectMouseDragged(x, y);
+      } else {
+        device.injectMouseMoved(x, y);
+      }
+    }
+  }
+
+  /**
+   * Presses or releases a mouse button on behalf of a tool, so the game sees a real click.
+   *
+   * <p>The button shows up in {@link #pressed(int)}, {@link #justPressed(int)}, {@link #justReleased(int)}, and
+   * every {@link FlixelMouseListener}, and it is never hidden by {@link #setBlocked(int, boolean)} or
+   * {@link #consume(int)}. "Just" detection works like it does for a real button, so release the button in a later
+   * frame than the press. Pointer position comes from {@link #injectPosition(int, int)}.
+   *
+   * @param button The {@link FlixelMouseButton} code.
+   * @param down {@code true} to press, {@code false} to release.
+   */
+  public void injectButton(int button, boolean down) {
+    if (button < 0 || button > MAX_BUTTON || injected[button] == down) {
+      return;
+    }
+    injected[button] = down;
+    if (Flixel.input instanceof FlixelBaseInputDevice device) {
+      int x = injectedPointer ? injectedX : Flixel.input.getX();
+      int y = injectedPointer ? injectedY : Flixel.input.getY();
+      if (down) {
+        device.injectMouseDown(button, x, y);
+      } else {
+        device.injectMouseUp(button, x, y);
+      }
+    }
+  }
+
+  /**
+   * Scrolls the mouse wheel on behalf of a tool.
+   *
+   * <p>The amount is added to {@link #getScrollDeltaY()} for the current frame, even while scrolling is
+   * {@linkplain #setScrollBlocked(boolean) blocked}, and every {@link FlixelMouseListener} gets
+   * {@code scrolled(...)}. A positive amount scrolls down.
+   *
+   * @param amountX The horizontal scroll amount.
+   * @param amountY The vertical scroll amount.
+   */
+  public void injectScroll(float amountX, float amountY) {
+    injectedScrollX += amountX;
+    injectedScrollY += amountY;
+    if (Flixel.input instanceof FlixelBaseInputDevice device) {
+      forwarding = true;
+      try {
+        device.injectScrolled(amountX, amountY);
+      } finally {
+        forwarding = false;
+      }
+    }
+  }
+
+  /**
+   * Releases every injected button and hands the pointer position back to the real mouse.
+   *
+   * <p>A tool calls this when it goes away, so a button it held down does not stay stuck.
+   */
+  public void releaseInjected() {
+    for (int i = 0; i <= MAX_BUTTON; i++) {
+      injectButton(i, false);
+    }
+    injectedPointer = false;
+  }
+
+  /**
+   * Returns whether a tool is holding a mouse button down through {@link #injectButton(int, boolean)}.
+   *
+   * @param button The button to check.
+   * @return {@code true} while the injected press has not been released.
+   */
+  public boolean isInjected(int button) {
+    return button >= 0 && button <= MAX_BUTTON && injected[button];
+  }
+
+  private boolean anyInjected() {
+    for (int i = 0; i <= MAX_BUTTON; i++) {
+      if (injected[i]) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

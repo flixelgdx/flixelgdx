@@ -134,6 +134,132 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
    *
    * @param keycode The {@link FlixelKey} code that went down.
    */
+  /**
+   * Delivers a key press to every keyboard listener as if the user had pressed it.
+   *
+   * <p>This is for tools that drive the game, such as the remote debugger. It does not change what the platform
+   * reports through polling, so use {@code Flixel.keys.injectKey(...)}, which keeps the key manager's own state in
+   * step and then calls this.
+   *
+   * @param keycode The {@link org.flixelgdx.input.keyboard.FlixelKey} code.
+   */
+  public void injectKeyDown(int keycode) {
+    dispatchKeyDown(keycode);
+  }
+
+  /**
+   * Delivers a key release to every keyboard listener as if the user had released it.
+   *
+   * @param keycode The {@link org.flixelgdx.input.keyboard.FlixelKey} code.
+   * @see #injectKeyDown(int)
+   */
+  public void injectKeyUp(int keycode) {
+    dispatchKeyUp(keycode);
+  }
+
+  /**
+   * Delivers a typed character to every keyboard listener, the way text typed on a keyboard arrives.
+   *
+   * @param character The character that was "typed".
+   * @see #injectKeyDown(int)
+   */
+  public void injectKeyTyped(char character) {
+    dispatchKeyTyped(character);
+  }
+
+  /**
+   * Delivers a mouse button press to every mouse listener.
+   *
+   * @param button The {@link org.flixelgdx.input.mouse.FlixelMouseButton} code.
+   * @param x The pointer's horizontal position in window pixels.
+   * @param y The pointer's vertical position in window pixels.
+   * @see #injectKeyDown(int)
+   */
+  public void injectMouseDown(int button, int x, int y) {
+    dispatchMouseDown(button, x, y);
+  }
+
+  /**
+   * Delivers a mouse button release to every mouse listener.
+   *
+   * @param button The {@link org.flixelgdx.input.mouse.FlixelMouseButton} code.
+   * @param x The pointer's horizontal position in window pixels.
+   * @param y The pointer's vertical position in window pixels.
+   * @see #injectKeyDown(int)
+   */
+  public void injectMouseUp(int button, int x, int y) {
+    dispatchMouseUp(button, x, y);
+  }
+
+  /**
+   * Delivers a mouse move to every mouse listener.
+   *
+   * @param x The pointer's horizontal position in window pixels.
+   * @param y The pointer's vertical position in window pixels.
+   * @see #injectKeyDown(int)
+   */
+  public void injectMouseMoved(int x, int y) {
+    dispatchMouseMoved(x, y);
+  }
+
+  /**
+   * Delivers a mouse drag (a move while a button is held) to every mouse listener.
+   *
+   * @param x The pointer's horizontal position in window pixels.
+   * @param y The pointer's vertical position in window pixels.
+   * @see #injectKeyDown(int)
+   */
+  public void injectMouseDragged(int x, int y) {
+    dispatchMouseDragged(x, y);
+  }
+
+  /**
+   * Delivers a mouse wheel scroll to every mouse listener.
+   *
+   * @param amountX The horizontal scroll amount.
+   * @param amountY The vertical scroll amount. Positive scrolls down.
+   * @see #injectKeyDown(int)
+   */
+  public void injectScrolled(float amountX, float amountY) {
+    dispatchScrolled(amountX, amountY);
+  }
+
+  /**
+   * Delivers a touch start to every touch listener.
+   *
+   * @param pointer The finger index.
+   * @param x The horizontal position in window pixels.
+   * @param y The vertical position in window pixels.
+   * @see #injectKeyDown(int)
+   */
+  public void injectTouched(int pointer, int x, int y) {
+    dispatchTouched(pointer, x, y);
+  }
+
+  /**
+   * Delivers a touch end to every touch listener.
+   *
+   * @param pointer The finger index.
+   * @param x The horizontal position in window pixels.
+   * @param y The vertical position in window pixels.
+   * @see #injectKeyDown(int)
+   */
+  public void injectTouchReleased(int pointer, int x, int y) {
+    dispatchTouchReleased(pointer, x, y);
+  }
+
+  /**
+   * Delivers a touch move to every touch listener.
+   *
+   * @param pointer The finger index.
+   * @param x The horizontal position in window pixels.
+   * @param y The vertical position in window pixels.
+   * @see #injectKeyDown(int)
+   */
+  public void injectTouchDragged(int pointer, int x, int y) {
+    dispatchTouchDragged(pointer, x, y);
+  }
+
   protected void dispatchKeyDown(int keycode) {
     for (int i = 0; i < keyboardListeners.getSize(); i++) {
       keyboardListeners.get(i).keyDown(keycode);

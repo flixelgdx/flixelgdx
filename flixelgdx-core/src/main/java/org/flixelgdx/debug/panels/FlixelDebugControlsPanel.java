@@ -258,7 +258,8 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
       runFreeCam(elapsed, keys, mouse);
     }
     if (keys != null && mouse != null && mouse.rawJustPressed(FlixelMouseButton.LEFT)
-        && (keys.rawPressed(FlixelKey.ALT_LEFT) || keys.rawPressed(FlixelKey.ALT_RIGHT))) {
+        && !mouse.isInjected(FlixelMouseButton.LEFT)
+        && (held(keys, FlixelKey.ALT_LEFT) || held(keys, FlixelKey.ALT_RIGHT))) {
       mouse.consume(FlixelMouseButton.LEFT);
       Object hit = pickAtMouse();
       if (hit != null) {
@@ -661,20 +662,20 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
 
     float perPixelX = worldPerPixelX(cam);
     float perPixelY = worldPerPixelY(cam);
-    boolean fast = keys.rawPressed(FlixelKey.SHIFT_LEFT) || keys.rawPressed(FlixelKey.SHIFT_RIGHT);
+    boolean fast = held(keys, FlixelKey.SHIFT_LEFT) || held(keys, FlixelKey.SHIFT_RIGHT);
 
     float moveX = 0f;
     float moveY = 0f;
-    if (keys.rawPressed(FlixelKey.A) || keys.rawPressed(FlixelKey.LEFT)) {
+    if (held(keys, FlixelKey.A) || held(keys, FlixelKey.LEFT)) {
       moveX -= 1f;
     }
-    if (keys.rawPressed(FlixelKey.D) || keys.rawPressed(FlixelKey.RIGHT)) {
+    if (held(keys, FlixelKey.D) || held(keys, FlixelKey.RIGHT)) {
       moveX += 1f;
     }
-    if (keys.rawPressed(FlixelKey.W) || keys.rawPressed(FlixelKey.UP)) {
+    if (held(keys, FlixelKey.W) || held(keys, FlixelKey.UP)) {
       moveY -= 1f;
     }
-    if (keys.rawPressed(FlixelKey.S) || keys.rawPressed(FlixelKey.DOWN)) {
+    if (held(keys, FlixelKey.S) || held(keys, FlixelKey.DOWN)) {
       moveY += 1f;
     }
     float pixels = freeCamSpeed * (fast ? FAST_FACTOR : 1f) * elapsed;
@@ -686,7 +687,7 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
       panFreeCam(moveX * pixels * perPixelX, moveY * pixels * perPixelY);
     }
 
-    if (mouse.rawPressed(FlixelMouseButton.RIGHT)) {
+    if (mouse.rawPressed(FlixelMouseButton.RIGHT) && !mouse.isInjected(FlixelMouseButton.RIGHT)) {
       float x = mouse.getScreenX();
       float y = mouse.getScreenY();
       if (dragging && (x != dragX || y != dragY)) {
@@ -703,10 +704,10 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
     // A positive wheel delta scrolls down, which zooms out.
     float steps = -mouse.getRawScrollDeltaY();
     steps = Math.max(-MAX_WHEEL_STEPS, Math.min(MAX_WHEEL_STEPS, steps));
-    if (keys.rawPressed(FlixelKey.E)) {
+    if (held(keys, FlixelKey.E)) {
       steps += ZOOM_KEY_STEPS_PER_SECOND * elapsed;
     }
-    if (keys.rawPressed(FlixelKey.Q)) {
+    if (held(keys, FlixelKey.Q)) {
       steps -= ZOOM_KEY_STEPS_PER_SECOND * elapsed;
     }
     if (steps != 0f) {
@@ -714,6 +715,11 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
       zoomFreeCam((float) Math.pow(ZOOM_STEP, steps), cam.getWorldWidth() / zoom * 0.5f,
           cam.getWorldHeight() / zoom * 0.5f);
     }
+  }
+
+  /** Returns whether a person holds a key. A key that a tool injected does not fly the free camera. */
+  private static boolean held(FlixelKeyInputManager keys, int key) {
+    return keys.rawPressed(key) && !keys.isInjected(key);
   }
 
   /** Returns how many world units one screen pixel covers horizontally, which depends on the zoom and window size. */
