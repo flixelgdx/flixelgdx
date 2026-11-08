@@ -79,6 +79,19 @@
  * pinch the map to fly the camera. The same actions work from code, for example
  * {@code Flixel.debug.viewport.pan(0f, -100f)}.
  *
+ * <h2>Widgets and other objects the debugger cannot walk</h2>
+ * <p>The scene tree and the viewport map walk groups and measure objects with a hitbox. An object that is neither
+ * (a user interface widget, for example) implements {@link org.flixelgdx.debug.FlixelDebugNode FlixelDebugNode} to
+ * list its children and to report the box it covers on a camera. It then shows up in the scene tree, gets a box on the
+ * map, can be picked with a tap or Alt click, and can be clicked from the app.
+ *
+ * <h2>Driving the game from the app</h2>
+ * <p>The input panel ({@link org.flixelgdx.debug.panels.FlixelDebugInputPanel FlixelDebugInputPanel}) presses keys,
+ * moves and clicks a pointer, scrolls, and types text through the same input managers real input uses, so game code
+ * cannot tell the difference. The capture panel
+ * ({@link org.flixelgdx.debug.panels.FlixelDebugCapturePanel FlixelDebugCapturePanel}) sends a picture of the finished
+ * frame on request. Together they let a tool, such as an AI agent, play and watch the game.
+ *
  * <h2>Textures</h2>
  * <p>The texture panel ({@link org.flixelgdx.debug.panels.FlixelDebugTexturePanel FlixelDebugTexturePanel}) lists every
  * loaded texture with its size, GPU memory, the number of sprites using it, and a duplicate flag. The app can ask

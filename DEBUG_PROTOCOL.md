@@ -10,7 +10,7 @@ The Java implementation lives in `org.flixelgdx.debug.remote` (`FlixelDebugProto
 with a README listing the exact values each file encodes. An app implementation should copy that folder
 and assert the same values.
 
-Current version: **1.0**.
+Current version: **1.1**.
 
 ## Table of contents
 
@@ -134,6 +134,8 @@ Panel kinds:
 | 9    | `INSPECTOR` | `inspector`   | [inspector](#inspector) |
 | 10   | `SAVE`      | `save`        | [save](#save) |
 | 11   | `VIEWPORT`  | `viewport`    | [viewport](#viewport) |
+| 12   | `CAPTURE`   | `capture`     | [capture](#capture) |
+| 13   | `INPUT`     | `input`       | [input](#input) |
 
 ### PANEL_DATA (4)
 
@@ -413,6 +415,13 @@ member slots are not sent, but they keep their index, so a label can skip number
 `track()` and also lives in the state appears once, inside the state, with `trackedRoot` set; a tracked object that is
 not in the state appears as an extra root with `parent` `-1`.
 
+**Debug nodes.** Besides groups, the game descends into objects that implement the framework's `FlixelDebugNode`
+interface (`getDebugChildCount()`, `getDebugChild(int)`, and `getDebugBounds(camera, out)`), for example user interface
+widgets that are neither a group nor a sprite. A node's children are listed like group members: the `label` is the child
+index, an empty slot keeps its index and is not sent, and the node gets an object `id` like any other object. When an
+object is both a group (or a sprite) and a debug node, the debug node wins for its children and its box. Nothing on the
+wire tells the two apart, so the app needs no change to show them.
+
 The game builds the tree again about twice a second and sends a snapshot only when its shape changed (an object or a
 group member count changed, a sub state opened or closed, a root was tracked). A moved or edited object does not
 change the shape. `REQUEST_TREE` makes the game send a snapshot even when nothing changed.
@@ -490,8 +499,8 @@ action, and the `select` console command. It is a list of steps separated by dot
 
 - The first step is `state` (the current game state), `substate` (the sub state open on top of the state), or the
   label of an object the game registered as an extra root (a label may itself contain dots).
-- Every later step is a decimal **member index** (the position in the group's member list, counting empty slots)
-  or the word `substate`, which steps from a state into its open sub state. `substate.substate` is the sub state
+- Every later step is a decimal **member index** (the position in the group's member list, or the child index of a
+  debug node, counting empty slots) or the word `substate`, which steps from a state into its open sub state. `substate.substate` is the sub state
   open on top of the first one.
 
 Examples: `state` (the state itself), `state.3` (its fourth member), `state.3.0` (the first member of that
@@ -606,6 +615,11 @@ size of your canvas; no camera math is needed. A box is the object's **hitbox** 
 game outlines when hitboxes are on), not the area its graphic covers, so a sprite's offset, scale, angle, and
 animation frame do not change it. `PICK` tests the same hitboxes, so a tap selects exactly the box under it. The box `id` is the same object id that [scene](#scene) and [inspector](#inspector) use.
 
+**Debug nodes.** An object that implements `FlixelDebugNode` (see [scene](#scene)) measures its own box in the
+camera's view space instead of using a hitbox, and returns no box when it is not drawn on that camera. Its children are
+walked like group members, and a node with children carries the group flag. `PICK`, `Alt + Click`, the selection
+outline, `MOVE` (when the node has a position), and `CLICK_OBJECT` of [input](#input) all use that box.
+
 **Which objects.** Boxes are listed in draw order, bottom first, so the last box that contains a point is the one
 on top. Only objects that exist, are visible, are drawn on the camera, and touch the visible area are listed, and an
 open sub state is drawn on top of the state below it (the state below only counts while it still draws). At most
@@ -650,6 +664,109 @@ Actions:
 Non-finite numbers are ignored. Pause, step, and hitboxes are actions of [controls](#controls); the viewport only
 reports them.
 
+### capture
+
+Id `capture`, kind 12. Takes a picture of the game's screen. Subtypes:
+
+| Code | Name    | Direction   |
+|------|---------|-------------|
+| 1    | `STATE` | game to app |
+| 2    | `IMAGE` | game to app |
+
+`STATE` payload: `u8 subtype=1`, `bool supported`. Sent on connect and whenever it changes. It is `false` when the game's
+graphics backend cannot read the finished frame back (the app should then hide its capture button) and `true` on the
+WebGPU renderer, which every current platform (desktop, Android, web) uses.
+
+`IMAGE` payload: `u8 subtype=2`, `i32 requestId`, `i32 width`, `i32 height`, `bytes png`.
+
+Actions:
+
+| Code | Name      | Fields |
+|------|-----------|--------|
+| 1    | `REQUEST` | `i32 requestId`, `u16 maxSide` |
+
+- `REQUEST` asks for a picture of the next finished frame. `requestId` is any number the app chooses and comes back in
+  `IMAGE`. `maxSide` is the most pixels the picture may have on its longest side; the game clamps it to 64 through 2048.
+- The picture is the **finished game frame**: everything the cameras and the game's own overlay drew, at the size the
+  game drew it (the render resolution when one is set, otherwise the window). It is taken **before** the debugger draws
+  its own outlines (hitboxes and the selection), so those are not in it. Pixels that were not drawn are written fully
+  opaque. It is the frame drawn after the request arrived, so it also works while the game is paused.
+- The game reads the frame back from the GPU, which takes a few frames, shrinks it with nearest-neighbor sampling (a
+  frame that is already small enough keeps its size), and encodes it as the same uncompressed 8-bit RGBA PNG as a
+  [thumbnail](#thumbnails). Read `width` and `height` from the answer instead of computing them.
+- **One request is open at a time.** A `REQUEST` that arrives while another one has not been answered yet is dropped, and
+  so is one that arrives while `supported` is `false`.
+- **There is no answer at all** when the capture fails (the read failed, the frame could not be encoded, or it took
+  longer than 10 seconds), so the app must time out.
+- The PNG is as large as the raw pixels, and a message may not exceed 16 MB (the game closes the connection above that).
+  Because of this, the game shrinks the picture further than `maxSide` when the PNG would pass 15 MB, which only happens
+  for an almost square picture near the largest sizes (a 2048 by 2048 picture would be 16.8 MB). A 16:9 picture at
+  `maxSide` 2048 is about 9.4 MB.
+
+### input
+
+Id `input`, kind 13. Presses keys, moves and clicks a pointer, scrolls, and types text in the game, through the same input
+managers real input uses, so game code and user interface widgets see it exactly like a person's input. Single payload
+(state), sent on connect and whenever it changes:
+
+| Field   | Type | Notes |
+|---------|------|-------|
+| `flags` | `u8` | What the game supports, below. |
+
+| Bit | Value | Meaning |
+|-----|-------|---------|
+| 0   | 1     | `KEY` works. |
+| 1   | 2     | `POINTER` and `CLICK_OBJECT` work. |
+| 2   | 4     | `SCROLL` works. |
+| 3   | 8     | `TEXT` works. |
+| 4   | 16    | Touch input is on, so a pointer that presses the left button also starts touch pointer 0. |
+
+Other bits are reserved and are 0.
+
+Actions:
+
+| Code | Name           | Fields |
+|------|----------------|--------|
+| 1    | `KEY`          | `bool down`, `i32 key` |
+| 2    | `POINTER`      | `u8 phase`, `u8 button`, `f32 viewX`, `f32 viewY` |
+| 3    | `SCROLL`       | `f32 amount` |
+| 4    | `TEXT`         | `string text` |
+| 5    | `CLICK_OBJECT` | `i32 id`, `u8 button` |
+
+- `KEY` presses (`down` true) or releases a key. `key` is the framework's key code (`FlixelKey`, which is not an ASCII
+  code and not an operating system scan code), from 0 to 255. Other values are ignored. An injected key is visible to every
+  way the game reads input: `pressed`, `rawPressed`, `justPressed`, `justReleased`, `firstPressed`, and keyboard listeners.
+- `POINTER` moves (phase `0`), presses (`1`), or releases (`2`) a pointer. `button` is `0` left, `1` right, or `2` middle
+  (3 and 4 are the extra buttons) and is used by phases `1` and `2`; a press and a release also move the pointer to the
+  position first. The position is in the **view space** of the camera that the [viewport](#viewport) panel shows
+  (`SET_CAMERA`), the same space as its boxes. The game converts it to window pixels, so `Flixel.mouse.getWorldX(camera)`
+  lands on the point within a pixel of rounding. The pointer stays where it was put until the real mouse moves or the
+  app disconnects.
+- `SCROLL` turns the mouse wheel. A positive amount scrolls down, like a wheel turned towards the user.
+- `TEXT` is delivered as typed characters (the way text from a keyboard arrives), so text boxes receive it. It presses no
+  key, so use `KEY` for Enter, Backspace, and arrows. Text longer than 1000 characters is cut.
+- `CLICK_OBJECT` clicks the center of the object's [viewport](#viewport) box on the camera the viewport shows: the
+  pointer moves there, `button` goes down, and in the next frame it goes up. An unknown `id`, or an object that is not on
+  that camera when the click runs, does nothing.
+
+**Timing.** The game puts actions in a queue of at most 256 entries and applies it once per frame, before it reads the
+input devices. A key or button transition needs a frame of its own, or `justPressed` and `justReleased` would never be
+seen for a quick tap. So the game applies **at most one key or button transition per frame** (a `KEY`, a `POINTER` press
+or release, or one stage of `CLICK_OBJECT`) and leaves the rest for the next frames. Pointer moves, `SCROLL`, and `TEXT` are
+not transitions and are all applied in the frame they reach the front of the queue. A tap (press, then release) therefore
+takes two frames. Actions beyond the queue's size are dropped.
+
+**While paused.** The queue waits while the game is paused. It is applied on the next `STEP` of [controls](#controls)
+(that frame sees the transition as `justPressed` or `justReleased`), or when the game resumes. A paused game never sees
+input it cannot act on, and an app that steps one frame at a time knows exactly what the game saw in each frame.
+
+**Free camera.** [The free camera](#controls) hides its keys, the right mouse button, and the wheel from the game and
+reads them to fly the camera. Injected input is never hidden from the game, and the free camera never reacts to it, so an
+agent can press `W` to walk the player while the free camera is on.
+
+**Disconnect.** When the connection to the app is lost, the game releases every key and button it was holding, hands the
+pointer back to the real mouse, and empties the queue, so nothing stays stuck.
+
 ## Custom panels
 
 A panel with kind `CUSTOM` (0) is registered by game code and has any `id`. Payload:
@@ -672,6 +789,10 @@ Actions:
 ## Versioning
 
 The version is `major.minor`, starting at **1.0**.
+
+- **1.1** added the `capture` (12) and `input` (13) panel kinds, and `FlixelDebugNode` support in `scene` and `viewport`
+  (no wire change). A 1.0 app ignores the two new panel kinds, and a 1.0 game simply never lists them, so a 1.1 app
+  must treat both panels as optional.
 
 - A **minor** bump only adds fields at the **end** of payloads, or adds new message types, panel kinds,
   subtypes, or action codes. Readers **must ignore trailing bytes** they do not understand and **must ignore

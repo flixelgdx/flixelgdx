@@ -72,7 +72,9 @@ The extra takes `host` or `host:port`. Release builds never open a connection.
 A phone has no keyboard or mouse for the debugger's own shortcuts (Alt + Click to pick, F4 for the free camera). Use
 the app's **Viewport** panel instead: it shows a live map of what the game's camera draws, so you can tap an object
 to select it, drag it to move it, and drag or pinch the map to fly the camera. Code can do the same through
-`Flixel.debug.viewport`.
+`Flixel.debug.viewport`. The **Input** and **Capture** panels let the app press keys, tap, scroll, and type text in the
+game and take a picture of the frame (the picture needs a graphics backend that can read the frame back, which the
+WebGPU renderer on Android does).
 
 ## Profiling with trace sections
 
