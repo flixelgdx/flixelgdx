@@ -30,6 +30,7 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.debug.FlixelDebugDrawable;
 import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.debug.FlixelDebugNode;
 import org.flixelgdx.debug.FlixelDebugPicker;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
@@ -438,7 +439,8 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
    */
   public void drawBoundingBoxes(@NotNull FlixelCamera[] cameras) {
     Object selected = inspector.getSelected();
-    boolean outline = selected instanceof FlixelObject || selected instanceof FlixelDebugDrawable;
+    boolean outline = selected instanceof FlixelObject || selected instanceof FlixelDebugNode
+        || selected instanceof FlixelDebugDrawable;
     if (!hitboxes && !outline) {
       return;
     }
@@ -560,9 +562,9 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
       return;
     }
     float thickness = hitboxThickness * 2f;
-    if (selected instanceof FlixelObject object) {
+    if (selected instanceof FlixelObject || selected instanceof FlixelDebugNode) {
       // Outline what is drawn, which is what an Alt click hits, not only the hitbox.
-      if (picker.computeBounds(object, cam)) {
+      if (picker.measure(selected, cam)) {
         FlixelSpriteUtil.drawBorder(batch, pixel, picker.getBoundsLeft(), picker.getBoundsTop(),
             picker.getBoundsWidth(), picker.getBoundsHeight(), thickness, selectionColor);
       }

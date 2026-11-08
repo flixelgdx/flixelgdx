@@ -53,7 +53,8 @@ import org.jetbrains.annotations.Nullable;
  * visible, and are drawn on that camera count. Sprites are tested against the area they are drawn in (their graphic
  * with its offset and scale, widened to the bounding box when rotated), other objects against their hitbox.
  * With {@link #hitboxes} turned on, every object is tested against its hitbox instead, sprites included.
- * Groups are searched member by member, last member first, and a hidden or removed group hides its members.
+ * Groups and {@link FlixelDebugNode}s are searched child by child, last child first, and a hidden or removed
+ * group hides its members.
  *
  * <p>The same walk is shared with anything else that needs "every object drawn on this camera", such as the
  * {@linkplain FlixelDebugViewportPanel viewport panel} that sends a map of the screen to the debugger app. Call
@@ -85,6 +86,7 @@ public class FlixelDebugPicker {
   private float hitX;
   private float hitY;
 
+  private final float[] nodeBounds = new float[4];
   private final FlixelVector point = new FlixelVector();
   private final Visitor hitTest = this::testHit;
 
@@ -162,7 +164,7 @@ public class FlixelDebugPicker {
    * while it still draws behind it ({@link FlixelState#persistentDraw}). Members that do not exist, are not
    * visible, or are not drawn on the camera are skipped, and a group that is skipped hides all of its members.
    * Groups are visited too (they are members like any other), and a group's members are drawn after the group, so
-   * they count as being on top of it. Objects nested deeper than {@link FlixelDebugPaths#MAX_DEPTH} are not
+   * they count as being on top of it. The children of a {@link FlixelDebugNode} are walked like group members. Objects nested deeper than {@link FlixelDebugPaths#MAX_DEPTH} are not
    * visited.
    *
    * <p>It does not allocate. The visitor may call {@link #computeBounds(FlixelObject, FlixelCamera)} on this
@@ -241,6 +243,33 @@ public class FlixelDebugPicker {
   }
 
   /**
+   * Works out the area any walkable object covers on a camera, in the camera's view space.
+   *
+   * <p>A {@link FlixelDebugNode} measures itself through {@link FlixelDebugNode#getDebugBounds(FlixelCamera,
+   * float[])}. A {@link FlixelObject} is measured by {@link #computeBounds(FlixelObject, FlixelCamera)}. Anything
+   * else has no area. The result is read with {@link #getBoundsLeft()}, {@link #getBoundsTop()},
+   * {@link #getBoundsWidth()}, and {@link #getBoundsHeight()}. This does not allocate.
+   *
+   * @param node The object to measure.
+   * @param cam The camera it is drawn on.
+   * @return {@code true} when the object has an area on the camera. When {@code false}, the stored values are not
+   *     meaningful.
+   */
+  public boolean measure(@NotNull Object node, @NotNull FlixelCamera cam) {
+    if (node instanceof FlixelDebugNode debug) {
+      if (!debug.getDebugBounds(cam, nodeBounds)) {
+        return false;
+      }
+      boundsLeft = nodeBounds[0];
+      boundsTop = nodeBounds[1];
+      boundsWidth = nodeBounds[2];
+      boundsHeight = nodeBounds[3];
+      return boundsWidth > 0f && boundsHeight > 0f;
+    }
+    return node instanceof FlixelObject object && computeBounds(object, cam);
+  }
+
+  /**
    * Returns whether an object is drawn on a camera.
    *
    * @param object The object, whose {@link FlixelBasic#cameras} list is checked.
@@ -276,16 +305,12 @@ public class FlixelDebugPicker {
   }
 
   private boolean walkGroup(Object node, FlixelCamera cam, boolean topFirst, Visitor visitor, int depth) {
-    if (depth >= FlixelDebugPaths.MAX_DEPTH || !(node instanceof FlixelGroupable<?> group)) {
+    if (depth >= FlixelDebugPaths.MAX_DEPTH) {
       return false;
     }
-    FlixelArray<?> members = group.getMembers();
-    if (members == null) {
-      return false;
-    }
-    int size = members.getSize();
+    int size = FlixelDebugNodes.childCount(node);
     for (int k = 0; k < size; k++) {
-      Object member = members.get(topFirst ? size - 1 - k : k);
+      Object member = FlixelDebugNodes.child(node, topFirst ? size - 1 - k : k);
       switch (member) {
         case null -> {
           continue;
@@ -312,10 +337,10 @@ public class FlixelDebugPicker {
   }
 
   private boolean testHit(Object member, FlixelCamera cam) {
-    if (member instanceof FlixelObject object && computeBounds(object, cam)
+    if (measure(member, cam)
         && hitX >= boundsLeft && hitX <= boundsLeft + boundsWidth
         && hitY >= boundsTop && hitY <= boundsTop + boundsHeight) {
-      hit = object;
+      hit = member;
       return true;
     }
     return false;

@@ -25,8 +25,9 @@ package org.flixelgdx.debug.panels;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelState;
-import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelIdentityMap;
+import org.flixelgdx.debug.FlixelDebugNode;
+import org.flixelgdx.debug.FlixelDebugNodes;
 import org.flixelgdx.debug.FlixelDebugObjectIds;
 import org.flixelgdx.debug.FlixelDebugPaths;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
@@ -56,6 +57,10 @@ import org.jetbrains.annotations.NotNull;
  * {@code state.3.0}.
  *
  * <h2>Change detection</h2>
+ *
+ * <p>Besides groups, the walk descends into every {@link FlixelDebugNode}, so objects that are neither a group
+ * nor a sprite (for example user interface widgets) have their children listed too. A child of either kind is
+ * labeled with its index.
  *
  * <p>About twice a second the panel walks the tree and adds up a checksum of the shape (each object, the
  * size of each group, the open sub states). When the checksum differs from the last one the revision goes
@@ -202,12 +207,11 @@ public class FlixelDebugScenePanel extends FlixelDebugPanelBase {
           .writeBool(tracked);
     }
     if (depth < FlixelDebugPaths.MAX_DEPTH) {
-      if (node instanceof FlixelGroupable<?> group) {
-        FlixelArray<?> members = group.getMembers();
-        int size = members != null ? members.getSize() : 0;
+      int size = FlixelDebugNodes.childCount(node);
+      if (size > 0 || node instanceof FlixelGroupable<?>) {
         checksum = checksum * 31 + size;
         for (int i = 0; i < size; i++) {
-          Object member = members.get(i);
+          Object member = FlixelDebugNodes.child(node, i);
           if (member == null) {
             checksum = checksum * 31 + 7;
           } else {

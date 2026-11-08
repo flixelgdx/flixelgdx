@@ -25,9 +25,7 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelState;
-import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
-import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,8 +49,8 @@ import org.jetbrains.annotations.Nullable;
  *       object. A label may contain dots.</li>
  * </ul>
  *
- * <p>Every later step is either a member index (a decimal number, the position in the group's member list,
- * counting empty slots) or the word {@code substate}, which steps from a state into its open sub state. The framework
+ * <p>Every later step is either a member index (a decimal number, the position in the group's member list, or the
+ * child index of a {@link FlixelDebugNode}, counting empty slots) or the word {@code substate}, which steps from a state into its open sub state. The framework
  * has no per-object debug names (a {@code FlixelBasic} only has a numeric id), so member indexes are the only
  * naming. Indexes change when members are added or removed in front of an object, so a path is a snapshot, not a
  * permanent address.
@@ -196,14 +194,10 @@ public final class FlixelDebugPaths {
       if (digits == 0 || (pos < length && path.charAt(pos) != '.')) {
         return null;
       }
-      if (!(node instanceof FlixelGroupable<?> group)) {
+      if (!FlixelDebugNodes.isContainer(node) || index >= FlixelDebugNodes.childCount(node)) {
         return null;
       }
-      FlixelArray<?> members = group.getMembers();
-      if (members == null || index >= members.getSize()) {
-        return null;
-      }
-      node = members.get(index);
+      node = FlixelDebugNodes.child(node, index);
     }
     return node;
   }
@@ -212,16 +206,12 @@ public final class FlixelDebugPaths {
     if (node == target) {
       return true;
     }
-    if (depth >= MAX_DEPTH || !(node instanceof FlixelGroupable<?> group)) {
-      return false;
-    }
-    FlixelArray<?> members = group.getMembers();
-    if (members == null) {
+    if (depth >= MAX_DEPTH) {
       return false;
     }
     int mark = out.length();
-    for (int i = 0, n = members.getSize(); i < n; i++) {
-      Object member = members.get(i);
+    for (int i = 0, n = FlixelDebugNodes.childCount(node); i < n; i++) {
+      Object member = FlixelDebugNodes.child(node, i);
       if (member == null) {
         continue;
       }

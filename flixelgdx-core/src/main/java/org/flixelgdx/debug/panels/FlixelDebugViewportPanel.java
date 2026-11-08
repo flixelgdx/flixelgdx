@@ -30,6 +30,8 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelObjectIntMap;
 import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.debug.FlixelDebugNode;
+import org.flixelgdx.debug.FlixelDebugNodes;
 import org.flixelgdx.debug.FlixelDebugObjectIds;
 import org.flixelgdx.debug.FlixelDebugPicker;
 import org.flixelgdx.debug.remote.FlixelDebugAgent;
@@ -58,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
  * world size divided by its zoom. Because each object is placed with its own scroll factor, parallax layers and
  * screen-fixed objects land exactly where they appear. Each box has the object's
  * {@linkplain FlixelDebugObjectIds id} (the same id the scene and inspector panels use), its hitbox (measured
- * by {@link FlixelDebugPicker#computeBounds(FlixelObject, FlixelCamera)} with {@linkplain #hitboxes hitbox mode} on,
+ * by {@link FlixelDebugPicker#measure(Object, FlixelCamera)} with {@linkplain #hitboxes hitbox mode} on,
  * so a box is exactly what a tap hits), its type name, and a few flags.
  *
  * <p>A box is the object's collision box, the same one the game outlines when hitboxes are on, not the area its
@@ -66,6 +68,10 @@ import org.jetbrains.annotations.Nullable;
  * the object moves or its hitbox is resized (for example with {@link FlixelSprite#updateHitbox()}). Boxes come in
  * draw order, bottom first, and only objects that touch the view are listed. At most {@value #MAX_BOXES} boxes
  * are sent; when more objects are on screen, the ones drawn on top are kept.
+ *
+ * <p>Objects that are neither a {@link FlixelObject} nor a group can still have a box: a
+ * {@link FlixelDebugNode} measures itself in the camera's view space, and its children are walked like group
+ * members. Picking, the selection outline, and moving (when the node has a position) use the same box.
  *
  * <h2>Sampling</h2>
  *
@@ -397,7 +403,7 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
     if (boxCount >= MAX_BOXES) {
       return true;
     }
-    if (!(member instanceof FlixelObject object) || !picker.computeBounds(object, cam)) {
+    if (!picker.measure(member, cam)) {
       return false;
     }
     float left = picker.getBoundsLeft();
@@ -408,22 +414,22 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
       return false;
     }
     int flags = 0;
-    if (object == walkSelected) {
+    if (member == walkSelected) {
       flags |= FlixelDebugProtocol.VIEWPORT_BOX_SELECTED;
     }
-    if (object instanceof FlixelGroupable<?>) {
+    if (member instanceof FlixelGroupable<?> || FlixelDebugNodes.childCount(member) > 0) {
       flags |= FlixelDebugProtocol.VIEWPORT_BOX_GROUP;
     }
-    if (!object.isActive()) {
+    if (member instanceof FlixelObject object && !object.isActive()) {
       flags |= FlixelDebugProtocol.VIEWPORT_BOX_INACTIVE;
     }
     int i = boxCount++;
-    boxIds[i] = ids.idOf(object);
+    boxIds[i] = ids.idOf(member);
     boxX[i] = left;
     boxY[i] = top;
     boxW[i] = width;
     boxH[i] = height;
-    boxTypes[i] = (short) typeIndex(object.getClass());
+    boxTypes[i] = (short) typeIndex(member.getClass());
     boxFlags[i] = (byte) flags;
     return false;
   }

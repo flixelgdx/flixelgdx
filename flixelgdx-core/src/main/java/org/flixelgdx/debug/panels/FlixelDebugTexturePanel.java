@@ -29,6 +29,7 @@ import org.flixelgdx.FlixelState;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.debug.FlixelDebugNodes;
 import org.flixelgdx.debug.FlixelDebugObjectIds;
 import org.flixelgdx.debug.FlixelDebugThumbnails;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
@@ -36,7 +37,6 @@ import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelTexture;
-import org.flixelgdx.group.FlixelGroupable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -321,15 +321,10 @@ public class FlixelDebugTexturePanel extends FlixelDebugPanelBase {
         }
       }
     }
-    if (node instanceof FlixelGroupable<?> group) {
-      FlixelArray<?> members = group.getMembers();
-      if (members != null) {
-        for (int i = 0, n = members.getSize(); i < n; i++) {
-          Object member = members.get(i);
-          if (member != null) {
-            countUsers(member, depth + 1);
-          }
-        }
+    for (int i = 0, n = FlixelDebugNodes.childCount(node); i < n; i++) {
+      Object member = FlixelDebugNodes.child(node, i);
+      if (member != null) {
+        countUsers(member, depth + 1);
       }
     }
   }

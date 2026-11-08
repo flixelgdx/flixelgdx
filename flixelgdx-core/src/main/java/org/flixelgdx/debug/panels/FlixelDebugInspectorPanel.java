@@ -31,6 +31,8 @@ import org.flixelgdx.FlixelSubState;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.debug.FlixelDebugNode;
+import org.flixelgdx.debug.FlixelDebugNodes;
 import org.flixelgdx.debug.FlixelDebugObjectIds;
 import org.flixelgdx.debug.FlixelDebugPaths;
 import org.flixelgdx.debug.FlixelDebugThumbnails;
@@ -90,7 +92,7 @@ import java.util.function.Consumer;
  * so a killed or recyclable object can be inspected and switched back on. The selection clears itself, and the
  * object's id is forgotten, once the object no longer exists and is no longer anywhere in the scene (it was
  * destroyed or removed). The scene is everything reachable from {@link Flixel#state}, its sub states, and the
- * objects added with {@link #track(Object, String)}, through every {@link FlixelGroupable}.
+ * objects added with {@link #track(Object, String)}, through every {@link FlixelGroupable} and {@link FlixelDebugNode}.
  *
  * <p>Each selected object has a stable numeric id from {@link FlixelDebugManager#ids}, and the app refers to
  * objects by that number. The path sent with the selection is its address in the object tree, such as
@@ -263,7 +265,7 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
    * Moves the selection to the group or state that holds the selected object.
    *
    * <p>The search starts at the current state (including its sub state) and at every object registered with
-   * {@link #track(Object, String)}, and looks through every {@link FlixelGroupable} it finds.
+   * {@link #track(Object, String)}, and looks through every {@link FlixelGroupable} and {@link FlixelDebugNode} it finds.
    *
    * @return {@code true} when a parent was found and selected. When the selected object is a root, or nothing is
    *     selected, nothing changes.
@@ -638,13 +640,8 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
       return;
     }
     ids.mark(node);
-    if (node instanceof FlixelGroupable<?> group) {
-      FlixelArray<?> members = group.getMembers();
-      if (members != null) {
-        for (int i = 0, n = members.getSize(); i < n; i++) {
-          markTree(members.get(i), depth + 1);
-        }
-      }
+    for (int i = 0, n = FlixelDebugNodes.childCount(node); i < n; i++) {
+      markTree(FlixelDebugNodes.child(node, i), depth + 1);
     }
     if (node instanceof FlixelState state) {
       markTree(state.getSubState(), depth + 1);
@@ -656,23 +653,18 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     if (node == null || depth > MAX_DEPTH) {
       return null;
     }
-    if (node instanceof FlixelGroupable<?> group) {
-      FlixelArray<?> members = group.getMembers();
-      if (members != null) {
-        int n = members.getSize();
-        for (int i = 0; i < n; i++) {
-          if (members.get(i) == target) {
-            return node;
-          }
-        }
-        for (int i = 0; i < n; i++) {
-          Object member = members.get(i);
-          if (member instanceof FlixelGroupable<?> || member instanceof FlixelState) {
-            Object found = findParent(member, target, depth + 1);
-            if (found != null) {
-              return found;
-            }
-          }
+    int n = FlixelDebugNodes.childCount(node);
+    for (int i = 0; i < n; i++) {
+      if (FlixelDebugNodes.child(node, i) == target) {
+        return node;
+      }
+    }
+    for (int i = 0; i < n; i++) {
+      Object member = FlixelDebugNodes.child(node, i);
+      if (FlixelDebugNodes.isContainer(member) || member instanceof FlixelState) {
+        Object found = findParent(member, target, depth + 1);
+        if (found != null) {
+          return found;
         }
       }
     }
