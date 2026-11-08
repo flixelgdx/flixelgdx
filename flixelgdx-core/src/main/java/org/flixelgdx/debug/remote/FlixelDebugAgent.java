@@ -219,7 +219,7 @@ public final class FlixelDebugAgent {
     helloPending = false;
     resetState();
     manager.stats.setAgentRates(0f, 0f);
-    LOG.info("Lost the connection to the remote debugger. Waiting for it to come back.");
+    LOG.warn("Lost the connection to the remote debugger. Waiting for it to come back.");
   }
 
   private void resetState() {
