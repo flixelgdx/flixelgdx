@@ -25,11 +25,11 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
-import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugControls;
 
 /**
  * Interface for objects that can draw a debug bounding box when hitboxes are
- * turned on (see {@link FlixelDebugControlsPanel#setHitboxes(boolean)}). Any class that
+ * turned on (see {@link FlixelDebugControls#setHitboxes(boolean)}). Any class that
  * implements this will automatically appear when visual debug drawing is enabled,
  * without being hard-coded into the debugger.
  *

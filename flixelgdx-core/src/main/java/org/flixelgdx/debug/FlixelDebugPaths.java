@@ -25,7 +25,7 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelState;
-import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@code state} is {@link Flixel#state}.</li>
  *   <li>{@code substate} is the sub state that is open on top of the state. {@code substate.substate} is the one
  *       open on top of that, and so on.</li>
- *   <li>Any label given to {@link FlixelDebugInspectorPanel#track(Object, String)} starts at that tracked
+ *   <li>Any label given to {@link FlixelDebugInspector#track(Object, String)} starts at that tracked
  *       object. A label may contain dots.</li>
  * </ul>
  *
@@ -64,7 +64,7 @@ import org.jetbrains.annotations.Nullable;
  * }</pre>
  *
  * <p>Building and resolving a path never creates objects except for the text you pass in. Searching walks the
- * object tree once, so avoid calling {@link #build(FlixelDebugInspectorPanel, Object, FlixelString)} every frame
+ * object tree once, so avoid calling {@link #build(FlixelDebugInspector, Object, FlixelString)} every frame
  * for large scenes.
  *
  * <p>Example:
@@ -77,7 +77,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * }</pre>
  *
- * @see FlixelDebugInspectorPanel
+ * @see FlixelDebugInspector
  */
 public final class FlixelDebugPaths {
 
@@ -103,7 +103,7 @@ public final class FlixelDebugPaths {
    * @param out Receives the path. It is cleared first, and left empty when the object is not found.
    * @return {@code true} when the object was found.
    */
-  public static boolean build(@NotNull FlixelDebugInspectorPanel roots, @Nullable Object target,
+  public static boolean build(@NotNull FlixelDebugInspector roots, @Nullable Object target,
       @NotNull FlixelString out) {
     out.clear();
     if (target == null) {
@@ -150,7 +150,7 @@ public final class FlixelDebugPaths {
    * @return The object, or {@code null} when the path does not lead to one.
    */
   @Nullable
-  public static Object resolve(@NotNull FlixelDebugInspectorPanel roots, @Nullable CharSequence path) {
+  public static Object resolve(@NotNull FlixelDebugInspector roots, @Nullable CharSequence path) {
     if (path == null || path.length() == 0) {
       return null;
     }

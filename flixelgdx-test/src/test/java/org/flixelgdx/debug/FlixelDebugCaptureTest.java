@@ -25,7 +25,7 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelList;
-import org.flixelgdx.debug.panels.FlixelDebugCapturePanel;
+import org.flixelgdx.debug.feeds.FlixelDebugCapture;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
@@ -53,12 +53,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugCapturePanelTest {
+class FlixelDebugCaptureTest {
 
   private FlixelLogger originalLog;
   private FlixelGraphicsManager originalGraphics;
   private CaptureGraphics graphics;
-  private FlixelDebugCapturePanel panel;
+  private FlixelDebugCapture panel;
 
   @BeforeEach
   void setUp() {
@@ -69,7 +69,7 @@ class FlixelDebugCapturePanelTest {
     Flixel.log = log;
     graphics = new CaptureGraphics();
     Flixel.graphics = graphics;
-    panel = new FlixelDebugCapturePanel();
+    panel = new FlixelDebugCapture();
   }
 
   @AfterEach
@@ -172,7 +172,7 @@ class FlixelDebugCapturePanelTest {
   @Test
   void aRequestThatTakesTooLongIsDroppedAndALateAnswerIsIgnored() {
     panel.request(1, 256);
-    panel.update(FlixelDebugCapturePanel.TIMEOUT_SECONDS + 1f);
+    panel.update(FlixelDebugCapture.TIMEOUT_SECONDS + 1f);
     assertTrue(panel.request(2, 256));
     FlixelPixelReadback old = graphics.callbacks.get(0);
     old.onPixels(ByteBuffer.allocate(32 * 32 * 4), 32, 32, 128);
@@ -183,10 +183,10 @@ class FlixelDebugCapturePanelTest {
 
   @Test
   void anAlmostSquareHugePictureIsShrunkToStayUnderTheMessageLimit() {
-    int side = FlixelDebugCapturePanel.fit(4096, 4096, FlixelDebugProtocol.CAPTURE_MAX_SIDE);
+    int side = FlixelDebugCapture.fit(4096, 4096, FlixelDebugProtocol.CAPTURE_MAX_SIDE);
     assertTrue(side < FlixelDebugProtocol.CAPTURE_MAX_SIDE);
-    assertTrue((long) side * side * 4 < FlixelDebugCapturePanel.MAX_IMAGE_BYTES);
-    assertEquals(2048, FlixelDebugCapturePanel.fit(1920, 1080, 2048));
+    assertTrue((long) side * side * 4 < FlixelDebugCapture.MAX_IMAGE_BYTES);
+    assertEquals(2048, FlixelDebugCapture.fit(1920, 1080, 2048));
   }
 
   @Test
@@ -199,7 +199,7 @@ class FlixelDebugCapturePanelTest {
 
   private FlixelDebugMessageReader pending() {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter(64);
-    w.beginMessage(FlixelDebugProtocol.MSG_PANEL_DATA);
+    w.beginMessage(FlixelDebugProtocol.MSG_FEED_DATA);
     w.writeU16(7);
     panel.writePendingPayload(w);
     FlixelDebugMessageReader r = new FlixelDebugMessageReader(w.finish());

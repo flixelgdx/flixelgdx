@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
@@ -31,6 +31,7 @@ import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
+import org.flixelgdx.debug.ui.FlixelDebugPanel;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelString;
@@ -84,7 +85,7 @@ import java.util.function.Consumer;
  * @see FlixelDebugCommandArgs
  * @see FlixelDebugProtocol#KIND_CONSOLE
  */
-public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
+public class FlixelDebugConsole extends FlixelDebugFeedBase {
 
   /** The most lines the history keeps; the oldest is dropped first. */
   public static final int MAX_HISTORY_ENTRIES = 100;
@@ -105,6 +106,7 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
   private String resultMessage = "";
 
   private int resultStatus = FlixelDebugProtocol.CONSOLE_RESULT_RAN;
+  private int resultCount;
 
   private boolean resultPending;
 
@@ -113,8 +115,8 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
    *
    * @param owner The debug manager whose panels the built-in commands control.
    */
-  public FlixelDebugConsolePanel(@NotNull FlixelDebugManager owner) {
-    super("console", "Console", FlixelDebugProtocol.KIND_CONSOLE);
+  public FlixelDebugConsole(@NotNull FlixelDebugManager owner) {
+    super("console", FlixelDebugProtocol.KIND_CONSOLE);
     this.owner = owner;
     registerBuiltins();
   }
@@ -325,6 +327,7 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
     resultStatus = status;
     resultMessage = message;
     resultPending = true;
+    resultCount++;
     return status;
   }
 
@@ -446,13 +449,13 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
     });
 
     register("pause", "pause [on|off]", "Pauses or resumes the game.", args -> {
-      FlixelDebugControlsPanel controls = owner.controls;
+      FlixelDebugControls controls = owner.controls;
       controls.setPaused(args.getBoolean(0, !controls.isPaused()));
       logger().info("Paused: {}", controls.isPaused());
     });
 
     register("hitboxes", "hitboxes [on|off]", "Shows or hides object hitboxes.", args -> {
-      FlixelDebugControlsPanel controls = owner.controls;
+      FlixelDebugControls controls = owner.controls;
       controls.setHitboxes(args.getBoolean(0, !controls.isHitboxes()));
       logger().info("Hitboxes: {}", controls.isHitboxes());
     });
@@ -464,7 +467,7 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
     });
 
     register("rate", "rate [hz]", "Shows or sets how many times per second the stats are sampled (1 to 30).", args -> {
-      FlixelDebugControlsPanel controls = owner.controls;
+      FlixelDebugControls controls = owner.controls;
       if (!args.isEmpty()) {
         controls.setRate(args.getInt(0, controls.getRate()));
       }
@@ -473,16 +476,16 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
 
     register("loglevel", "loglevel [Debug|Info|Warn|Error|Default]",
         "Shows or sets the minimum level of logged messages.", args -> {
-          FlixelDebugControlsPanel controls = owner.controls;
+          FlixelDebugControls controls = owner.controls;
           if (!args.isEmpty()) {
             controls.setLogLevel(parseLogLevel(args.getString(0, "")));
           }
-          FlixelLogLevel level = FlixelDebugControlsPanel.toLogLevel(controls.getLogLevel());
+          FlixelLogLevel level = FlixelDebugControls.toLogLevel(controls.getLogLevel());
           logger().info("Log level: {}", level != null ? level.name() : "DEFAULT");
         });
 
     register("watch.mouse", "watch.mouse [on|off]", "Shows or hides the mouse position watch.", args -> {
-      FlixelDebugWatchPanel watches = owner.watches;
+      FlixelDebugWatches watches = owner.watches;
       boolean on = args.getBoolean(0, !watches.isMouseWatched());
       if (on) {
         watches.addMouse();
@@ -493,7 +496,7 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
     });
 
     register("watch.camera", "watch.camera [on|off]", "Shows or hides the camera watch.", args -> {
-      FlixelDebugWatchPanel watches = owner.watches;
+      FlixelDebugWatches watches = owner.watches;
       boolean on = args.getBoolean(0, !watches.isCameraWatched());
       if (on) {
         watches.addCamera();
@@ -510,7 +513,7 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
 
     register("select", "select [path]",
         "Selects the object at a scene path such as state.3.0, or the object under the mouse without a path.", args -> {
-          FlixelDebugInspectorPanel inspector = owner.inspector;
+          FlixelDebugInspector inspector = owner.inspector;
           String path = args.getString(0, "");
           if (path.isEmpty()) {
             Object hit = owner.controls.pickAtMouse();
@@ -528,7 +531,7 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
         });
 
     register("freecam", "freecam [on|off]", "Turns the free camera (WASD, wheel, right drag) on or off.", args -> {
-      FlixelDebugControlsPanel controls = owner.controls;
+      FlixelDebugControls controls = owner.controls;
       controls.setFreeCam(args.getBoolean(0, !controls.isFreeCam()));
       logger().info("Free camera: {}", controls.isFreeCam());
     });
@@ -556,7 +559,7 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
     });
 
     register("select.parent", "select.parent", "Selects the group or state that holds the selected object.", args -> {
-      FlixelDebugInspectorPanel inspector = owner.inspector;
+      FlixelDebugInspector inspector = owner.inspector;
       if (inspector.getSelected() == null) {
         logger().warn("Nothing is selected.");
       } else if (inspector.selectParent()) {
@@ -570,6 +573,42 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
       logger().info("Resetting the current state.");
       Flixel.resetState();
     });
+
+    register("clear", "clear", "Removes every line from the log.", args -> owner.logs.clear());
+
+    register("show", "show <panel>", "Shows a debugger panel by its id or title and brings it to the front.",
+        args -> {
+          FlixelDebugPanel panel = findPanel(args);
+          if (panel != null) {
+            panel.show();
+          }
+        });
+
+    register("close", "close <panel>", "Closes a debugger panel by its id or title.", args -> {
+      FlixelDebugPanel panel = findPanel(args);
+      if (panel != null) {
+        panel.hide();
+      }
+    });
+
+    register("layout.reset", "layout.reset", "Puts every debugger panel back in its first place.",
+        args -> owner.panels.resetLayout());
+  }
+
+  private FlixelDebugPanel findPanel(FlixelDebugCommandArgs args) {
+    String name = args.getString(0, "");
+    if (name.isEmpty()) {
+      logger().warn("Name a panel, for example \"show logs\".");
+      return null;
+    }
+    for (int i = 0, n = owner.panels.getCount(); i < n; i++) {
+      FlixelDebugPanel panel = owner.panels.get(i);
+      if (panel.getId().equalsIgnoreCase(name) || panel.getTitle().equalsIgnoreCase(name)) {
+        return panel;
+      }
+    }
+    logger().warn("There is no panel called \"{}\".", name);
+    return null;
   }
 
   private static int parseLogLevel(String text) {
@@ -592,6 +631,59 @@ public class FlixelDebugConsolePanel extends FlixelDebugPanelBase {
    *
    * @return The live history list. Do not modify it.
    */
+  /**
+   * Returns how many commands are registered. Together with {@link #getCommandName(int)} and its siblings this walks
+   * the commands in name order without allocating.
+   *
+   * @return The command count.
+   */
+  public int getCommandCount() {
+    return commands.getSize();
+  }
+
+  /**
+   * Returns the name of a command.
+   *
+   * @param index A position from 0 to {@link #getCommandCount()} minus 1.
+   * @return The name.
+   */
+  @NotNull
+  public String getCommandName(int index) {
+    return commands.get(index).name;
+  }
+
+  /**
+   * Returns how to call a command, such as {@code god [on|off]}. A command registered without usage returns its name.
+   *
+   * @param index A position from 0 to {@link #getCommandCount()} minus 1.
+   * @return The usage.
+   */
+  @NotNull
+  public String getCommandUsage(int index) {
+    Command command = commands.get(index);
+    return command.usage.isEmpty() ? command.name : command.usage;
+  }
+
+  /**
+   * Returns what a command does.
+   *
+   * @param index A position from 0 to {@link #getCommandCount()} minus 1.
+   * @return The description, empty when none was given.
+   */
+  @NotNull
+  public String getCommandDescription(int index) {
+    return commands.get(index).description;
+  }
+
+  /**
+   * Returns how many command lines produced a result, so a panel can notice a new one.
+   *
+   * @return The count since the game started.
+   */
+  public int getResultCount() {
+    return resultCount;
+  }
+
   @NotNull
   public FlixelList<String> getHistory() {
     return history;

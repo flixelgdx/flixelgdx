@@ -31,7 +31,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.debug.InspectorTestSupport.Row;
 import org.flixelgdx.debug.InspectorTestSupport.State;
-import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.group.FlixelSpriteGroup;
@@ -56,12 +56,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugInspectorPanelTest {
+class FlixelDebugInspectorTest {
 
   private FlixelLogger originalLog;
   private List<FlixelLogLevel> levels;
   private FlixelDebugObjectIds ids;
-  private FlixelDebugInspectorPanel inspector;
+  private FlixelDebugInspector inspector;
 
   @BeforeEach
   void setUp() {
@@ -72,7 +72,7 @@ class FlixelDebugInspectorPanelTest {
     log.addSink(entry -> levels.add(entry.getLevel()));
     Flixel.log = log;
     ids = new FlixelDebugObjectIds();
-    inspector = new FlixelDebugInspectorPanel(ids);
+    inspector = new FlixelDebugInspector(ids);
   }
 
   @AfterEach
@@ -407,7 +407,7 @@ class FlixelDebugInspectorPanelTest {
   @Test
   void removedListenersAreNotCalled() {
     List<Object> events = new ArrayList<>();
-    FlixelDebugInspectorPanel.SelectionListener listener = events::add;
+    FlixelDebugInspector.SelectionListener listener = events::add;
     inspector.addSelectionListener(listener);
     inspector.addSelectionListener(listener);
     inspector.removeSelectionListener(listener);
@@ -520,7 +520,7 @@ class FlixelDebugInspectorPanelTest {
     inspector.select(sprite);
     assertFalse(InspectorTestSupport.state(inspector).hasTexture(), "a sprite without a texture has no thumbnail");
 
-    FlixelDebugInspectorPanel always = new FlixelDebugInspectorPanel(ids) {
+    FlixelDebugInspector always = new FlixelDebugInspector(ids) {
       @Override
       protected boolean hasTexture(Object object) {
         return true;
@@ -752,7 +752,7 @@ class FlixelDebugInspectorPanelTest {
   @Test
   void managerRegistersTheInspectorAsKindInspector() {
     FlixelDebugManager manager = new FlixelDebugManager();
-    assertSame(manager.inspector, manager.get("inspector"));
+    assertSame(manager.inspector, manager.getFeed("inspector"));
     assertEquals(FlixelDebugProtocol.KIND_INSPECTOR, manager.inspector.getKind());
     assertSame(manager.ids, manager.inspector.getIds());
   }

@@ -24,7 +24,7 @@
 package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugControls;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.input.keyboard.FlixelKey;
@@ -40,10 +40,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugControlsPanelTest {
+class FlixelDebugControlsTest {
 
   private FlixelLogger originalLog;
-  private FlixelDebugControlsPanel controls;
+  private FlixelDebugControls controls;
 
   @BeforeEach
   void setUp() {
@@ -176,7 +176,7 @@ class FlixelDebugControlsPanelTest {
     controls.reset();
     assertFalse(controls.isHitboxes());
     assertFalse(controls.isFreeCam());
-    assertEquals(FlixelDebugControlsPanel.DEFAULT_RATE, controls.getRate());
+    assertEquals(FlixelDebugControls.DEFAULT_RATE, controls.getRate());
     assertEquals(FlixelDebugProtocol.LEVEL_DEFAULT, controls.getLogLevel());
     assertEquals(FlixelLogLevel.DEBUG, Flixel.log.getLevel());
   }

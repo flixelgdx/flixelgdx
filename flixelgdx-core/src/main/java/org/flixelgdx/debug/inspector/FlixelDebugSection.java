@@ -107,6 +107,23 @@ public final class FlixelDebugSection {
   }
 
   /**
+   * Writes the rows of this section as items of a list, each a {@code LIST [STRING name, value, BOOL editable]}, the
+   * form a property grid widget uses.
+   *
+   * @param writer The writer, positioned inside a list.
+   * @param target The object to read from, as returned by {@link #resolve(Object)}.
+   * @param epoch The read epoch, see {@link FlixelDebugProperty#writeRow(FlixelDebugMessageWriter, Object, int)}.
+   * @return How many rows were written.
+   */
+  public int writeListItems(@NotNull FlixelDebugMessageWriter writer, @NotNull Object target, int epoch) {
+    int n = Math.min(properties.getSize(), FlixelDebugProtocol.MAX_ARRAY_COUNT);
+    for (int i = 0; i < n; i++) {
+      properties.get(i).writeListRow(writer, target, epoch);
+    }
+    return n;
+  }
+
+  /**
    * Applies a value sent by the app to one property.
    *
    * @param index The position of the property, as sent in the rows.

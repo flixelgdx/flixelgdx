@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
@@ -53,7 +53,7 @@ import org.jetbrains.annotations.NotNull;
  * so game code and user interface widgets cannot tell the difference. An injected key shows up in
  * {@code pressed}, {@code rawPressed}, {@code justPressed}, {@code justReleased}, and every keyboard listener; the
  * injected pointer moves {@code Flixel.mouse.getWorldX(camera)}; and the free camera of the
- * {@linkplain FlixelDebugControlsPanel controls panel} never hides injected input from the game.
+ * {@linkplain FlixelDebugControls controls panel} never hides injected input from the game.
  *
  * <h2>How input is delivered</h2>
  *
@@ -65,7 +65,7 @@ import org.jetbrains.annotations.NotNull;
  * front of the queue. A tap therefore takes two frames (press, then release), and typing a sentence takes one.
  *
  * <p>While the game is paused, the queue waits. The next time the game steps a frame (see
- * {@link FlixelDebugControlsPanel#stepFrame()}) or is resumed, the panel applies the queue as usual. This means a
+ * {@link FlixelDebugControls#stepFrame()}) or is resumed, the panel applies the queue as usual. This means a
  * paused game never sees input it cannot act on, and an agent can step one frame at a time and know exactly what
  * the game saw in it. The queue holds at most {@value #CAPACITY} actions; further actions are dropped.
  *
@@ -75,7 +75,7 @@ import org.jetbrains.annotations.NotNull;
  * <h2>Pointer positions</h2>
  *
  * <p>Pointer positions are in the <strong>view space</strong> of the camera that the
- * {@linkplain FlixelDebugViewportPanel viewport panel} shows, the same space as its boxes. The panel converts them
+ * {@linkplain FlixelDebugViewport viewport panel} shows, the same space as its boxes. The panel converts them
  * to window pixels, so the game's pointer lands on the spot, within a pixel of rounding. The injected pointer stays
  * where it was put until the real mouse moves or the app disconnects. {@link #click(int, int)} clicks the middle of
  * an object's viewport box, which is the simplest way to press a button.
@@ -86,7 +86,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>Example:
  *
  * <pre>{@code
- * FlixelDebugInputPanel input = Flixel.debug.input;
+ * FlixelDebugInput input = Flixel.debug.input;
  * input.key(FlixelKey.SPACE, true);   // Press the jump key...
  * input.key(FlixelKey.SPACE, false);  // ...and let go of it a frame later.
  * input.click(Flixel.debug.ids.idOf(playButton), FlixelMouseButton.LEFT);
@@ -99,7 +99,7 @@ import org.jetbrains.annotations.NotNull;
  * @see FlixelKeyInputManager#injectKey(int, boolean)
  * @see FlixelMouseInputManager#injectButton(int, boolean)
  */
-public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
+public class FlixelDebugInput extends FlixelDebugFeedBase {
 
   /** The most actions that wait in the queue. */
   public static final int CAPACITY = 256;
@@ -119,7 +119,7 @@ public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
   private final FlixelString readText = new FlixelString();
   private final FlixelString texts = new FlixelString();
   private final FlixelDebugPicker picker = new FlixelDebugPicker();
-  private final FlixelDebugViewportPanel viewport;
+  private final FlixelDebugViewport viewport;
   private final FlixelDebugObjectIds ids;
 
   private final int[] kinds = new int[CAPACITY];
@@ -144,8 +144,8 @@ public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
    * @param viewport The viewport panel whose camera gives pointer positions their meaning.
    * @param ids The id registry that turns an object id of a click into the object.
    */
-  public FlixelDebugInputPanel(@NotNull FlixelDebugViewportPanel viewport, @NotNull FlixelDebugObjectIds ids) {
-    super("input", "Input", FlixelDebugProtocol.KIND_INPUT);
+  public FlixelDebugInput(@NotNull FlixelDebugViewport viewport, @NotNull FlixelDebugObjectIds ids) {
+    super("input", FlixelDebugProtocol.KIND_INPUT);
     this.viewport = viewport;
     this.ids = ids;
     picker.hitboxes = true;
@@ -259,7 +259,7 @@ public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
    * next frame it goes up, so {@code justPressed} and {@code justReleased} both fire.
    *
    * <p>The box is measured when the click is applied, on the first camera that draws the object: the
-   * {@linkplain FlixelDebugViewportPanel viewport panel}'s camera, then the other cameras in order. The pointer is
+   * {@linkplain FlixelDebugViewport viewport panel}'s camera, then the other cameras in order. The pointer is
    * placed at that camera's position in window pixels. An unknown id, or an object that no camera draws, makes the
    * click do nothing and logs a warning.
    *
@@ -295,7 +295,9 @@ public class FlixelDebugInputPanel extends FlixelDebugPanelBase {
       case FlixelDebugProtocol.INPUT_TEXT -> type(reader.readString(readText));
       case FlixelDebugProtocol.INPUT_CLICK_OBJECT -> {
         int id = reader.readI32();
-        click(id, reader.readU8());
+        if (click(id, reader.readU8())) {
+          ids.markAgentTouched(ids.get(id));
+        }
       }
       default -> {
       }

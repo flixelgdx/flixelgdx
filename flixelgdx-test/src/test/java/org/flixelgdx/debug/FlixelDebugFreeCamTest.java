@@ -28,7 +28,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelCamera.FollowStyle;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
-import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugControls;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.input.FlixelInputDevice;
@@ -60,7 +60,7 @@ class FlixelDebugFreeCamTest {
   private FlixelKeyInputManager originalKeys;
   private FlixelMouseInputManager originalMouse;
   private FlixelDebugManager debug;
-  private FlixelDebugControlsPanel controls;
+  private FlixelDebugControls controls;
   private FlixelKeyInputManager keys;
   private FlixelMouseInputManager mouse;
   private PointerDevice device;
@@ -290,10 +290,10 @@ class FlixelDebugFreeCamTest {
     assertEquals(worldY, newAnchorY + cam.scrollY + cam.getViewMarginY(), EPS);
 
     assertTrue(controls.zoomFreeCam(1000f, 0f, 0f));
-    assertEquals(FlixelDebugControlsPanel.MAX_ZOOM, cam.getZoom(), 0f);
+    assertEquals(FlixelDebugControls.MAX_ZOOM, cam.getZoom(), 0f);
     assertFalse(controls.zoomFreeCam(2f, 0f, 0f), "already at the limit");
     assertTrue(controls.zoomFreeCam(0.00001f, 0f, 0f));
-    assertEquals(FlixelDebugControlsPanel.MIN_ZOOM, cam.getZoom(), 0f);
+    assertEquals(FlixelDebugControls.MIN_ZOOM, cam.getZoom(), 0f);
     assertFalse(controls.zoomFreeCam(0f, 0f, 0f));
     assertFalse(controls.zoomFreeCam(-2f, 0f, 0f));
   }

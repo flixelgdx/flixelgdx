@@ -23,8 +23,8 @@
  */
 package org.flixelgdx.debug;
 
-import org.flixelgdx.debug.panels.FlixelDebugLogPanel;
-import org.flixelgdx.debug.panels.FlixelDebugPanelBase;
+import org.flixelgdx.debug.feeds.FlixelDebugFeedBase;
+import org.flixelgdx.debug.feeds.FlixelDebugLogs;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
@@ -39,14 +39,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugLogPanelTest {
+class FlixelDebugLogsTest {
 
-  private FlixelDebugLogPanel logs;
+  private FlixelDebugLogs logs;
   private FlixelLogger log;
 
   @BeforeEach
   void setUp() {
-    logs = new FlixelDebugLogPanel();
+    logs = new FlixelDebugLogs();
     FlixelDefaultLogger root = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     root.setConsoleSink(null);
     root.addSink(logs.getSink());
@@ -131,7 +131,7 @@ class FlixelDebugLogPanelTest {
     for (int i = 1; i <= 600; i++) {
       log.info("line {}", i);
     }
-    assertEquals(FlixelDebugLogPanel.MAX_LINES, logs.getLineCount());
+    assertEquals(FlixelDebugLogs.MAX_LINES, logs.getLineCount());
     assertEquals(600, logs.getNewestSeq());
 
     FlixelDebugMessageReader r = DebugTestSupport.payload(logs);
@@ -174,7 +174,7 @@ class FlixelDebugLogPanelTest {
     assertTrue(line.stack().contains("\tat "), line.stack());
     assertTrue(line.stack().contains("Caused by: " + IllegalArgumentException.class.getName() + ": root cause"),
         line.stack());
-    assertTrue(line.stack().contains("FlixelDebugLogPanelTest"));
+    assertTrue(line.stack().contains("FlixelDebugLogsTest"));
   }
 
   @Test
@@ -220,18 +220,18 @@ class FlixelDebugLogPanelTest {
     assertTrue(logs.getRevision() > before);
   }
 
-  private static final class BacklogView extends FlixelDebugPanelBase {
+  private static final class BacklogView extends FlixelDebugFeedBase {
 
-    private final FlixelDebugLogPanel logs;
+    private final FlixelDebugLogs logs;
 
-    BacklogView(FlixelDebugLogPanel logs) {
-      super("view", "View", FlixelDebugProtocol.KIND_LOGS);
+    BacklogView(FlixelDebugLogs logs) {
+      super("view", FlixelDebugProtocol.KIND_LOGS);
       this.logs = logs;
     }
 
     @Override
     public void write(@NotNull FlixelDebugMessageWriter writer) {
-      logs.writeBacklog(writer);
+      logs.writeFirst(writer);
     }
   }
 }

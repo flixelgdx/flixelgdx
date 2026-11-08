@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
@@ -29,35 +29,31 @@ import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A ready-made {@link FlixelDebugPanel} that holds the boring parts: the id, the display name, the kind,
- * the enabled flag, and the revision counter.
+ * A ready-made {@link FlixelDebugFeed} that holds the boring parts: the id, the kind, the enabled flag, and the
+ * revision counter.
  *
- * <p>Subclasses only have to write their payload in
- * {@link #write(FlixelDebugMessageWriter)} and, if they sample data, override
- * {@link #update(float)}. Call {@link #markChanged()} whenever the payload has new content.
+ * <p>Subclasses only have to write their payload in {@link #write(FlixelDebugMessageWriter)} and, if they sample
+ * data, override {@link #update(float)}. Call {@link #markChanged()} whenever the payload has new content.
  *
- * @see FlixelDebugPanel
+ * @see FlixelDebugFeed
  */
-public abstract class FlixelDebugPanelBase implements FlixelDebugPanel {
+public abstract class FlixelDebugFeedBase implements FlixelDebugFeed {
 
   private long revision;
 
   private final int kind;
   private final String id;
-  private final String displayName;
 
   private boolean enabled = true;
 
   /**
-   * Creates a panel.
+   * Creates a feed.
    *
-   * @param id The stable id, for example {@code "custom.player"}.
-   * @param displayName The name shown on the panel's tab.
+   * @param id The stable id, for example {@code "scene"}.
    * @param kind One of the {@code KIND_*} constants of {@link FlixelDebugProtocol}.
    */
-  protected FlixelDebugPanelBase(@NotNull String id, @NotNull String displayName, int kind) {
+  protected FlixelDebugFeedBase(@NotNull String id, int kind) {
     this.id = id;
-    this.displayName = displayName;
     this.kind = kind;
   }
 
@@ -84,12 +80,6 @@ public abstract class FlixelDebugPanelBase implements FlixelDebugPanel {
   @NotNull
   public String getId() {
     return id;
-  }
-
-  @Override
-  @NotNull
-  public String getDisplayName() {
-    return displayName;
   }
 
   @Override

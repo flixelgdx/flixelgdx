@@ -25,8 +25,8 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
-import org.flixelgdx.debug.panels.FlixelDebugScenePanel;
-import org.flixelgdx.debug.panels.FlixelDebugViewportPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugScene;
+import org.flixelgdx.debug.feeds.FlixelDebugViewport;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.group.FlixelGroupable;
 import org.jetbrains.annotations.NotNull;
@@ -43,11 +43,11 @@ import org.jetbrains.annotations.Nullable;
  * <p>What a node gets once it implements this interface:
  *
  * <ul>
- *   <li>The {@linkplain FlixelDebugScenePanel scene panel} lists it and descends into its children the way it
+ *   <li>The {@linkplain FlixelDebugScene scene panel} lists it and descends into its children the way it
  *       does for a group. A child's label is its index, so a scene path such as {@code state.3.0} and
  *       {@code SELECT_PATH} work through a node like through a group.</li>
  *   <li>It gets an object id like every other object, so the inspector can select it.</li>
- *   <li>The {@linkplain FlixelDebugViewportPanel viewport panel} draws its box, a tap picks it, and Alt click
+ *   <li>The {@linkplain FlixelDebugViewport viewport panel} draws its box, a tap picks it, and Alt click
  *       selects it, when {@link #getDebugBounds(FlixelCamera, float[])} returns {@code true}.</li>
  *   <li>The remote {@code CLICK_OBJECT} action clicks the center of that box.</li>
  *   <li>It can be moved from the viewport when it also implements

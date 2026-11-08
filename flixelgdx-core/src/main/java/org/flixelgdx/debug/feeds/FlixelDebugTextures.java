@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
@@ -85,7 +85,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see FlixelDebugProtocol#KIND_TEXTURES
  */
-public class FlixelDebugTexturePanel extends FlixelDebugPanelBase {
+public class FlixelDebugTextures extends FlixelDebugFeedBase {
 
   /** Seconds between rebuilds of the list while the panel is enabled. */
   public static final float REFRESH_INTERVAL = 1f;
@@ -112,8 +112,8 @@ public class FlixelDebugTexturePanel extends FlixelDebugPanelBase {
    *
    * @param ids The registry that gives textures their ids.
    */
-  public FlixelDebugTexturePanel(@NotNull FlixelDebugObjectIds ids) {
-    super("textures", "Textures", FlixelDebugProtocol.KIND_TEXTURES);
+  public FlixelDebugTextures(@NotNull FlixelDebugObjectIds ids) {
+    super("textures", FlixelDebugProtocol.KIND_TEXTURES);
     this.ids = ids;
   }
 
@@ -211,7 +211,26 @@ public class FlixelDebugTexturePanel extends FlixelDebugPanelBase {
   }
 
   /**
-   * Starts making a thumbnail of a listed texture.
+   * Starts making a preview picture of a listed texture for the listener of {@link #getThumbnails()}, such as the
+   * textures panel. It is not sent to tools.
+   *
+   * @param id A texture id from the list.
+   * @return {@code true} when a read was started. It is {@code false} for an unknown id or when the graphics
+   *     backend cannot read textures.
+   */
+  public boolean requestPreview(int id) {
+    for (int i = 0; i < count; i++) {
+      Row row = rows.get(i);
+      if (row.id == id && row.texture != null) {
+        return thumbnails.requestPreview(id, row.texture, 0, 0, row.width, row.height);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Starts making a thumbnail of a listed texture for tools. The finished picture is sent as a {@code THUMBNAIL}
+   * payload.
    *
    * @param id A texture id from the list.
    * @return {@code true} when a read was started. It is {@code false} for an unknown id or when the graphics
@@ -416,6 +435,88 @@ public class FlixelDebugTexturePanel extends FlixelDebugPanelBase {
    */
   public int getUsers(int index) {
     return rows.get(index).users;
+  }
+
+  /**
+   * Returns the id of a listed texture, the one {@link #requestThumbnail(int)} and {@link #requestPreview(int)} take.
+   *
+   * @param index A position from 0 to {@link #getTextureCount()} minus 1.
+   * @return The id.
+   */
+  public int getId(int index) {
+    return rows.get(index).id;
+  }
+
+  /**
+   * Returns the asset path of a listed texture, or {@code flixel://synthetic/N} for a graphic made in code.
+   *
+   * @param index A position from 0 to {@link #getTextureCount()} minus 1.
+   * @return The name.
+   */
+  @NotNull
+  public String getName(int index) {
+    return rows.get(index).name;
+  }
+
+  /**
+   * Returns the width of a listed texture in pixels.
+   *
+   * @param index A position from 0 to {@link #getTextureCount()} minus 1.
+   * @return The width.
+   */
+  public int getWidth(int index) {
+    return rows.get(index).width;
+  }
+
+  /**
+   * Returns the height of a listed texture in pixels.
+   *
+   * @param index A position from 0 to {@link #getTextureCount()} minus 1.
+   * @return The height.
+   */
+  public int getHeight(int index) {
+    return rows.get(index).height;
+  }
+
+  /**
+   * Returns the short pixel format name of a listed texture, such as {@code RGBA8}.
+   *
+   * @param index A position from 0 to {@link #getTextureCount()} minus 1.
+   * @return The format.
+   */
+  @NotNull
+  public String getFormat(int index) {
+    return rows.get(index).format;
+  }
+
+  /**
+   * Returns how many bytes a listed texture takes on the GPU.
+   *
+   * @param index A position from 0 to {@link #getTextureCount()} minus 1.
+   * @return The size in bytes.
+   */
+  public long getBytes(int index) {
+    return rows.get(index).bytes;
+  }
+
+  /**
+   * Returns whether the same file was loaded more than once.
+   *
+   * @param index A position from 0 to {@link #getTextureCount()} minus 1.
+   * @return {@code true} for a duplicate.
+   */
+  public boolean isDuplicate(int index) {
+    return rows.get(index).duplicate;
+  }
+
+  /**
+   * Returns the thumbnail reader of this feed. A panel sets its listener to receive preview pictures.
+   *
+   * @return The thumbnail reader.
+   */
+  @NotNull
+  public FlixelDebugThumbnails getThumbnails() {
+    return thumbnails;
   }
 
   /** One listed texture. Rows are reused between refreshes. */

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -45,19 +45,19 @@ import org.jetbrains.annotations.NotNull;
  * of {@value #HISTORY_SIZE} samples (frame rate, frame time, and Java heap) for tools that want them
  * without the app.
  *
- * <p>The sample rate lives on {@link FlixelDebugControlsPanel} and can be changed from the app or with
+ * <p>The sample rate lives on {@link FlixelDebugControls} and can be changed from the app or with
  * the {@code rate} console command. Sampling and writing never allocate.
  *
  * <p>Example:
  *
  * <pre>{@code
- * FlixelDebugStatsPanel stats = Flixel.debug.stats;
+ * FlixelDebugStats stats = Flixel.debug.stats;
  * Flixel.info("Draw calls last sample: {}", stats.getDraws());
  * }</pre>
  *
- * @see FlixelDebugControlsPanel#setRate(int)
+ * @see FlixelDebugControls#setRate(int)
  */
-public class FlixelDebugStatsPanel extends FlixelDebugPanelBase {
+public class FlixelDebugStats extends FlixelDebugFeedBase {
 
   /** The number of samples kept in each history ring. */
   public static final int HISTORY_SIZE = 120;
@@ -71,7 +71,7 @@ public class FlixelDebugStatsPanel extends FlixelDebugPanelBase {
 
   private double elapsedSeconds;
 
-  private final FlixelDebugControlsPanel controls;
+  private final FlixelDebugControls controls;
   private final FlixelDebugManager owner;
   private final float[] fpsHistory = new float[HISTORY_SIZE];
   private final float[] frameMsHistory = new float[HISTORY_SIZE];
@@ -90,6 +90,7 @@ public class FlixelDebugStatsPanel extends FlixelDebugPanelBase {
   private float ringKb;
   private float sendKbps;
   private float recvKbps;
+  private float roundTripMs = -1f;
   private float camX;
   private float camY;
   private float camZoom = 1f;
@@ -111,8 +112,8 @@ public class FlixelDebugStatsPanel extends FlixelDebugPanelBase {
    * @param controls The controls panel that holds the sample rate.
    * @param owner The manager whose tracked batches add to the draw call count.
    */
-  public FlixelDebugStatsPanel(@NotNull FlixelDebugControlsPanel controls, @NotNull FlixelDebugManager owner) {
-    super("stats", "Stats", FlixelDebugProtocol.KIND_STATS);
+  public FlixelDebugStats(@NotNull FlixelDebugControls controls, @NotNull FlixelDebugManager owner) {
+    super("stats", FlixelDebugProtocol.KIND_STATS);
     this.controls = controls;
     this.owner = owner;
   }
@@ -251,6 +252,16 @@ public class FlixelDebugStatsPanel extends FlixelDebugPanelBase {
   }
 
   /**
+   * Stores the round trip to the debugger app that the app measured and reported in its last {@code PING}. The agent
+   * calls this.
+   *
+   * @param roundTripMs The round trip in milliseconds, or {@code -1} when it is unknown.
+   */
+  public void setRoundTrip(float roundTripMs) {
+    this.roundTripMs = Float.isFinite(roundTripMs) && roundTripMs >= 0f ? roundTripMs : -1f;
+  }
+
+  /**
    * Stores the transfer rates of the network agent so they show up in the next sample.
    *
    * @param sendKbps Kilobytes per second the agent sends.
@@ -327,6 +338,15 @@ public class FlixelDebugStatsPanel extends FlixelDebugPanelBase {
 
   public float getRecvKbps() {
     return recvKbps;
+  }
+
+  /**
+   * Returns the round trip to the debugger app, as the app measured it.
+   *
+   * @return Milliseconds, or {@code -1} when it is unknown.
+   */
+  public float getRoundTripMs() {
+    return roundTripMs;
   }
 
   public boolean isPaused() {

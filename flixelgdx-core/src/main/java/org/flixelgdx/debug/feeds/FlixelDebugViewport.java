@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  * the camera draws, right where it is drawn, so the app can draw the same picture. Tapping a box on the map
  * selects that object, dragging a box moves the object, and dragging or pinching the empty map flies the camera.
  * This is what makes the free camera and picking usable on a phone, where the game has no keyboard or mouse for
- * the {@linkplain FlixelDebugControlsPanel controls panel} to read.
+ * the {@linkplain FlixelDebugControls controls panel} to read.
  *
  * <h2>What the map holds</h2>
  *
@@ -81,7 +81,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Sampling</h2>
  *
  * <p>The panel looks at the camera at the sample rate of the controls panel (see
- * {@link FlixelDebugControlsPanel#setRate(int)}) and right after each action. It only has new content, and only
+ * {@link FlixelDebugControls#setRate(int)}) and right after each action. It only has new content, and only
  * gets sent, when something on the map changed, which it checks with a cheap checksum. Sampling does not allocate
  * once every object and type on screen has been seen once. While no debugger app is connected, the timed samples
  * are skipped, so the panel costs nothing when nobody is watching.
@@ -89,15 +89,15 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Flying the camera</h2>
  *
  * <p>{@link #pan(float, float)} and {@link #zoom(float, float, float)} go through the free camera of the controls
- * panel ({@link FlixelDebugControlsPanel#panFreeCam(float, float)} and
- * {@link FlixelDebugControlsPanel#zoomFreeCam(float, float, float)}). They turn it on and point it at the camera
+ * panel ({@link FlixelDebugControls#panFreeCam(float, float)} and
+ * {@link FlixelDebugControls#zoomFreeCam(float, float, float)}). They turn it on and point it at the camera
  * this panel shows, so following a target does not undo the move. {@link #resetCamera()} turns the free camera
  * off, which puts the camera back exactly as the game had it.
  *
  * <p>Example:
  *
  * <pre>{@code
- * FlixelDebugViewportPanel viewport = Flixel.debug.viewport;
+ * FlixelDebugViewport viewport = Flixel.debug.viewport;
  * viewport.setCameraIndex(1);          // Show the second camera, for example a HUD camera.
  * viewport.pick(40f, 30f);             // Select whatever is drawn at that spot.
  * viewport.move(viewport.getBoxId(0), 16f, 0f); // Push the bottom object 16 units to the right.
@@ -110,7 +110,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FlixelDebugProtocol#KIND_VIEWPORT
  * @see FlixelDebugPicker
  */
-public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
+public class FlixelDebugViewport extends FlixelDebugFeedBase {
 
   /** The most boxes one state message holds. */
   public static final int MAX_BOXES = 1024;
@@ -124,8 +124,8 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
   /** Measures the selected object by the area its graphic covers, to match the game's yellow outline. */
   private final FlixelDebugPicker graphicPicker = new FlixelDebugPicker();
   private final FlixelDebugPicker.Visitor collector = this::collect;
-  private final FlixelDebugControlsPanel controls;
-  private final FlixelDebugInspectorPanel inspector;
+  private final FlixelDebugControls controls;
+  private final FlixelDebugInspector inspector;
   private final FlixelDebugObjectIds ids;
 
   @Nullable
@@ -164,9 +164,9 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
    * @param controls The controls panel whose free camera, pause, hitboxes, and sample rate this panel uses.
    * @param inspector The inspector that picked objects are selected on. Its id registry names the boxes.
    */
-  public FlixelDebugViewportPanel(@NotNull FlixelDebugControlsPanel controls,
-      @NotNull FlixelDebugInspectorPanel inspector) {
-    super("viewport", "Viewport", FlixelDebugProtocol.KIND_VIEWPORT);
+  public FlixelDebugViewport(@NotNull FlixelDebugControls controls,
+      @NotNull FlixelDebugInspector inspector) {
+    super("viewport", FlixelDebugProtocol.KIND_VIEWPORT);
     this.controls = controls;
     this.inspector = inspector;
     this.ids = inspector.getIds();
@@ -261,7 +261,7 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
    * @param dx How far to move the camera right, in view units. Negative moves it left.
    * @param dy How far to move the camera down, in view units. Negative moves it up.
    * @return {@code true} when the camera moved.
-   * @see FlixelDebugControlsPanel#panFreeCam(float, float)
+   * @see FlixelDebugControls#panFreeCam(float, float)
    */
   public boolean pan(float dx, float dy) {
     dirty = true;
@@ -279,7 +279,7 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
    * @param anchorViewX The horizontal position of the point that stays still, in view space before the zoom.
    * @param anchorViewY The vertical position of the point that stays still, in view space before the zoom.
    * @return {@code true} when the zoom changed.
-   * @see FlixelDebugControlsPanel#zoomFreeCam(float, float, float)
+   * @see FlixelDebugControls#zoomFreeCam(float, float, float)
    */
   public boolean zoom(float factor, float anchorViewX, float anchorViewY) {
     dirty = true;
@@ -340,8 +340,18 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
   public void handleAction(int action, @NotNull FlixelDebugMessageReader reader) {
     switch (action) {
       case FlixelDebugProtocol.VIEWPORT_SET_CAMERA -> setCameraIndex(reader.readU8());
-      case FlixelDebugProtocol.VIEWPORT_PICK -> pick(reader.readF32(), reader.readF32());
-      case FlixelDebugProtocol.VIEWPORT_MOVE -> move(reader.readI32(), reader.readF32(), reader.readF32());
+      case FlixelDebugProtocol.VIEWPORT_PICK -> {
+        // Feed actions come from tools such as AI agents, so the picked or moved object is marked for the panels.
+        if (pick(reader.readF32(), reader.readF32()) != null) {
+          inspector.markAgentSelection();
+        }
+      }
+      case FlixelDebugProtocol.VIEWPORT_MOVE -> {
+        int id = reader.readI32();
+        if (move(id, reader.readF32(), reader.readF32())) {
+          inspector.getIds().markAgentTouched(inspector.getIds().get(id));
+        }
+      }
       case FlixelDebugProtocol.VIEWPORT_PAN -> pan(reader.readF32(), reader.readF32());
       case FlixelDebugProtocol.VIEWPORT_ZOOM -> zoom(reader.readF32(), reader.readF32(), reader.readF32());
       case FlixelDebugProtocol.VIEWPORT_RESET_CAMERA -> resetCamera();
@@ -619,6 +629,88 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
    */
   public int getBoxType(int index) {
     return boxTypes[index] & 0xFFFF;
+  }
+
+  /**
+   * Returns the index of the camera the last sample shows. It is the main camera (0) while the chosen index is past
+   * the end of the camera list.
+   *
+   * @return The shown camera's position in the camera list.
+   */
+  public int getShownIndex() {
+    return shownIndex;
+  }
+
+  /**
+   * Returns how many cameras the game had at the last sample, at most 255.
+   *
+   * @return The camera count, {@code 0} when there is no camera.
+   */
+  public int getCameraCount() {
+    return cameraCount;
+  }
+
+  /**
+   * Returns the visible width of the shown camera in view units at the last sample.
+   *
+   * @return The width.
+   */
+  public float getViewWidth() {
+    return viewWidth;
+  }
+
+  /**
+   * Returns the visible height of the shown camera in view units at the last sample.
+   *
+   * @return The height.
+   */
+  public float getViewHeight() {
+    return viewHeight;
+  }
+
+  /**
+   * Returns the zoom of the shown camera at the last sample.
+   *
+   * @return The zoom.
+   */
+  public float getZoom() {
+    return zoom;
+  }
+
+  /**
+   * Returns the horizontal scroll of the shown camera at the last sample, in world units.
+   *
+   * @return The scroll x.
+   */
+  public float getScrollX() {
+    return scrollX;
+  }
+
+  /**
+   * Returns the vertical scroll of the shown camera at the last sample, in world units.
+   *
+   * @return The scroll y.
+   */
+  public float getScrollY() {
+    return scrollY;
+  }
+
+  /**
+   * Returns whether the free camera flew a camera at the last sample.
+   *
+   * @return {@code true} while the free camera is on.
+   */
+  public boolean isFreeCam() {
+    return freeCam;
+  }
+
+  /**
+   * Returns the id of the inspector's selection at the last sample.
+   *
+   * @return The id, or {@link FlixelDebugObjectIds#NONE}.
+   */
+  public int getSelectedId() {
+    return selectedId;
   }
 
   /**

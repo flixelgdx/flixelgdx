@@ -26,7 +26,7 @@ package org.flixelgdx.debug;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.collections.FlixelList;
-import org.flixelgdx.debug.panels.FlixelDebugStatsPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugStats;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
@@ -41,11 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugStatsPanelTest {
+class FlixelDebugStatsTest {
 
   private FlixelGraphicsManager originalGraphics;
   private FlixelDebugManager manager;
-  private FlixelDebugStatsPanel stats;
+  private FlixelDebugStats stats;
   private FlixelCamera camera;
 
   @BeforeEach
@@ -145,13 +145,13 @@ class FlixelDebugStatsPanelTest {
     for (int i = 0; i < 130; i++) {
       stats.update(0.04f + 0.001f * i);
     }
-    assertEquals(FlixelDebugStatsPanel.HISTORY_SIZE, stats.getHistoryCount());
+    assertEquals(FlixelDebugStats.HISTORY_SIZE, stats.getHistoryCount());
     int start = stats.getHistoryStart();
     assertEquals(stats.getHistoryHead(), start);
     float[] ms = stats.getFrameMsHistory();
     // The oldest kept sample is number 11 (index 10), the newest is number 130 (index 129).
     assertEquals(50f, ms[start], 1e-2f);
-    assertEquals(169f, ms[(start + FlixelDebugStatsPanel.HISTORY_SIZE - 1) % FlixelDebugStatsPanel.HISTORY_SIZE],
+    assertEquals(169f, ms[(start + FlixelDebugStats.HISTORY_SIZE - 1) % FlixelDebugStats.HISTORY_SIZE],
         1e-2f);
   }
 

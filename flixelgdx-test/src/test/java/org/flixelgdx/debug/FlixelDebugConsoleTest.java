@@ -25,8 +25,8 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.debug.panels.FlixelDebugConsolePanel;
-import org.flixelgdx.debug.panels.FlixelDebugPanelBase;
+import org.flixelgdx.debug.feeds.FlixelDebugConsole;
+import org.flixelgdx.debug.feeds.FlixelDebugFeedBase;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
@@ -51,11 +51,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugConsolePanelTest {
+class FlixelDebugConsoleTest {
 
   private FlixelLogger originalLog;
   private FlixelDebugManager manager;
-  private FlixelDebugConsolePanel console;
+  private FlixelDebugConsole console;
   private List<String> lines;
   private List<FlixelLogLevel> levels;
   private String[] lastArgs;
@@ -161,7 +161,7 @@ class FlixelDebugConsolePanelTest {
 
   @Test
   void historyKeepsOnlyTheNewestLines() {
-    int max = FlixelDebugConsolePanel.MAX_HISTORY_ENTRIES;
+    int max = FlixelDebugConsole.MAX_HISTORY_ENTRIES;
     int total = max + 6;
     for (int i = 0; i < total; i++) {
       console.run("echo " + i);
@@ -231,8 +231,8 @@ class FlixelDebugConsolePanelTest {
 
   @Test
   void blankLinesAreIgnored() {
-    assertEquals(FlixelDebugConsolePanel.RESULT_IGNORED, console.run("   "));
-    assertEquals(FlixelDebugConsolePanel.RESULT_IGNORED, console.run(null));
+    assertEquals(FlixelDebugConsole.RESULT_IGNORED, console.run("   "));
+    assertEquals(FlixelDebugConsole.RESULT_IGNORED, console.run(null));
     assertFalse(console.hasPendingResult());
   }
 
@@ -418,13 +418,13 @@ class FlixelDebugConsolePanelTest {
     return n;
   }
 
-  /** Makes {@link FlixelDebugConsolePanel#writeResult} usable through the generic test helper. */
-  private static final class ResultView extends FlixelDebugPanelBase {
+  /** Makes {@link FlixelDebugConsole#writeResult} usable through the generic test helper. */
+  private static final class ResultView extends FlixelDebugFeedBase {
 
-    private final FlixelDebugConsolePanel console;
+    private final FlixelDebugConsole console;
 
-    ResultView(FlixelDebugConsolePanel console) {
-      super("view", "View", FlixelDebugProtocol.KIND_CONSOLE);
+    ResultView(FlixelDebugConsole console) {
+      super("view", FlixelDebugProtocol.KIND_CONSOLE);
       this.console = console;
     }
 

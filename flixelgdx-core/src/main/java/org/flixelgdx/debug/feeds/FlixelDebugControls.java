@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.FlixelObject;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugDrawable;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugNode;
@@ -115,7 +116,7 @@ import java.util.function.Consumer;
  * @see FlixelDebugProtocol#KIND_CONTROLS
  * @see FlixelDebugPicker
  */
-public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
+public class FlixelDebugControls extends FlixelDebugFeedBase {
 
   /** The sample rate in Hz that the stats panel uses until it is changed. */
   public static final int DEFAULT_RATE = 20;
@@ -160,7 +161,7 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
   private final FlixelColor selectionColor = new FlixelColor(1f, 0.85f, 0.2f, 1f);
   private final FlixelVector scratchPoint = new FlixelVector();
   private final FlixelDebugPicker picker = new FlixelDebugPicker();
-  private final FlixelDebugInspectorPanel inspector;
+  private final FlixelDebugInspector inspector;
   private final Consumer<FlixelDebugDrawable> hitboxDrawer = this::drawHitbox;
 
   @Nullable
@@ -228,8 +229,8 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
    *
    * @param inspector The inspector that picked objects are selected on and whose selection is outlined.
    */
-  public FlixelDebugControlsPanel(@NotNull FlixelDebugInspectorPanel inspector) {
-    super("controls", "Controls", FlixelDebugProtocol.KIND_CONTROLS);
+  public FlixelDebugControls(@NotNull FlixelDebugInspector inspector) {
+    super("controls", FlixelDebugProtocol.KIND_CONTROLS);
     this.inspector = inspector;
   }
 
@@ -506,6 +507,42 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanelBase {
     writer.writeString("Right Drag").writeString("Pan the free camera");
     count += 5;
     writer.endArray(count);
+  }
+
+  /**
+   * Fills two lists with the keys the game uses for the debugger and what each one does, in the order the controls
+   * feed sends them. A hotkey that was turned off is left out.
+   *
+   * @param keys Receives the key names, such as {@code F3}; cleared first.
+   * @param descriptions Receives what each key does; cleared first.
+   * @return How many keybinds were added.
+   */
+  public int getKeybinds(@NotNull FlixelArray<String> keys, @NotNull FlixelArray<String> descriptions) {
+    keys.clear();
+    descriptions.clear();
+    if (pauseKey != FlixelKey.NONE) {
+      keys.add(pauseKeyName);
+      descriptions.add("Pause or resume the game");
+    }
+    if (hitboxesKey != FlixelKey.NONE) {
+      keys.add(hitboxesKeyName);
+      descriptions.add("Show or hide hitboxes");
+    }
+    if (freeCamKey != FlixelKey.NONE) {
+      keys.add(freeCamKeyName);
+      descriptions.add("Turn the free camera on or off");
+    }
+    keys.add("Alt + Click");
+    descriptions.add("Select the object under the mouse");
+    keys.add("W A S D / Arrows");
+    descriptions.add("Move the free camera");
+    keys.add("Wheel / Q / E");
+    descriptions.add("Zoom the free camera");
+    keys.add("Shift");
+    descriptions.add("Move the free camera 4 times faster");
+    keys.add("Right Drag");
+    descriptions.add("Pan the free camera");
+    return keys.getSize();
   }
 
   @Override

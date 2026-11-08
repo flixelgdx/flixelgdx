@@ -30,7 +30,7 @@ import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelBaseAssetManager;
 import org.flixelgdx.debug.ReadbackTestSupport.FakeTexture;
 import org.flixelgdx.debug.ReadbackTestSupport.ReadbackGraphics;
-import org.flixelgdx.debug.panels.FlixelDebugTexturePanel;
+import org.flixelgdx.debug.feeds.FlixelDebugTextures;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugTexturePanelTest {
+class FlixelDebugTexturesTest {
 
   private FlixelLogger originalLog;
   private FlixelAssetManager originalAssets;
@@ -63,7 +63,7 @@ class FlixelDebugTexturePanelTest {
   private FlixelBaseAssetManager assets;
   private ReadbackGraphics graphics;
   private FlixelDebugObjectIds ids;
-  private FlixelDebugTexturePanel panel;
+  private FlixelDebugTextures panel;
 
   @BeforeEach
   void setUp() {
@@ -78,7 +78,7 @@ class FlixelDebugTexturePanelTest {
     graphics = new ReadbackGraphics();
     Flixel.graphics = graphics;
     ids = new FlixelDebugObjectIds();
-    panel = new FlixelDebugTexturePanel(ids);
+    panel = new FlixelDebugTextures(ids);
   }
 
   @AfterEach
@@ -264,7 +264,7 @@ class FlixelDebugTexturePanelTest {
     graphics.answer(0);
     assertTrue(panel.hasPendingPayload());
     FlixelDebugMessageWriter writer = new FlixelDebugMessageWriter(64);
-    writer.beginMessage(FlixelDebugProtocol.MSG_PANEL_DATA);
+    writer.beginMessage(FlixelDebugProtocol.MSG_FEED_DATA);
     writer.writeU16(4);
     panel.writePendingPayload(writer);
     FlixelDebugMessageReader r = new FlixelDebugMessageReader(writer.finish());

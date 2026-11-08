@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
@@ -102,7 +102,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FlixelSave
  * @see FlixelDebugProtocol#KIND_SAVE
  */
-public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
+public class FlixelDebugSave extends FlixelDebugFeedBase {
 
   /** The most rows the panel flattens and sends. */
   public static final int MAX_ROWS = 300;
@@ -165,8 +165,8 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
   private boolean storedValid;
 
   /** Creates the save panel. It edits {@link Flixel#save}. */
-  public FlixelDebugSavePanel() {
-    super("save", "Save", FlixelDebugProtocol.KIND_SAVE);
+  public FlixelDebugSave() {
+    super("save", FlixelDebugProtocol.KIND_SAVE);
   }
 
   @Override
@@ -1096,6 +1096,98 @@ public class FlixelDebugSavePanel extends FlixelDebugPanelBase {
    */
   public int getRowCount() {
     return rows.count;
+  }
+
+  /**
+   * Returns the dotted path of a row, such as {@code player.coins}.
+   *
+   * @param index A position from 0 to {@link #getRowCount()} minus 1.
+   * @return The reused path text.
+   */
+  @NotNull
+  public CharSequence getRowPath(int index) {
+    return rows.items.get(index).path;
+  }
+
+  /**
+   * Returns a row's value as text: strings in double quotes, numbers as digits, and so on.
+   *
+   * @param index A position from 0 to {@link #getRowCount()} minus 1.
+   * @return The reused display text.
+   */
+  @NotNull
+  public CharSequence getRowDisplay(int index) {
+    return rows.items.get(index).display;
+  }
+
+  /**
+   * Returns the kind of a row's value.
+   *
+   * @param index A position from 0 to {@link #getRowCount()} minus 1.
+   * @return A {@code VALUE_*} constant of {@link FlixelDebugProtocol}.
+   */
+  public int getRowKind(int index) {
+    return rows.items.get(index).kind;
+  }
+
+  /**
+   * Returns whether a row differs from the copy in storage.
+   *
+   * @param index A position from 0 to {@link #getRowCount()} minus 1.
+   * @return {@code true} when the value is not saved yet.
+   */
+  public boolean isRowUnsaved(int index) {
+    return rows.items.get(index).unsaved;
+  }
+
+  /**
+   * Returns how many paths are in storage but no longer in the data.
+   *
+   * @return The count.
+   */
+  public int getRemovedCount() {
+    return removed.count;
+  }
+
+  /**
+   * Returns a path that is in storage but no longer in the data.
+   *
+   * @param index A position from 0 to {@link #getRemovedCount()} minus 1.
+   * @return The reused path text.
+   */
+  @NotNull
+  public CharSequence getRemovedPath(int index) {
+    return removed.items.get(index).path;
+  }
+
+  /**
+   * Returns the status line: a summary of the save, or the result of the last action.
+   *
+   * @return The reused status text.
+   */
+  @NotNull
+  public CharSequence getStatus() {
+    return status;
+  }
+
+  /**
+   * Returns whether the status line describes a failure.
+   *
+   * @return {@code true} for an error.
+   */
+  public boolean isStatusError() {
+    return statusError;
+  }
+
+  /**
+   * Returns the label of a save in the list that {@link #select(int)} picks from, such as {@code profile/1}.
+   *
+   * @param index A position from 0 to {@link #getSaveCount()} minus 1.
+   * @return The reused label text.
+   */
+  @NotNull
+  public CharSequence getSaveLabel(int index) {
+    return labels.get(index);
   }
 
   public int getUnsavedCount() {

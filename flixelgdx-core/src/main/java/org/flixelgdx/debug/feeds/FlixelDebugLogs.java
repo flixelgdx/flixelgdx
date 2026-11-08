@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
@@ -34,19 +34,20 @@ import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The log panel of the remote debugger: it remembers the most recent log lines so the debugger app can
- * show them.
+ * The log feed of the remote debugger: it remembers the most recent log lines so the debugger app and the logs
+ * panel can show them.
  *
  * <p>Think of it as a conveyor belt with room for {@value #MAX_LINES} boxes. Every log message from
  * {@code Flixel.log} puts a new box on the belt, and once the belt is full the oldest box falls off the
  * end. The network agent grabs all boxes that arrived since its last visit with
  * {@link #write(FlixelDebugMessageWriter)}, or the whole belt with
- * {@link #writeBacklog(FlixelDebugMessageWriter)} right after the app connects.
+ * {@link #writeFirst(FlixelDebugMessageWriter)} right after the app subscribes. A panel reads the boxes with
+ * {@link #visitSince(long, LineVisitor)}, keeping track of its own position on the belt.
  *
- * <p>The logger reuses its entry object for every message, so this panel copies each message into a
+ * <p>The logger reuses its entry object for every message, so this feed copies each message into a
  * pooled line object that is created once and then recycled. Messages longer than
  * {@value FlixelDebugProtocol#MAX_LOG_MESSAGE_CHARS} characters are cut and end with
- * {@value #CUT_OFF}. The panel receives log messages only while it is attached to the logger, which the
+ * {@value #CUT_OFF}. The feed receives log messages only while it is attached to the logger, which the
  * manager does when the game starts in debug mode.
  *
  * <p>Logging is allowed from any thread, so the line buffer is guarded by a lock. Reading and writing it
@@ -54,9 +55,9 @@ import org.jetbrains.annotations.NotNull;
  *
  * @see FlixelDebugProtocol#KIND_LOGS
  */
-public class FlixelDebugLogPanel extends FlixelDebugPanelBase {
+public class FlixelDebugLogs extends FlixelDebugFeedBase {
 
-  /** How many log lines the panel keeps. */
+  /** How many log lines the feed keeps. */
   public static final int MAX_LINES = 500;
 
   /** The text appended to a message that was shortened. */
@@ -80,12 +81,13 @@ public class FlixelDebugLogPanel extends FlixelDebugPanelBase {
 
   private int head;
   private int count;
+  private int clears;
 
   private boolean attached;
 
-  /** Creates the log panel. It does not receive messages until {@link #attach()} is called. */
-  public FlixelDebugLogPanel() {
-    super("logs", "Logs", FlixelDebugProtocol.KIND_LOGS);
+  /** Creates the log feed. It does not receive messages until {@link #attach()} is called. */
+  public FlixelDebugLogs() {
+    super("logs", FlixelDebugProtocol.KIND_LOGS);
   }
 
   /**
@@ -111,6 +113,35 @@ public class FlixelDebugLogPanel extends FlixelDebugPanelBase {
     synchronized (lock) {
       count = 0;
       sentSeq = nextSeq - 1L;
+      clears++;
+    }
+  }
+
+  /**
+   * Shows every stored line that is newer than a sequence number to a visitor, oldest first.
+   *
+   * <p>A panel keeps the sequence number of the newest line it has seen and passes it back next time, so it only
+   * receives new lines. The text arguments are reused buffers that are only valid during the call. Logging from other
+   * threads waits while the visitor runs, so keep it quick. Nothing is allocated.
+   *
+   * @param afterSeq The newest sequence number already seen, or {@code 0} for every stored line.
+   * @param visitor Receives each line.
+   * @return The sequence number of the newest stored line, to pass in next time.
+   */
+  public long visitSince(long afterSeq, @NotNull LineVisitor visitor) {
+    synchronized (lock) {
+      long newest = nextSeq - 1L;
+      int n = (int) Math.max(0L, Math.min(count, newest - afterSeq));
+      int start = head - n;
+      if (start < 0) {
+        start += MAX_LINES;
+      }
+      for (int i = 0; i < n; i++) {
+        Line line = lines[(start + i) % MAX_LINES];
+        visitor.visit(line.seq, line.time, line.level, line.uncaught, line.tag, line.callSite, line.message,
+            line.stack);
+      }
+      return newest;
     }
   }
 
@@ -128,10 +159,10 @@ public class FlixelDebugLogPanel extends FlixelDebugPanelBase {
   /**
    * Writes the lines that arrived since the previous write, then remembers that they were sent.
    *
-   * <p>The payload has the backlog flag set to {@code false}. If the panel dropped older lines before they
+   * <p>The payload has the backlog flag set to {@code false}. If the feed dropped older lines before they
    * could be sent, they are simply missing.
    *
-   * @param writer The writer positioned right after the panel index.
+   * @param writer The writer positioned right after the feed index.
    */
   @Override
   public void write(@NotNull FlixelDebugMessageWriter writer) {
@@ -143,12 +174,13 @@ public class FlixelDebugLogPanel extends FlixelDebugPanelBase {
   /**
    * Writes every stored line, oldest first, with the backlog flag set to {@code true}.
    *
-   * <p>Use it for the first message after the app connects. It also counts as a write, so the next call to
-   * {@link #write(FlixelDebugMessageWriter)} only sends lines that arrive afterwards.
+   * <p>The agent uses it for the first message after the app subscribes. It also counts as a write, so the next
+   * call to {@link #write(FlixelDebugMessageWriter)} only sends lines that arrive afterwards.
    *
-   * @param writer The writer positioned right after the panel index.
+   * @param writer The writer positioned right after the feed index.
    */
-  public void writeBacklog(@NotNull FlixelDebugMessageWriter writer) {
+  @Override
+  public void writeFirst(@NotNull FlixelDebugMessageWriter writer) {
     synchronized (lock) {
       writeLines(writer, true, 0L);
     }
@@ -298,7 +330,7 @@ public class FlixelDebugLogPanel extends FlixelDebugPanelBase {
   }
 
   /**
-   * Returns the sink that feeds this panel, so it can be attached to a logger other than
+   * Returns the sink that fills this feed, so it can be attached to a logger other than
    * {@link Flixel#log}.
    *
    * @return The sink, never {@code null}.
@@ -330,8 +362,41 @@ public class FlixelDebugLogPanel extends FlixelDebugPanelBase {
     }
   }
 
+  /**
+   * Returns how many times the lines were cleared, so a panel can notice a clear that someone else made.
+   *
+   * @return The clear count.
+   */
+  public int getClears() {
+    synchronized (lock) {
+      return clears;
+    }
+  }
+
   public boolean isAttached() {
     return attached;
+  }
+
+  /**
+   * Receives the stored lines of a {@link FlixelDebugLogs} feed, one call per line.
+   */
+  @FunctionalInterface
+  public interface LineVisitor {
+
+    /**
+     * Receives one line. The text arguments are reused buffers that are only valid during the call.
+     *
+     * @param seq The line's sequence number, increasing by one per message.
+     * @param time Seconds since the game started.
+     * @param level The level: {@link FlixelDebugProtocol#LEVEL_DEBUG} up to {@link FlixelDebugProtocol#LEVEL_ERROR}.
+     * @param uncaught Whether the line reports an uncaught exception.
+     * @param tag The logger's tag.
+     * @param callSite The file and line that logged it, such as {@code Main.java:10}, or empty.
+     * @param message The message.
+     * @param stack The stack trace, or empty.
+     */
+    void visit(long seq, double time, int level, boolean uncaught, @NotNull CharSequence tag,
+        @NotNull CharSequence callSite, @NotNull CharSequence message, @NotNull CharSequence stack);
   }
 
   private static final class Line {

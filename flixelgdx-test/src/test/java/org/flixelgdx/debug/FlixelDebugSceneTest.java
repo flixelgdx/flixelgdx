@@ -29,8 +29,8 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
-import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
-import org.flixelgdx.debug.panels.FlixelDebugScenePanel;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
+import org.flixelgdx.debug.feeds.FlixelDebugScene;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.group.FlixelSpriteGroup;
@@ -48,21 +48,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugScenePanelTest {
+class FlixelDebugSceneTest {
 
   private record Node(int id, int parent, String type, String label, boolean tracked) {
   }
 
   private FlixelDebugObjectIds ids;
-  private FlixelDebugInspectorPanel inspector;
-  private FlixelDebugScenePanel scene;
+  private FlixelDebugInspector inspector;
+  private FlixelDebugScene scene;
   private FlixelState state;
 
   @BeforeEach
   void setUp() {
     ids = new FlixelDebugObjectIds();
-    inspector = new FlixelDebugInspectorPanel(ids);
-    scene = new FlixelDebugScenePanel(ids, inspector);
+    inspector = new FlixelDebugInspector(ids);
+    scene = new FlixelDebugScene(ids, inspector);
     state = new TestState();
     Flixel.state = state;
   }
@@ -227,7 +227,7 @@ class FlixelDebugScenePanelTest {
     state.add(new FlixelSprite());
     scene.update(0.1f);
     assertEquals(first, scene.getRevision(), "too early to look again");
-    scene.update(FlixelDebugScenePanel.CHECK_INTERVAL);
+    scene.update(FlixelDebugScene.CHECK_INTERVAL);
     assertTrue(scene.getRevision() > first);
   }
 

@@ -29,7 +29,7 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.audio.FlixelSoundManager;
-import org.flixelgdx.debug.panels.FlixelDebugInputPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugInput;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelInputDevice;
@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugInputPanelTest {
+class FlixelDebugInputTest {
 
   private FlixelLogger originalLog;
   private FlixelInputDevice originalInput;
@@ -61,7 +61,7 @@ class FlixelDebugInputPanelTest {
   private FlixelSoundManager originalSound;
   private FlixelDebugManager originalDebug;
   private FlixelDebugManager debug;
-  private FlixelDebugInputPanel input;
+  private FlixelDebugInput input;
   private FlixelKeyInputManager keys;
   private FlixelMouseInputManager mouse;
   private FlixelTouchManager touches;
@@ -368,7 +368,7 @@ class FlixelDebugInputPanelTest {
 
   @Test
   void aFullQueueDropsTheRest() {
-    for (int i = 0; i < FlixelDebugInputPanel.CAPACITY; i++) {
+    for (int i = 0; i < FlixelDebugInput.CAPACITY; i++) {
       assertTrue(input.scroll(1f));
     }
     assertFalse(input.scroll(1f));

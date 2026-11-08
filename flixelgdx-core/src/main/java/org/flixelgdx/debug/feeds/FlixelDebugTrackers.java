@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
@@ -51,7 +51,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @see FlixelDebugProtocol#KIND_TRACKERS
  */
-public class FlixelDebugTrackerPanel extends FlixelDebugPanelBase {
+public class FlixelDebugTrackers extends FlixelDebugFeedBase {
 
   /** Seconds between revision bumps, which is how often the app is offered fresh values. */
   private static final float REFRESH_INTERVAL = 0.1f;
@@ -62,8 +62,8 @@ public class FlixelDebugTrackerPanel extends FlixelDebugPanelBase {
   private float timer;
 
   /** Creates the tracker panel. */
-  public FlixelDebugTrackerPanel() {
-    super("trackers", "Trackers", FlixelDebugProtocol.KIND_TRACKERS);
+  public FlixelDebugTrackers() {
+    super("trackers", FlixelDebugProtocol.KIND_TRACKERS);
   }
 
   /**
@@ -144,6 +144,34 @@ public class FlixelDebugTrackerPanel extends FlixelDebugPanelBase {
     timer = 0f;
   }
 
+  /**
+   * Writes the values of one tracker as {@code LIST [STRING key, STRING value, BOOL false]} items, sorted by key, the
+   * row form of a property grid.
+   *
+   * @param index A position from 0 to {@link #getCount()} minus 1.
+   * @param writer The writer, positioned inside a list.
+   * @return How many rows were written.
+   */
+  public int writeListItems(int index, @NotNull FlixelDebugMessageWriter writer) {
+    FlixelDebugTrackerEntry entry = entries.get(index);
+    FlixelMap<String, String> values = entry != null ? entry.getTrackedValues() : null;
+    if (values == null) {
+      return 0;
+    }
+    sortedKeys.clear();
+    for (FlixelMap.Entry<String, String> pair : values.entries()) {
+      insertSorted(pair.key);
+    }
+    int rows = Math.min(sortedKeys.getSize(), FlixelDebugProtocol.MAX_ARRAY_COUNT);
+    for (int i = 0; i < rows; i++) {
+      String key = sortedKeys.get(i);
+      String value = values.get(key);
+      writer.beginList().writeValue(key).writeValue(value != null ? value : "").writeValue(false).endList(3);
+    }
+    sortedKeys.clear();
+    return rows;
+  }
+
   /** Inserts a key into {@link #sortedKeys} so the list stays sorted, without creating temporary objects. */
   private void insertSorted(String key) {
     int i = sortedKeys.getSize();
@@ -162,5 +190,16 @@ public class FlixelDebugTrackerPanel extends FlixelDebugPanelBase {
    */
   public int getCount() {
     return entries.getSize();
+  }
+
+  /**
+   * Returns a tracked entry.
+   *
+   * @param index A position from 0 to {@link #getCount()} minus 1.
+   * @return The entry.
+   */
+  @NotNull
+  public FlixelDebugTrackerEntry getEntry(int index) {
+    return entries.get(index);
   }
 }

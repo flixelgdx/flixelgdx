@@ -29,8 +29,8 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
 import org.flixelgdx.debug.inspector.FlixelSectionBuilder;
-import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.group.FlixelSpriteGroup;
@@ -59,7 +59,7 @@ final class FlixelDebugDefaultSections {
    *
    * @param inspector The panel to register them on.
    */
-  static void register(FlixelDebugInspectorPanel inspector) {
+  static void register(FlixelDebugInspector inspector) {
     inspector.register(FlixelBasic.class, "Basic", b -> b
         .intProp("ID", o -> o.id).once()
         .boolProp("Exists", FlixelBasic::isExists, FlixelBasic::setExists)

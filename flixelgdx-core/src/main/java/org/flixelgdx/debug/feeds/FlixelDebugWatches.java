@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -68,7 +68,7 @@ import java.util.function.Supplier;
  *
  * @see FlixelDebugProtocol#KIND_WATCHES
  */
-public class FlixelDebugWatchPanel extends FlixelDebugPanelBase {
+public class FlixelDebugWatches extends FlixelDebugFeedBase {
 
   /** The name of the watch added by {@link #addMouse()}. */
   public static final String MOUSE_NAME = "Mouse";
@@ -85,8 +85,8 @@ public class FlixelDebugWatchPanel extends FlixelDebugPanelBase {
   private float timer;
 
   /** Creates the watch panel. */
-  public FlixelDebugWatchPanel() {
-    super("watches", "Watches", FlixelDebugProtocol.KIND_WATCHES);
+  public FlixelDebugWatches() {
+    super("watches", FlixelDebugProtocol.KIND_WATCHES);
   }
 
   /**
@@ -265,6 +265,29 @@ public class FlixelDebugWatchPanel extends FlixelDebugPanelBase {
   @Override
   public void reset() {
     clear();
+  }
+
+  /**
+   * Writes every watch as a {@code LIST [STRING name, value, BOOL false]} item, the row form of a property grid. A
+   * getter that throws shows its message as an error value.
+   *
+   * @param writer The writer, positioned inside a list.
+   * @return How many rows were written.
+   */
+  public int writeListItems(@NotNull FlixelDebugMessageWriter writer) {
+    int n = Math.min(watches.getSize(), FlixelDebugProtocol.MAX_ARRAY_COUNT);
+    for (int i = 0; i < n; i++) {
+      Watch watch = watches.get(i);
+      writer.beginList().writeValue(watch.name);
+      try {
+        watch.writeValue(writer, scratch);
+      } catch (Exception e) {
+        String message = e.getMessage();
+        writer.writeErrorValue(message != null ? message : e.getClass().getName());
+      }
+      writer.writeValue(false).endList(3);
+    }
+    return n;
   }
 
   /**

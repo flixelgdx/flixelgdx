@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelState;
@@ -50,7 +50,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Each node carries the {@linkplain FlixelDebugObjectIds id} of its object, the id of its parent
  * ({@code -1} for a root), the type name, a label, and a flag that is true for objects added through
- * {@link FlixelDebugInspectorPanel#track(Object, String)}. Parents always come before their children.
+ * {@link FlixelDebugInspector#track(Object, String)}. Parents always come before their children.
  * The label is the step the object takes in a {@linkplain FlixelDebugPaths scene path}: {@code state} for
  * the state, {@code substate} for an open sub state, the member index for a member, and the tracked label
  * for a tracked root. Joining the labels from the root down with dots gives a valid scene path, for example
@@ -80,7 +80,7 @@ import org.jetbrains.annotations.NotNull;
  * @see FlixelDebugProtocol#KIND_SCENE
  * @see FlixelDebugPaths
  */
-public class FlixelDebugScenePanel extends FlixelDebugPanelBase {
+public class FlixelDebugScene extends FlixelDebugFeedBase {
 
   /** Seconds between two checks for a changed tree. */
   public static final float CHECK_INTERVAL = 0.5f;
@@ -88,9 +88,10 @@ public class FlixelDebugScenePanel extends FlixelDebugPanelBase {
   private final FlixelIdentityMap<Class<?>, String> typeNames = new FlixelIdentityMap<>();
   private final FlixelString label = new FlixelString();
   private final FlixelDebugObjectIds ids;
-  private final FlixelDebugInspectorPanel roots;
+  private final FlixelDebugInspector roots;
 
   private FlixelDebugMessageWriter writer;
+  private NodeVisitor visitor;
   private boolean[] trackedSeen = new boolean[4];
   private float timer;
   private int checksum;
@@ -103,8 +104,8 @@ public class FlixelDebugScenePanel extends FlixelDebugPanelBase {
    * @param ids The registry that gives objects their ids.
    * @param roots The inspector that knows the tracked roots.
    */
-  public FlixelDebugScenePanel(@NotNull FlixelDebugObjectIds ids, @NotNull FlixelDebugInspectorPanel roots) {
-    super("scene", "Scene", FlixelDebugProtocol.KIND_SCENE);
+  public FlixelDebugScene(@NotNull FlixelDebugObjectIds ids, @NotNull FlixelDebugInspector roots) {
+    super("scene", FlixelDebugProtocol.KIND_SCENE);
     this.ids = ids;
     this.roots = roots;
   }
@@ -146,6 +147,27 @@ public class FlixelDebugScenePanel extends FlixelDebugPanelBase {
     out.endArray(nodeCount);
     writer = null;
     checked = true;
+  }
+
+  /**
+   * Walks the current scene and shows every node to a visitor, parents before their children, in the same order and
+   * with the same ids and labels as the feed's payload. It does not change what the feed considers already sent.
+   *
+   * @param visitor Receives each node.
+   * @return How many nodes were visited.
+   */
+  public int visit(@NotNull NodeVisitor visitor) {
+    int savedChecksum = checksum;
+    int savedCount = nodeCount;
+    this.visitor = visitor;
+    try {
+      walkAll();
+      return nodeCount;
+    } finally {
+      this.visitor = null;
+      checksum = savedChecksum;
+      nodeCount = savedCount;
+    }
   }
 
   @Override
@@ -196,15 +218,20 @@ public class FlixelDebugScenePanel extends FlixelDebugPanelBase {
       }
     }
     int id = FlixelDebugObjectIds.NONE;
-    if (writer != null) {
+    if (writer != null || visitor != null) {
       id = ids.idOf(node);
       if (step != null) {
         label.set(step);
       } else {
         label.set(index);
       }
-      writer.writeI32(id).writeI32(parent).writeString(typeName(node.getClass())).writeString(label)
-          .writeBool(tracked);
+      String type = typeName(node.getClass());
+      if (writer != null) {
+        writer.writeI32(id).writeI32(parent).writeString(type).writeString(label).writeBool(tracked);
+      }
+      if (visitor != null) {
+        visitor.visit(id, parent, type, label, tracked);
+      }
     }
     if (depth < FlixelDebugPaths.MAX_DEPTH) {
       int size = FlixelDebugNodes.childCount(node);
@@ -243,5 +270,23 @@ public class FlixelDebugScenePanel extends FlixelDebugPanelBase {
    */
   public int getNodeCount() {
     return nodeCount;
+  }
+
+  /**
+   * Receives the nodes of the scene from {@link FlixelDebugScene#visit(NodeVisitor)}.
+   */
+  @FunctionalInterface
+  public interface NodeVisitor {
+
+    /**
+     * Receives one node.
+     *
+     * @param id The object's id, shared with the inspector and the viewport.
+     * @param parent The parent's id, or {@code -1} for a root.
+     * @param type The simple class name of the object.
+     * @param label The node's step in a scene path, such as {@code state} or {@code 3}; a reused buffer.
+     * @param trackedRoot Whether the object was added with the inspector's {@code track()}.
+     */
+    void visit(int id, int parent, @NotNull String type, @NotNull CharSequence label, boolean trackedRoot);
   }
 }

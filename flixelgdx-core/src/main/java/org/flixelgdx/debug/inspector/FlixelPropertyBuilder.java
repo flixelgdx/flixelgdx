@@ -23,9 +23,8 @@
  */
 package org.flixelgdx.debug.inspector;
 
-import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
-import org.flixelgdx.debug.remote.FlixelDebugProtocol;
+import org.flixelgdx.debug.ui.FlixelDebugProperties;
 import org.flixelgdx.functional.consumer.BooleanConsumer;
 import org.flixelgdx.functional.consumer.FloatConsumer;
 import org.flixelgdx.functional.supplier.FloatSupplier;
@@ -43,37 +42,37 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
- * Builds the rows and buttons of a custom debugger panel.
+ * Builds the live rows of one section of a property grid ({@link FlixelDebugProperties}) from getters and setters.
  *
- * <p>This is the same idea as {@link FlixelSectionBuilder}, minus the selected object: a custom panel is not about
- * one object, so its getters take no arguments and read whatever the game code captured in the lambda. Think of a
- * control panel on a machine: some labeled gauges (rows) and some buttons.
+ * <p>This is the same idea as {@link FlixelSectionBuilder}, minus the selected object: a section of a panel is not
+ * about one object, so its getters take no arguments and read whatever the game code captured in the lambda. Think of
+ * a dashboard on a machine: a few labeled gauges, some of which have a knob to turn (a setter).
  *
  * <pre>{@code
- * Flixel.debug.register(new FlixelDebugCustomPanel("ai", "Enemy AI", p -> p
+ * FlixelDebugProperties ai = new FlixelDebugProperties().section("Enemy AI", s -> s
  *     .intProp("Active enemies", () -> enemies.countLiving())
  *     .floatProp("Aggression", () -> ai.aggression, v -> ai.aggression = v)
- *     .action("Kill all", enemies::killAll)));
+ *     .boolProp("Paused", () -> ai.paused, v -> ai.paused = v));
  * }</pre>
  *
  * <p>As with the inspector, there is one method per value type so lambdas are never ambiguous, reading never
- * allocates, and a getter that throws shows its message as an error row.
+ * allocates, and a getter that throws shows its message as an error row. A row with a setter can be edited in the
+ * app; a row without one is read-only.
  *
  * @see FlixelSectionBuilder
+ * @see FlixelDebugProperties
  */
-public final class FlixelPanelBuilder {
+public final class FlixelPropertyBuilder {
 
-  // The rows reuse the section class. Its type and title are never sent for a custom panel.
-  private final FlixelDebugSection rows = new FlixelDebugSection(FlixelPanelBuilder.class, "Rows");
-  private final FlixelArray<String> labels = new FlixelArray<>();
-  private final FlixelArray<Runnable> actions = new FlixelArray<>();
+  // The rows reuse the section class. Its type and title are never sent; the property grid sends its own title.
+  private final FlixelDebugSection rows = new FlixelDebugSection(FlixelPropertyBuilder.class, "Rows");
 
   private FlixelDebugProperty<Object> last;
 
   private int epoch;
 
   /** Creates an empty builder. */
-  public FlixelPanelBuilder() {}
+  public FlixelPropertyBuilder() {}
 
   /**
    * Adds a read-only {@code boolean} row.
@@ -83,7 +82,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder boolProp(@NotNull String name, @NotNull BooleanSupplier getter) {
+  public FlixelPropertyBuilder boolProp(@NotNull String name, @NotNull BooleanSupplier getter) {
     return add(FlixelDebugProperty.ofBool(name, o -> getter.getAsBoolean(), null));
   }
 
@@ -96,7 +95,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder boolProp(@NotNull String name, @NotNull BooleanSupplier getter,
+  public FlixelPropertyBuilder boolProp(@NotNull String name, @NotNull BooleanSupplier getter,
       @NotNull BooleanConsumer setter) {
     return add(FlixelDebugProperty.ofBool(name, o -> getter.getAsBoolean(), (o, v) -> setter.accept(v)));
   }
@@ -109,7 +108,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder intProp(@NotNull String name, @NotNull IntSupplier getter) {
+  public FlixelPropertyBuilder intProp(@NotNull String name, @NotNull IntSupplier getter) {
     return add(FlixelDebugProperty.ofInt(name, o -> getter.getAsInt(), null));
   }
 
@@ -122,7 +121,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder intProp(@NotNull String name, @NotNull IntSupplier getter, @NotNull IntConsumer setter) {
+  public FlixelPropertyBuilder intProp(@NotNull String name, @NotNull IntSupplier getter, @NotNull IntConsumer setter) {
     return add(FlixelDebugProperty.ofInt(name, o -> getter.getAsInt(), (o, v) -> setter.accept(v)));
   }
 
@@ -134,7 +133,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder longProp(@NotNull String name, @NotNull LongSupplier getter) {
+  public FlixelPropertyBuilder longProp(@NotNull String name, @NotNull LongSupplier getter) {
     return add(FlixelDebugProperty.ofLong(name, o -> getter.getAsLong(), null));
   }
 
@@ -147,7 +146,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder longProp(@NotNull String name, @NotNull LongSupplier getter,
+  public FlixelPropertyBuilder longProp(@NotNull String name, @NotNull LongSupplier getter,
       @NotNull LongConsumer setter) {
     return add(FlixelDebugProperty.ofLong(name, o -> getter.getAsLong(), (o, v) -> setter.accept(v)));
   }
@@ -160,7 +159,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder floatProp(@NotNull String name, @NotNull FloatSupplier getter) {
+  public FlixelPropertyBuilder floatProp(@NotNull String name, @NotNull FloatSupplier getter) {
     return add(FlixelDebugProperty.ofFloat(name, o -> getter.getAsFloat(), null));
   }
 
@@ -173,7 +172,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder floatProp(@NotNull String name, @NotNull FloatSupplier getter,
+  public FlixelPropertyBuilder floatProp(@NotNull String name, @NotNull FloatSupplier getter,
       @NotNull FloatConsumer setter) {
     return add(FlixelDebugProperty.ofFloat(name, o -> getter.getAsFloat(), (o, v) -> setter.accept(v)));
   }
@@ -186,7 +185,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder doubleProp(@NotNull String name, @NotNull DoubleSupplier getter) {
+  public FlixelPropertyBuilder doubleProp(@NotNull String name, @NotNull DoubleSupplier getter) {
     return add(FlixelDebugProperty.ofDouble(name, o -> getter.getAsDouble(), null));
   }
 
@@ -199,7 +198,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder doubleProp(@NotNull String name, @NotNull DoubleSupplier getter,
+  public FlixelPropertyBuilder doubleProp(@NotNull String name, @NotNull DoubleSupplier getter,
       @NotNull DoubleConsumer setter) {
     return add(FlixelDebugProperty.ofDouble(name, o -> getter.getAsDouble(), (o, v) -> setter.accept(v)));
   }
@@ -213,7 +212,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder stringProp(@NotNull String name, @NotNull Consumer<FlixelString> getter) {
+  public FlixelPropertyBuilder stringProp(@NotNull String name, @NotNull Consumer<FlixelString> getter) {
     return add(FlixelDebugProperty.ofString(name, (o, out) -> getter.accept(out), null));
   }
 
@@ -227,7 +226,7 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder stringProp(@NotNull String name, @NotNull Consumer<FlixelString> getter,
+  public FlixelPropertyBuilder stringProp(@NotNull String name, @NotNull Consumer<FlixelString> getter,
       @NotNull Consumer<CharSequence> setter) {
     return add(FlixelDebugProperty.ofString(name, (o, out) -> getter.accept(out), (o, v) -> setter.accept(v)));
   }
@@ -240,20 +239,20 @@ public final class FlixelPanelBuilder {
    * @return This builder.
    */
   @NotNull
-  public FlixelPanelBuilder enumProp(@NotNull String name,
+  public FlixelPropertyBuilder enumProp(@NotNull String name,
       @NotNull Supplier<? extends Enum<?>> getter) {
     return add(FlixelDebugProperty.ofEnum(name, o -> getter.get()));
   }
 
   /**
-   * Marks the row added last as read once instead of every refresh. The panel reads it again after
-   * {@code FlixelDebugCustomPanel.refresh()} or after the row is edited.
+   * Marks the row added last as read once instead of every refresh. The row reads its getter again after
+   * {@link #refresh()} or after the row is edited.
    *
    * @return This builder.
    * @throws IllegalStateException If no row was added yet.
    */
   @NotNull
-  public FlixelPanelBuilder once() {
+  public FlixelPropertyBuilder once() {
     if (last == null) {
       throw new IllegalStateException("once() must come right after a row, for example intProp(...).once().");
     }
@@ -262,32 +261,13 @@ public final class FlixelPanelBuilder {
   }
 
   /**
-   * Adds a button.
+   * Writes every row as a {@code LIST [STRING name, value, BOOL editable]} item, reading the getters.
    *
-   * @param label The text on the button.
-   * @param onPress Runs on the game's main thread when the button is pressed in the app.
-   * @return This builder.
+   * @param writer The writer, positioned inside the rows list of a section.
+   * @return How many rows were written.
    */
-  @NotNull
-  public FlixelPanelBuilder action(@NotNull String label, @NotNull Runnable onPress) {
-    labels.add(label);
-    actions.add(onPress);
-    return this;
-  }
-
-  /**
-   * Writes the panel payload: the rows, then the buttons.
-   *
-   * @param writer The writer positioned after the panel index.
-   */
-  public void write(@NotNull FlixelDebugMessageWriter writer) {
-    rows.writeRows(writer, this, epoch);
-    int n = Math.min(actions.getSize(), FlixelDebugProtocol.MAX_ARRAY_COUNT);
-    writer.beginArray();
-    for (int i = 0; i < n; i++) {
-      writer.writeU16(i).writeString(labels.get(i));
-    }
-    writer.endArray(n);
+  public int writeItems(@NotNull FlixelDebugMessageWriter writer) {
+    return rows.writeListItems(writer, this, epoch);
   }
 
   /**
@@ -297,30 +277,16 @@ public final class FlixelPanelBuilder {
    * @param value The value from the app.
    * @return {@code true} when the row accepted the value.
    */
-  public boolean setProperty(int index, @NotNull FlixelDebugValue value) {
+  public boolean apply(int index, @NotNull FlixelDebugValue value) {
     return rows.apply(index, this, value);
   }
 
-  /**
-   * Runs the action of a button.
-   *
-   * @param index The action index taken from the button.
-   * @return {@code true} when a button with that index exists.
-   */
-  public boolean press(int index) {
-    if (index < 0 || index >= actions.getSize()) {
-      return false;
-    }
-    actions.get(index).run();
-    return true;
-  }
-
-  /** Makes rows marked {@link #once()} read their getters again the next time the panel is written. */
+  /** Makes rows marked {@link #once()} read their getters again the next time the rows are written. */
   public void refresh() {
     epoch++;
   }
 
-  private FlixelPanelBuilder add(FlixelDebugProperty<Object> property) {
+  private FlixelPropertyBuilder add(FlixelDebugProperty<Object> property) {
     rows.add(property);
     last = property;
     return this;
@@ -333,14 +299,5 @@ public final class FlixelPanelBuilder {
    */
   public int getRowCount() {
     return rows.getCount();
-  }
-
-  /**
-   * Returns how many buttons were added.
-   *
-   * @return The button count.
-   */
-  public int getActionCount() {
-    return actions.getSize();
   }
 }

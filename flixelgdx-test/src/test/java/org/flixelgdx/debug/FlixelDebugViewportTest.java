@@ -30,8 +30,8 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
-import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
-import org.flixelgdx.debug.panels.FlixelDebugViewportPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugControls;
+import org.flixelgdx.debug.feeds.FlixelDebugViewport;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.graphics.FlixelFrame;
@@ -53,13 +53,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugViewportPanelTest {
+class FlixelDebugViewportTest {
 
   private static final float EPS = 1e-3f;
 
   private FlixelLogger originalLog;
   private FlixelDebugManager debug;
-  private FlixelDebugViewportPanel viewport;
+  private FlixelDebugViewport viewport;
   private FlixelCamera cam;
   private FlixelState state;
 
@@ -187,7 +187,7 @@ class FlixelDebugViewportPanelTest {
 
   @Test
   void theBoxCountIsCappedAndTheTopmostObjectsAreKept() {
-    int total = FlixelDebugViewportPanel.MAX_BOXES + 100;
+    int total = FlixelDebugViewport.MAX_BOXES + 100;
     FlixelObject last = null;
     for (int i = 0; i < total; i++) {
       last = new FlixelObject(i % 300, 5f, 4f, 4f);
@@ -196,7 +196,7 @@ class FlixelDebugViewportPanelTest {
 
     Snapshot s = Snapshot.read(viewport);
 
-    assertEquals(FlixelDebugViewportPanel.MAX_BOXES, s.boxes.size());
+    assertEquals(FlixelDebugViewport.MAX_BOXES, s.boxes.size());
     assertEquals(debug.ids.peek(last), s.boxes.get(s.boxes.size() - 1).id);
     assertEquals(debug.ids.peek(state.getMembers().get(100)), s.boxes.get(0).id, "the bottom 100 are dropped");
   }
@@ -320,7 +320,7 @@ class FlixelDebugViewportPanelTest {
     assertEquals(y / 2f, viewport.getBoxY(0), EPS);
 
     assertTrue(viewport.zoom(1000f, 0f, 0f));
-    assertEquals(FlixelDebugControlsPanel.MAX_ZOOM, cam.getZoom(), 0f);
+    assertEquals(FlixelDebugControls.MAX_ZOOM, cam.getZoom(), 0f);
     assertFalse(viewport.zoom(2f, 0f, 0f));
   }
 
@@ -414,7 +414,7 @@ class FlixelDebugViewportPanelTest {
     boolean paused;
     boolean hitboxes;
 
-    static Snapshot read(FlixelDebugViewportPanel panel) {
+    static Snapshot read(FlixelDebugViewport panel) {
       FlixelDebugMessageReader r = DebugTestSupport.payload(panel);
       Snapshot s = new Snapshot();
       s.camera = r.readU8();

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -107,7 +107,7 @@ import java.util.function.Consumer;
  * @see FlixelSectionBuilder
  * @see FlixelDebugProtocol#KIND_INSPECTOR
  */
-public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
+public class FlixelDebugInspector extends FlixelDebugFeedBase {
 
   /** Seconds between revision bumps while an object is selected, which is how often the app is offered fresh values. */
   private static final float REFRESH_INTERVAL = 0.1f;
@@ -152,13 +152,15 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
   /** Whether the selected object was already checked for being in the scene since its exists flag went off. */
   private boolean goneChecked;
 
+  private boolean agentSelection;
+
   /**
    * Creates the inspector panel.
    *
    * @param ids The registry that gives objects their ids.
    */
-  public FlixelDebugInspectorPanel(@NotNull FlixelDebugObjectIds ids) {
-    super("inspector", "Inspector", FlixelDebugProtocol.KIND_INSPECTOR);
+  public FlixelDebugInspector(@NotNull FlixelDebugObjectIds ids) {
+    super("inspector", FlixelDebugProtocol.KIND_INSPECTOR);
     this.ids = ids;
   }
 
@@ -222,6 +224,7 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
     }
     boolean changed = selected != object;
     selected = object;
+    agentSelection = false;
     goneChecked = false;
     ids.idOf(object);
     epoch++;
@@ -238,6 +241,7 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
       return;
     }
     selected = null;
+    agentSelection = false;
     sent.clear();
     epoch++;
     markChanged();
@@ -469,25 +473,140 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
 
   @Override
   public void handleAction(int action, @NotNull FlixelDebugMessageReader reader) {
+    // Every feed action comes from a tool such as an AI agent, so what it selects or edits is marked for the panels.
     switch (action) {
       case FlixelDebugProtocol.INSPECTOR_SELECT -> {
         Object object = ids.get(reader.readI32());
         if (object != null) {
           select(object);
+          markAgentSelection();
         }
       }
-      case FlixelDebugProtocol.INSPECTOR_SELECT_PARENT -> selectParent();
+      case FlixelDebugProtocol.INSPECTOR_SELECT_PARENT -> {
+        selectParent();
+        markAgentSelection();
+      }
       case FlixelDebugProtocol.INSPECTOR_CLEAR -> clearSelection();
       case FlixelDebugProtocol.INSPECTOR_GO_TO -> goTo();
-      case FlixelDebugProtocol.INSPECTOR_SET_PROPERTY -> setProperty(reader);
+      case FlixelDebugProtocol.INSPECTOR_SET_PROPERTY -> {
+        setProperty(reader);
+        ids.markAgentTouched(selected);
+      }
       case FlixelDebugProtocol.INSPECTOR_SELECT_PATH -> {
         reader.readString(pathInput);
         selectPath(pathInput);
+        markAgentSelection();
       }
       case FlixelDebugProtocol.INSPECTOR_REQUEST_THUMBNAIL -> requestThumbnail(reader.readI32());
       default -> {
       }
     }
+  }
+
+  /**
+   * Marks the current selection as made by a tool (such as an AI agent), so the inspector panel can say so. Feed
+   * actions call it; any later selection made another way clears the mark.
+   */
+  public void markAgentSelection() {
+    if (selected != null) {
+      agentSelection = true;
+      ids.markAgentTouched(selected);
+    }
+  }
+
+  /**
+   * Collects the inspector sections that describe the selected object, in the order they are shown: the sections of
+   * its own class first, then those of its parent classes, then sections that point at a related object. Sections
+   * whose related object is missing are left out.
+   *
+   * <p>A panel reads each section's rows with
+   * {@link FlixelDebugSection#writeListItems(FlixelDebugMessageWriter, Object, int)}, passing
+   * {@code section.resolve(getSelected())} and {@link #getEpoch()}.
+   *
+   * @param out Receives the sections; it is cleared first. Nothing else is allocated.
+   * @return How many sections were collected.
+   */
+  public int collectSections(@NotNull FlixelArray<FlixelDebugSection> out) {
+    out.clear();
+    Object current = getSelected();
+    if (current == null) {
+      return 0;
+    }
+    FlixelArray<FlixelDebugSection> found = chainFor(current.getClass()).sections;
+    for (int i = 0, n = found.getSize(); i < n; i++) {
+      FlixelDebugSection section = found.get(i);
+      if (section.resolve(current) != null) {
+        out.add(section);
+      }
+    }
+    return out.getSize();
+  }
+
+  /**
+   * Changes one property of the selected object, as if the person edited it.
+   *
+   * @param section A section returned by {@link #collectSections(FlixelArray)}.
+   * @param row The position of the property in the section.
+   * @param value The new value. Numbers are converted like a Java cast; other kinds must match.
+   * @return {@code true} when the property accepted the value.
+   */
+  public boolean apply(@NotNull FlixelDebugSection section, int row, @NotNull FlixelDebugValue value) {
+    Object current = getSelected();
+    if (current == null) {
+      return false;
+    }
+    Object target = section.resolve(current);
+    if (target == null || !section.apply(row, target, value)) {
+      return false;
+    }
+    markChanged();
+    return true;
+  }
+
+  /**
+   * Starts reading a picture of what the selected sprite shows, for the listener of {@link #getThumbnails()}. It is
+   * not sent to tools.
+   *
+   * @return {@code true} when the read started.
+   */
+  public boolean requestPreview() {
+    Object current = getSelected();
+    if (current instanceof FlixelSprite sprite) {
+      FlixelFrame frame = sprite.getFrame();
+      if (frame != null) {
+        return thumbnails.requestPreview(ids.idOf(current), frame.getTexture(), frame.getRegionX(),
+            frame.getRegionY(), frame.getRegionWidth(), frame.getRegionHeight());
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns whether the selected object can be shown as a picture (it is a sprite with a frame and the graphics
+   * backend can read pixels back).
+   *
+   * @return {@code true} when {@link #requestPreview()} can work.
+   */
+  public boolean hasPreview() {
+    Object current = getSelected();
+    return current != null && hasTexture(current);
+  }
+
+  /**
+   * Returns the address of the selected object in the scene, such as {@code state.3.0}, or {@code TypeName#id} for
+   * an object that is not in the scene tree.
+   *
+   * @return The reused path text, empty when nothing is selected.
+   */
+  @NotNull
+  public CharSequence getPath() {
+    Object current = getSelected();
+    if (current == null) {
+      pathText.clear();
+      pathObject = null;
+      return pathText;
+    }
+    return pathOf(current, chainFor(current.getClass()), ids.idOf(current));
   }
 
   @Override
@@ -738,6 +857,35 @@ public class FlixelDebugInspectorPanel extends FlixelDebugPanelBase {
    *
    * @param focusHandler The handler, or {@code null} to center the main camera directly.
    */
+  /**
+   * Returns whether the current selection was made by a tool (such as an AI agent) rather than by a person or the
+   * game.
+   *
+   * @return {@code true} for a selection made through a feed action.
+   */
+  public boolean isAgentSelection() {
+    return agentSelection;
+  }
+
+  /**
+   * Returns the read epoch: it goes up whenever rows marked {@code once()} should read their getters again.
+   *
+   * @return The epoch.
+   */
+  public int getEpoch() {
+    return epoch;
+  }
+
+  /**
+   * Returns the thumbnail reader of the inspector. A panel sets its listener to receive preview pictures.
+   *
+   * @return The thumbnail reader.
+   */
+  @NotNull
+  public FlixelDebugThumbnails getThumbnails() {
+    return thumbnails;
+  }
+
   public void setFocusHandler(@Nullable FocusHandler focusHandler) {
     this.focusHandler = focusHandler;
   }

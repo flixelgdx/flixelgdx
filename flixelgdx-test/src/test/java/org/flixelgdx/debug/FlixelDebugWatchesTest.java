@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.debug;
 
-import org.flixelgdx.debug.panels.FlixelDebugWatchPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugWatches;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.util.FlixelString;
@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugWatchPanelTest {
+class FlixelDebugWatchesTest {
 
-  private FlixelDebugWatchPanel watches;
+  private FlixelDebugWatches watches;
 
   @BeforeEach
   void setUp() {
@@ -226,15 +226,15 @@ class FlixelDebugWatchPanelTest {
   @Test
   void numbersFormatAsIntegersWhenWholeAndTwoDecimalsOtherwise() {
     FlixelString s = new FlixelString();
-    FlixelDebugWatchPanel.appendNumber(s, 3.0);
+    FlixelDebugWatches.appendNumber(s, 3.0);
     s.concat('|');
-    FlixelDebugWatchPanel.appendNumber(s, -4.0);
+    FlixelDebugWatches.appendNumber(s, -4.0);
     s.concat('|');
-    FlixelDebugWatchPanel.appendNumber(s, 2.5);
+    FlixelDebugWatches.appendNumber(s, 2.5);
     s.concat('|');
-    FlixelDebugWatchPanel.appendNumber(s, 0.333);
+    FlixelDebugWatches.appendNumber(s, 0.333);
     s.concat('|');
-    FlixelDebugWatchPanel.appendNumber(s, 100f);
+    FlixelDebugWatches.appendNumber(s, 100f);
     assertEquals("3|-4|2.50|0.33|100", s.toString());
   }
 }

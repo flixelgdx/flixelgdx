@@ -24,7 +24,7 @@
 package org.flixelgdx.debug;
 
 import org.flixelgdx.collections.FlixelMap;
-import org.flixelgdx.debug.panels.FlixelDebugTrackerPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugTrackers;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.junit.jupiter.api.Test;
@@ -32,11 +32,11 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugTrackerPanelTest {
+class FlixelDebugTrackersTest {
 
   @Test
   void rowsAreSortedByKeyAndEmptyEntriesAreLeftOut() {
-    FlixelDebugTrackerPanel trackers = new FlixelDebugManager().trackers;
+    FlixelDebugTrackers trackers = new FlixelDebugManager().trackers;
     trackers.add(new MapEntry("Enemies", "zeta", "1", "alpha", "2", "mid", "3"));
     trackers.add(new MapEntry("Hidden"));
     trackers.add(new MapEntry("Items", "b", "x", "a", "y"));
@@ -67,7 +67,7 @@ class FlixelDebugTrackerPanelTest {
 
   @Test
   void addTwiceIsIgnoredAndRemoveWorks() {
-    FlixelDebugTrackerPanel trackers = new FlixelDebugManager().trackers;
+    FlixelDebugTrackers trackers = new FlixelDebugManager().trackers;
     MapEntry entry = new MapEntry("A", "k", "v");
     trackers.add(entry);
     trackers.add(entry);

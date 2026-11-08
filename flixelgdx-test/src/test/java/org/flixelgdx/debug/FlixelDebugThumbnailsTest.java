@@ -27,7 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.debug.ReadbackTestSupport.FakeTexture;
 import org.flixelgdx.debug.ReadbackTestSupport.ReadbackGraphics;
-import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
@@ -166,7 +166,7 @@ class FlixelDebugThumbnailsTest {
   @Test
   void theInspectorRequestsTheFrameRegionOfTheSelectedSprite() {
     FlixelDebugObjectIds ids = new FlixelDebugObjectIds();
-    FlixelDebugInspectorPanel inspector = new FlixelDebugInspectorPanel(ids);
+    FlixelDebugInspector inspector = new FlixelDebugInspector(ids);
     FakeTexture atlas = new FakeTexture(512, 512);
     FlixelSprite sprite = new FlixelSprite();
     sprite.setRegion(new FlixelFrame(atlas, 64, 32, 40, 20));
@@ -186,7 +186,7 @@ class FlixelDebugThumbnailsTest {
     graphics.answer(0);
     assertTrue(inspector.hasPendingPayload());
     FlixelDebugMessageWriter writer = new FlixelDebugMessageWriter(64);
-    writer.beginMessage(FlixelDebugProtocol.MSG_PANEL_DATA);
+    writer.beginMessage(FlixelDebugProtocol.MSG_FEED_DATA);
     writer.writeU16(3);
     inspector.writePendingPayload(writer);
     FlixelDebugMessageReader r = new FlixelDebugMessageReader(writer.finish());
@@ -201,7 +201,7 @@ class FlixelDebugThumbnailsTest {
 
   @Test
   void theInspectorOnlyOffersThumbnailsWhenThePixelsCanBeRead() {
-    FlixelDebugInspectorPanel inspector = new FlixelDebugInspectorPanel(new FlixelDebugObjectIds());
+    FlixelDebugInspector inspector = new FlixelDebugInspector(new FlixelDebugObjectIds());
     FlixelSprite sprite = new FlixelSprite();
     sprite.setRegion(new FlixelFrame(new FakeTexture(8, 8)));
     inspector.select(sprite);
@@ -214,7 +214,7 @@ class FlixelDebugThumbnailsTest {
   @Test
   void aThumbnailRequestForAnObjectWithoutAFrameOrAnUnknownIdIsIgnored() {
     FlixelDebugObjectIds ids = new FlixelDebugObjectIds();
-    FlixelDebugInspectorPanel inspector = new FlixelDebugInspectorPanel(ids);
+    FlixelDebugInspector inspector = new FlixelDebugInspector(ids);
     FlixelSprite plain = new FlixelSprite();
     inspector.select(plain);
     DebugTestSupport.send(inspector, FlixelDebugProtocol.INSPECTOR_REQUEST_THUMBNAIL, w -> w.writeI32(ids.idOf(plain)));
@@ -224,7 +224,7 @@ class FlixelDebugThumbnailsTest {
 
   private FlixelDebugMessageReader write(int subtype) {
     FlixelDebugMessageWriter writer = new FlixelDebugMessageWriter(1024);
-    writer.beginMessage(FlixelDebugProtocol.MSG_PANEL_DATA);
+    writer.beginMessage(FlixelDebugProtocol.MSG_FEED_DATA);
     writer.writeU16(3);
     thumbnails.write(writer, subtype);
     FlixelDebugMessageReader r = new FlixelDebugMessageReader(writer.finish());

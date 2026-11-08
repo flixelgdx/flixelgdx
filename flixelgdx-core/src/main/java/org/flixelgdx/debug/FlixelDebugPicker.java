@@ -30,8 +30,8 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.debug.panels.FlixelDebugControlsPanel;
-import org.flixelgdx.debug.panels.FlixelDebugViewportPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugControls;
+import org.flixelgdx.debug.feeds.FlixelDebugViewport;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.group.FlixelGroupable;
@@ -58,7 +58,7 @@ import org.jetbrains.annotations.Nullable;
  * two members that is not on any of them hits the group.
  *
  * <p>The same walk is shared with anything else that needs "every object drawn on this camera", such as the
- * {@linkplain FlixelDebugViewportPanel viewport panel} that sends a map of the screen to the debugger app. Call
+ * {@linkplain FlixelDebugViewport viewport panel} that sends a map of the screen to the debugger app. Call
  * {@link #forEachDrawn(FlixelCamera, boolean, Visitor)} to walk the objects in either order, and
  * {@link #computeBounds(FlixelObject, FlixelCamera)} to measure one of them, so every tool agrees on what is drawn
  * where.
@@ -75,8 +75,8 @@ import org.jetbrains.annotations.Nullable;
  * }
  * }</pre>
  *
- * @see FlixelDebugControlsPanel
- * @see FlixelDebugViewportPanel
+ * @see FlixelDebugControls
+ * @see FlixelDebugViewport
  */
 public class FlixelDebugPicker {
 
@@ -96,7 +96,7 @@ public class FlixelDebugPicker {
    *
    * <p>A hitbox is the collision box ({@link FlixelObject#getWidth()} and {@link FlixelObject#getHeight()} at the
    * object's position). It does not follow a sprite's offset, scale, angle, or animation frame, so it only changes
-   * when the game moves the object or resizes its hitbox. The {@linkplain FlixelDebugViewportPanel viewport panel}
+   * when the game moves the object or resizes its hitbox. The {@linkplain FlixelDebugViewport viewport panel}
    * turns this on so the debugger app shows and picks the same boxes the game collides with.
    */
   public boolean hitboxes;

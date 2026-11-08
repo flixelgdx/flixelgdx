@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug.panels;
+package org.flixelgdx.debug.feeds;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
@@ -79,7 +79,7 @@ import java.nio.ByteBuffer;
  * @see FlixelDebugProtocol#KIND_CAPTURE
  * @see FlixelGraphicsManager#captureScene(FlixelPixelReadback)
  */
-public class FlixelDebugCapturePanel extends FlixelDebugPanelBase {
+public class FlixelDebugCapture extends FlixelDebugFeedBase {
 
   /** The most bytes of PNG one answer may hold, so the message stays well under the 16 MB limit. */
   public static final int MAX_IMAGE_BYTES = 15 * 1024 * 1024;
@@ -101,8 +101,8 @@ public class FlixelDebugCapturePanel extends FlixelDebugPanelBase {
   private boolean supported;
 
   /** Creates the capture panel. */
-  public FlixelDebugCapturePanel() {
-    super("capture", "Capture", FlixelDebugProtocol.KIND_CAPTURE);
+  public FlixelDebugCapture() {
+    super("capture", FlixelDebugProtocol.KIND_CAPTURE);
   }
 
   @Override

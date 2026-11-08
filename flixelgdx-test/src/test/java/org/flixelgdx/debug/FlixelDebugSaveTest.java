@@ -26,7 +26,7 @@ package org.flixelgdx.debug;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
-import org.flixelgdx.debug.panels.FlixelDebugSavePanel;
+import org.flixelgdx.debug.feeds.FlixelDebugSave;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.logging.FlixelDefaultLogger;
@@ -52,13 +52,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelDebugSavePanelTest {
+class FlixelDebugSaveTest {
 
   private FlixelLogger originalLog;
   private FlixelSave originalSave;
   private MemoryHandler storage;
   private FlixelSave save;
-  private FlixelDebugSavePanel panel;
+  private FlixelDebugSave panel;
 
   @BeforeEach
   void setUp() {
@@ -71,7 +71,7 @@ class FlixelDebugSavePanelTest {
     save = new FlixelSave(storage);
     save.bind("Game", "slot1");
     Flixel.save = save;
-    panel = new FlixelDebugSavePanel();
+    panel = new FlixelDebugSave();
   }
 
   @AfterEach
@@ -418,7 +418,7 @@ class FlixelDebugSavePanelTest {
     assertTrue(failed.isError);
     assertTrue(failed.status.contains("coins"), failed.status);
 
-    panel.update(FlixelDebugSavePanel.STATUS_SECONDS + 0.1f);
+    panel.update(FlixelDebugSave.STATUS_SECONDS + 0.1f);
     Payload summary = payload();
     assertFalse(summary.isError);
     assertTrue(summary.status.contains("Game.slot1"), summary.status);
