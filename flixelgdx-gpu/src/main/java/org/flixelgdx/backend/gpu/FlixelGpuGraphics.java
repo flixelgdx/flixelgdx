@@ -72,6 +72,7 @@ import io.github.stringdotjar.jwebgpu.GpuRenderPassColorAttachment;
 import io.github.stringdotjar.jwebgpu.GpuRenderPassDescriptor;
 import io.github.stringdotjar.jwebgpu.GpuRenderPassEncoder;
 import io.github.stringdotjar.jwebgpu.GpuRenderPipeline;
+import io.github.stringdotjar.jwebgpu.GpuStatus;
 import io.github.stringdotjar.jwebgpu.GpuStoreOp;
 import io.github.stringdotjar.jwebgpu.GpuSurface;
 import io.github.stringdotjar.jwebgpu.GpuSurfaceCapabilities;
@@ -853,22 +854,18 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
       GpuCallbackMode mode = eventPump != null ? GpuCallbackMode.ALLOW_PROCESS_EVENTS
           : GpuCallbackMode.ALLOW_SPONTANEOUS;
       pendingReadbacks++;
-      staging.mapAsync(GpuMapMode.READ, 0L, size, mode, (status, message) -> {
+      try {
+        staging.mapAsync(GpuMapMode.READ, 0L, size, mode, (status, message) -> {
+          pendingReadbacks--;
+          deliverReadback(staging, status, message, size, w, h, rowBytes, callback);
+        });
+      } catch (RuntimeException e) {
+        // A browser rejects a map it does not like right away, so give up on this read instead of failing the frame.
         pendingReadbacks--;
-        try {
-          if (status == GpuMapAsyncStatus.SUCCESS) {
-            callback.onPixels(staging.getConstMappedRange(0L, size), w, h, rowBytes);
-          } else {
-            LOG.warn("Reading back a texture failed: {} {}", status, message);
-            callback.onPixels(null, 0, 0, 0);
-          }
-        } finally {
-          if (status == GpuMapAsyncStatus.SUCCESS) {
-            staging.unmap();
-          }
-          staging.destroy();
-        }
-      });
+        LOG.warn("Could not start reading back a texture: {}", e.toString());
+        staging.destroy();
+        callback.onPixels(null, 0, 0, 0);
+      }
     }
   }
 
@@ -918,6 +915,51 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
       return;
     }
     readPixels(target.getTexture(), 0, 0, sceneWidth, sceneHeight, callback);
+  }
+
+  /**
+   * Finishes a readback once the staging buffer is mapped: copies the bytes out, releases the buffer, and calls back.
+   *
+   * <p>The bytes are copied with {@code readMappedRange} instead of being read through a mapped pointer, because the
+   * browser has no pointers into GPU memory (its mapped range is a copy), so the pointer form only works natively.
+   * Whatever goes wrong, including a callback that throws, is logged and never escapes, because on the web an
+   * exception inside a promise handler becomes an unhandled rejection that stops the game.
+   */
+  private void deliverReadback(GpuBuffer staging, GpuMapAsyncStatus status, String message, long size, int w, int h,
+      int rowBytes, FlixelPixelReadback callback) {
+    ByteBuffer pixels = null;
+    try {
+      if (status == GpuMapAsyncStatus.SUCCESS) {
+        ByteBuffer copy = ByteBuffer.allocateDirect((int) size);
+        if (staging.readMappedRange(0L, copy) == GpuStatus.SUCCESS) {
+          pixels = copy;
+        } else {
+          LOG.warn("Could not copy the mapped texture readback.");
+        }
+      } else {
+        LOG.warn("Reading back a texture failed: {} {}", status, message);
+      }
+    } catch (RuntimeException | OutOfMemoryError e) {
+      LOG.warn("Could not copy a texture readback: {}", e.toString());
+    } finally {
+      try {
+        if (status == GpuMapAsyncStatus.SUCCESS) {
+          staging.unmap();
+        }
+        staging.destroy();
+      } catch (RuntimeException e) {
+        LOG.warn("Could not release a readback buffer: {}", e.toString());
+      }
+    }
+    try {
+      if (pixels != null) {
+        callback.onPixels(pixels, w, h, rowBytes);
+      } else {
+        callback.onPixels(null, 0, 0, 0);
+      }
+    } catch (RuntimeException e) {
+      LOG.warn("A readback callback failed: {}", e.toString());
+    }
   }
 
   @Nullable

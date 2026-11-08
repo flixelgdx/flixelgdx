@@ -255,6 +255,27 @@ class FlixelGpuSmokeTest {
   }
 
   @Test
+  void aReadbackCallbackThatThrowsDoesNotEscapeAndTheBytesAreCopied() {
+    FlixelTexture texture = solid(4);
+    int[] calls = new int[1];
+    int[] sum = new int[1];
+    graphics.readPixels(texture, 0, 0, 4, 4, (rgba, width, height, rowBytes) -> {
+      calls[0]++;
+      for (int i = 0; i < width * 4; i++) {
+        sum[0] += rgba.get(i) & 0xFF;
+      }
+      throw new IllegalStateException("boom");
+    });
+    long deadline = System.nanoTime() + 5_000_000_000L;
+    while (calls[0] == 0 && System.nanoTime() < deadline) {
+      graphics.beginFrame();
+      graphics.endFrame();
+    }
+    assertEquals(1, calls[0], "the callback ran and its exception stayed inside the renderer");
+    texture.destroy();
+  }
+
+  @Test
   void aReadbackOfADestroyedTextureReportsNoPixels() {
     FlixelTexture texture = solid(4);
     texture.destroy();
