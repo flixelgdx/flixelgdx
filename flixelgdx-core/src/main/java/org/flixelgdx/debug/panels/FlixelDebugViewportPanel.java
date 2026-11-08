@@ -65,7 +65,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>A box is the object's collision box, the same one the game outlines when hitboxes are on, not the area its
  * graphic covers. It does not change when a sprite is scaled, rotated, offset, or plays an animation, only when
- * the object moves or its hitbox is resized (for example with {@link FlixelSprite#updateHitbox()}). Boxes come in
+ * the object moves or its hitbox is resized (for example with {@link FlixelSprite#updateHitbox()}). The selected
+ * object is the exception: its box is the area its graphic covers, the same one the game outlines in yellow, so
+ * the map and the game window show the same selection outline. Boxes come in
  * draw order, bottom first, and only objects that touch the view are listed. At most {@value #MAX_BOXES} boxes
  * are sent; when more objects are on screen, the ones drawn on top are kept.
  *
@@ -116,6 +118,8 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
   private final FlixelObjectIntMap<Class<?>> typeIndices = new FlixelObjectIntMap<>();
   private final FlixelArray<String> typeNames = new FlixelArray<>();
   private final FlixelDebugPicker picker = new FlixelDebugPicker();
+  /** Measures the selected object by the area its graphic covers, to match the game's yellow outline. */
+  private final FlixelDebugPicker graphicPicker = new FlixelDebugPicker();
   private final FlixelDebugPicker.Visitor collector = this::collect;
   private final FlixelDebugControlsPanel controls;
   private final FlixelDebugInspectorPanel inspector;
@@ -403,13 +407,15 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanelBase {
     if (boxCount >= MAX_BOXES) {
       return true;
     }
-    if (!picker.measure(member, cam)) {
+    // The selected box covers the graphic, like the yellow outline in the game. Every other box is a hitbox.
+    FlixelDebugPicker measurer = member == walkSelected ? graphicPicker : picker;
+    if (!measurer.measure(member, cam)) {
       return false;
     }
-    float left = picker.getBoundsLeft();
-    float top = picker.getBoundsTop();
-    float width = picker.getBoundsWidth();
-    float height = picker.getBoundsHeight();
+    float left = measurer.getBoundsLeft();
+    float top = measurer.getBoundsTop();
+    float width = measurer.getBoundsWidth();
+    float height = measurer.getBoundsHeight();
     if (left > viewWidth || top > viewHeight || left + width < 0f || top + height < 0f) {
       return false;
     }

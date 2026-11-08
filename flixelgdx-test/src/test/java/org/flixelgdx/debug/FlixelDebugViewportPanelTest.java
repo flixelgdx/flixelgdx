@@ -238,6 +238,32 @@ class FlixelDebugViewportPanelTest {
   }
 
   @Test
+  void selectedSpriteBoxCoversTheDrawnGraphicLikeTheGameOutline() {
+    FlixelSprite sprite = new FlixelSprite(100f, 100f);
+    sprite.setRegion(new FlixelFrame(new FlixelNoopTexture(32, 32)));
+    sprite.setSize(10f, 14f);
+    sprite.setOffset(3f, 2f);
+    sprite.setScale(2f);
+    state.add(sprite);
+    debug.inspector.select(sprite);
+
+    Snapshot s = Snapshot.read(viewport);
+
+    FlixelDebugPicker graphic = new FlixelDebugPicker();
+    assertTrue(graphic.measure(sprite, cam));
+    Box box = s.boxes.get(s.indexOf(debug.ids.peek(sprite)));
+    assertEquals(graphic.getBoundsLeft(), box.x, EPS);
+    assertEquals(graphic.getBoundsTop(), box.y, EPS);
+    assertEquals(graphic.getBoundsWidth(), box.w, EPS);
+    assertEquals(graphic.getBoundsHeight(), box.h, EPS);
+    assertEquals(64f, box.w, EPS, "the selected box is the scaled graphic, not the 10 by 14 hitbox");
+
+    // Picking still tests the hitbox, so a tap inside the graphic but outside the hitbox misses.
+    DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(140f).writeF32(140f));
+    assertNull(debug.inspector.getSelected());
+  }
+
+  @Test
   void moveAddsTheDistanceToAnyObjectAndIgnoresUnknownIds() {
     FlixelObject object = new FlixelObject(10f, 20f, 5f, 5f);
     state.add(object);
