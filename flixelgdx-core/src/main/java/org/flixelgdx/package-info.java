@@ -573,11 +573,11 @@
  * <h3>Looks: scale, rotation, color, alpha, and flipping</h3>
  *
  * <pre>{@code
- * player.setScale(2f);                       // Twice as big (does not change the hitbox).
- * player.updateHitbox();                     // Make the hitbox match the new size.
+ * player.setScale(2f);                       // Twice as big, grown around the origin (hitbox unchanged).
+ * player.updateHitbox();                     // Make the hitbox match the new size and line up with it.
  * player.setGraphicSize(64, 64);             // Stretch to an exact pixel size.
  * player.setAngle(45f);                      // Rotate 45 degrees clockwise.
- * player.setOriginCenter();                  // Rotate and scale around the center.
+ * player.setOrigin(0f, 0f);                  // Rotate and scale around the top-left corner instead of the center.
  * player.setAlpha(0.5f);                     // Half transparent.
  * player.setColor(FlixelColor.RED);          // Tint red.
  * player.setFlipX(true);                     // Mirror horizontally.
