@@ -33,9 +33,8 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.feeds.FlixelDebugControls;
 import org.flixelgdx.debug.feeds.FlixelDebugViewport;
 import org.flixelgdx.functional.IFlixelBasic;
-import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.group.FlixelGroupable;
-import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -89,6 +88,7 @@ public class FlixelDebugPicker {
 
   private final float[] nodeBounds = new float[4];
   private final FlixelVector point = new FlixelVector();
+  private final FlixelRect drawBounds = new FlixelRect();
   private final Visitor hitTest = this::testHit;
 
   /**
@@ -198,9 +198,9 @@ public class FlixelDebugPicker {
   /**
    * Works out the area an object is drawn in on a camera, in the camera's view space.
    *
-   * <p>A sprite with a graphic is measured the way {@link FlixelSprite#draw} places it: from its position plus
-   * its offset, as wide and tall as its graphic frame times its scale, and widened to the bounding box when it is
-   * rotated. Any other object, and a sprite without a graphic, uses its hitbox. While {@link #hitboxes} is
+   * <p>A sprite with a graphic is measured the way {@link FlixelSprite#draw} places it, using
+   * {@link FlixelSprite#getDrawBounds(FlixelCamera, FlixelRect)}: its frame placed at its position minus its
+   * offset, scaled and rotated around its origin, and widened to the bounding box when it is rotated. Any other object, and a sprite without a graphic, uses its hitbox. While {@link #hitboxes} is
    * {@code true}, every object uses its hitbox, placed with its scroll factor. The result is stored in this picker
    * and read with {@link #getBoundsLeft()}, {@link #getBoundsTop()}, {@link #getBoundsWidth()}, and
    * {@link #getBoundsHeight()}.
@@ -214,27 +214,12 @@ public class FlixelDebugPicker {
     float top = cam.worldToViewY(object.getY(), object.getScrollY());
     float width = object.getWidth();
     float height = object.getHeight();
-    if (!hitboxes && object instanceof FlixelSprite sprite) {
-      FlixelFrame frame = sprite.getFrame();
-      if (frame != null) {
-        // Mirror FlixelSprite.draw(): the whole source box is scaled around its center and then anchored so its
-        // top left corner stays at the sprite's drawn position (position minus offset).
-        left -= sprite.getOffsetX();
-        top -= sprite.getOffsetY();
-        width = frame.originalWidth * Math.abs(sprite.getScaleX());
-        height = frame.originalHeight * Math.abs(sprite.getScaleY());
-        float angle = sprite.getAngle();
-        if (angle != 0f) {
-          float cos = Math.abs(FlixelMath.cosDeg(angle));
-          float sin = Math.abs(FlixelMath.sinDeg(angle));
-          float rotW = cos * width + sin * height;
-          float rotH = sin * width + cos * height;
-          left -= (rotW - width) * 0.5f;
-          top -= (rotH - height) * 0.5f;
-          width = rotW;
-          height = rotH;
-        }
-      }
+    if (!hitboxes && object instanceof FlixelSprite sprite && sprite.getDrawBounds(cam, drawBounds)) {
+      // Measure the graphic exactly the way FlixelSprite.draw() places it.
+      left = drawBounds.x;
+      top = drawBounds.y;
+      width = drawBounds.width;
+      height = drawBounds.height;
     }
     boundsLeft = left;
     boundsTop = top;
