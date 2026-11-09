@@ -404,7 +404,7 @@ class FlixelDebugProtocolTest {
     FlixelDebugMessageReader r = new FlixelDebugMessageReader(ByteBuffer.wrap(padded));
     assertEquals(FlixelDebugProtocol.MSG_HELLO_ACK, r.readU8());
     assertEquals(1, r.readU16());
-    assertEquals(FlixelDebugProtocol.VERSION_MINOR, r.readU16());
+    assertEquals(0, r.readU16(), "the fixture holds version 1.0");
     assertEquals(5, r.getRemaining());
   }
 

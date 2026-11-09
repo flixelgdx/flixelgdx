@@ -388,6 +388,30 @@ class FlixelDebugViewportTest {
     assertTrue(viewport.getRevision() > revision, "the controls state is part of the map");
   }
 
+  @Test
+  void everyActionRaisesTheActionCountEvenWhenItChangesNothing() {
+    state.add(new FlixelObject(10f, 10f, 10f, 10f));
+    viewport.sample();
+    assertEquals(0, Snapshot.read(viewport).actionCount);
+    long revision = viewport.getRevision();
+
+    // A pick on empty space with nothing selected changes nothing on the map.
+    DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(390f).writeF32(290f));
+    viewport.update(0f);
+    assertTrue(viewport.getRevision() > revision, "the state is sent again so a tool sees its action was handled");
+    assertEquals(1, Snapshot.read(viewport).actionCount);
+    assertEquals(1, viewport.getActionCount());
+
+    DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PAN, w -> w.writeF32(5f).writeF32(0f));
+    viewport.pan(5f, 0f);
+    viewport.update(0f);
+    assertEquals(2, viewport.getActionCount(), "calling the method directly does not count");
+
+    viewport.reset();
+    viewport.sample();
+    assertEquals(0, viewport.getActionCount());
+  }
+
   private static FlixelCamera newCamera() {
     FlixelCamera camera = new FlixelCamera(400, 300);
     camera.getViewport().setScreenBounds(0, 0, 400, 300);
@@ -410,6 +434,7 @@ class FlixelDebugViewportTest {
     int camera;
     int cameraCount;
     int selectedId;
+    int actionCount;
     boolean freeCam;
     boolean paused;
     boolean hitboxes;
@@ -437,7 +462,8 @@ class FlixelDebugViewportTest {
         s.boxes.add(new Box(r.readI32(), r.readF32(), r.readF32(), r.readF32(), r.readF32(), r.readU16(),
             r.readU8()));
       }
-      assertEquals(0, r.getRemaining(), "nothing follows the boxes");
+      s.actionCount = r.readI32();
+      assertEquals(0, r.getRemaining(), "nothing follows the action count");
       return s;
     }
 
