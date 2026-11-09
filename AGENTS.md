@@ -277,23 +277,30 @@ For widely used classes, fields, methods, or anything central to correctness, in
 
 ## Working with Git and Pull Requests
 
-- Prefer **small, focused commits** as you finish logical slices of work so history stays readable. For example, if the task
-  involves a large refactor, **don't dump everything in one commit**; split each logical change into a separate commit.
-- Use **one branch and one pull request** unless the user explicitly asks for more (for example, stacked features or dependent work).
+- Keep pull requests **tightly focused**: one pull request covers **one logical change** (a single feature, fix,
+  refactor, or docs update). If a task touches several unrelated things, split it into **separate branches and pull
+  requests**, one per change, instead of bundling everything under a single release-style pull request. Release notes
+  are assembled from these titles later, so each pull request should stand on its own.
+- Give each branch a short name that matches its one change (for example, `fix/camera-zoom-offset` or
+  `feat/gamepad-rumble`). Every branch starts from the latest `master`. If a change truly depends on another one that
+  has not been merged yet, branch off that change's branch and say so in the pull request description.
+- Prefer **small, focused commits** inside each pull request so history stays readable. Don't dump a large change into
+  one commit; split each logical step into its own commit.
 - If the user renames a pull request, **do not rename it back**; respect their title.
 - Your commit titles should be **short and descriptive**, not exceeding **72 characters**, and should not contain
   **keywords in front (e.g. `fix`, `feat`, `refactor`, etc.)**. They should also be **present** tense. Examples:
     - "Update README with more descriptive content"
-    - "Fix typos in documentation and refactor FlixelSprite"
     - "Fix rendering bug in FlixelCamera"
     - "Add missing Javadoc to FlixelCamera"
 - Always pull the latest changes before changing any code if on a branch outside of the `master` branch.
-- If the current branch is set to `master` or something else, **create a new branch off of the latest changes from `master`**.
-- When you're done with a task (and you haven't yet made one), **create a pull request**. Make sure it follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md)
-  exactly with all of your changes.
-- Pull request titles should be read as **past tense**, in the format as if it was a new update to a game. Examples:
-    - "Added experimental gamepad support for games to be playable on more platforms such as console"
-    - "Enhanced the desktop backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
-    - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
-- All pull requests should target the **`master`** branch.
+- If the current branch is set to `master` or something else, **create a new branch off of the latest changes from
+  `master`** for each change.
+- When you're done with a change (and you haven't yet made one for it), **create a pull request** for it. Make sure it
+  follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md) exactly, describing only that change.
+- Pull request titles should be **past tense** and describe **only the one change** the pull request makes, in a single
+  short, specific sentence. Don't write a broad headline that sums up many changes at once. Examples:
+    - "Fixed FlixelCamera drawing sprites one pixel off at odd zoom levels"
+    - "Added rumble support for gamepads on desktop"
+    - "Removed the unused FlixelAssetLoader class"
+- All pull requests should target the **`master`** branch, unless they are stacked on another unmerged pull request.
 - If the user has changes present on the current branch, **do not undo, modify or touch them**. Leave them as-is.
