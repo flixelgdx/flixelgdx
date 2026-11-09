@@ -47,9 +47,15 @@ import java.util.Arrays;
  * {@link FlixelDebugFeed#writePendingPayload(FlixelDebugMessageWriter)}.
  *
  * <p>Pixels come from {@link FlixelGraphicsManager#readPixels}. A backend that cannot read textures (see
- * {@link FlixelGraphicsManager#supportsReadPixels()}) makes every request quietly do nothing, and the app should
- * not offer thumbnails. Requests only happen when a person asks for one, so this class allocates freely when a
- * request runs and never in the frame loop.
+ * {@link FlixelGraphicsManager#supportsReadPixels()}) answers every request with an empty thumbnail, and the app
+ * should not offer thumbnails. Requests only happen when a person asks for one, so this class allocates freely when
+ * a request runs and never in the frame loop.
+ *
+ * <p>Every {@linkplain #request(int, FlixelTexture, int, int, int, int) request} gets exactly one answer, so a tool
+ * waiting for it never waits for nothing. When the picture cannot be made (the backend cannot read pixels, the
+ * texture is compressed, the read fails, or too many requests are open), the answer is an <strong>empty
+ * thumbnail</strong>: a width and height of {@code 0} and no PNG bytes. A feed that has nothing to take a picture of
+ * answers with {@link #reject(int)}.
  *
  * <p>All methods must be called from the game's main thread.
  *
@@ -60,8 +66,13 @@ public final class FlixelDebugThumbnails {
   /** The most pixels a thumbnail has on its longest side. */
   public static final int MAX_SIDE = 256;
 
-  /** The most requests that can wait or be unsent at once; extra requests are dropped. */
+  /** The most requests that can wait or be unsent at once; extra requests get an empty thumbnail. */
   public static final int MAX_PENDING = 8;
+
+  /** The most empty answers that can wait to be sent; extra ones are dropped so a flood of requests cannot pile up. */
+  private static final int MAX_EMPTY = 32;
+
+  private static final byte[] NO_PNG = new byte[0];
 
   private final FlixelPngEncoder encoder = new FlixelPngEncoder();
   private final FlixelArray<Print> ready = new FlixelArray<>();
@@ -75,8 +86,9 @@ public final class FlixelDebugThumbnails {
   /**
    * Asks for a thumbnail of part of a texture.
    *
-   * <p>Nothing happens when a thumbnail for the same id is already waiting, when too many requests are open, or
-   * when the graphics backend cannot read textures.
+   * <p>The request is always answered once. A request for an id whose read is already running or whose picture is
+   * already waiting shares that answer. When too many requests are open, the area is empty, or the graphics backend
+   * cannot read textures, the answer is an empty thumbnail (see {@link #reject(int)}).
    *
    * @param id The id to report back with the picture (a texture id or an object id).
    * @param texture The texture to read.
@@ -105,6 +117,27 @@ public final class FlixelDebugThumbnails {
    */
   public boolean requestPreview(int id, @NotNull FlixelTexture texture, int x, int y, int width, int height) {
     return start(id, texture, x, y, width, height, false);
+  }
+
+  /**
+   * Answers a request with an empty thumbnail: the id with a width and height of {@code 0} and no PNG bytes.
+   *
+   * <p>A feed calls this when it has nothing to take a picture of, for example an unknown id or an object without a
+   * texture, so the app learns right away that no picture is coming instead of waiting for one. The listener is not
+   * called.
+   *
+   * @param id The id the request asked for.
+   */
+  public void reject(int id) {
+    int empty = 0;
+    for (int i = 0, n = ready.getSize(); i < n; i++) {
+      if (ready.get(i).png.length == 0) {
+        empty++;
+      }
+    }
+    if (empty < MAX_EMPTY) {
+      ready.add(new Print(id, 0, 0, NO_PNG));
+    }
   }
 
   /**
@@ -144,6 +177,9 @@ public final class FlixelDebugThumbnails {
   private boolean start(int id, FlixelTexture texture, int x, int y, int width, int height, boolean queued) {
     FlixelGraphicsManager graphics = Flixel.graphics;
     if (!graphics.supportsReadPixels() || width <= 0 || height <= 0) {
+      if (queued) {
+        reject(id);
+      }
       return false;
     }
     int running = inFlight.indexOf(id);
@@ -155,7 +191,13 @@ public final class FlixelDebugThumbnails {
       }
       return false;
     }
-    if (findReady(id) >= 0 || inFlight.getSize() + ready.getSize() >= MAX_PENDING) {
+    if (findReady(id) >= 0) {
+      return false; // The picture is already waiting to be sent, which answers this request too.
+    }
+    if (inFlight.getSize() + ready.getSize() >= MAX_PENDING) {
+      if (queued) {
+        reject(id);
+      }
       return false;
     }
     inFlight.add(id);
@@ -174,6 +216,9 @@ public final class FlixelDebugThumbnails {
     FlixelLogger log = Flixel.log.tagged("Debugger/Thumbnails");
     if (rgba == null) {
       log.warn("Could not read the pixels for thumbnail {}.", id);
+      if (queued) {
+        reject(id);
+      }
       return;
     }
     try {
@@ -186,6 +231,9 @@ public final class FlixelDebugThumbnails {
       }
     } catch (RuntimeException e) {
       log.warn("Could not make thumbnail {}: {}", id, e.getMessage());
+      if (queued) {
+        reject(id);
+      }
     }
   }
 

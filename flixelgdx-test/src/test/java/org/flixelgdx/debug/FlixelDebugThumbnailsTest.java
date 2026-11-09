@@ -131,23 +131,51 @@ class FlixelDebugThumbnailsTest {
       assertTrue(thumbnails.request(100 + i, texture, 0, 0, 8, 8));
     }
     assertFalse(thumbnails.request(999, texture, 0, 0, 8, 8));
+    assertEquals(FlixelDebugThumbnails.MAX_PENDING, graphics.requests, "the extra request reads nothing");
+    assertEmpty(write(FlixelDebugProtocol.TEXTURES_THUMBNAIL), 999);
   }
 
   @Test
-  void aFailedReadProducesNoPayloadAndFreesTheSlot() {
+  void aFailedReadIsAnsweredWithAnEmptyThumbnailAndFreesTheSlot() {
     FakeTexture texture = new FakeTexture(8, 8);
     thumbnails.request(7, texture, 0, 0, 8, 8);
     graphics.fail();
+    assertEmpty(write(FlixelDebugProtocol.TEXTURES_THUMBNAIL), 7);
     assertFalse(thumbnails.hasPending());
     assertTrue(thumbnails.request(7, texture, 0, 0, 8, 8));
   }
 
   @Test
-  void aBackendThatCannotReadPixelsDoesNothing() {
+  void aFailedPreviewSendsNothing() {
+    thumbnails.requestPreview(7, new FakeTexture(8, 8), 0, 0, 8, 8);
+    graphics.fail();
+    assertFalse(thumbnails.hasPending(), "previews are only for the listener");
+  }
+
+  @Test
+  void aBackendThatCannotReadPixelsAnswersWithAnEmptyThumbnail() {
     graphics.supported = false;
     assertFalse(thumbnails.request(1, new FakeTexture(8, 8), 0, 0, 8, 8));
     assertEquals(0, graphics.requests);
-    assertFalse(thumbnails.request(1, new FakeTexture(8, 8), 0, 0, 0, 8), "an empty area is rejected too");
+    assertEmpty(write(FlixelDebugProtocol.TEXTURES_THUMBNAIL), 1);
+    graphics.supported = true;
+    assertFalse(thumbnails.request(2, new FakeTexture(8, 8), 0, 0, 0, 8), "an empty area is rejected too");
+    assertEmpty(write(FlixelDebugProtocol.TEXTURES_THUMBNAIL), 2);
+    assertFalse(thumbnails.hasPending());
+  }
+
+  @Test
+  void emptyAnswersCannotPileUp() {
+    graphics.supported = false;
+    for (int i = 0; i < 100; i++) {
+      thumbnails.reject(i);
+    }
+    int sent = 0;
+    while (thumbnails.hasPending()) {
+      write(FlixelDebugProtocol.TEXTURES_THUMBNAIL);
+      sent++;
+    }
+    assertTrue(sent < 100, "extra empty answers are dropped");
   }
 
   @Test
@@ -212,7 +240,7 @@ class FlixelDebugThumbnailsTest {
   }
 
   @Test
-  void aThumbnailRequestForAnObjectWithoutAFrameOrAnUnknownIdIsIgnored() {
+  void aThumbnailRequestForAnObjectWithoutAFrameOrAnUnknownIdGetsAnEmptyAnswer() {
     FlixelDebugObjectIds ids = new FlixelDebugObjectIds();
     FlixelDebugInspector inspector = new FlixelDebugInspector(ids);
     FlixelSprite plain = new FlixelSprite();
@@ -220,6 +248,30 @@ class FlixelDebugThumbnailsTest {
     DebugTestSupport.send(inspector, FlixelDebugProtocol.INSPECTOR_REQUEST_THUMBNAIL, w -> w.writeI32(ids.idOf(plain)));
     DebugTestSupport.send(inspector, FlixelDebugProtocol.INSPECTOR_REQUEST_THUMBNAIL, w -> w.writeI32(9999));
     assertEquals(0, graphics.requests);
+    assertEmpty(writePending(inspector), ids.idOf(plain));
+    assertEmpty(writePending(inspector), 9999);
+    assertFalse(inspector.hasPendingPayload());
+  }
+
+  private static FlixelDebugMessageReader writePending(FlixelDebugInspector inspector) {
+    assertTrue(inspector.hasPendingPayload());
+    FlixelDebugMessageWriter writer = new FlixelDebugMessageWriter(64);
+    writer.beginMessage(FlixelDebugProtocol.MSG_FEED_DATA);
+    writer.writeU16(3);
+    inspector.writePendingPayload(writer);
+    FlixelDebugMessageReader r = new FlixelDebugMessageReader(writer.finish());
+    r.readU8();
+    r.readU16();
+    return r;
+  }
+
+  private static void assertEmpty(FlixelDebugMessageReader r, int id) {
+    r.readU8();
+    assertEquals(id, r.readI32());
+    assertEquals(0, r.readI32(), "an empty thumbnail has no width");
+    assertEquals(0, r.readI32(), "an empty thumbnail has no height");
+    assertEquals(0, r.readBytesLength(), "an empty thumbnail has no PNG");
+    assertEquals(0, r.getRemaining());
   }
 
   private FlixelDebugMessageReader write(int subtype) {
