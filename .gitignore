@@ -68,6 +68,9 @@ nb-configuration.xml
 .DS_Store
 Thumbs.db
 
+# AI
+.claude/settings.local.json
+
 ## Miscellaneous:
 *~
 *.*#
