@@ -151,8 +151,10 @@ public class FlixelDebugPanels {
       return null;
     }
     FlixelDebugPanel removed = panels.removeIndex(index);
-    removed.setOpen(false);
-    removed.setOwner(null);
+    if (removed != null) {
+      removed.setOpen(false);
+      removed.setOwner(null);
+    }
     revision++;
     return removed;
   }
