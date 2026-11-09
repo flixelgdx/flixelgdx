@@ -74,7 +74,7 @@ Summarize every pull request that went into a tag into release notes.
 
    When a PR mixes relevant changes with docs or chores, keep only the relevant part.
 
-8. Sort each remaining change into exactly one section:
+8. Sort each remaining change into exactly one section, as a code snippet the user can copy and paste:
    - **Added**: new features, APIs, platforms, or options
    - **Changed**: reworks, refactors with visible effects, behavior or API changes, performance improvements
    - **Fixed**: bug fixes
