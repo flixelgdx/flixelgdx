@@ -689,7 +689,7 @@ Actions:
 
 | Code | Name                | Fields |
 |------|---------------------|--------|
-| 1    | `REQUEST_THUMBNAIL` | `i32 id` (texture id). The game answers with a `THUMBNAIL` payload. |
+| 1    | `REQUEST_THUMBNAIL` | `i32 id` (texture id). The game answers with a `THUMBNAIL` payload, which is empty when no picture can be made (see [Thumbnails](#thumbnails)). |
 
 ### controls
 
@@ -848,16 +848,19 @@ string. A value of any other kind is ignored and a warning is logged.
 
 A thumbnail is a PNG picture of a texture (or, for the inspector, of the part of the texture a sprite shows). The
 app asks with `REQUEST_THUMBNAIL`; the game reads the pixels back from the GPU, which takes a few frames, and then
-sends one `THUMBNAIL` payload. There is no answer at all when the pixels cannot be read, so the app must not wait
-for one forever. The inspector's `hasTexture` flag is only `true` when the game's graphics backend can read pixels
+sends one `THUMBNAIL` payload. Every request gets exactly one answer. When no picture can be made (an unknown id, an
+object without a texture such as text, a compressed texture, a backend that cannot read pixels, a failed read, or too
+many open requests), the answer is an **empty thumbnail**: `width` and `height` are `0` and `png` has no bytes. It
+usually arrives in the same frame. Games built before this rule sent nothing in those cases, so the app should still
+give up after a timeout. The inspector's `hasTexture` flag is only `true` when the game's graphics backend can read pixels
 back, so the app can hide its thumbnail button otherwise.
 
 - `width` and `height` are the size of the PNG. The longest side is at most 256 pixels. Bigger pictures are
   shrunk with nearest-neighbor sampling, so pixel art stays sharp, and smaller pictures keep their size.
 - `png` is an ordinary 8-bit RGBA PNG. The game does not compress it (the deflate data uses stored blocks), so
   every PNG reader can open it, but the file is as large as the raw pixels.
-- At most 8 thumbnails are open at once. Requests beyond that, and a repeat request for an id that is already open,
-  are dropped.
+- At most 8 thumbnails are open at once. Requests beyond that get an empty thumbnail. A repeat request for an id
+  that is already open, or whose answer is waiting to be sent, shares that one answer.
 - The picture shows the texture's current pixels, not what is drawn on screen.
 
 ### Scene paths
