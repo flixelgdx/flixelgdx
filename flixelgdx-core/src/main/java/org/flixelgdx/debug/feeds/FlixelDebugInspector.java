@@ -651,7 +651,8 @@ public class FlixelDebugInspector extends FlixelDebugFeedBase {
    * Starts making a thumbnail of what a sprite shows: the part of its texture that its current frame covers.
    *
    * <p>The result arrives a few frames later through {@link #writePendingPayload(FlixelDebugMessageWriter)}. An
-   * object that is not a sprite with a frame is ignored.
+   * unknown id or an object that is not a sprite with a frame (text, for example) gets an empty thumbnail right
+   * away, so the app does not wait for a picture that never comes.
    */
   private void requestThumbnail(int id) {
     if (ids.get(id) instanceof FlixelSprite sprite) {
@@ -659,8 +660,10 @@ public class FlixelDebugInspector extends FlixelDebugFeedBase {
       if (frame != null) {
         thumbnails.request(id, frame.getTexture(), frame.getRegionX(), frame.getRegionY(), frame.getRegionWidth(),
             frame.getRegionHeight());
+        return;
       }
     }
+    thumbnails.reject(id);
   }
 
   /**

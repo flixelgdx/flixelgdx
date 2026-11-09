@@ -232,6 +232,9 @@ public class FlixelDebugTextures extends FlixelDebugFeedBase {
    * Starts making a thumbnail of a listed texture for tools. The finished picture is sent as a {@code THUMBNAIL}
    * payload.
    *
+   * <p>Every call is answered once. An unknown id, or a texture whose pixels cannot be read back, is answered with
+   * an empty thumbnail (a width and height of {@code 0} and no PNG bytes).
+   *
    * @param id A texture id from the list.
    * @return {@code true} when a read was started. It is {@code false} for an unknown id or when the graphics
    *     backend cannot read textures.
@@ -243,6 +246,7 @@ public class FlixelDebugTextures extends FlixelDebugFeedBase {
         return thumbnails.request(id, row.texture, 0, 0, row.width, row.height);
       }
     }
+    thumbnails.reject(id);
     return false;
   }
 
