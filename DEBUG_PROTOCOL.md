@@ -968,6 +968,7 @@ camera without the device's keyboard and mouse (a phone has neither). Single pay
 | `selectedId`  | `i32` | The object selected in the [inspector](#inspector), or `-1`. |
 | types         | `array<string>` | Type names (simple class names) that boxes refer to by index. |
 | boxes         | `array<box>` | See below. |
+| `actionCount` | `i32` | How many actions this feed has received, counted before each one is handled, so even an action that changes nothing raises it. It starts at `0` and wraps around. Added in 1.1; a reader treats a message that ends before it as `0`. |
 
 Box: `i32 id`, `f32 x`, `f32 y`, `f32 width`, `f32 height`, `u16 typeIndex` (into `types`), `u8 flags`.
 
@@ -1006,7 +1007,15 @@ message, because the indices are only valid inside the message they came in. The
 uses.
 
 **When it is sent.** The game samples the camera at the sample rate of [controls](#controls) and right after each
-action, and sends the state only when something in it changed.
+action, and sends the state only when something in it changed. Because `actionCount` is part of the state, every
+action is followed by a state message, even one that changes nothing else.
+
+**Waiting for an action.** A state that the game sampled, or already sent, before an action arrived can reach the app
+after the action was sent, so do not take just the next state as the answer. The game handles actions in the order
+they arrive, so number the viewport actions you send (1, 2, 3, ...) in the order they go out, and remember the
+`actionCount` of a state that arrived before you sent any. Your action number `n` has been handled once a state's
+`actionCount` reaches that remembered count plus `n` (allowing for the wrap). Waiting for just any higher count is not
+enough when more than one tool sends actions at the same time, because another tool's action raises it too.
 
 Actions:
 

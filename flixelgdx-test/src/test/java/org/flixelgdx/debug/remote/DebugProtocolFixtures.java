@@ -342,7 +342,7 @@ final class DebugProtocolFixtures {
         i32(2), f32(10f), f32(20f), f32(64f), f32(32f), u16(1),
         u8(FlixelDebugProtocol.VIEWPORT_BOX_GROUP | FlixelDebugProtocol.VIEWPORT_BOX_INACTIVE),
         i32(3), f32(-8.5f), f32(150.25f), f32(16f), f32(16f), u16(0), u8(FlixelDebugProtocol.VIEWPORT_BOX_SELECTED),
-        end(2)));
+        end(2), i32(5)));
     add("feed_capture_state", data(P_CAPTURE, u8(FlixelDebugProtocol.CAPTURE_STATE), bool(true)));
     add("feed_capture_image", data(P_CAPTURE, u8(FlixelDebugProtocol.CAPTURE_IMAGE),
         i32(7), i32(2), i32(1), bytes(PNG_BYTES)));

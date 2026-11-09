@@ -202,7 +202,7 @@ capture 11, input 12. Panel messages use panel index 3.
 
 ## feed_viewport.bin
 
-`u8:4 u16:10 u8:0 u8:2 f32:320.0 f32:180.0 f32:2.0 f32:100.5 f32:-40.0 bool:true bool:false bool:true i32:3 array[ string:"FlixelSprite" string:"FlixelSpriteGroup"](count 2) array[ i32:2 f32:10.0 f32:20.0 f32:64.0 f32:32.0 u16:1 u8:6 i32:3 f32:-8.5 f32:150.25 f32:16.0 f32:16.0 u16:0 u8:1](count 2)`
+`u8:4 u16:10 u8:0 u8:2 f32:320.0 f32:180.0 f32:2.0 f32:100.5 f32:-40.0 bool:true bool:false bool:true i32:3 array[ string:"FlixelSprite" string:"FlixelSpriteGroup"](count 2) array[ i32:2 f32:10.0 f32:20.0 f32:64.0 f32:32.0 u16:1 u8:6 i32:3 f32:-8.5 f32:150.25 f32:16.0 f32:16.0 u16:0 u8:1](count 2) i32:5`
 
 ## feed_capture_state.bin
 

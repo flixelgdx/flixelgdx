@@ -151,6 +151,8 @@ public class FlixelDebugViewport extends FlixelDebugFeedBase {
   private int boxCount;
   private int selectedId = FlixelDebugObjectIds.NONE;
   private int signature;
+  private int actions;
+  private int actionCount;
 
   private boolean freeCam;
   private boolean paused;
@@ -334,10 +336,16 @@ public class FlixelDebugViewport extends FlixelDebugFeedBase {
           .writeU8(boxFlags[i] & 0xFF);
     }
     writer.endArray(boxCount);
+    writer.writeI32(actionCount);
   }
 
   @Override
   public void handleAction(int action, @NotNull FlixelDebugMessageReader reader) {
+    // Counted before acting, so even an action that changes nothing makes the next state differ. A tool waits for a
+    // state whose count went up, which tells it apart from a state that was sampled or already on its way before
+    // the action arrived.
+    actions++;
+    dirty = true;
     switch (action) {
       case FlixelDebugProtocol.VIEWPORT_SET_CAMERA -> setCameraIndex(reader.readU8());
       case FlixelDebugProtocol.VIEWPORT_PICK -> {
@@ -366,6 +374,8 @@ public class FlixelDebugViewport extends FlixelDebugFeedBase {
     cameraIndex = 0;
     shownIndex = 0;
     boxCount = 0;
+    actions = 0;
+    actionCount = 0;
     sampled = false;
     dirty = false;
     walkSelected = null;
@@ -380,6 +390,7 @@ public class FlixelDebugViewport extends FlixelDebugFeedBase {
     paused = controls.isPaused();
     hitboxes = controls.isHitboxes();
     selectedId = inspector.getSelectedId();
+    actionCount = actions;
     boxCount = 0;
     if (cam != null) {
       zoom = cam.getZoom();
@@ -520,6 +531,7 @@ public class FlixelDebugViewport extends FlixelDebugFeedBase {
     sum = sum * 31 + Float.floatToIntBits(scrollY);
     sum = sum * 31 + (freeCam ? 1 : 0) + (paused ? 2 : 0) + (hitboxes ? 4 : 0);
     sum = sum * 31 + selectedId;
+    sum = sum * 31 + actionCount;
     sum = sum * 31 + typeNames.getSize();
     sum = sum * 31 + boxCount;
     for (int i = 0; i < boxCount; i++) {
@@ -711,6 +723,21 @@ public class FlixelDebugViewport extends FlixelDebugFeedBase {
    */
   public int getSelectedId() {
     return selectedId;
+  }
+
+  /**
+   * Returns how many actions from the app the latest sample counts, the {@code actionCount} the state message
+   * carries.
+   *
+   * <p>Every {@code FEED_ACTION} this feed receives adds one, even an action that changes nothing. The panel's own
+   * buttons and the map do not count, because they call the methods directly. The count starts at {@code 0}, goes
+   * back to {@code 0} when the feed is {@linkplain #reset() reset}, and wraps around after
+   * {@link Integer#MAX_VALUE}.
+   *
+   * @return The action count.
+   */
+  public int getActionCount() {
+    return actionCount;
   }
 
   /**
