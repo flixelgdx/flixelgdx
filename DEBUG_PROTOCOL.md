@@ -1008,9 +1008,11 @@ action, and sends the state only when something in it changed. Because `actionCo
 action is followed by a state message, even one that changes nothing else.
 
 **Waiting for an action.** A state that the game sampled, or already sent, before an action arrived can reach the app
-after the action was sent. To read the result of an action, remember the `actionCount` of the latest state, send the
-action, and wait for a state whose `actionCount` is higher (allowing for the wrap). Do not wait for just the next
-state, which may be one from before the action.
+after the action was sent, so do not take just the next state as the answer. The game handles actions in the order
+they arrive, so number the viewport actions you send (1, 2, 3, ...) in the order they go out, and remember the
+`actionCount` of a state that arrived before you sent any. Your action number `n` has been handled once a state's
+`actionCount` reaches that remembered count plus `n` (allowing for the wrap). Waiting for just any higher count is not
+enough when more than one tool sends actions at the same time, because another tool's action raises it too.
 
 Actions:
 
