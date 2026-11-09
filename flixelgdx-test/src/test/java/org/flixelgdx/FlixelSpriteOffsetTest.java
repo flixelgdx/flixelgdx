@@ -30,6 +30,7 @@ import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMatrix;
+import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelSpriteOffsetTest {
 
@@ -90,6 +92,64 @@ class FlixelSpriteOffsetTest {
     assertEquals(sprite.getY() + sprite.getHeight() / 2f, graphicCenterY, EPS);
   }
 
+  @Test
+  void scalingGrowsTheGraphicAroundItsCenter() {
+    // A 16x16 graphic at (100, 50) scaled by 4 should stay centered on (108, 58).
+    FlixelSprite sprite = sprite(100f, 50f);
+    sprite.setScale(4f);
+    sprite.draw(batch);
+    assertEquals(100f + 8f - 8f * 4f, drawnLeft(), EPS);
+    assertEquals(50f + 8f - 8f * 4f, drawnTop(), EPS);
+  }
+
+  @Test
+  void customOriginIsThePivotForScaling() {
+    FlixelSprite sprite = sprite(100f, 50f);
+    sprite.setOrigin(0f, 0f);
+    sprite.setScale(4f);
+    sprite.draw(batch);
+    assertEquals(100f, drawnLeft(), EPS);
+    assertEquals(50f, drawnTop(), EPS);
+    assertEquals(0f, batch.originX, EPS);
+    assertEquals(0f, batch.originY, EPS);
+  }
+
+  @Test
+  void updateHitboxAfterScalingLinesTheHitboxUpWithTheGraphic() {
+    FlixelSprite sprite = sprite(100f, 50f);
+    sprite.setScale(4f);
+    sprite.updateHitbox();
+    sprite.draw(batch);
+    assertEquals(64f, sprite.getWidth(), EPS);
+    assertEquals(64f, sprite.getHeight(), EPS);
+    assertEquals(sprite.getX(), drawnLeft(), EPS);
+    assertEquals(sprite.getY(), drawnTop(), EPS);
+    assertEquals(8f, sprite.getOriginX(), EPS);
+    assertEquals(8f, sprite.getOriginY(), EPS);
+  }
+
+  @Test
+  void drawBoundsCoverTheScaledGraphic() {
+    FlixelSprite sprite = sprite(100f, 50f);
+    sprite.setScale(2f);
+    FlixelRect bounds = new FlixelRect();
+    assertTrue(sprite.getDrawBounds(Flixel.getDrawCamera(), bounds));
+    assertEquals(92f, bounds.x, EPS);
+    assertEquals(42f, bounds.y, EPS);
+    assertEquals(32f, bounds.width, EPS);
+    assertEquals(32f, bounds.height, EPS);
+  }
+
+  /** Left edge of the scaled quad the batch was asked to draw. */
+  private float drawnLeft() {
+    return batch.x + batch.originX - batch.originX * batch.scaleX;
+  }
+
+  /** Top edge of the scaled quad the batch was asked to draw. */
+  private float drawnTop() {
+    return batch.y + batch.originY - batch.originY * batch.scaleY;
+  }
+
   private static FlixelSprite sprite(float x, float y) {
     FlixelSprite sprite = new FlixelSprite(x, y);
     sprite.setRegion(new FlixelFrame(new FlixelNoopTexture(16, 16)));
@@ -104,6 +164,10 @@ class FlixelSpriteOffsetTest {
     private final FlixelMatrix transform = new FlixelMatrix();
     private float x = Float.NaN;
     private float y = Float.NaN;
+    private float originX = Float.NaN;
+    private float originY = Float.NaN;
+    private float scaleX = Float.NaN;
+    private float scaleY = Float.NaN;
 
     @Override
     public void begin() {}
@@ -133,6 +197,10 @@ class FlixelSpriteOffsetTest {
         boolean flipX, boolean flipY) {
       this.x = x;
       this.y = y;
+      this.originX = originX;
+      this.originY = originY;
+      this.scaleX = scaleX;
+      this.scaleY = scaleY;
     }
 
     @Override
