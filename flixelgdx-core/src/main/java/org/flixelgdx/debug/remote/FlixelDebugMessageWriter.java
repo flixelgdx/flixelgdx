@@ -67,7 +67,7 @@ import java.nio.ByteOrder;
 public class FlixelDebugMessageWriter {
 
   /** Deepest allowed nesting of {@link #beginArray()} calls. */
-  public static final int MAX_DEPTH = 16;
+  public static final int MAX_DEPTH = 32;
 
   private static final int DEFAULT_CAPACITY = 4096;
 
@@ -429,6 +429,153 @@ public class FlixelDebugMessageWriter {
   @NotNull
   public FlixelDebugMessageWriter writeErrorValue(@Nullable CharSequence message) {
     return writeU8(FlixelDebugProtocol.VALUE_ERROR).writeString(message);
+  }
+
+  /**
+   * Writes a {@code NULL} value, which means "no value", for example a cleared selection.
+   *
+   * @return This writer, for chaining.
+   */
+  @NotNull
+  public FlixelDebugMessageWriter writeNullValue() {
+    return writeU8(FlixelDebugProtocol.VALUE_NULL);
+  }
+
+  /**
+   * Writes a {@code BYTES} value, such as a PNG picture.
+   *
+   * @param data The array that holds the bytes.
+   * @param offset The position of the first byte.
+   * @param length How many bytes to write.
+   * @return This writer, for chaining.
+   */
+  @NotNull
+  public FlixelDebugMessageWriter writeBytesValue(@NotNull byte[] data, int offset, int length) {
+    return writeU8(FlixelDebugProtocol.VALUE_BYTES).writeBytes(data, offset, length);
+  }
+
+  /**
+   * Starts a {@code LIST} value. Write the items as values, then call {@link #endList(int)} with their count.
+   *
+   * <p>A list is a value whose items are values too, so lists can hold other lists. Think of it as a box of
+   * labeled jars: every jar says what is inside it, and a jar can itself be a smaller box.
+   *
+   * <pre>{@code
+   * writer.beginList();
+   * writer.writeValue("Score").writeValue(42);
+   * writer.endList(2);
+   * }</pre>
+   *
+   * @return This writer, for chaining.
+   * @throws FlixelDebugProtocolException If lists and arrays are nested deeper than {@link #MAX_DEPTH}.
+   */
+  @NotNull
+  public FlixelDebugMessageWriter beginList() {
+    writeU8(FlixelDebugProtocol.VALUE_LIST);
+    return beginArray();
+  }
+
+  /**
+   * Finishes the list started by the matching {@link #beginList()}.
+   *
+   * @param count How many items were written into the list.
+   * @return This writer, for chaining.
+   */
+  @NotNull
+  public FlixelDebugMessageWriter endList(int count) {
+    return endArray(count);
+  }
+
+  /**
+   * Empties this writer without starting a message, so it can be used as a scratch buffer that is later copied
+   * into a message with {@link #writeRaw(FlixelDebugMessageWriter)}.
+   *
+   * @return This writer, for chaining.
+   */
+  @NotNull
+  public FlixelDebugMessageWriter clear() {
+    buffer.clear();
+    depth = 0;
+    return this;
+  }
+
+  /**
+   * Copies everything another writer has written so far into this one, byte for byte.
+   *
+   * <p>Widgets use this to keep an encoded copy of a large property (for example the rows of a table) and to drop
+   * it into a message without encoding it again. It does not allocate once this writer is big enough.
+   *
+   * @param other The writer whose bytes are copied. It is not changed.
+   * @return This writer, for chaining.
+   */
+  @NotNull
+  public FlixelDebugMessageWriter writeRaw(@NotNull FlixelDebugMessageWriter other) {
+    int length = other.buffer.position();
+    ensure(length);
+    buffer.put(other.buffer.array(), other.buffer.arrayOffset(), length);
+    return this;
+  }
+
+  /**
+   * Copies a range of the bytes another writer has written into this one.
+   *
+   * @param other The writer whose bytes are copied. It is not changed.
+   * @param from The position of the first byte to copy.
+   * @param to The position after the last byte to copy.
+   * @return This writer, for chaining.
+   */
+  @NotNull
+  public FlixelDebugMessageWriter writeRaw(@NotNull FlixelDebugMessageWriter other, int from, int to) {
+    int length = to - from;
+    if (from < 0 || length < 0 || to > other.buffer.position()) {
+      throw new FlixelDebugProtocolException("Bad range " + from + " to " + to);
+    }
+    ensure(length);
+    buffer.put(other.buffer.array(), other.buffer.arrayOffset() + from, length);
+    return this;
+  }
+
+  /**
+   * Removes bytes from the start of what was written and moves the rest to the front. Used by widgets that keep a
+   * capped history of encoded items, such as the newest rows of a log table.
+   *
+   * @param count How many bytes to remove, from 0 to {@link #getSize()}.
+   * @return This writer, for chaining.
+   */
+  @NotNull
+  public FlixelDebugMessageWriter dropFront(int count) {
+    int size = buffer.position();
+    if (count < 0 || count > size || depth != 0) {
+      throw new FlixelDebugProtocolException("Cannot drop " + count + " of " + size + " bytes");
+    }
+    byte[] array = buffer.array();
+    int offset = buffer.arrayOffset();
+    System.arraycopy(array, offset + count, array, offset, size - count);
+    buffer.position(size - count);
+    return this;
+  }
+
+  /**
+   * Returns whether this writer holds exactly the same bytes as another one.
+   *
+   * @param other The writer to compare with.
+   * @return {@code true} when both hold the same bytes.
+   */
+  public boolean contentEquals(@NotNull FlixelDebugMessageWriter other) {
+    int length = buffer.position();
+    if (length != other.buffer.position()) {
+      return false;
+    }
+    byte[] a = buffer.array();
+    byte[] b = other.buffer.array();
+    int offsetA = buffer.arrayOffset();
+    int offsetB = other.buffer.arrayOffset();
+    for (int i = 0; i < length; i++) {
+      if (a[offsetA + i] != b[offsetB + i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private void ensure(int extra) {

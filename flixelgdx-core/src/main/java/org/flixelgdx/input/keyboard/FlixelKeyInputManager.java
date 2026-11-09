@@ -26,6 +26,7 @@ package org.flixelgdx.input.keyboard;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.collections.FlixelIntSet;
+import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelKeyboardListener;
@@ -57,6 +58,12 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
 
   /** Keys the game must not see, which is used by tools such as the debugger's free camera. */
   private final FlixelIntSet blockedKeys = new FlixelIntSet();
+
+  /** Keys that a tool pressed through {@link #injectKey(int, boolean)} and has not released yet. */
+  private final FlixelIntSet injectedKeys = new FlixelIntSet();
+
+  /** Scratch list for {@link #releaseInjected()}, so releasing does not change the set it walks. */
+  private final FlixelIntArray releasing = new FlixelIntArray();
 
   /** Whether keyboard input is currently enabled. When false, all key checks return false. */
   public boolean enabled = true;
@@ -608,7 +615,81 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
    * @return {@code true} if the key was blocked with {@link #block(int)}.
    */
   public boolean isBlocked(int key) {
-    return blockedKeys.getSize() > 0 && blockedKeys.contains(key);
+    return blockedKeys.getSize() > 0 && blockedKeys.contains(key) && !isInjected(key);
+  }
+
+  /**
+   * Presses or releases a key on behalf of a tool, so the game sees it exactly like a real key.
+   *
+   * <p>The key shows up in every read: {@link #pressed(int)}, {@link #rawPressed(int)}, {@link #justPressed(int)},
+   * {@link #justReleased(int)}, the {@code any...} and {@code first...} helpers, and every
+   * {@link FlixelKeyboardListener} registered with {@link Flixel#input}. An injected key is never hidden by
+   * {@link #block(int)}, so a tool that hides keys from the game (the debugger's free camera) does not swallow the
+   * keys another tool presses. Calling it again for a key in the same state does nothing.
+   *
+   * <p>"Just" detection works like it does for a real key: the press is "just pressed" until the frame ends, so a
+   * tool must release the key in a later frame than it pressed it. The debugger's input panel takes care of that.
+   *
+   * @param key The key to press or release (for example {@link FlixelKey#SPACE}). Invalid codes are ignored.
+   * @param down {@code true} to press, {@code false} to release.
+   */
+  public void injectKey(int key, boolean down) {
+    if (!isValidKeycode(key)) {
+      return;
+    }
+    if (down) {
+      injectedKeys.add(key);
+      keyDown(key);
+    } else {
+      injectedKeys.remove(key);
+      keyUp(key);
+    }
+    if (Flixel.input instanceof FlixelBaseInputDevice device) {
+      if (down) {
+        device.injectKeyDown(key);
+      } else {
+        device.injectKeyUp(key);
+      }
+    }
+  }
+
+  /**
+   * Delivers a typed character to every keyboard listener, the way text typed on a keyboard arrives.
+   *
+   * <p>Text boxes receive characters through {@link FlixelKeyboardListener#keyTyped(char)}, not through key
+   * presses, so this is how a tool "types" into them.
+   *
+   * @param character The character to type.
+   */
+  public void injectTyped(char character) {
+    if (Flixel.input instanceof FlixelBaseInputDevice device) {
+      device.injectKeyTyped(character);
+    }
+  }
+
+  /**
+   * Releases every key that was pressed with {@link #injectKey(int, boolean)}.
+   *
+   * <p>A tool calls this when it goes away, so a key it held down does not stay stuck.
+   */
+  public void releaseInjected() {
+    releasing.clear();
+    for (FlixelIntSet.IntSetIterator it = injectedKeys.iterator(); it.hasNext;) {
+      releasing.add(it.next());
+    }
+    for (int i = 0, n = releasing.getSize(); i < n; i++) {
+      injectKey(releasing.get(i), false);
+    }
+  }
+
+  /**
+   * Returns whether a tool is holding a key down through {@link #injectKey(int, boolean)}.
+   *
+   * @param key The key to check.
+   * @return {@code true} while the injected press has not been released.
+   */
+  public boolean isInjected(int key) {
+    return injectedKeys.getSize() > 0 && injectedKeys.contains(key);
   }
 
   private boolean anyUnblocked(FlixelIntSet keys) {
@@ -616,7 +697,8 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
       return keys.getSize() > 0;
     }
     for (FlixelIntSet.IntSetIterator it = keys.iterator(); it.hasNext;) {
-      if (!blockedKeys.contains(it.next())) {
+      int key = it.next();
+      if (!blockedKeys.contains(key) || isInjected(key)) {
         return true;
       }
     }
@@ -628,6 +710,7 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
    * Does not change {@link #enabled}.
    */
   public void reset() {
+    injectedKeys.clear();
     currentPressedKeys.clear();
     previousPressedKeys.clear();
     pressedOrder.clear();

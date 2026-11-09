@@ -36,7 +36,7 @@ import java.nio.ByteBuffer;
  * ready. On the web the answer always arrives asynchronously, and on desktop and Android it arrives within a few
  * frames.
  *
- * <p>The buffer is only valid <em>during</em> the call. Copy what you need before returning. Use
+ * <p>The buffer is only valid <em>during</em> the call. Copy what you need before returning: the backend reuses the same buffer for the next readback. Use
  * {@link ByteBuffer#get(int)} with absolute indexes rather than relative reads, and do not change its position or
  * limit.
  *

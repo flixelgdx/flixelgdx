@@ -23,221 +23,111 @@
  */
 package org.flixelgdx.debug.panels;
 
-import org.flixelgdx.Flixel;
-import org.flixelgdx.FlixelState;
-import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.collections.FlixelIdentityMap;
+import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugObjectIds;
-import org.flixelgdx.debug.FlixelDebugPaths;
-import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
-import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
+import org.flixelgdx.debug.feeds.FlixelDebugScene;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
-import org.flixelgdx.group.FlixelGroupable;
-import org.flixelgdx.util.FlixelString;
+import org.flixelgdx.debug.ui.FlixelDebugButton;
+import org.flixelgdx.debug.ui.FlixelDebugLabel;
+import org.flixelgdx.debug.ui.FlixelDebugPanel;
+import org.flixelgdx.debug.ui.FlixelDebugTextBox;
+import org.flixelgdx.debug.ui.FlixelDebugTree;
+import org.flixelgdx.debug.ui.FlixelDebugUi;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The scene panel of the remote debugger: a tree of every object in the current state, its open sub states,
- * and the extra roots added through the inspector.
+ * The built-in "Scene" panel: the tree of the current state, its open sub states, their groups, and the objects added
+ * with the inspector's {@code track()}.
  *
- * <p>Think of it as the floor plan of a building. The state is the building, each group is a room, and the
- * objects are the furniture inside. The app draws the plan, and a click on a piece of furniture selects it
- * in the inspector. The plan is a snapshot: it is sent whole, and sent again only when the building was
- * rearranged.
- *
- * <h2>Nodes</h2>
- *
- * <p>Each node carries the {@linkplain FlixelDebugObjectIds id} of its object, the id of its parent
- * ({@code -1} for a root), the type name, a label, and a flag that is true for objects added through
- * {@link FlixelDebugInspectorPanel#track(Object, String)}. Parents always come before their children.
- * The label is the step the object takes in a {@linkplain FlixelDebugPaths scene path}: {@code state} for
- * the state, {@code substate} for an open sub state, the member index for a member, and the tracked label
- * for a tracked root. Joining the labels from the root down with dots gives a valid scene path, for example
- * {@code state.3.0}.
- *
- * <h2>Change detection</h2>
- *
- * <p>About twice a second the panel walks the tree and adds up a checksum of the shape (each object, the
- * size of each group, the open sub states). When the checksum differs from the last one the revision goes
- * up, so the network agent sends a new snapshot. The walk does not allocate. A changed object property
- * does not change the shape, so it never triggers a resend. The app can also ask for a fresh snapshot with
- * {@link FlixelDebugProtocol#SCENE_REQUEST_TREE}.
- *
- * <p>Example:
- *
- * <pre>{@code
- * Flixel.debug.scene.refresh();          // Check for changes right now.
- * int nodes = Flixel.debug.scene.getNodeCount();
- * }</pre>
- *
- * <p>All methods must be called from the game's main thread.
- *
- * @see FlixelDebugProtocol#KIND_SCENE
- * @see FlixelDebugPaths
+ * <p>Selecting a node selects its object in the inspector, and selecting an object anywhere else (with Alt + Click,
+ * the viewport, or a tool) selects its node here. Nodes added with {@code track()} carry a "tracked" badge and objects
+ * an AI agent touched carry an "agent" badge. The tree is rebuilt when the scene's shape changes, which the
+ * {@linkplain FlixelDebugManager#scene scene feed} checks twice a second. A game can replace the panel under the id
+ * {@value FlixelDebugDefaultPanels#SCENE}.
  */
-public class FlixelDebugScenePanel extends FlixelDebugPanelBase {
+public class FlixelDebugScenePanel extends FlixelDebugPanel {
 
-  /** Seconds between two checks for a changed tree. */
-  public static final float CHECK_INTERVAL = 0.5f;
+  private long seenRevision = -1L;
 
-  private final FlixelIdentityMap<Class<?>, String> typeNames = new FlixelIdentityMap<>();
-  private final FlixelString label = new FlixelString();
+  private final FlixelDebugScene scene;
+  private final FlixelDebugInspector inspector;
   private final FlixelDebugObjectIds ids;
-  private final FlixelDebugInspectorPanel roots;
-
-  private FlixelDebugMessageWriter writer;
-  private boolean[] trackedSeen = new boolean[4];
-  private float timer;
-  private int checksum;
-  private int nodeCount;
-  private boolean checked;
+  private final FlixelDebugTree tree = new FlixelDebugTree();
+  private final FlixelDebugLabel empty =
+      FlixelDebugUi.hint("The scene is empty. Connect a game to see its objects.");
+  private final FlixelDebugScene.NodeVisitor builder = this::addNode;
+  private int seenAgentRevision = -1;
 
   /**
-   * Creates the scene panel.
+   * Creates the panel.
    *
-   * @param ids The registry that gives objects their ids.
-   * @param roots The inspector that knows the tracked roots.
+   * @param manager The debug manager whose scene feed the panel shows.
    */
-  public FlixelDebugScenePanel(@NotNull FlixelDebugObjectIds ids, @NotNull FlixelDebugInspectorPanel roots) {
-    super("scene", "Scene", FlixelDebugProtocol.KIND_SCENE);
-    this.ids = ids;
-    this.roots = roots;
+  public FlixelDebugScenePanel(@NotNull FlixelDebugManager manager) {
+    super(FlixelDebugDefaultPanels.SCENE, "Scene");
+    this.scene = manager.scene;
+    this.inspector = manager.inspector;
+    this.ids = manager.ids;
+    setDock(FlixelDebugProtocol.DOCK_CENTER);
+    FlixelDebugTextBox filter = FlixelDebugUi.textBox("Filter objects").setGrow(1f).setName("filter");
+    tree.setFilter(filter).setGrow(1f).setName("tree");
+    tree.onSelect(id -> {
+      Object object = id >= 0 ? ids.get((int) id) : null;
+      if (object != null) {
+        inspector.select(object);
+      }
+    });
+    tree.onActivate(id -> {
+      Object object = ids.get((int) id);
+      if (object != null) {
+        inspector.select(object);
+        inspector.goTo();
+      }
+    });
+    setContent(FlixelDebugUi.column(
+        FlixelDebugUi.row(new FlixelDebugButton("Refresh", this::refresh).setName("refresh"), filter),
+        empty,
+        tree));
+  }
+
+  /** Builds the tree again from the current scene. */
+  public void refresh() {
+    scene.refresh();
+    seenRevision = -1L;
   }
 
   @Override
   public void update(float elapsed) {
-    timer += elapsed;
-    if (timer >= CHECK_INTERVAL) {
-      timer = 0f;
-      refresh();
+    super.update(elapsed);
+    long revision = scene.getRevision();
+    int agentRevision = ids.getAgentRevision();
+    if (revision != seenRevision || agentRevision != seenAgentRevision) {
+      seenRevision = revision;
+      seenAgentRevision = agentRevision;
+      tree.beginNodes();
+      int count = scene.visit(builder);
+      tree.endNodes();
+      empty.setVisible(count == 0);
     }
-  }
-
-  /**
-   * Walks the tree now and, when its shape differs from the last walk, makes the panel send a new snapshot.
-   *
-   * <p>{@link #update(float)} calls this twice a second. It does not allocate.
-   */
-  public void refresh() {
-    writer = null;
-    int before = checksum;
-    walkAll();
-    if (!checked || checksum != before) {
-      checked = true;
-      markChanged();
-    }
-  }
-
-  /**
-   * Writes the whole tree as an {@code array<node>}.
-   *
-   * @param out The writer positioned right after the panel index.
-   */
-  @Override
-  public void write(@NotNull FlixelDebugMessageWriter out) {
-    writer = out;
-    out.beginArray();
-    walkAll();
-    out.endArray(nodeCount);
-    writer = null;
-    checked = true;
+    tree.setSelected(inspector.getSelectedId());
   }
 
   @Override
-  public void handleAction(int action, @NotNull FlixelDebugMessageReader reader) {
-    if (action == FlixelDebugProtocol.SCENE_REQUEST_TREE) {
-      markChanged();
-    }
+  protected void onOpen() {
+    seenRevision = -1L;
   }
 
-  @Override
-  public void reset() {
-    checked = false;
-    timer = 0f;
-  }
-
-  private void walkAll() {
-    checksum = 0;
-    nodeCount = 0;
-    int tracked = roots.getTrackedCount();
-    if (trackedSeen.length < tracked) {
-      trackedSeen = new boolean[Math.max(tracked, trackedSeen.length * 2)];
+  private void addNode(int id, int parent, String type, CharSequence label, boolean trackedRoot) {
+    FlixelDebugTree.Node node = tree.node(id, parent, type).detail(label);
+    if (parent < 0) {
+      node.style(FlixelDebugProtocol.STYLE_EXPANDED);
     }
-    for (int i = 0; i < tracked; i++) {
-      trackedSeen[i] = false;
+    if (trackedRoot) {
+      node.badge("tracked", FlixelDebugProtocol.TONE_ACCENT);
     }
-    FlixelState state = Flixel.state;
-    if (state != null) {
-      walk(state, FlixelDebugObjectIds.NONE, FlixelDebugPaths.STATE, -1, 0);
+    if (ids.isAgentTouched(id)) {
+      node.badge("agent", FlixelDebugProtocol.TONE_SUCCESS);
     }
-    for (int i = 0; i < tracked; i++) {
-      if (!trackedSeen[i]) {
-        walk(roots.getTracked(i), FlixelDebugObjectIds.NONE, roots.getTrackedLabel(i), -1, 0);
-      }
-    }
-  }
-
-  private void walk(Object node, int parent, String step, int index, int depth) {
-    if (nodeCount >= FlixelDebugProtocol.MAX_ARRAY_COUNT) {
-      return;
-    }
-    nodeCount++;
-    checksum = checksum * 31 + System.identityHashCode(node);
-    boolean tracked = false;
-    for (int i = 0, n = roots.getTrackedCount(); i < n; i++) {
-      if (roots.getTracked(i) == node) {
-        trackedSeen[i] = true;
-        tracked = true;
-      }
-    }
-    int id = FlixelDebugObjectIds.NONE;
-    if (writer != null) {
-      id = ids.idOf(node);
-      if (step != null) {
-        label.set(step);
-      } else {
-        label.set(index);
-      }
-      writer.writeI32(id).writeI32(parent).writeString(typeName(node.getClass())).writeString(label)
-          .writeBool(tracked);
-    }
-    if (depth < FlixelDebugPaths.MAX_DEPTH) {
-      if (node instanceof FlixelGroupable<?> group) {
-        FlixelArray<?> members = group.getMembers();
-        int size = members != null ? members.getSize() : 0;
-        checksum = checksum * 31 + size;
-        for (int i = 0; i < size; i++) {
-          Object member = members.get(i);
-          if (member == null) {
-            checksum = checksum * 31 + 7;
-          } else {
-            walk(member, id, null, i, depth + 1);
-          }
-        }
-      }
-      if (node instanceof FlixelState owner && owner.getSubState() != null) {
-        walk(owner.getSubState(), id, FlixelDebugPaths.SUBSTATE, -1, depth + 1);
-      }
-    }
-    checksum = checksum * 31 + 13;
-  }
-
-  private String typeName(Class<?> type) {
-    String name = typeNames.get(type);
-    if (name == null) {
-      String simple = type.getSimpleName();
-      name = simple.isEmpty() ? type.getName() : simple;
-      typeNames.put(type, name);
-    }
-    return name;
-  }
-
-  /**
-   * Returns how many nodes the most recent walk visited.
-   *
-   * @return The node count, at most 65535.
-   */
-  public int getNodeCount() {
-    return nodeCount;
   }
 }

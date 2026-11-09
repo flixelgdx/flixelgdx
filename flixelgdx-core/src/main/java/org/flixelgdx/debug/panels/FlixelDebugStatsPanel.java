@@ -23,386 +23,111 @@
  */
 package org.flixelgdx.debug.panels;
 
-import org.flixelgdx.Flixel;
-import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.FlixelGame;
-import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
-import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
+import org.flixelgdx.debug.feeds.FlixelDebugStats;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
-import org.flixelgdx.graphics.FlixelBatch;
-import org.flixelgdx.graphics.FlixelRenderStats;
-import org.flixelgdx.util.FlixelDebugUtil;
+import org.flixelgdx.debug.ui.FlixelDebugGrid;
+import org.flixelgdx.debug.ui.FlixelDebugLabel;
+import org.flixelgdx.debug.ui.FlixelDebugPanel;
+import org.flixelgdx.debug.ui.FlixelDebugScroll;
+import org.flixelgdx.debug.ui.FlixelDebugStack;
+import org.flixelgdx.debug.ui.FlixelDebugUi;
+import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The performance panel of the remote debugger: frame rate, frame time, draw calls, memory, and the
- * camera.
+ * The built-in "Stats" panel: the newest numbers of the {@linkplain FlixelDebugManager#stats stats feed} at a glance,
+ * such as the frame rate, memory, the game state, and the camera position.
  *
- * <p>Think of it as the dashboard of a car. Every so often (the sample rate, 20 times per second by
- * default) it glances at all the gauges at once and writes the numbers down. The debugger app draws the
- * graphs from those samples, so this panel only keeps the latest numbers plus three short histories
- * of {@value #HISTORY_SIZE} samples (frame rate, frame time, and Java heap) for tools that want them
- * without the app.
- *
- * <p>The sample rate lives on {@link FlixelDebugControlsPanel} and can be changed from the app or with
- * the {@code rate} console command. Sampling and writing never allocate.
- *
- * <p>Example:
- *
- * <pre>{@code
- * FlixelDebugStatsPanel stats = Flixel.debug.stats;
- * Flixel.info("Draw calls last sample: {}", stats.getDraws());
- * }</pre>
- *
- * @see FlixelDebugControlsPanel#setRate(int)
+ * <p>Like every built-in panel it is an ordinary {@link FlixelDebugPanel}, so a game can replace it with its own
+ * design under the id {@value FlixelDebugDefaultPanels#STATS}. The numbers refresh every time the stats feed takes a
+ * sample (20 times a second by default).
  */
-public class FlixelDebugStatsPanel extends FlixelDebugPanelBase {
+public class FlixelDebugStatsPanel extends FlixelDebugPanel {
 
-  /** The number of samples kept in each history ring. */
-  public static final int HISTORY_SIZE = 120;
+  private long seenRevision = -1L;
 
-  /** Seconds between object count refreshes, because counting walks the whole scene. */
-  private static final float OBJECT_COUNT_INTERVAL = 0.5f;
-
-  private static final float BYTES_PER_MB = 1024f * 1024f;
-
-  private final long startNanos = System.nanoTime();
-
-  private double elapsedSeconds;
-
-  private final FlixelDebugControlsPanel controls;
-  private final FlixelDebugManager owner;
-  private final float[] fpsHistory = new float[HISTORY_SIZE];
-  private final float[] frameMsHistory = new float[HISTORY_SIZE];
-  private final float[] heapMbHistory = new float[HISTORY_SIZE];
-
-  private float timer;
-  private float objectTimer = OBJECT_COUNT_INTERVAL;
-  private float liveFrameMs;
-  private float fps;
-  private float frameMs;
-  private float cpuMs;
-  private float presentMs;
-  private float heapMb;
-  private float nativeMb;
-  private float textureMb;
-  private float ringKb;
-  private float sendKbps;
-  private float recvKbps;
-  private float camX;
-  private float camY;
-  private float camZoom = 1f;
-  private int draws;
-  private int triangles;
-  private int vertices;
-  private int passes;
-  private int submits;
-  private int pipelines;
-  private int objectCount;
-  private int historyHead;
-  private int historyCount;
-
-  private boolean paused;
+  private final FlixelString text = new FlixelString(16);
+  private final FlixelDebugStats stats;
+  private final FlixelDebugLabel fps = value();
+  private final FlixelDebugLabel frame = value();
+  private final FlixelDebugLabel heap = value();
+  private final FlixelDebugLabel nativeMemory = value();
+  private final FlixelDebugLabel objects = value();
+  private final FlixelDebugLabel draws = value();
+  private final FlixelDebugLabel triangles = value();
+  private final FlixelDebugLabel ping = value();
+  private final FlixelDebugLabel state = value();
+  private final FlixelDebugLabel elapsed = value();
+  private final FlixelDebugLabel cameraX = value();
+  private final FlixelDebugLabel cameraY = value();
+  private final FlixelDebugLabel zoom = value();
 
   /**
-   * Creates the stats panel.
+   * Creates the panel.
    *
-   * @param controls The controls panel that holds the sample rate.
-   * @param owner The manager whose tracked batches add to the draw call count.
+   * @param manager The debug manager whose stats feed the panel shows.
    */
-  public FlixelDebugStatsPanel(@NotNull FlixelDebugControlsPanel controls, @NotNull FlixelDebugManager owner) {
-    super("stats", "Stats", FlixelDebugProtocol.KIND_STATS);
-    this.controls = controls;
-    this.owner = owner;
+  public FlixelDebugStatsPanel(@NotNull FlixelDebugManager manager) {
+    super(FlixelDebugDefaultPanels.STATS, "Stats");
+    this.stats = manager.stats;
+    setDock(FlixelDebugProtocol.DOCK_LEFT);
+    FlixelDebugStack content = FlixelDebugUi.column(
+        FlixelDebugUi.heading("Client"),
+        grid(new String[] { "FPS", "Frame ms", "Java heap MB", "Native MB", "Objects", "Draw calls", "Triangles",
+            "Ping" }, fps, frame, heap, nativeMemory, objects, draws, triangles, ping),
+        FlixelDebugUi.heading("World"),
+        grid(new String[] { "State", "Elapsed" }, state, elapsed),
+        FlixelDebugUi.heading("Camera"),
+        grid(new String[] { "X", "Y", "Zoom" }, cameraX, cameraY, zoom));
+    setContent(new FlixelDebugScroll(content));
   }
 
   @Override
-  public void update(float elapsed) {
-    liveFrameMs = elapsed * 1000f;
-    objectTimer += elapsed;
-    timer += elapsed;
-    float interval = 1f / controls.getRate();
-    if (timer >= interval) {
-      timer -= interval;
-      if (timer > interval) {
-        timer = 0f;
-      }
-      sample();
+  public void update(float elapsedSeconds) {
+    super.update(elapsedSeconds);
+    long revision = stats.getRevision();
+    if (revision == seenRevision) {
+      return;
     }
-  }
-
-  /**
-   * Reads every statistic once and stores it as the latest sample.
-   *
-   * <p>{@link #update(float)} calls this at the sample rate. It is public so tools and tests can take a
-   * sample on demand. It does not allocate.
-   */
-  public void sample() {
-    elapsedSeconds = (System.nanoTime() - startNanos) / 1_000_000_000.0;
-    fps = Flixel.graphics.getFps();
-    frameMs = liveFrameMs;
-    heapMb = Flixel.runtime.getJavaHeap() / BYTES_PER_MB;
-    nativeMb = Flixel.runtime.getNativeHeap() / BYTES_PER_MB;
-
-    FlixelRenderStats stats = Flixel.graphics.getStats();
-    if (stats != null) {
-      cpuMs = stats.cpuMs;
-      presentMs = stats.presentMs;
-      draws = stats.draws;
-      triangles = stats.triangles;
-      vertices = stats.vertices;
-      passes = stats.passes;
-      submits = stats.submits;
-      pipelines = stats.pipelines;
-      textureMb = stats.textureBytes / BYTES_PER_MB;
-      ringKb = (stats.vertexBytes + stats.uniformBytes) / 1024f;
+    seenRevision = revision;
+    fps.setText(text.setLength(0).concatFloatRounded(stats.getFps(), 0));
+    frame.setText(text.setLength(0).concatFloatRounded(stats.getFrameMs(), 2));
+    heap.setText(text.setLength(0).concatFloatRounded(stats.getHeapMb(), 1));
+    nativeMemory.setText(text.setLength(0).concatFloatRounded(stats.getNativeMb(), 1));
+    objects.setText(text.setLength(0).concat(stats.getObjectCount()));
+    draws.setText(text.setLength(0).concat(stats.getDraws()));
+    triangles.setText(text.setLength(0).concat(stats.getTriangles()));
+    float roundTrip = stats.getRoundTripMs();
+    if (roundTrip < 0f) {
+      ping.setText("n/a");
     } else {
-      cpuMs = 0f;
-      presentMs = 0f;
-      draws = countRenderCalls();
-      triangles = 0;
-      vertices = 0;
-      passes = 0;
-      submits = 0;
-      pipelines = 0;
-      textureMb = 0f;
-      ringKb = 0f;
+      ping.setText(text.setLength(0).concatFloatRounded(roundTrip, 0).concat(" ms"));
     }
-
-    if (objectTimer >= OBJECT_COUNT_INTERVAL) {
-      objectTimer = 0f;
-      objectCount = FlixelDebugUtil.countActiveMembers();
-    }
-
-    FlixelGame game = Flixel.game;
-    paused = game != null && game.isGamePaused();
-
-    if (Flixel.cameras.getSize() > 0) {
-      FlixelCamera cam = Flixel.cameras.get(0);
-      camX = cam.scrollX;
-      camY = cam.scrollY;
-      camZoom = cam.getZoom();
-    }
-
-    fpsHistory[historyHead] = fps;
-    frameMsHistory[historyHead] = frameMs;
-    heapMbHistory[historyHead] = heapMb;
-    historyHead = (historyHead + 1) % HISTORY_SIZE;
-    if (historyCount < HISTORY_SIZE) {
-      historyCount++;
-    }
-    markChanged();
+    boolean paused = stats.isPaused();
+    state.setText(paused ? "PAUSED" : "RUNNING");
+    state.setStyle((paused ? FlixelDebugProtocol.TONE_WARNING : FlixelDebugProtocol.TONE_SUCCESS)
+        | FlixelDebugProtocol.STYLE_MONO | FlixelDebugProtocol.STYLE_BOLD);
+    elapsed.setText(text.setLength(0).concatFloatRounded((float) stats.getElapsedSeconds(), 1).concat(" s"));
+    cameraX.setText(text.setLength(0).concatFloatRounded(stats.getCamX(), 1));
+    cameraY.setText(text.setLength(0).concatFloatRounded(stats.getCamY(), 1));
+    zoom.setText(text.setLength(0).concatFloatRounded(stats.getCamZoom(), 2));
   }
 
   @Override
-  public void write(@NotNull FlixelDebugMessageWriter writer) {
-    writer.writeF32(fps)
-        .writeF32(frameMs)
-        .writeF32(cpuMs)
-        .writeF32(presentMs)
-        .writeI32(draws)
-        .writeI32(triangles)
-        .writeI32(vertices)
-        .writeI32(passes)
-        .writeI32(submits)
-        .writeI32(pipelines)
-        .writeF32(heapMb)
-        .writeF32(nativeMb)
-        .writeF32(textureMb)
-        .writeF32(ringKb)
-        .writeI32(objectCount)
-        .writeF32(sendKbps)
-        .writeF32(recvKbps)
-        .writeBool(paused)
-        .writeF64(elapsedSeconds)
-        .writeF32(camX)
-        .writeF32(camY)
-        .writeF32(camZoom);
+  protected void onOpen() {
+    seenRevision = -1L;
   }
 
-  @Override
-  public void reset() {
-    timer = 0f;
-    objectTimer = OBJECT_COUNT_INTERVAL;
-    historyHead = 0;
-    historyCount = 0;
-    markChanged();
+  private static FlixelDebugLabel value() {
+    return new FlixelDebugLabel("-").setStyle(FlixelDebugProtocol.STYLE_MONO);
   }
 
-  /**
-   * Sums the render calls of the framework's batch and every batch registered with
-   * {@link FlixelDebugManager#trackBatch(FlixelBatch)}.
-   */
-  private int countRenderCalls() {
-    int total = 0;
-    FlixelGame game = Flixel.game;
-    if (game != null) {
-      total += game.getFrameRenderCalls();
+  private static FlixelDebugGrid grid(@NotNull String[] names, @NotNull FlixelDebugLabel... values) {
+    FlixelDebugGrid grid = new FlixelDebugGrid("2*", "3*").setSpacing(2f);
+    for (int i = 0; i < names.length && i < values.length; i++) {
+      grid.add(FlixelDebugUi.label(names[i]), values[i]);
     }
-    FlixelArray<FlixelBatch> extra = owner.getTrackedBatches();
-    for (int i = 0, n = extra.getSize(); i < n; i++) {
-      FlixelBatch batch = extra.get(i);
-      if (batch != null) {
-        total += batch.getRenderCalls();
-      }
-    }
-    return total;
-  }
-
-  /**
-   * Stores the transfer rates of the network agent so they show up in the next sample.
-   *
-   * @param sendKbps Kilobytes per second the agent sends.
-   * @param recvKbps Kilobytes per second the agent receives.
-   */
-  public void setAgentRates(float sendKbps, float recvKbps) {
-    this.sendKbps = sendKbps;
-    this.recvKbps = recvKbps;
-  }
-
-  public float getFps() {
-    return fps;
-  }
-
-  public float getFrameMs() {
-    return frameMs;
-  }
-
-  public float getCpuMs() {
-    return cpuMs;
-  }
-
-  public float getPresentMs() {
-    return presentMs;
-  }
-
-  public int getDraws() {
-    return draws;
-  }
-
-  public int getTriangles() {
-    return triangles;
-  }
-
-  public int getVertices() {
-    return vertices;
-  }
-
-  public int getPasses() {
-    return passes;
-  }
-
-  public int getSubmits() {
-    return submits;
-  }
-
-  public int getPipelines() {
-    return pipelines;
-  }
-
-  public float getHeapMb() {
-    return heapMb;
-  }
-
-  public float getNativeMb() {
-    return nativeMb;
-  }
-
-  public float getTextureMb() {
-    return textureMb;
-  }
-
-  public float getRingKb() {
-    return ringKb;
-  }
-
-  public int getObjectCount() {
-    return objectCount;
-  }
-
-  public float getSendKbps() {
-    return sendKbps;
-  }
-
-  public float getRecvKbps() {
-    return recvKbps;
-  }
-
-  public boolean isPaused() {
-    return paused;
-  }
-
-  public double getElapsedSeconds() {
-    return elapsedSeconds;
-  }
-
-  public float getCamX() {
-    return camX;
-  }
-
-  public float getCamY() {
-    return camY;
-  }
-
-  public float getCamZoom() {
-    return camZoom;
-  }
-
-  /**
-   * Returns the ring of frame rate samples. Read it starting at {@link #getHistoryStart()}.
-   *
-   * @return The live ring, {@value #HISTORY_SIZE} slots long.
-   */
-  @NotNull
-  public float[] getFpsHistory() {
-    return fpsHistory;
-  }
-
-  /**
-   * Returns the ring of frame time samples in milliseconds. Read it starting at {@link #getHistoryStart()}.
-   *
-   * @return The live ring, {@value #HISTORY_SIZE} slots long.
-   */
-  @NotNull
-  public float[] getFrameMsHistory() {
-    return frameMsHistory;
-  }
-
-  /**
-   * Returns the ring of Java heap samples in megabytes. Read it starting at {@link #getHistoryStart()}.
-   *
-   * @return The live ring, {@value #HISTORY_SIZE} slots long.
-   */
-  @NotNull
-  public float[] getHeapMbHistory() {
-    return heapMbHistory;
-  }
-
-  /**
-   * Returns the slot where the next sample will be written.
-   *
-   * @return A ring index.
-   */
-  public int getHistoryHead() {
-    return historyHead;
-  }
-
-  /**
-   * Returns the slot of the oldest valid sample, which is where reading a history in order starts.
-   *
-   * @return A ring index.
-   */
-  public int getHistoryStart() {
-    return historyCount < HISTORY_SIZE ? 0 : historyHead;
-  }
-
-  /**
-   * Returns how many samples the history rings hold.
-   *
-   * @return A count from 0 to {@value #HISTORY_SIZE}.
-   */
-  public int getHistoryCount() {
-    return historyCount;
+    return grid;
   }
 }

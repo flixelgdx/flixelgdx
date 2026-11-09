@@ -153,7 +153,9 @@ sparks.start(true, 0f, 20); // Burst 20 sparks at once.
 A game running in debug mode streams its internals to a separate desktop debugger app: frame times and memory, the
 log, live watches, loaded textures, the scene tree, a property inspector with editing, a command console, the save
 data, and a live map of the screen that lets you pick objects, drag them, and fly the camera from the app (handy on a
-phone, which has no keyboard or mouse). Register your own values and panels with a line each:
+phone, which has no keyboard or mouse). It can also press keys, move and click a pointer, and type text in the game, and
+take a picture of the finished frame, so a tool (or an AI agent) can drive and watch the game. Register your own values
+and panels with a line each:
 
 ```java
 Flixel.debug.watches.addFloat("Player X", player::getX);

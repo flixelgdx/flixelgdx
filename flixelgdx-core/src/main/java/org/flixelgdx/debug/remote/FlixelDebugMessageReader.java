@@ -267,18 +267,38 @@ public class FlixelDebugMessageReader {
   }
 
   /**
-   * Skips one property value (its kind byte and payload).
+   * Skips one value (its kind byte and payload), including a whole list with everything inside it.
    *
-   * @param scratch Reusable space used while skipping a string.
+   * @param scratch Kept for callers written against older versions; skipping no longer needs it.
    */
   public void skipValue(@NotNull FlixelString scratch) {
-    int kind = readU8();
-    switch (kind) {
-      case FlixelDebugProtocol.VALUE_BOOL -> skip(1);
-      case FlixelDebugProtocol.VALUE_INT, FlixelDebugProtocol.VALUE_FLOAT -> skip(4);
-      case FlixelDebugProtocol.VALUE_LONG, FlixelDebugProtocol.VALUE_DOUBLE -> skip(8);
-      case FlixelDebugProtocol.VALUE_STRING, FlixelDebugProtocol.VALUE_ERROR -> readString(scratch);
-      default -> throw new FlixelDebugProtocolException("Unknown value kind: " + kind);
+    skipValue();
+  }
+
+  /**
+   * Skips one value (its kind byte and payload), including a whole list with everything inside it.
+   *
+   * <p>Lists are skipped item by item without recursion depth limits beyond the message itself, and nothing is
+   * allocated.
+   *
+   * @throws FlixelDebugProtocolException If the message is too short or a kind is unknown.
+   */
+  public void skipValue() {
+    int pending = 1;
+    while (pending > 0) {
+      pending--;
+      int kind = readU8();
+      switch (kind) {
+        case FlixelDebugProtocol.VALUE_BOOL -> skip(1);
+        case FlixelDebugProtocol.VALUE_INT, FlixelDebugProtocol.VALUE_FLOAT -> skip(4);
+        case FlixelDebugProtocol.VALUE_LONG, FlixelDebugProtocol.VALUE_DOUBLE -> skip(8);
+        case FlixelDebugProtocol.VALUE_STRING, FlixelDebugProtocol.VALUE_ERROR -> skip(readU16());
+        case FlixelDebugProtocol.VALUE_NULL -> {
+        }
+        case FlixelDebugProtocol.VALUE_BYTES -> skip(readBytesLength());
+        case FlixelDebugProtocol.VALUE_LIST -> pending += readCount();
+        default -> throw new FlixelDebugProtocolException("Unknown value kind: " + kind);
+      }
     }
   }
 

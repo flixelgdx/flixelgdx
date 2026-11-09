@@ -44,7 +44,6 @@ import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
-import org.flixelgdx.debug.panels.FlixelDebugPanel;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.file.FlixelNoopFiles;
 import org.flixelgdx.functional.FlixelAntialiasable;
@@ -534,8 +533,9 @@ public final class Flixel {
    *     with {@code register(...)}, to run arbitrary game code from the debugger's command line.
    *   </li>
    *   <li>
-   *     <b>Your own panels:</b> {@link FlixelDebugManager#register(FlixelDebugPanel)}
-   *     adds a panel that shows anything you like.
+   *     <b>Panels:</b> {@link FlixelDebugManager#panels} lists every tab of the debugger app. Every panel, the
+   *     built-in ones included, is built by the game out of widgets, so you can add your own, redesign a built-in
+   *     one under the same id, or remove the ones you do not need.
    *   </li>
    * </ul>
    *

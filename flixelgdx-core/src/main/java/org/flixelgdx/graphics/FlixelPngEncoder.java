@@ -104,6 +104,27 @@ public final class FlixelPngEncoder {
    *     not positive.
    */
   public int encode(@NotNull ByteBuffer rgba, int srcWidth, int srcHeight, int rowBytes, int maxSide) {
+    return encode(rgba, srcWidth, srcHeight, rowBytes, maxSide, false);
+  }
+
+  /**
+   * Encodes a picture like {@link #encode(ByteBuffer, int, int, int, int)}, optionally ignoring the alpha channel.
+   *
+   * <p>A picture of a rendered frame can hold transparent pixels where nothing was drawn, which would show the
+   * viewer's background through the picture. With {@code opaque} set, every pixel is written fully opaque.
+   *
+   * @param rgba The source pixels as 8-bit RGBA. Only absolute reads are used.
+   * @param srcWidth The width of the source picture in pixels.
+   * @param srcHeight The height of the source picture in pixels.
+   * @param rowBytes The distance in bytes between the starts of two source rows, at least {@code srcWidth * 4}.
+   * @param maxSide The most pixels the longest side of the result may have. A smaller source is not enlarged.
+   * @param opaque {@code true} to write alpha as 255 for every pixel.
+   * @return The size of the PNG in bytes.
+   * @throws IllegalArgumentException If the picture is empty, {@code rowBytes} is too small, or {@code maxSide} is
+   *     not positive.
+   */
+  public int encode(@NotNull ByteBuffer rgba, int srcWidth, int srcHeight, int rowBytes, int maxSide,
+      boolean opaque) {
     if (srcWidth <= 0 || srcHeight <= 0 || maxSide <= 0 || rowBytes < srcWidth * 4) {
       throw new IllegalArgumentException("Bad picture: " + srcWidth + "x" + srcHeight + ", row " + rowBytes
           + ", max side " + maxSide + ".");
@@ -132,7 +153,7 @@ public final class FlixelPngEncoder {
         raw[at++] = rgba.get(src);
         raw[at++] = rgba.get(src + 1);
         raw[at++] = rgba.get(src + 2);
-        raw[at++] = rgba.get(src + 3);
+        raw[at++] = opaque ? (byte) 0xFF : rgba.get(src + 3);
       }
     }
     return write(rawSize, outW, outH);

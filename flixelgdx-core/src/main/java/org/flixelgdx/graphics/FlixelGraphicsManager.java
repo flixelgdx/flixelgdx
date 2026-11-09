@@ -396,6 +396,46 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Frees the memory a backend keeps between pixel readbacks.
+   *
+   * <p>A backend reuses one buffer for every readback, because allocating a large buffer each time can exhaust
+   * the heap on some platforms. Tools call this when they are done (for example when the debugger disconnects)
+   * so the buffer does not stay allocated. The next readback allocates it again. The default does nothing.
+   */
+  default void releaseReadbackBuffers() {}
+
+  /**
+   * Returns whether {@link #captureScene(FlixelPixelReadback)} can capture the finished game frame on this
+   * backend.
+   *
+   * @return {@code true} when frame capture is available. The default is {@code false}.
+   */
+  default boolean supportsCapture() {
+    return false;
+  }
+
+  /**
+   * Captures the next finished game frame as pixels, so tools such as the debugger can show what the game looks
+   * like.
+   *
+   * <p>The capture is asynchronous: this method returns right away, the frame that is drawn next is kept, and the
+   * callback runs a few frames later. The picture is the scene the game drew, including the game's own overlay,
+   * at the size it was drawn at (the render resolution when one is set, otherwise the window). It does not include
+   * anything drawn after the scene was put on the screen, such as the debugger's hitbox outlines. Capturing
+   * costs a copy of the whole frame, so use it for tools, never in a game loop.
+   *
+   * <p>Only one capture is kept: asking again before the callback ran answers the older callback with
+   * {@code null}. A backend that cannot capture (see {@link #supportsCapture()}) calls the callback straight away
+   * with {@code null}.
+   *
+   * @param callback Receives the pixels, valid only during the call, or {@code null} when the frame could not be
+   *     read. See {@link FlixelPixelReadback} for how to read the buffer.
+   */
+  default void captureScene(@NotNull FlixelPixelReadback callback) {
+    callback.onPixels(null, 0, 0, 0);
+  }
+
+  /**
    * Uploads a CPU-side image to a new GPU texture.
    *
    * @param image The pixels to upload.

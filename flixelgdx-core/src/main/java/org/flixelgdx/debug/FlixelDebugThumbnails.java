@@ -26,7 +26,7 @@ package org.flixelgdx.debug;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelIntArray;
-import org.flixelgdx.debug.panels.FlixelDebugPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugFeed;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelPngEncoder;
@@ -44,7 +44,7 @@ import java.util.Arrays;
  * booth asks the graphics card for the pixels (which takes a few frames), shrinks the picture to at most
  * {@value #MAX_SIDE} pixels on its longest side, wraps it in a PNG, and puts the finished print in an outbox. The
  * panel hands prints to the network agent one by one through
- * {@link FlixelDebugPanel#writePendingPayload(FlixelDebugMessageWriter)}.
+ * {@link FlixelDebugFeed#writePendingPayload(FlixelDebugMessageWriter)}.
  *
  * <p>Pixels come from {@link FlixelGraphicsManager#readPixels}. A backend that cannot read textures (see
  * {@link FlixelGraphicsManager#supportsReadPixels()}) makes every request quietly do nothing, and the app should
@@ -66,6 +66,8 @@ public final class FlixelDebugThumbnails {
   private final FlixelPngEncoder encoder = new FlixelPngEncoder();
   private final FlixelArray<Print> ready = new FlixelArray<>();
   private final FlixelIntArray inFlight = new FlixelIntArray();
+  private final FlixelIntArray inFlightQueued = new FlixelIntArray();
+  private Listener listener;
 
   /** Creates an empty queue. */
   public FlixelDebugThumbnails() {}
@@ -85,22 +87,30 @@ public final class FlixelDebugThumbnails {
    * @return {@code true} when a read was started.
    */
   public boolean request(int id, @NotNull FlixelTexture texture, int x, int y, int width, int height) {
-    FlixelGraphicsManager graphics = Flixel.graphics;
-    if (!graphics.supportsReadPixels() || width <= 0 || height <= 0) {
-      return false;
-    }
-    if (inFlight.indexOf(id) >= 0 || findReady(id) >= 0 || inFlight.getSize() + ready.getSize() >= MAX_PENDING) {
-      return false;
-    }
-    inFlight.add(id);
-    graphics.readPixels(texture, x, y, width, height, (rgba, w, h, rowBytes) -> finish(id, rgba, w, h, rowBytes));
-    return true;
+    return start(id, texture, x, y, width, height, true);
   }
 
   /**
-   * Returns whether a finished thumbnail waits to be sent.
+   * Starts reading a thumbnail only for the {@linkplain #setListener(Listener) listener}, such as a preview in a
+   * debugger panel. It is not queued for {@link #write(FlixelDebugMessageWriter, int)}.
    *
-   * @return {@code true} when {@link #write(FlixelDebugMessageWriter, int)} has something to write.
+   * @param id The id the thumbnail is reported with.
+   * @param texture The texture to read.
+   * @param x The left edge of the region to read, in pixels.
+   * @param y The top edge of the region to read, in pixels.
+   * @param width The width of the region, in pixels.
+   * @param height The height of the region, in pixels.
+   * @return {@code true} when the read started; {@code false} when one for the same id is already running, the
+   *   picture is waiting to be sent, too many are open, or the graphics backend cannot read pixels.
+   */
+  public boolean requestPreview(int id, @NotNull FlixelTexture texture, int x, int y, int width, int height) {
+    return start(id, texture, x, y, width, height, false);
+  }
+
+  /**
+   * Returns whether a finished thumbnail is waiting to be handed out.
+   *
+   * @return {@code true} if at least one thumbnail is ready.
    */
   public boolean hasPending() {
     return ready.getSize() > 0;
@@ -128,6 +138,30 @@ public final class FlixelDebugThumbnails {
   public void clear() {
     ready.clear();
     inFlight.clear();
+    inFlightQueued.clear();
+  }
+
+  private boolean start(int id, FlixelTexture texture, int x, int y, int width, int height, boolean queued) {
+    FlixelGraphicsManager graphics = Flixel.graphics;
+    if (!graphics.supportsReadPixels() || width <= 0 || height <= 0) {
+      return false;
+    }
+    int running = inFlight.indexOf(id);
+    if (running >= 0) {
+      // A read for the same id is already running, so this request is dropped. The running read is still queued
+      // when this request wanted that, so a tool that asks while a preview is being read gets its answer.
+      if (queued) {
+        inFlightQueued.set(running, 1);
+      }
+      return false;
+    }
+    if (findReady(id) >= 0 || inFlight.getSize() + ready.getSize() >= MAX_PENDING) {
+      return false;
+    }
+    inFlight.add(id);
+    inFlightQueued.add(queued ? 1 : 0);
+    graphics.readPixels(texture, x, y, width, height, (rgba, w, h, rowBytes) -> finish(id, rgba, w, h, rowBytes));
+    return true;
   }
 
   private void finish(int id, ByteBuffer rgba, int width, int height, int rowBytes) {
@@ -136,6 +170,7 @@ public final class FlixelDebugThumbnails {
       return; // The queue was cleared while the read was running.
     }
     inFlight.removeIndex(slot);
+    boolean queued = inFlightQueued.removeIndex(slot) != 0;
     FlixelLogger log = Flixel.log.tagged("Debugger/Thumbnails");
     if (rgba == null) {
       log.warn("Could not read the pixels for thumbnail {}.", id);
@@ -143,7 +178,12 @@ public final class FlixelDebugThumbnails {
     }
     try {
       int length = encoder.encode(rgba, width, height, rowBytes, MAX_SIDE);
-      ready.add(new Print(id, encoder.getWidth(), encoder.getHeight(), Arrays.copyOf(encoder.getBytes(), length)));
+      if (listener != null) {
+        listener.onThumbnail(id, encoder.getWidth(), encoder.getHeight(), encoder.getBytes(), length);
+      }
+      if (queued) {
+        ready.add(new Print(id, encoder.getWidth(), encoder.getHeight(), Arrays.copyOf(encoder.getBytes(), length)));
+      }
     } catch (RuntimeException e) {
       log.warn("Could not make thumbnail {}: {}", id, e.getMessage());
     }
@@ -158,7 +198,43 @@ public final class FlixelDebugThumbnails {
     return -1;
   }
 
-  /** One finished thumbnail. */
+  /**
+   * Returns the listener that hears about every finished thumbnail.
+   *
+   * @return The listener, or {@code null} for none.
+   */
+  public Listener getListener() {
+    return listener;
+  }
+
+  /**
+   * Sets a listener that hears about every finished thumbnail, queued or not. A debugger panel uses it to show a
+   * preview.
+   *
+   * @param listener The listener, or {@code null} for none.
+   */
+  public void setListener(Listener listener) {
+    this.listener = listener;
+  }
+
   private record Print(int id, int width, int height, byte[] png) {
+  }
+
+  /**
+   * Hears about finished thumbnails.
+   */
+  @FunctionalInterface
+  public interface Listener {
+
+    /**
+     * Receives a finished thumbnail.
+     *
+     * @param id The id it was requested with.
+     * @param width The width of the PNG in pixels.
+     * @param height The height of the PNG in pixels.
+     * @param png The array that holds the PNG file; only valid during the call, so copy what you keep.
+     * @param length How many bytes of the array the PNG uses.
+     */
+    void onThumbnail(int id, int width, int height, byte @NotNull [] png, int length);
   }
 }

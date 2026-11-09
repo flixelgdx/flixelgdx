@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.debug;
 
-import org.flixelgdx.debug.panels.FlixelDebugPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugFeed;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 
@@ -63,7 +63,7 @@ final class InspectorTestSupport {
   record Custom(List<Row> rows, List<String> buttons, List<Integer> buttonIndices) {
   }
 
-  static State state(FlixelDebugPanel panel) {
+  static State state(FlixelDebugFeed panel) {
     FlixelDebugMessageReader r = DebugTestSupport.payload(panel);
     int subtype = r.readU8();
     int id = r.readI32();
@@ -82,7 +82,7 @@ final class InspectorTestSupport {
     return new State(subtype, id, path, sections, hasTexture);
   }
 
-  static Custom custom(FlixelDebugPanel panel) {
+  static Custom custom(FlixelDebugFeed panel) {
     FlixelDebugMessageReader r = DebugTestSupport.payload(panel);
     List<Row> rows = rows(r);
     int count = r.readCount();

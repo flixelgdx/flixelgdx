@@ -27,7 +27,7 @@ import org.flixelgdx.collections.FlixelIdentityMap;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.collections.FlixelIntMap;
 import org.flixelgdx.collections.FlixelIntSet;
-import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
 import org.flixelgdx.functional.FlixelExistable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +62,7 @@ import org.jetbrains.annotations.Nullable;
  * Object same = Flixel.debug.ids.get(id); // == player
  * }</pre>
  *
- * @see FlixelDebugInspectorPanel
+ * @see FlixelDebugInspector
  */
 public class FlixelDebugObjectIds {
 
@@ -73,8 +73,10 @@ public class FlixelDebugObjectIds {
   private final FlixelIntMap<Object> objects = new FlixelIntMap<>();
   private final FlixelIntArray dead = new FlixelIntArray();
   private final FlixelIntSet marked = new FlixelIntSet();
+  private final FlixelIntSet agentTouched = new FlixelIntSet();
 
   private int next = 1;
+  private int agentRevision;
 
   private boolean marking;
 
@@ -138,7 +140,40 @@ public class FlixelDebugObjectIds {
       return false;
     }
     objects.remove(id);
+    if (agentTouched.remove(id)) {
+      agentRevision++;
+    }
     return true;
+  }
+
+  /**
+   * Remembers that a tool (such as an AI agent working through a feed) selected, moved, edited, or clicked an
+   * object, so the panels can point it out to the person.
+   *
+   * @param object The object, or {@code null} to do nothing.
+   */
+  public void markAgentTouched(@Nullable Object object) {
+    if (object != null && agentTouched.add(idOf(object))) {
+      agentRevision++;
+    }
+  }
+
+  /**
+   * Returns whether a tool touched the object with this id.
+   *
+   * @param id The object's id.
+   * @return {@code true} after {@link #markAgentTouched(Object)} for that object.
+   */
+  public boolean isAgentTouched(int id) {
+    return agentTouched.contains(id);
+  }
+
+  /** Forgets which objects a tool touched. */
+  public void clearAgentTouched() {
+    if (!agentTouched.isEmpty()) {
+      agentTouched.clear();
+      agentRevision++;
+    }
   }
 
   /**
@@ -206,6 +241,9 @@ public class FlixelDebugObjectIds {
       if (object != null) {
         ids.remove(object);
       }
+      if (agentTouched.remove(id)) {
+        agentRevision++;
+      }
     }
     return dead.getSize();
   }
@@ -216,6 +254,7 @@ public class FlixelDebugObjectIds {
     objects.clear();
     marked.clear();
     marking = false;
+    clearAgentTouched();
   }
 
   /**
@@ -225,5 +264,15 @@ public class FlixelDebugObjectIds {
    */
   public int getCount() {
     return objects.getSize();
+  }
+
+  /**
+   * Returns a number that goes up whenever the set of objects a tool touched changes, so panels know when to redraw
+   * their marks.
+   *
+   * @return The revision.
+   */
+  public int getAgentRevision() {
+    return agentRevision;
   }
 }

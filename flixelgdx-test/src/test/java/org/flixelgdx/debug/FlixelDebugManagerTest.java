@@ -23,16 +23,19 @@
  */
 package org.flixelgdx.debug;
 
-import org.flixelgdx.debug.panels.FlixelDebugPanelBase;
-import org.flixelgdx.debug.panels.FlixelDebugStatsPanel;
-import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
+import org.flixelgdx.debug.feeds.FlixelDebugFeed;
+import org.flixelgdx.debug.panels.FlixelDebugDefaultPanels;
+import org.flixelgdx.debug.panels.FlixelDebugSavePanel;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
-import org.jetbrains.annotations.NotNull;
+import org.flixelgdx.debug.ui.FlixelDebugLabel;
+import org.flixelgdx.debug.ui.FlixelDebugPanel;
+import org.flixelgdx.debug.ui.FlixelDebugPanels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,127 +51,153 @@ class FlixelDebugManagerTest {
   }
 
   @Test
-  void builtInPanelsAreRegisteredInOrder() {
+  void feedsAreListedInProtocolOrder() {
     String[] ids = {
         "stats", "logs", "watches", "trackers", "textures", "controls", "console", "scene", "inspector", "save",
-        "viewport" };
+        "viewport", "capture", "input" };
     int[] kinds = {
         FlixelDebugProtocol.KIND_STATS, FlixelDebugProtocol.KIND_LOGS, FlixelDebugProtocol.KIND_WATCHES,
         FlixelDebugProtocol.KIND_TRACKERS, FlixelDebugProtocol.KIND_TEXTURES, FlixelDebugProtocol.KIND_CONTROLS,
         FlixelDebugProtocol.KIND_CONSOLE, FlixelDebugProtocol.KIND_SCENE, FlixelDebugProtocol.KIND_INSPECTOR,
-        FlixelDebugProtocol.KIND_SAVE, FlixelDebugProtocol.KIND_VIEWPORT };
-    assertEquals(ids.length, manager.getPanelCount());
+        FlixelDebugProtocol.KIND_SAVE, FlixelDebugProtocol.KIND_VIEWPORT, FlixelDebugProtocol.KIND_CAPTURE,
+        FlixelDebugProtocol.KIND_INPUT };
+    assertEquals(ids.length, manager.getFeedCount());
     for (int i = 0; i < ids.length; i++) {
-      assertEquals(ids[i], manager.getPanel(i).getId());
-      assertEquals(kinds[i], manager.getPanel(i).getKind());
+      FlixelDebugFeed feed = manager.getFeed(i);
+      assertEquals(ids[i], feed.getId());
+      assertEquals(kinds[i], feed.getKind());
+      assertSame(feed, manager.getFeed(ids[i]));
     }
-    assertSame(manager.stats, manager.get("stats"));
-    assertSame(manager.logs, manager.get("logs"));
-    assertSame(manager.watches, manager.get("watches"));
-    assertSame(manager.trackers, manager.get("trackers"));
-    assertSame(manager.textures, manager.get("textures"));
-    assertSame(manager.controls, manager.get("controls"));
-    assertSame(manager.console, manager.get("console"));
-    assertSame(manager.scene, manager.get("scene"));
-    assertSame(manager.inspector, manager.get("inspector"));
-    assertSame(manager.save, manager.get("save"));
-    assertSame(manager.viewport, manager.get("viewport"));
+    assertSame(manager.stats, manager.getFeed("stats"));
+    assertSame(manager.input, manager.getFeed("input"));
+    assertNull(manager.getFeed("nope"));
   }
 
   @Test
-  void registerReturnsThePanelAndGetFindsIt() {
-    CountingPanel panel = manager.register(new CountingPanel("custom.count"));
-    assertSame(panel, manager.get("custom.count"));
-    assertEquals(FlixelDebugProtocol.KIND_CUSTOM, panel.getKind());
-    assertSame(panel, manager.getPanel(manager.getPanelCount() - 1));
+  void builtInPanelsAreOrdinaryRegisteredPanels() {
+    String[] ids = {
+        FlixelDebugDefaultPanels.STATS, FlixelDebugDefaultPanels.PERFORMANCE, FlixelDebugDefaultPanels.LOGS,
+        FlixelDebugDefaultPanels.SCENE, FlixelDebugDefaultPanels.VIEWPORT, FlixelDebugDefaultPanels.INSPECTOR,
+        FlixelDebugDefaultPanels.TEXTURES, FlixelDebugDefaultPanels.SAVE, FlixelDebugDefaultPanels.WATCHES,
+        FlixelDebugDefaultPanels.CONTROLS, FlixelDebugDefaultPanels.TRACKERS, FlixelDebugDefaultPanels.CONSOLE };
+    FlixelDebugPanels panels = manager.panels;
+    assertEquals(ids.length, panels.getCount());
+    for (int i = 0; i < ids.length; i++) {
+      FlixelDebugPanel panel = panels.get(i);
+      assertEquals(ids[i], panel.getId());
+      assertSame(panels, panel.getOwner());
+      assertSame(manager, panel.getManager());
+      assertFalse(panel.isOpen(), "panels start closed");
+      assertTrue(panel.getContent() != null, ids[i] + " has content");
+    }
+    assertTrue(panels.get(FlixelDebugDefaultPanels.SAVE) instanceof FlixelDebugSavePanel);
   }
 
   @Test
-  void getWithTypeReturnsNullForTheWrongTypeOrUnknownId() {
-    CountingPanel panel = manager.register(new CountingPanel("custom.count"));
-    assertSame(panel, manager.get("custom.count", CountingPanel.class));
-    assertSame(manager.stats, manager.get("stats", FlixelDebugStatsPanel.class));
-    assertNull(manager.get("custom.count", FlixelDebugStatsPanel.class));
-    assertNull(manager.get("nope", CountingPanel.class));
-    assertNull(manager.get("nope"));
+  void aBuiltInPanelCanBeReplacedInPlace() {
+    FlixelDebugPanels panels = manager.panels;
+    int index = panels.indexOf(FlixelDebugDefaultPanels.SAVE);
+    FlixelDebugPanel old = panels.get(FlixelDebugDefaultPanels.SAVE);
+    long revision = panels.getRevision();
+    FlixelDebugPanel mine = new FlixelDebugPanel(FlixelDebugDefaultPanels.SAVE, "My save", new FlixelDebugLabel("hi"));
+    assertSame(mine, panels.replace(mine));
+    assertEquals(index, panels.indexOf(FlixelDebugDefaultPanels.SAVE));
+    assertSame(mine, panels.get(FlixelDebugDefaultPanels.SAVE));
+    assertNull(old.getOwner());
+    assertNotEquals(revision, panels.getRevision());
   }
 
   @Test
-  void duplicateIdsAreRejected() {
-    manager.register(new CountingPanel("custom.count"));
-    assertThrows(IllegalArgumentException.class, () -> manager.register(new CountingPanel("custom.count")));
-    assertThrows(IllegalArgumentException.class, () -> manager.register(new CountingPanel("stats")));
-    assertEquals(12, manager.getPanelCount());
+  void panelsCanBeAddedFoundRemovedAndCleared() {
+    FlixelDebugPanels panels = manager.panels;
+    FlixelDebugPanel mine = panels.register(new FlixelDebugPanel("game.enemies", "Enemies"));
+    assertSame(mine, panels.get("game.enemies"));
+    assertSame(mine, panels.get("game.enemies", FlixelDebugPanel.class));
+    assertNull(panels.get("game.enemies", FlixelDebugSavePanel.class));
+    assertThrows(IllegalArgumentException.class, () -> panels.register(new FlixelDebugPanel("game.enemies", "X")));
+
+    assertSame(mine, panels.unregister("game.enemies"));
+    assertNull(panels.get("game.enemies"));
+    assertNull(panels.unregister("game.enemies"));
+
+    assertTrue(panels.unregister(FlixelDebugDefaultPanels.TRACKERS) != null);
+    assertEquals(-1, panels.indexOf(FlixelDebugDefaultPanels.TRACKERS));
+
+    panels.clear();
+    assertEquals(0, panels.getCount());
+    FlixelDebugDefaultPanels.addTo(manager);
+    assertEquals(12, panels.getCount());
   }
 
   @Test
-  void unregisterRemovesThePanelAndKeepsTheOrderOfTheRest() {
-    CountingPanel a = manager.register(new CountingPanel("custom.a"));
-    CountingPanel b = manager.register(new CountingPanel("custom.b"));
-    CountingPanel c = manager.register(new CountingPanel("custom.c"));
-    assertSame(b, manager.unregister("custom.b"));
-    assertNull(manager.get("custom.b"));
-    assertNull(manager.unregister("custom.b"));
-    int n = manager.getPanelCount();
-    assertSame(a, manager.getPanel(n - 2));
-    assertSame(c, manager.getPanel(n - 1));
+  void addingDefaultsKeepsAGamesOwnPanelWithABuiltInId() {
+    FlixelDebugPanels panels = manager.panels;
+    panels.clear();
+    FlixelDebugPanel mine = panels.register(new FlixelDebugPanel(FlixelDebugDefaultPanels.LOGS, "My logs"));
+    FlixelDebugDefaultPanels.addTo(manager);
+    assertSame(mine, panels.get(FlixelDebugDefaultPanels.LOGS));
+    assertEquals(12, panels.getCount());
   }
 
   @Test
-  void panelRevisionChangesWhenPanelsAreAddedOrRemoved() {
-    long start = manager.getPanelRevision();
-    manager.register(new CountingPanel("custom.a"));
-    long afterAdd = manager.getPanelRevision();
-    assertTrue(afterAdd > start);
-    manager.unregister("custom.a");
-    assertTrue(manager.getPanelRevision() > afterAdd);
-    long afterRemove = manager.getPanelRevision();
-    manager.unregister("custom.a");
-    assertEquals(afterRemove, manager.getPanelRevision(), "removing an unknown panel changes nothing");
+  void movingAPanelChangesTheListOrder() {
+    FlixelDebugPanels panels = manager.panels;
+    assertTrue(panels.move(FlixelDebugDefaultPanels.CONSOLE, 0));
+    assertEquals(FlixelDebugDefaultPanels.CONSOLE, panels.get(0).getId());
+    assertFalse(panels.move("nope", 0));
   }
 
   @Test
-  void updateReachesOnlyEnabledPanels() {
-    CountingPanel on = manager.register(new CountingPanel("custom.on"));
-    CountingPanel off = manager.register(new CountingPanel("custom.off"));
-    off.setEnabled(false);
-    manager.update(0.25f);
-    manager.update(0.25f);
-    assertEquals(2, on.updates);
-    assertEquals(0.5f, on.total, 1e-6f);
-    assertEquals(0, off.updates);
-    assertFalse(off.isEnabled());
+  void updateReachesOnlyEnabledFeedsAndOpenPanels() {
+    CountingPanel open = manager.panels.register(new CountingPanel("open"));
+    CountingPanel closed = manager.panels.register(new CountingPanel("closed"));
+    CountingPanel always = manager.panels.register(new CountingPanel("always"));
+    always.setUpdatedWhileClosed(true);
+    open.setOpen(true);
+    manager.watches.setEnabled(false);
+    manager.update(0.016f);
+    assertEquals(1, open.updates);
+    assertEquals(0, closed.updates);
+    assertEquals(1, always.updates);
   }
 
   @Test
-  void disposeResetsEveryPanel() {
-    CountingPanel panel = manager.register(new CountingPanel("custom.a"));
+  void aPanelThatThrowsDoesNotStopTheOthers() {
+    FlixelDebugPanel broken = manager.panels.register(new FlixelDebugPanel("broken", "Broken") {
+      @Override
+      public void update(float elapsed) {
+        throw new IllegalStateException("boom");
+      }
+    });
+    CountingPanel after = manager.panels.register(new CountingPanel("after"));
+    broken.setOpen(true);
+    after.setOpen(true);
+    manager.update(0.016f);
+    assertEquals(1, after.updates);
+  }
+
+  @Test
+  void disposeResetsEveryFeedAndClosesEveryPanel() {
+    FlixelDebugPanel panel = manager.panels.get(0);
+    panel.setOpen(true);
+    manager.watches.addInt("x", () -> 1);
     manager.dispose();
-    assertEquals(1, panel.resets);
+    assertEquals(0, manager.watches.getCount());
+    assertFalse(panel.isOpen());
   }
 
-  private static final class CountingPanel extends FlixelDebugPanelBase {
+  private static final class CountingPanel extends FlixelDebugPanel {
 
-    float total;
     int updates;
-    int resets;
 
     CountingPanel(String id) {
-      super(id, id, FlixelDebugProtocol.KIND_CUSTOM);
+      super(id, id);
     }
 
     @Override
     public void update(float elapsed) {
+      super.update(elapsed);
       updates++;
-      total += elapsed;
-    }
-
-    @Override
-    public void write(@NotNull FlixelDebugMessageWriter writer) {}
-
-    @Override
-    public void reset() {
-      resets++;
     }
   }
 }

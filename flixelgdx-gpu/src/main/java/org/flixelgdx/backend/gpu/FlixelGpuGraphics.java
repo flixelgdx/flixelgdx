@@ -72,6 +72,7 @@ import io.github.stringdotjar.jwebgpu.GpuRenderPassColorAttachment;
 import io.github.stringdotjar.jwebgpu.GpuRenderPassDescriptor;
 import io.github.stringdotjar.jwebgpu.GpuRenderPassEncoder;
 import io.github.stringdotjar.jwebgpu.GpuRenderPipeline;
+import io.github.stringdotjar.jwebgpu.GpuStatus;
 import io.github.stringdotjar.jwebgpu.GpuStoreOp;
 import io.github.stringdotjar.jwebgpu.GpuSurface;
 import io.github.stringdotjar.jwebgpu.GpuSurfaceCapabilities;
@@ -217,6 +218,14 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private FlixelGpuShaderProgram spriteProgram;
   private FlixelGpuTexture opaqueTexture;
   private FlixelGpuRenderTarget sceneTarget;
+
+  /** The reusable copy of the latest readback. It is only valid during the callback that receives it. */
+  @Nullable
+  private ByteBuffer readbackCopy;
+
+  /** The caller waiting for the next finished frame, or {@code null}. See {@link #captureScene}. */
+  @Nullable
+  private FlixelPixelReadback pendingCapture;
   private FlixelImageDecoder decoder;
   private volatile FlixelBasisTranscoder basisTranscoder;
   private Runnable eventPump;
@@ -252,6 +261,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private boolean windowedRenderResolution;
   private boolean renderSmooth = true;
   private boolean sceneActive;
+  private boolean sceneDrawn;
   private boolean sceneTargetDirty;
   private boolean statsEnabled;
   private boolean ringWarned;
@@ -562,6 +572,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     encoder = encoder == null ? device.createCommandEncoder(null) : device.createCommandEncoder(null, encoder);
     passOpen = false;
     sceneActive = false;
+    sceneDrawn = false;
     depth = 1;
     initLevel(0, surfaceView, surfaceFormat, backBufferWidth, backBufferHeight, null);
     setClear(0, 0f, 0f, 0f, 1f);
@@ -607,6 +618,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     finishLevel(0);
     endPass();
     submitCommands();
+    finishCapture();
     long presentStart = System.nanoTime();
     if (surface != null) {
       surface.present();
@@ -846,22 +858,124 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
       GpuCallbackMode mode = eventPump != null ? GpuCallbackMode.ALLOW_PROCESS_EVENTS
           : GpuCallbackMode.ALLOW_SPONTANEOUS;
       pendingReadbacks++;
-      staging.mapAsync(GpuMapMode.READ, 0L, size, mode, (status, message) -> {
+      try {
+        staging.mapAsync(GpuMapMode.READ, 0L, size, mode, (status, message) -> {
+          pendingReadbacks--;
+          deliverReadback(staging, status, message, size, w, h, rowBytes, callback);
+        });
+      } catch (RuntimeException e) {
+        // A browser rejects a map it does not like right away, so give up on this read instead of failing the frame.
         pendingReadbacks--;
-        try {
-          if (status == GpuMapAsyncStatus.SUCCESS) {
-            callback.onPixels(staging.getConstMappedRange(0L, size), w, h, rowBytes);
-          } else {
-            LOG.warn("Reading back a texture failed: {} {}", status, message);
-            callback.onPixels(null, 0, 0, 0);
-          }
-        } finally {
-          if (status == GpuMapAsyncStatus.SUCCESS) {
-            staging.unmap();
-          }
-          staging.destroy();
+        LOG.warn("Could not start reading back a texture: {}", e.toString());
+        staging.destroy();
+        callback.onPixels(null, 0, 0, 0);
+      }
+    }
+  }
+
+  @Override
+  public void releaseReadbackBuffers() {
+    readbackCopy = null;
+  }
+
+  @Override
+  public boolean supportsCapture() {
+    return device != null;
+  }
+
+  /**
+   * Keeps the scene of the next finished frame and copies it back to the CPU.
+   *
+   * <p>The renderer normally draws the scene straight onto the window's back buffer, which cannot be read back.
+   * While a capture is waiting, the next frame draws the scene into its own render target instead (the same one
+   * it uses for a render resolution), copies the target to the window as usual, and, right after that frame's
+   * commands are submitted, reads the target back with {@link #readPixels}. That makes the picture exactly the
+   * scene the game drew, before anything that is drawn on the window afterwards (such as the debugger's outlines),
+   * and costs one extra full-screen copy for that single frame.
+   *
+   * <p>A second call before the first finished answers the first callback with {@code null}. The callback is
+   * called exactly once, on the thread that pumps the GPU's events.
+   *
+   * @param callback Receives the pixels, valid only during the call, or {@code null}.
+   */
+  @Override
+  public void captureScene(@NotNull FlixelPixelReadback callback) {
+    if (device == null) {
+      callback.onPixels(null, 0, 0, 0);
+      return;
+    }
+    FlixelPixelReadback older = pendingCapture;
+    pendingCapture = callback;
+    if (older != null) {
+      older.onPixels(null, 0, 0, 0);
+    }
+  }
+
+  /** Reads the scene target back when a capture is waiting and the frame that just ended drew into it. */
+  private void finishCapture() {
+    FlixelPixelReadback callback = pendingCapture;
+    if (callback == null) {
+      return;
+    }
+    pendingCapture = null;
+    FlixelGpuRenderTarget target = sceneTarget;
+    if (!sceneDrawn || target == null) {
+      callback.onPixels(null, 0, 0, 0);
+      return;
+    }
+    readPixels(target.getTexture(), 0, 0, sceneWidth, sceneHeight, callback);
+  }
+
+  /**
+   * Finishes a readback once the staging buffer is mapped: copies the bytes out, releases the buffer, and calls back.
+   *
+   * <p>The bytes are copied with {@code readMappedRange} instead of being read through a mapped pointer, because the
+   * browser has no pointers into GPU memory (its mapped range is a copy), so the pointer form only works natively.
+   * Whatever goes wrong, including a callback that throws, is logged and never escapes, because on the web an
+   * exception inside a promise handler becomes an unhandled rejection that stops the game.
+   */
+  private void deliverReadback(GpuBuffer staging, GpuMapAsyncStatus status, String message, long size, int w, int h,
+      int rowBytes, FlixelPixelReadback callback) {
+    ByteBuffer pixels = null;
+    try {
+      if (status == GpuMapAsyncStatus.SUCCESS) {
+        ByteBuffer copy = readbackCopy;
+        if (copy == null || copy.capacity() < size) {
+          // Drop the old one first so a big buffer never exists twice. Allocating a multi-megabyte direct buffer for
+          // every readback exhausts the heap of the web backend, so the buffer is kept and only ever grows.
+          readbackCopy = null;
+          copy = ByteBuffer.allocateDirect((int) size);
+          readbackCopy = copy;
         }
-      });
+        copy.clear().limit((int) size);
+        if (staging.readMappedRange(0L, copy) == GpuStatus.SUCCESS) {
+          pixels = copy;
+        } else {
+          LOG.warn("Could not copy the mapped texture readback.");
+        }
+      } else {
+        LOG.warn("Reading back a texture failed: {} {}", status, message);
+      }
+    } catch (RuntimeException | OutOfMemoryError e) {
+      LOG.warn("Could not copy a texture readback: {}", e.toString());
+    } finally {
+      try {
+        if (status == GpuMapAsyncStatus.SUCCESS) {
+          staging.unmap();
+        }
+        staging.destroy();
+      } catch (RuntimeException e) {
+        LOG.warn("Could not release a readback buffer: {}", e.toString());
+      }
+    }
+    try {
+      if (pixels != null) {
+        callback.onPixels(pixels, w, h, rowBytes);
+      } else {
+        callback.onPixels(null, 0, 0, 0);
+      }
+    } catch (RuntimeException e) {
+      LOG.warn("A readback callback failed: {}", e.toString());
     }
   }
 
@@ -1157,7 +1271,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     }
     int width = sceneSize(true);
     int height = sceneSize(false);
-    if (width == backBufferWidth && height == backBufferHeight) {
+    if (width == backBufferWidth && height == backBufferHeight && pendingCapture == null) {
       disposeSceneTarget();
       return;
     }
@@ -1191,6 +1305,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     finishLevel(0);
     endPass();
     sceneActive = false;
+    sceneDrawn = true;
     FlixelGpuRenderTarget scene = sceneTarget;
     copyLevel(SPARE, 0);
     viewX[0] = 0;

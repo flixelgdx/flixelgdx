@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.debug;
 
-import org.flixelgdx.debug.panels.FlixelDebugPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugFeed;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
@@ -39,9 +39,9 @@ final class DebugTestSupport {
   private DebugTestSupport() {}
 
   /** Encodes the panel inside a PANEL_DATA message and returns a reader positioned after the panel index. */
-  static FlixelDebugMessageReader payload(FlixelDebugPanel panel) {
+  static FlixelDebugMessageReader payload(FlixelDebugFeed panel) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter(64);
-    w.beginMessage(FlixelDebugProtocol.MSG_PANEL_DATA);
+    w.beginMessage(FlixelDebugProtocol.MSG_FEED_DATA);
     w.writeU16(7);
     panel.write(w);
     FlixelDebugMessageReader r = new FlixelDebugMessageReader(w.finish());
@@ -53,7 +53,7 @@ final class DebugTestSupport {
   /** Builds a PANEL_ACTION message and returns a reader positioned after the action code. */
   static FlixelDebugMessageReader action(int action, Consumer<FlixelDebugMessageWriter> fields) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter(64);
-    w.beginMessage(FlixelDebugProtocol.MSG_PANEL_ACTION);
+    w.beginMessage(FlixelDebugProtocol.MSG_FEED_ACTION);
     w.writeU16(7);
     w.writeU8(action);
     fields.accept(w);
@@ -65,7 +65,7 @@ final class DebugTestSupport {
   }
 
   /** Sends an action to the panel the way the network agent would. */
-  static void send(FlixelDebugPanel panel, int action, Consumer<FlixelDebugMessageWriter> fields) {
+  static void send(FlixelDebugFeed panel, int action, Consumer<FlixelDebugMessageWriter> fields) {
     panel.handleAction(action, action(action, fields));
   }
 

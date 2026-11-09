@@ -89,10 +89,31 @@ public final class FlixelDebugValue {
         longValue = 0L;
         doubleValue = 0.0;
       }
+      case FlixelDebugProtocol.VALUE_NULL -> {
+        longValue = 0L;
+        doubleValue = 0.0;
+      }
+      case FlixelDebugProtocol.VALUE_BYTES, FlixelDebugProtocol.VALUE_LIST -> {
+        // A holder only keeps simple values, so the content of bytes and lists is skipped. The kind still tells
+        // the caller what arrived.
+        skipContent(reader, k);
+        longValue = 0L;
+        doubleValue = 0.0;
+      }
       default -> throw new FlixelDebugProtocolException("Unknown value kind: " + k);
     }
     kind = k;
     return this;
+  }
+
+  /**
+   * Returns whether the holder is the {@code NULL} value, which events use for "nothing", such as a cleared
+   * selection.
+   *
+   * @return {@code true} for {@code NULL}.
+   */
+  public boolean isNull() {
+    return kind == FlixelDebugProtocol.VALUE_NULL;
   }
 
   /**
@@ -164,6 +185,16 @@ public final class FlixelDebugValue {
    */
   public boolean asBoolean() {
     return longValue != 0L;
+  }
+
+  private static void skipContent(FlixelDebugMessageReader reader, int kind) {
+    if (kind == FlixelDebugProtocol.VALUE_BYTES) {
+      reader.skip(reader.readBytesLength());
+      return;
+    }
+    for (int i = 0, n = reader.readCount(); i < n; i++) {
+      reader.skipValue();
+    }
   }
 
   /**

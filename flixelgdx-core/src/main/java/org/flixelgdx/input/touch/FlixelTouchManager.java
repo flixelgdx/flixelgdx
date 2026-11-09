@@ -26,6 +26,7 @@ package org.flixelgdx.input.touch;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelTouchListener;
 import org.flixelgdx.math.FlixelVector;
@@ -182,6 +183,74 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   }
 
   /**
+   * Starts a touch on behalf of a tool, so the game sees a real finger go down.
+   *
+   * <p>Works like {@link #touched(int, int, int)} and also tells every {@link FlixelTouchListener}. The position
+   * stays at the injected spot (it is not polled from the platform) until {@link #injectTouchReleased(int, int, int)}.
+   *
+   * @param pointer The finger index. Out of range indices are ignored.
+   * @param x The horizontal position in window pixels.
+   * @param y The vertical position in window pixels.
+   */
+  public void injectTouched(int pointer, int x, int y) {
+    if (pointer < 0 || pointer >= list.length) {
+      return;
+    }
+    list[pointer].injected = true;
+    touched(pointer, x, y);
+    if (Flixel.input instanceof FlixelBaseInputDevice device) {
+      device.injectTouched(pointer, x, y);
+    }
+  }
+
+  /**
+   * Moves an injected touch.
+   *
+   * @param pointer The finger index. Out of range indices are ignored.
+   * @param x The horizontal position in window pixels.
+   * @param y The vertical position in window pixels.
+   * @see #injectTouched(int, int, int)
+   */
+  public void injectTouchDragged(int pointer, int x, int y) {
+    if (pointer < 0 || pointer >= list.length) {
+      return;
+    }
+    touchDragged(pointer, x, y);
+    if (Flixel.input instanceof FlixelBaseInputDevice device) {
+      device.injectTouchDragged(pointer, x, y);
+    }
+  }
+
+  /**
+   * Ends an injected touch, so the game sees the finger lift.
+   *
+   * @param pointer The finger index. Out of range indices are ignored.
+   * @param x The horizontal position in window pixels.
+   * @param y The vertical position in window pixels.
+   * @see #injectTouched(int, int, int)
+   */
+  public void injectTouchReleased(int pointer, int x, int y) {
+    if (pointer < 0 || pointer >= list.length) {
+      return;
+    }
+    list[pointer].injected = false;
+    touchReleased(pointer, x, y);
+    if (Flixel.input instanceof FlixelBaseInputDevice device) {
+      device.injectTouchReleased(pointer, x, y);
+    }
+  }
+
+  /**
+   * Returns whether a tool holds a touch down through {@link #injectTouched(int, int, int)}.
+   *
+   * @param pointer The finger index.
+   * @return {@code true} while the injected touch has not been released.
+   */
+  public boolean isInjected(int pointer) {
+    return pointer >= 0 && pointer < list.length && list[pointer].injected;
+  }
+
+  /**
    * Resizes the pointer limit and reallocates {@link #list}. Existing {@link FlixelTouch} objects
    * are preserved for indices that fall within the new size; new slots beyond the old size receive
    * fresh instances. Reducing the limit discards state for pointers above the new ceiling.
@@ -231,8 +300,10 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
       if (!t.pressed) {
         continue;
       }
-      t.screenX = Flixel.input.getX(p);
-      t.screenY = Flixel.input.getY(p);
+      if (!t.injected) {
+        t.screenX = Flixel.input.getX(p);
+        t.screenY = Flixel.input.getY(p);
+      }
       if (cam != null) {
         tmpUnproject.set(t.screenX, t.screenY);
         cam.unproject(tmpUnproject);
@@ -266,6 +337,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
     for (int p = 0; p < maxPointers; p++) {
       FlixelTouch t = list[p];
       t.pressed = false;
+      t.injected = false;
       t.justPressed = false;
       t.justReleased = false;
       t.dragging = false;

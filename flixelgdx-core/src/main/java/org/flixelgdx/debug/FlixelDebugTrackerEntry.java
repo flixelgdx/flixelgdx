@@ -24,7 +24,7 @@
 package org.flixelgdx.debug;
 
 import org.flixelgdx.collections.FlixelMap;
-import org.flixelgdx.debug.panels.FlixelDebugTrackerPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugTrackers;
 
 /**
  * Abstract base for custom entries shown in the debugger's <b>Trackers</b> panel.
@@ -37,7 +37,7 @@ import org.flixelgdx.debug.panels.FlixelDebugTrackerPanel;
  * <p>To keep the debugger allocation-free, hold a single reusable {@link FlixelMap} as a field and return it
  * from {@link #getTrackedValues()}, only updating its values in place each frame. Keep the same set of keys
  * between frames so the panel's row order stays stable. The app shows the lines sorted by label. Register instances via
- * {@link FlixelDebugTrackerPanel#add(FlixelDebugTrackerEntry)} (for example
+ * {@link FlixelDebugTrackers#add(FlixelDebugTrackerEntry)} (for example
  * {@code Flixel.debug.trackers.add(...)}).
  *
  * <p>Example usage:

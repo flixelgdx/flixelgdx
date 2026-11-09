@@ -30,8 +30,11 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelNoopTexture;
+import org.flixelgdx.group.FlixelBasicGroup;
+import org.flixelgdx.group.FlixelGroup;
 import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.math.FlixelVector;
 import org.junit.jupiter.api.AfterEach;
@@ -118,6 +121,55 @@ class FlixelDebugPickerTest {
     group.visible = true;
     group.exists = false;
     assertSame(behind, picker.pickInCamera(cam, 20f, 20f));
+  }
+
+  @Test
+  void aGroupCoversTheAreaAroundItsDrawnMembers() {
+    FlixelSpriteGroup group = new FlixelSpriteGroup();
+    FlixelSprite left = new FlixelSprite(10f, 10f);
+    left.setSize(40f, 40f);
+    FlixelSprite right = new FlixelSprite(100f, 50f);
+    right.setSize(20f, 30f);
+    FlixelSprite hidden = new FlixelSprite(300f, 250f);
+    hidden.setSize(10f, 10f);
+    hidden.visible = false;
+    group.add(left);
+    group.add(right);
+    group.add(hidden);
+    state.add(group);
+
+    assertTrue(picker.measure(group, cam), "a group without a size of its own still has an area");
+    assertBounds(10f, 10f, 110f, 70f);
+    assertSame(left, picker.pickInCamera(cam, 20f, 20f), "members are on top of their group");
+    assertSame(group, picker.pickInCamera(cam, 70f, 20f), "the gap between members hits the group");
+    assertNull(picker.pickInCamera(cam, 305f, 255f), "a hidden member does not widen the group");
+
+    left.visible = false;
+    right.visible = false;
+    assertFalse(picker.measure(group, cam), "a group with nothing drawn and no size has no area");
+  }
+
+  @Test
+  void basicCustomAndNestedGroupsAreMeasuredAroundTheirMembers() {
+    TestGroup outer = new TestGroup();
+    FlixelSpriteGroup inner = new FlixelSpriteGroup();
+    FlixelSprite deep = new FlixelSprite(50f, 60f);
+    deep.setSize(10f, 10f);
+    inner.add(deep);
+    outer.add(box(0, 20, 10, 10));
+    outer.add(inner);
+    state.add(outer);
+
+    assertTrue(picker.measure(inner, cam));
+    assertBounds(50f, 60f, 10f, 10f);
+    assertTrue(picker.measure(outer, cam), "a nested group counts with its members");
+    assertBounds(0f, 20f, 60f, 50f);
+
+    FlixelGroup<FlixelObject> plain = new FlixelGroup<>(FlixelObject[]::new);
+    plain.add(box(5, 5, 10, 10));
+    plain.add(box(30, 40, 5, 5));
+    assertTrue(picker.measure(plain, cam), "a group that is not an object still has an area");
+    assertBounds(5f, 5f, 30f, 40f);
   }
 
   @Test
@@ -342,6 +394,13 @@ class FlixelDebugPickerTest {
     assertEquals(1, seen.getSize(), "returning true stops the walk");
   }
 
+  private void assertBounds(float left, float top, float width, float height) {
+    assertEquals(left, picker.getBoundsLeft(), 0.001f);
+    assertEquals(top, picker.getBoundsTop(), 0.001f);
+    assertEquals(width, picker.getBoundsWidth(), 0.001f);
+    assertEquals(height, picker.getBoundsHeight(), 0.001f);
+  }
+
   private static FlixelObject box(float x, float y, float width, float height) {
     return new FlixelObject(x, y, width, height);
   }
@@ -350,5 +409,12 @@ class FlixelDebugPickerTest {
   }
 
   private static final class TestSubState extends FlixelSubState {
+  }
+
+  /** A custom group, the way a game would make its own. */
+  private static final class TestGroup extends FlixelBasicGroup<IFlixelBasic> {
+    TestGroup() {
+      super(IFlixelBasic[]::new);
+    }
   }
 }

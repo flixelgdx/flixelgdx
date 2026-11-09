@@ -27,7 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
-import org.flixelgdx.debug.panels.FlixelDebugInspectorPanel;
+import org.flixelgdx.debug.feeds.FlixelDebugInspector;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.util.FlixelString;
@@ -43,13 +43,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugPathsTest {
 
-  private FlixelDebugInspectorPanel inspector;
+  private FlixelDebugInspector inspector;
   private FlixelString path;
   private FlixelState state;
 
   @BeforeEach
   void setUp() {
-    inspector = new FlixelDebugInspectorPanel(new FlixelDebugObjectIds());
+    inspector = new FlixelDebugInspector(new FlixelDebugObjectIds());
     path = new FlixelString();
     state = new TestState();
     Flixel.state = state;

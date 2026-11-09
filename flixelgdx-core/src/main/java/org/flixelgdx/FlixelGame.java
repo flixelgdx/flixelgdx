@@ -388,6 +388,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
 
+    if (Flixel.isDebugMode()) {
+      // Input a remote tool injected is applied first, so the managers below see it like real input.
+      Flixel.debug.applyInput();
+    }
+
     // Always update input first!
     Flixel.keys.update();
     Flixel.mouse.update();
@@ -395,7 +400,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.gamepads.update();
     FlixelActionSets.update(elapsed);
 
-    if (Flixel.isDebugMode() && Flixel.debug != null) {
+    if (Flixel.isDebugMode()) {
       // Before the game logic runs, so a click or key the debugger takes is already hidden from the game.
       Flixel.debug.updateInput(rawElapsed);
     }
@@ -626,7 +631,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @see #endFrame()
    */
   public float advanceTime(float rawDelta) {
-    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
+    float rawClamped = Math.clamp(rawDelta, Flixel.MIN_ELAPSED, Flixel.MAX_ELAPSED);
     rawElapsed = rawClamped;
     elapsed = rawClamped * Flixel.timeScale;
     return elapsed;
@@ -680,6 +685,15 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (gamePaused) {
       stepPending = true;
     }
+  }
+
+  /**
+   * Returns whether {@link #stepFrame()} scheduled a step that has not run yet.
+   *
+   * @return {@code true} when the next update runs even though the game is paused.
+   */
+  public boolean isStepPending() {
+    return stepPending;
   }
 
   private void snapshotCamerasForDebugPause() {

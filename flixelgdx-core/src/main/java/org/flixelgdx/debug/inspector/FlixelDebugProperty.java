@@ -53,7 +53,7 @@ import java.util.function.ToLongFunction;
  * needle and, when the row is editable, a setter that turns the knob.
  *
  * <p>You never create these directly. The builders {@link FlixelSectionBuilder} (for the inspector) and
- * {@link FlixelPanelBuilder} (for custom panels) create them through their {@code boolProp(...)},
+ * {@link FlixelPropertyBuilder} (for property grids) create them through their {@code boolProp(...)},
  * {@code intProp(...)}, and similar methods.
  *
  * <h2>No garbage</h2>
@@ -71,7 +71,7 @@ import java.util.function.ToLongFunction;
  *
  * @param <T> The type of the object the getters and setters work on.
  * @see FlixelSectionBuilder
- * @see FlixelPanelBuilder
+ * @see FlixelPropertyBuilder
  */
 public abstract class FlixelDebugProperty<T> {
 
@@ -202,27 +202,25 @@ public abstract class FlixelDebugProperty<T> {
    *     when the epoch differs from the one it last read in.
    */
   public final void writeRow(@NotNull FlixelDebugMessageWriter writer, T target, int epoch) {
-    if (!once || !cached || cachedEpoch != epoch) {
-      try {
-        read(target);
-      } catch (Exception e) {
-        String message = e.getMessage();
-        putError(message != null ? message : e.getClass().getName());
-      }
-      cached = true;
-      cachedEpoch = epoch;
-    }
+    refresh(target, epoch);
     writer.writeString(name);
-    switch (kind) {
-      case FlixelDebugProtocol.VALUE_BOOL -> writer.writeValue(longValue != 0L);
-      case FlixelDebugProtocol.VALUE_INT -> writer.writeValue((int) longValue);
-      case FlixelDebugProtocol.VALUE_LONG -> writer.writeValue(longValue);
-      case FlixelDebugProtocol.VALUE_FLOAT -> writer.writeValue((float) doubleValue);
-      case FlixelDebugProtocol.VALUE_DOUBLE -> writer.writeValue(doubleValue);
-      case FlixelDebugProtocol.VALUE_ERROR -> writer.writeErrorValue(text);
-      default -> writer.writeValue(text);
-    }
+    writeValue(writer);
     writer.writeBool(editable);
+  }
+
+  /**
+   * Writes this row as a {@code LIST [STRING name, value, BOOL editable]} value, the form a property grid widget
+   * uses.
+   *
+   * @param writer The writer.
+   * @param target The object to read from.
+   * @param epoch The current read epoch, as for {@link #writeRow(FlixelDebugMessageWriter, Object, int)}.
+   */
+  public final void writeListRow(@NotNull FlixelDebugMessageWriter writer, T target, int epoch) {
+    refresh(target, epoch);
+    writer.beginList().writeValue(name);
+    writeValue(writer);
+    writer.writeValue(editable).endList(3);
   }
 
   /**
@@ -317,6 +315,31 @@ public abstract class FlixelDebugProperty<T> {
     kind = FlixelDebugProtocol.VALUE_ERROR;
     text.clear();
     text.concat(message);
+  }
+
+  private void refresh(T target, int epoch) {
+    if (!once || !cached || cachedEpoch != epoch) {
+      try {
+        read(target);
+      } catch (Exception e) {
+        String message = e.getMessage();
+        putError(message != null ? message : e.getClass().getName());
+      }
+      cached = true;
+      cachedEpoch = epoch;
+    }
+  }
+
+  private void writeValue(FlixelDebugMessageWriter writer) {
+    switch (kind) {
+      case FlixelDebugProtocol.VALUE_BOOL -> writer.writeValue(longValue != 0L);
+      case FlixelDebugProtocol.VALUE_INT -> writer.writeValue((int) longValue);
+      case FlixelDebugProtocol.VALUE_LONG -> writer.writeValue(longValue);
+      case FlixelDebugProtocol.VALUE_FLOAT -> writer.writeValue((float) doubleValue);
+      case FlixelDebugProtocol.VALUE_DOUBLE -> writer.writeValue(doubleValue);
+      case FlixelDebugProtocol.VALUE_ERROR -> writer.writeErrorValue(text);
+      default -> writer.writeValue(text);
+    }
   }
 
   /**
