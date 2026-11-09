@@ -101,7 +101,7 @@ Summarize every pull request that went into a tag into release notes.
 
 ## Output format
 
-Your entire response must be ONLY the notes below. No greeting, no intro such as "Here's your summary", no closing remarks, no PR numbers list, no explanation of what was filtered out. Omit any section that has no entries. The push question from step 10 is asked through the `AskUserQuestion` tool, not written into the response.
+Your entire response must be ONLY the notes below, as a code snippet. No greeting, no intro such as "Here's your summary", no closing remarks, no PR numbers list, no explanation of what was filtered out. Omit any section that has no entries. The push question from step 10 is asked through the `AskUserQuestion` tool, not written into the response.
 
 ```markdown
 ## Added
