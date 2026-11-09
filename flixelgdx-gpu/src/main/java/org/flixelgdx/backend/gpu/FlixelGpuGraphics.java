@@ -631,6 +631,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     stats.pipelines = pipelines.getPipelineCount();
     stats.textures = textures.getSize();
     stats.ringBytes = VERTEX_RING_BYTES + UNIFORM_RING_BYTES;
+    stats.endFrame();
     frameActive = false;
     if (statsEnabled) {
       statsLog.tick(end, stats, api);
@@ -716,7 +717,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     passLevel = level;
     stateDirty = true;
     lastPipeline = null;
-    stats.passes++;
+    stats.addPass();
   }
 
   private void endPass() {
@@ -742,7 +743,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     commands = commands == null ? encoder.finish(null) : encoder.finish(null, commands);
     submitArray[0] = commands;
     queue.submit(submitArray, 1);
-    stats.submits++;
+    stats.addSubmit();
   }
 
   /**
@@ -1548,9 +1549,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     pass.setVertexBuffer(0, vertexRing.getBuffer(), vertexOffset, (long) quadCount * 80L);
     pass.setIndexBuffer(quadIndices, GpuIndexFormat.UINT16, 0L, (long) quadCount * 12L);
     pass.drawIndexed(quadCount * FlixelGpuBatch.indicesPerQuad(), 1, 0, 0, 0);
-    stats.draws++;
-    stats.triangles += quadCount * 2;
-    stats.vertices += quadCount * 4;
+    stats.addDraw(quadCount * 2, quadCount * 4);
   }
 
   /** Applies the viewport and scissor of the current level to the open pass when they changed. */
