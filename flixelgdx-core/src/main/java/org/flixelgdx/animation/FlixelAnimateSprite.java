@@ -33,7 +33,6 @@ import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelAffine;
-import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
@@ -339,30 +338,41 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * Rebuilds the hitbox so it exactly matches the drawn rig. With a rig installed, the hitbox is the
-   * anchor bounding box scaled by {@link #getScaleX()} / {@link #getScaleY()}, so
-   * {@link FlixelSprite#screenCenter()} and {@link Flixel#overlap} agree with what the player sees.
-   * Without a rig the parent behavior is used.
+   * Returns the unscaled width of what this sprite draws.
    *
-   * <p>Unlike {@link FlixelSprite#updateHitbox}, this method does <strong>not</strong> reset
-   * {@link #setScale(float)} back to {@code 1}. The rig's part affines are baked at anchor-local size,
-   * so the absolute scale must remain on the sprite for the {@link #draw(FlixelBatch)} matrix chain to
-   * size the visible rig correctly. The {@link #draw(FlixelBatch)} method is fully aware of this and uses
-   * {@link #getOriginX()} / {@link #getOriginY()} together with {@code |scaleX|} / {@code |scaleY|}
-   * so the visible rig still coincides with the hitbox.
+   * <p>While a rig clip is playing this is the rig's anchor bounding box width, so the origin,
+   * {@link #updateHitbox()}, and {@link #setOriginCenter()} all work on the whole rig. The same is
+   * true right after the rig loads, before any frame is shown. A Sparrow clip merged onto this
+   * sprite uses its frame, like a normal sprite.
    *
-   * @return {@code this} sprite, matching {@link FlixelSprite#updateHitbox}.
+   * @return The unscaled width in pixels, or {@code 0} when there is nothing to draw.
    */
   @Override
-  public @NotNull FlixelSprite updateHitbox() {
-    // A Sparrow clip merged onto this sprite sizes its hitbox from the frame, like a normal sprite;
-    // only a rig clip uses the rig's anchor bounding box.
-    if (!isCurrentClipRig() || rig == null) {
-      return super.updateHitbox();
+  public float getFrameWidth() {
+    FlixelAnimateRig activeRig = rig;
+    if (activeRig != null && (isCurrentClipRig() || getFrame() == null)) {
+      return activeRig.anchorWidth;
     }
-    float effW = Math.abs(getScaleX()) * rig.anchorWidth;
-    float effH = Math.abs(getScaleY()) * rig.anchorHeight;
-    return updateHitbox(effW, effH);
+    return super.getFrameWidth();
+  }
+
+  /**
+   * Returns the unscaled height of what this sprite draws.
+   *
+   * <p>While a rig clip is playing this is the rig's anchor bounding box height, so the origin,
+   * {@link #updateHitbox()}, and {@link #setOriginCenter()} all work on the whole rig. The same is
+   * true right after the rig loads, before any frame is shown. A Sparrow clip merged onto this
+   * sprite uses its frame, like a normal sprite.
+   *
+   * @return The unscaled height in pixels, or {@code 0} when there is nothing to draw.
+   */
+  @Override
+  public float getFrameHeight() {
+    FlixelAnimateRig activeRig = rig;
+    if (activeRig != null && (isCurrentClipRig() || getFrame() == null)) {
+      return activeRig.anchorHeight;
+    }
+    return super.getFrameHeight();
   }
 
   /**
@@ -449,12 +459,11 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * {@link FlixelSprite} draw path.
    *
    * <p>The rig draw composes the sprite's world transform once per frame as
-   * {@code T(wx-offsetX, wy-offsetY) * T(originX, originY) * R(angle) * S(sx, sy) * T(-originX/|sx|, -originY/|sy|)}.
-   * The asymmetric origin (scaled-world units before the scale, anchor-local units after the scale) is
-   * what makes the rig's visible bounding box exactly coincide with the hitbox after
-   * {@link #updateHitbox()} for any non-unit scale, while still pivoting rotations around the visual
-   * center. Per-part baked matrices are post-multiplied into this base, so rotation, scale, flip,
-   * origin, and offset all behave identically to a regular {@link FlixelSprite}.
+   * {@code T(wx-offsetX, wy-offsetY) * T(originX, originY) * R(angle) * S(sx, sy) * T(-originX, -originY)},
+   * with the origin measured in the rig's unscaled anchor space. Scaling therefore happens around the
+   * origin, and {@link #updateHitbox()} sets the offset so the hitbox still covers the scaled rig.
+   * Per-part baked matrices are post-multiplied into this base, so rotation, scale, flip, origin, and
+   * offset all behave identically to a regular {@link FlixelSprite}.
    *
    * @param batch The active batch.
    */
@@ -505,24 +514,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
-    // Conservative culling using the anchor-clip hitbox. Multipart rigs may extend beyond this box,
-    // but it avoids drawing entirely off-screen rigs. Per-part culling is not done here.
-    float rigCullW = getWidth() * Math.abs(scaleX);
-    float rigCullH = getHeight() * Math.abs(scaleY);
-    float rigLeft = wx - getOffsetX();
-    float rigBottom = wy - getOffsetY();
-    float rigAngle = getAngle();
-    if (rigAngle != 0f) {
-      float cos = Math.abs(FlixelMath.cosDeg(rigAngle));
-      float sin = Math.abs(FlixelMath.sinDeg(rigAngle));
-      float rotW = cos * rigCullW + sin * rigCullH;
-      float rotH = sin * rigCullW + cos * rigCullH;
-      rigLeft -= (rotW - rigCullW) * 0.5f;
-      rigBottom -= (rotH - rigCullH) * 0.5f;
-      rigCullW = rotW;
-      rigCullH = rotH;
-    }
-    if (!cam.isInView(rigLeft, rigBottom, rigCullW, rigCullH)) {
+    // Conservative culling using the anchor clip's bounding box. Multipart rigs may extend beyond this
+    // box, but it avoids drawing entirely off-screen rigs. Per-part culling is not done here.
+    FlixelRect cull = clipBoundsTemp;
+    if (getDrawBounds(cam, cull) && !cam.isInView(cull.x, cull.y, cull.width, cull.height)) {
       return;
     }
 
@@ -544,27 +539,16 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float ox = getOriginX();
     float oy = getOriginY();
 
-    // Origin/scale unit conversion: FlixelSprite stores originX/originY in the same coordinate space as
-    // getWidth()/getHeight() (i.e. scaled-world units, since updateHitbox() folds the absolute scale
-    // into the size and then re-centers the origin). The rig's part affines, however, place each part
-    // inside an anchor-local rectangle of size (anchorWidth, anchorHeight). To pivot rotation and
-    // scaling around the visual center, we therefore translate by +origin in scaled-world units AFTER
-    // the scale, but by -origin/|scale| in anchor-local units BEFORE the scale. The two translations
-    // collapse to the no-op pair (+origin, -origin) when |scale| == 1, so the unit-scale path stays
-    // identical to FlixelSprite's standard transform chain.
-    float absSx = Math.abs(sx);
-    float absSy = Math.abs(sy);
-    float anchorOriginX = (absSx != 0f) ? ox / absSx : 0f;
-    float anchorOriginY = (absSy != 0f) ? oy / absSy : 0f;
+    // The origin is measured in the rig's unscaled anchor space, just like a regular sprite's origin
+    // is measured in unscaled frame pixels.
     boolean hasOrigin = (ox != 0f) || (oy != 0f);
-    boolean hasAnchorOrigin = (anchorOriginX != 0f) || (anchorOriginY != 0f);
 
     // Build the world-space base transform:
-    //   T(world) * T(origin_world) * R * S * T(-origin_anchor)
+    //   T(world) * T(origin) * R * S * T(-origin)
     // Each builder call is a right-multiplication, so the resulting matrix applied to a part-local
-    // (anchor-local) point first shifts by -origin_anchor, then scales/rotates, then re-shifts by
-    // +origin_world, then translates to the world position. Identity branches are skipped so the
-    // no-rotation/no-scale fast path stays cheap.
+    // (anchor-local) point first shifts by -origin, then scales/rotates, then shifts back by +origin,
+    // then translates to the world position. Identity branches are skipped so the no-rotation and
+    // no-scale fast path stays cheap.
     baseAffine.idt();
     baseAffine.translate(wx - getOffsetX(), wy - getOffsetY());
     if (hasOrigin) {
@@ -576,18 +560,19 @@ public class FlixelAnimateSprite extends FlixelSprite {
     if (sx != 1f || sy != 1f) {
       baseAffine.scale(sx, sy);
     }
-    if (hasAnchorOrigin) {
-      baseAffine.translate(-anchorOriginX, -anchorOriginY);
+    if (hasOrigin) {
+      baseAffine.translate(-ox, -oy);
     }
 
     boolean hasClip = isClipRectEnabled();
     boolean clipPushed = false;
     if (hasClip) {
       // Flush pending geometry before switching scissor state so non-clipped sprites that were
-      // batched before this draw call are not retroactively clipped.
+      // batched before this draw call are not retroactively clipped. The clip rect is measured from
+      // the scaled rig's top-left corner.
       batch.flush();
-      float clipScreenX = (wx - getOffsetX()) + getClipRectX() * Math.abs(sx);
-      float clipScreenY = (wy - getOffsetY()) + getClipRectY() * Math.abs(sy);
+      float clipScreenX = (wx - getOffsetX()) + ox * (1f - Math.abs(sx)) + getClipRectX() * Math.abs(sx);
+      float clipScreenY = (wy - getOffsetY()) + oy * (1f - Math.abs(sy)) + getClipRectY() * Math.abs(sy);
       float clipScreenW = getClipRectWidth() * Math.abs(sx);
       float clipScreenH = getClipRectHeight() * Math.abs(sy);
       cam.getViewport().projectToScissor(clipScreenX, clipScreenY, clipScreenW, clipScreenH, clipBoundsTemp);

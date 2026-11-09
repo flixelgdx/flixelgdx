@@ -224,14 +224,15 @@ class FlixelDebugPickerTest {
     sprite.setScale(2f);
     state.add(sprite);
 
-    // The graphic is 64 x 32 on screen and starts at (10 - 5, 10 - 3), since offset is subtracted.
-    assertSame(sprite, picker.pickInCamera(cam, 60f, 30f));
-    assertSame(sprite, picker.pickInCamera(cam, 6f, 8f));
-    assertNull(picker.pickInCamera(cam, 4f, 8f), "left of the offset graphic");
-    assertNull(picker.pickInCamera(cam, 75f, 30f), "right of the scaled graphic");
+    // The unscaled graphic starts at (10 - 5, 10 - 3), since offset is subtracted. Scaling by 2 around
+    // its centered origin (16, 8) grows it to 64 x 32 starting at (5 + 16 - 32, 7 + 8 - 16).
+    assertSame(sprite, picker.pickInCamera(cam, 50f, 30f));
+    assertSame(sprite, picker.pickInCamera(cam, 52f, 0f));
+    assertNull(picker.pickInCamera(cam, 54f, 8f), "right of the scaled graphic");
+    assertNull(picker.pickInCamera(cam, 30f, 32f), "below the scaled graphic");
     assertTrue(picker.computeBounds(sprite, cam));
-    assertEquals(5f, picker.getBoundsLeft(), 1e-4f);
-    assertEquals(7f, picker.getBoundsTop(), 1e-4f);
+    assertEquals(-11f, picker.getBoundsLeft(), 1e-4f);
+    assertEquals(-1f, picker.getBoundsTop(), 1e-4f);
     assertEquals(64f, picker.getBoundsWidth(), 1e-4f);
     assertEquals(32f, picker.getBoundsHeight(), 1e-4f);
   }
