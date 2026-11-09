@@ -45,6 +45,7 @@ import static org.flixelgdx.debug.ui.UiTestSupport.patch;
 import static org.flixelgdx.debug.ui.UiTestSupport.tree;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -170,21 +171,30 @@ class FlixelDebugDefaultPanelsTest {
   }
 
   @Test
-  void theWatchesPanelListsEveryWatch() {
+  void theWatchesPanelListsEveryWatchInATable() {
     FlixelDebugPanel watches = opened(panel(FlixelDebugDefaultPanels.WATCHES));
     manager.watches.addInt("Score", () -> 42);
+    manager.watches.addInt("Broken", () -> {
+      throw new IllegalStateException("no level");
+    });
     manager.update(1f);
     FlixelDebugWidget<?> values = watches.find("values");
     assertNotNull(values);
-    List<?> sections = null;
+    assertInstanceOf(FlixelDebugTable.class, values, "the watches show as a flat table, not a folding section");
+    List<?> rows = null;
     for (Op op : patch(watches)) {
-      if (op.widget() == values.getId()) {
-        sections = (List<?>) op.value();
+      if (op.widget() == values.getId() && op.key() == FlixelDebugProtocol.PROP_ITEMS) {
+        rows = (List<?>) op.value();
       }
     }
-    assertNotNull(sections);
-    List<?> rows = (List<?>) ((List<?>) sections.get(0)).get(2);
-    assertEquals(List.of("Score", 42, false), rows.get(0));
+    assertNotNull(rows);
+    assertEquals(2, rows.size());
+    List<?> score = (List<?>) rows.get(0);
+    assertEquals(FlixelDebugProtocol.TONE_NORMAL, score.get(1));
+    assertEquals(List.of("Score", 42), score.get(2));
+    List<?> broken = (List<?>) rows.get(1);
+    assertEquals(FlixelDebugProtocol.TONE_ERROR, broken.get(1));
+    assertEquals(List.of("Broken", "error: no level"), broken.get(2));
   }
 
   @Test

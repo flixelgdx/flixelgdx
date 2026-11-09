@@ -25,16 +25,21 @@ package org.flixelgdx.debug.panels;
 
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.feeds.FlixelDebugWatches;
+import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.debug.ui.FlixelDebugLabel;
 import org.flixelgdx.debug.ui.FlixelDebugPanel;
-import org.flixelgdx.debug.ui.FlixelDebugProperties;
+import org.flixelgdx.debug.ui.FlixelDebugTable;
 import org.flixelgdx.debug.ui.FlixelDebugUi;
+import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The built-in "Watches" panel: every value registered with {@code Flixel.debug.watches}, refreshed ten times a
- * second.
+ * The built-in "Watches" panel: a Name and Value table of every value registered with {@code Flixel.debug.watches},
+ * refreshed ten times a second.
+ *
+ * <p>Rows keep the order the watches were added in. A getter that throws shows its message as a red
+ * {@code error: message} row.
  *
  * <p>A game can replace it under the id {@value FlixelDebugDefaultPanels#WATCHES}.
  */
@@ -44,9 +49,13 @@ public class FlixelDebugWatchesPanel extends FlixelDebugPanel {
   public static final float REFRESH_INTERVAL = 0.1f;
 
   private final FlixelDebugWatches watches;
-  private final FlixelDebugProperties grid = new FlixelDebugProperties();
+  private final FlixelDebugTable table = new FlixelDebugTable()
+      .column("Name", 0f, 0)
+      .column("Value", 0f, 0);
   private final FlixelDebugLabel empty = FlixelDebugUi.hint(
       "No watches yet. Add some with Flixel.debug.watches.addInt(\"Score\", () -> score).");
+  private final FlixelDebugMessageWriter value = new FlixelDebugMessageWriter(64);
+  private final FlixelString error = new FlixelString(64);
   private float timer = REFRESH_INTERVAL;
 
   /**
@@ -58,7 +67,7 @@ public class FlixelDebugWatchesPanel extends FlixelDebugPanel {
     super(FlixelDebugDefaultPanels.WATCHES, "Watches");
     this.watches = manager.watches;
     setDock(FlixelDebugProtocol.DOCK_RIGHT);
-    setContent(FlixelDebugUi.column(empty, grid.setGrow(1f).setName("values")));
+    setContent(FlixelDebugUi.column(empty, table.setGrow(1f).setName("values")));
   }
 
   @Override
@@ -69,11 +78,21 @@ public class FlixelDebugWatchesPanel extends FlixelDebugPanel {
       return;
     }
     timer = 0f;
-    empty.setVisible(watches.getCount() == 0);
-    grid.beginSections();
-    grid.beginSection("Watches", true);
-    grid.addRawRows(watches.writeListItems(grid.getRowWriter()));
-    grid.endSections();
+    int n = Math.min(watches.getCount(), FlixelDebugProtocol.MAX_ARRAY_COUNT);
+    empty.setVisible(n == 0);
+    table.beginRows();
+    for (int i = 0; i < n; i++) {
+      value.clear();
+      String message = watches.writeValue(i, value);
+      if (message == null) {
+        table.row(i).cell(watches.getName(i)).cell(value);
+      } else {
+        error.clear();
+        error.concat("error: ").concat(message);
+        table.row(i, FlixelDebugProtocol.TONE_ERROR).cell(watches.getName(i)).cell(error);
+      }
+    }
+    table.endRows();
   }
 
   @Override

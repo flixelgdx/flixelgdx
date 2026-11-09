@@ -268,26 +268,35 @@ public class FlixelDebugWatches extends FlixelDebugFeedBase {
   }
 
   /**
-   * Writes every watch as a {@code LIST [STRING name, value, BOOL false]} item, the row form of a property grid. A
-   * getter that throws shows its message as an error value.
+   * Returns the label of a watch.
    *
-   * @param writer The writer, positioned inside a list.
-   * @return How many rows were written.
+   * @param index The watch's position, from {@code 0} to {@link #getCount()} minus one.
+   * @return The label.
    */
-  public int writeListItems(@NotNull FlixelDebugMessageWriter writer) {
-    int n = Math.min(watches.getSize(), FlixelDebugProtocol.MAX_ARRAY_COUNT);
-    for (int i = 0; i < n; i++) {
-      Watch watch = watches.get(i);
-      writer.beginList().writeValue(watch.name);
-      try {
-        watch.writeValue(writer, scratch);
-      } catch (Exception e) {
-        String message = e.getMessage();
-        writer.writeErrorValue(message != null ? message : e.getClass().getName());
-      }
-      writer.writeValue(false).endList(3);
+  @NotNull
+  public String getName(int index) {
+    return watches.get(index).name;
+  }
+
+  /**
+   * Reads a watch and writes its current value as one value.
+   *
+   * <p>When the getter throws, nothing is written and the exception's message is returned instead, so the caller can
+   * show it as an error.
+   *
+   * @param index The watch's position, from {@code 0} to {@link #getCount()} minus one.
+   * @param writer The writer to write the value to.
+   * @return {@code null} when the value was written, or the error message when the getter threw.
+   */
+  @Nullable
+  public String writeValue(int index, @NotNull FlixelDebugMessageWriter writer) {
+    try {
+      watches.get(index).writeValue(writer, scratch);
+      return null;
+    } catch (Exception e) {
+      String message = e.getMessage();
+      return message != null ? message : e.getClass().getName();
     }
-    return n;
   }
 
   /**

@@ -641,6 +641,21 @@ public class FlixelDebugTable extends FlixelDebugWidget<FlixelDebugTable> {
     }
 
     /**
+     * Adds a cell holding one value that was written ahead of time, such as a value read by a feed.
+     *
+     * <p>The writer must hold exactly one value. Its bytes are copied, so it can be reused for the next cell.
+     *
+     * @param value The writer holding the value.
+     * @return This row, for chaining.
+     */
+    @NotNull
+    public Row cell(@NotNull FlixelDebugMessageWriter value) {
+      out.writeRaw(value);
+      cells++;
+      return this;
+    }
+
+    /**
      * Adds a true or false cell.
      *
      * @param value The flag.
