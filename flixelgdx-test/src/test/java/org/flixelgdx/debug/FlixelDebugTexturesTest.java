@@ -279,11 +279,12 @@ class FlixelDebugTexturesTest {
   }
 
   @Test
-  void aThumbnailRequestForAnUnknownIdIsIgnored() {
+  void aThumbnailRequestForAnUnknownIdGetsAnEmptyAnswer() {
     panel.refresh();
     DebugTestSupport.send(panel, FlixelDebugProtocol.TEXTURES_REQUEST_THUMBNAIL, w -> w.writeI32(12345));
     assertEquals(0, graphics.requests);
-    assertFalse(panel.requestThumbnail(12345));
+    assertTrue(panel.hasPendingPayload(), "the tool learns at once that no picture is coming");
+    assertFalse(panel.requestThumbnail(12345), "a second request shares the waiting answer");
   }
 
   @Test
