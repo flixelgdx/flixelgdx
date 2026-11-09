@@ -66,8 +66,10 @@ import org.jetbrains.annotations.Nullable;
  * centering asymmetric artwork on a hitbox.
  *
  * <p>Positive values move the artwork left and up. {@link #originX}/{@link #originY} sets the pivot used
- * for rotation and scale; call {@link #setOriginCenter()} after every hitbox resize to keep the
- * pivot centered. {@link #scaleX}/{@link #scaleY} multiply each drawn frame's pixel dimensions.
+ * for rotation and scale, measured in unscaled frame pixels and centered when a graphic is loaded.
+ * {@link #scaleX}/{@link #scaleY} multiply each drawn frame's pixel dimensions around that pivot, so
+ * a scaled sprite grows around its center without moving. Call {@link #updateHitbox()} after
+ * scaling to resize the hitbox and line it up with the scaled graphic.
  *
  * <h2>Facing and flip</h2>
  * <p>{@link #facing} automatically mirrors the sprite on X when set to {@link FlixelDirectionFlags#LEFT},
@@ -94,6 +96,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /** Shared scratch rectangle for clip rect bounds; reused across all sprite draw calls. */
   @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelRect tempClipBounds = new FlixelRect();
+
+  /** Shared scratch rectangle for culling bounds; reused across all sprite draw calls. */
+  @SuppressWarnings("checkstyle:ConstantName")
+  private static final FlixelRect tempDrawBounds = new FlixelRect();
 
   /** Graphic backing this sprite (shared/cached wrapper around a texture). */
   @Nullable
@@ -550,24 +556,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
-    float drawLeft = wx - offsetX;
-    float drawTop = wy - offsetY;
-    // Use the actual graphic dimensions for culling rather than the hitbox, since the hitbox may
-    // have been shrunk independently (e.g. via setSize()) while the visible sprite remains larger.
-    float cullW = f.originalWidth * Math.abs(scaleX);
-    float cullH = f.originalHeight * Math.abs(scaleY);
-    float angle = getAngle();
-    if (angle != 0f) {
-      float cos = Math.abs(FlixelMath.cosDeg(angle));
-      float sin = Math.abs(FlixelMath.sinDeg(angle));
-      float rotW = cos * cullW + sin * cullH;
-      float rotH = sin * cullW + cos * cullH;
-      drawLeft -= (rotW - cullW) * 0.5f;
-      drawTop -= (rotH - cullH) * 0.5f;
-      cullW = rotW;
-      cullH = rotH;
-    }
-    if (!cam.isInView(drawLeft, drawTop, cullW, cullH)) {
+    // Cull against the drawn graphic rather than the hitbox, since the hitbox may have been resized
+    // independently (for example with setSize()) while the visible sprite stays larger.
+    FlixelRect cull = tempDrawBounds;
+    if (!getDrawBounds(cam, cull) || !cam.isInView(cull.x, cull.y, cull.width, cull.height)) {
       return;
     }
 
@@ -602,13 +594,13 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     int insetX = FlixelFrame.regionInsetX(srcW, regW, f.offsetX, isFlippedX);
     int insetY = FlixelFrame.regionInsetY(srcH, regH, f.offsetY, isFlippedY);
 
-    float drawX = wx - offsetX + insetX + srcW * (scaleX - 1) * 0.5f;
-    float drawY = wy - offsetY + insetY + srcH * (scaleY - 1) * 0.5f;
+    float drawX = wx - offsetX + insetX;
+    float drawY = wy - offsetY + insetY;
 
-    // Rotate/scale around the source box's center, expressed relative to the region's top-left
-    // corner (the origin that the batch.draw(...) overload below measures from).
-    float originXParam = srcW / 2f - insetX;
-    float originYParam = srcH / 2f - insetY;
+    // Rotate and scale around the sprite's origin, which is measured from the source box's top-left
+    // corner. The batch measures the origin from the region's top-left corner, so remove the inset.
+    float originXParam = originX - insetX;
+    float originYParam = originY - insetY;
 
     boolean clipEnabled = clipRectEnabled;
     if (clipEnabled) {
@@ -680,26 +672,123 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
+   * Measures the box this sprite's graphic covers on a camera, in the camera's view space.
+   *
+   * <p>The box starts from the full untrimmed frame placed at the sprite's position minus its
+   * offset. Scale and rotation are then applied around the origin, exactly like {@link #draw} does,
+   * and the result is widened to an axis-aligned box when the sprite is rotated. Nothing is
+   * allocated, so this is safe to call every frame.
+   *
+   * @param cam The camera the sprite is drawn on.
+   * @param out The rectangle that receives the bounds.
+   * @return {@code true} when the sprite has a graphic to measure. When {@code false}, {@code out}
+   *     is left unchanged.
+   */
+  public boolean getDrawBounds(@NotNull FlixelCamera cam, @NotNull FlixelRect out) {
+    float fw = getFrameWidth();
+    float fh = getFrameHeight();
+    if (fw <= 0f || fh <= 0f) {
+      return false;
+    }
+    float pivotX = cam.worldToViewX(getX(), scrollX) - offsetX + originX;
+    float pivotY = cam.worldToViewY(getY(), scrollY) - offsetY + originY;
+
+    // Corners of the frame relative to the origin, after scaling.
+    float x0 = -originX * scaleX;
+    float y0 = -originY * scaleY;
+    float x1 = (fw - originX) * scaleX;
+    float y1 = (fh - originY) * scaleY;
+
+    float angle = getAngle();
+    if (angle == 0f) {
+      out.x = pivotX + Math.min(x0, x1);
+      out.y = pivotY + Math.min(y0, y1);
+      out.width = Math.abs(x1 - x0);
+      out.height = Math.abs(y1 - y0);
+      return true;
+    }
+
+    // Rotate each corner around the origin and keep the smallest box that holds all four.
+    float cos = FlixelMath.cosDeg(angle);
+    float sin = FlixelMath.sinDeg(angle);
+    float ax = x0 * cos - y0 * sin;
+    float ay = x0 * sin + y0 * cos;
+    float bx = x1 * cos - y0 * sin;
+    float by = x1 * sin + y0 * cos;
+    float cx = x1 * cos - y1 * sin;
+    float cy = x1 * sin + y1 * cos;
+    float dx = x0 * cos - y1 * sin;
+    float dy = x0 * sin + y1 * cos;
+    float minX = Math.min(Math.min(ax, bx), Math.min(cx, dx));
+    float minY = Math.min(Math.min(ay, by), Math.min(cy, dy));
+    float maxX = Math.max(Math.max(ax, bx), Math.max(cx, dx));
+    float maxY = Math.max(Math.max(ay, by), Math.max(cy, dy));
+    out.x = pivotX + minX;
+    out.y = pivotY + minY;
+    out.width = maxX - minX;
+    out.height = maxY - minY;
+    return true;
+  }
+
+  /**
+   * Returns the width of the graphic before scaling, which is what the origin is measured in.
+   *
+   * <p>For a regular sprite this is the current frame's untrimmed source width. Subclasses that
+   * draw something other than a single frame override it to report their own unscaled size.
+   *
+   * @return The unscaled graphic width in pixels, or {@code 0} when there is no graphic.
+   */
+  public float getFrameWidth() {
+    return currentFrame != null ? currentFrame.originalWidth : 0f;
+  }
+
+  /**
+   * Returns the height of the graphic before scaling, which is what the origin is measured in.
+   *
+   * <p>For a regular sprite this is the current frame's untrimmed source height. Subclasses that
+   * draw something other than a single frame override it to report their own unscaled size.
+   *
+   * @return The unscaled graphic height in pixels, or {@code 0} when there is no graphic.
+   */
+  public float getFrameHeight() {
+    return currentFrame != null ? currentFrame.originalHeight : 0f;
+  }
+
+  /**
    * Sets the hitbox to match the on-screen graphic.
    *
-   * <p>{@link #draw} sizes every frame from {@link FlixelFrame#originalWidth}/{@link FlixelFrame#originalHeight}
-   * and scale separately, so the hitbox is set to the frame's untrimmed source size times
-   * {@code |scale|} so the box frames the whole drawn artwork (matching HaxeFlixel's
-   * {@code frameWidth}/{@code frameHeight}), not just the trimmed pixels.
+   * <p>Scaling happens around the origin, so a scaled graphic grows or shrinks around its center
+   * while the position stays where it was. This method resizes the hitbox to the frame's untrimmed
+   * size times {@code |scale|}, then sets the offset so the hitbox lines up with the scaled
+   * graphic, and centers the origin on the frame. Call it after changing the scale whenever
+   * collisions and {@link #screenCenter()} should follow the new size.
+   *
+   * <pre>{@code
+   * // A 32x32 coin drawn twice as big, with a 64x64 hitbox that covers it.
+   * coin.setScale(2f);
+   * coin.updateHitbox();
+   * }</pre>
    *
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite updateHitbox() {
-    if (currentFrame == null) {
+    float fw = getFrameWidth();
+    float fh = getFrameHeight();
+    if (fw <= 0f || fh <= 0f) {
       return this;
     }
-    float effW = Math.abs(scaleX) * currentFrame.originalWidth;
-    float effH = Math.abs(scaleY) * currentFrame.originalHeight;
-    return updateHitbox(effW, effH);
+    float w = Math.abs(scaleX) * fw;
+    float h = Math.abs(scaleY) * fh;
+    updateHitbox(w, h);
+    setOffset(-0.5f * (w - fw), -0.5f * (h - fh));
+    return this;
   }
 
   /**
    * Updates the hitbox of {@code this} sprite to the size of the given width and height.
+   *
+   * <p>The origin is centered on the frame afterward. The offset is left alone, so set it yourself
+   * when the hitbox should sit somewhere other than the graphic's top-left corner.
    *
    * @param width The width of the hitbox.
    * @param height The height of the hitbox.
@@ -905,12 +994,15 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Sets the pivot point used for rotation and scale, measured from the sprite's top-left draw
-   * corner in pixels. Default is {@code (0, 0)}, which rotates and scales around the top-left
-   * corner. Call {@link #setOriginCenter()} to rotate around the center instead.
+   * Sets the pivot point used for rotation and scale.
    *
-   * @param originX Horizontal pivot offset in pixels.
-   * @param originY Vertical pivot offset in pixels.
+   * <p>The origin is measured in unscaled frame pixels from the graphic's top-left corner, so it
+   * stays on the same spot of the artwork no matter the scale. Loading a graphic centers it, which
+   * makes the sprite rotate and scale around its middle. Pass {@code (0, 0)} to pivot around the
+   * top-left corner instead.
+   *
+   * @param originX Horizontal pivot in unscaled frame pixels.
+   * @param originY Vertical pivot in unscaled frame pixels.
    */
   public void setOrigin(float originX, float originY) {
     this.originX = originX;
@@ -918,15 +1010,18 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Sets the rotation and scale pivot to the center of the current hitbox.
+   * Sets the rotation and scale pivot to the center of the graphic.
    *
-   * <p>Call this after every hitbox resize (for example after {@link #updateHitbox()} or
-   * {@link #setSize(float, float)}) to keep the pivot centered - it is not updated automatically
-   * when the hitbox changes.
+   * <p>The center comes from {@link #getFrameWidth()} and {@link #getFrameHeight()}. A sprite with
+   * no graphic, such as text, uses the center of its hitbox instead. Graphic loading and
+   * {@link #updateHitbox()} already call this, so it is mostly needed after switching to a frame of
+   * a different size.
    */
   public void setOriginCenter() {
-    originX = getWidth() / 2f;
-    originY = getHeight() / 2f;
+    float fw = getFrameWidth();
+    float fh = getFrameHeight();
+    originX = (fw > 0f ? fw : getWidth()) / 2f;
+    originY = (fh > 0f ? fh : getHeight()) / 2f;
   }
 
   public float getOffsetX() {
@@ -1154,12 +1249,16 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Replaces the currently displayed frame directly, bypassing the frame grid and animation
    * system. Useful for one-off sprites that source a frame from an existing atlas without going
    * through {@link #loadGraphic(FlixelFile)} or {@link #applySparrowAtlas(FlixelGraphic, FlixelArray)}.
-   * Pass {@code null} to clear the displayed frame.
+   * Pass {@code null} to clear the displayed frame. Like loading a graphic, this centers the origin
+   * on the new frame, so call {@link #setOrigin(float, float)} afterward for a different pivot.
    *
    * @param region The frame to display, or {@code null} to stop rendering.
    */
   public void setRegion(FlixelFrame region) {
     currentFrame = region;
+    if (region != null) {
+      setOriginCenter();
+    }
   }
 
   public FlixelFrame getFrame() {
