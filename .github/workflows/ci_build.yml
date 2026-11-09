@@ -114,12 +114,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # The desktop backend compiles to the same bytecode and bundles every OS's natives on any
+          # host, so building it once on Linux covers Windows and macOS too.
           - os: ubuntu-latest
-            platform: linux
-          - os: windows-latest
-            platform: windows
-          - os: macos-latest
-            platform: macos
+            platform: desktop
           - os: ubuntu-latest
             platform: android
           - os: macos-latest
@@ -153,11 +151,10 @@ jobs:
           echo "sdk.dir=$SDK_DIR" >> local.properties
 
       - name: Grant execute permission for gradlew
-        if: matrix.os != 'windows-latest'
         run: chmod +x gradlew
 
       - name: Build (Desktop)
-        if: matrix.platform == 'linux' || matrix.platform == 'windows' || matrix.platform == 'macos'
+        if: matrix.platform == 'desktop'
         run: ./gradlew :flixelgdx-core:assemble :flixelgdx-desktop:assemble --no-daemon
         shell: bash
 
