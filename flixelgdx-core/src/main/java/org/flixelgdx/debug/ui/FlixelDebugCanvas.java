@@ -127,7 +127,7 @@ public class FlixelDebugCanvas extends FlixelDebugWidget<FlixelDebugCanvas> {
    * @return This canvas, for chaining.
    */
   @NotNull
-  public FlixelDebugCanvas setBackground(@NotNull byte[] png, int offset, int count) {
+  public FlixelDebugCanvas setBackground(byte @NotNull [] png, int offset, int count) {
     if (background.length < count) {
       background = new byte[count];
     }

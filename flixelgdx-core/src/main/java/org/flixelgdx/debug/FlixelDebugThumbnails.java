@@ -198,7 +198,6 @@ public final class FlixelDebugThumbnails {
     return -1;
   }
 
-  /** One finished thumbnail. */
   /**
    * Returns the listener that hears about every finished thumbnail.
    *
@@ -236,6 +235,6 @@ public final class FlixelDebugThumbnails {
      * @param png The array that holds the PNG file; only valid during the call, so copy what you keep.
      * @param length How many bytes of the array the PNG uses.
      */
-    void onThumbnail(int id, int width, int height, @NotNull byte[] png, int length);
+    void onThumbnail(int id, int width, int height, byte @NotNull [] png, int length);
   }
 }

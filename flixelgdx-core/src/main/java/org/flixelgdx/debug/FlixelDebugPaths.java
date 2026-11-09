@@ -50,10 +50,10 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  *
  * <p>Every later step is either a member index (a decimal number, the position in the group's member list, or the
- * child index of a {@link FlixelDebugNode}, counting empty slots) or the word {@code substate}, which steps from a state into its open sub state. The framework
- * has no per-object debug names (a {@code FlixelBasic} only has a numeric id), so member indexes are the only
- * naming. Indexes change when members are added or removed in front of an object, so a path is a snapshot, not a
- * permanent address.
+ * child index of a {@link FlixelDebugNode}, counting empty slots) or the word {@code substate}, which steps from a
+ * state into its open sub state. The framework has no per-object debug names (a {@code FlixelBasic} only has a
+ * numeric id), so member indexes are the only naming. Indexes change when members are added or removed in front
+ * of an object, so a path is a snapshot, not a permanent address.
  *
  * <pre>{@code
  * state            // The current state itself.
