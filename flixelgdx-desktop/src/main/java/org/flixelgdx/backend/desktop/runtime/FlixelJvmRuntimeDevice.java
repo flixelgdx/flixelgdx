@@ -32,6 +32,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.lang.management.BufferPoolMXBean;
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,6 +48,7 @@ import java.util.jar.JarFile;
 public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
 
   private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
+  private BufferPoolMXBean[] bufferPools;
 
   private boolean runtimeModeSet = false;
 
@@ -53,6 +56,33 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
   public long getJavaHeap() {
     Runtime runtime = Runtime.getRuntime();
     return runtime.totalMemory() - runtime.freeMemory();
+  }
+
+  /**
+   * Returns the bytes of off-heap memory the JVM tracks for the game: direct buffers, memory-mapped files, and
+   * native memory segments.
+   *
+   * <p>This is an estimate. Memory a native library allocates on its own (for example inside a GPU driver) is not
+   * visible to the JVM, so it is not included. The buffer pools are looked up once on the first call, so later calls
+   * do not allocate.
+   *
+   * @return Used off-heap memory in bytes, or {@code 0} when the JVM does not expose its buffer pools.
+   */
+  @Override
+  public long getNativeHeap() {
+    BufferPoolMXBean[] pools = bufferPools;
+    if (pools == null) {
+      pools = loadBufferPools();
+      bufferPools = pools;
+    }
+    long total = 0L;
+    for (BufferPoolMXBean pool : pools) {
+      long used = pool.getMemoryUsed();
+      if (used > 0L) {
+        total += used;
+      }
+    }
+    return total;
   }
 
   @Override
@@ -210,6 +240,15 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
    * {@code user.dir}. Rejects unrelated folders (for example a lone framework module on the classpath while the game
    * runs from another directory).
    */
+  private static BufferPoolMXBean[] loadBufferPools() {
+    try {
+      return ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class).toArray(new BufferPoolMXBean[0]);
+    } catch (RuntimeException | LinkageError e) {
+      // Some runtimes (such as a native image without management support) do not expose the pools.
+      return new BufferPoolMXBean[0];
+    }
+  }
+
   private static boolean ideLogsRootCompatibleWithUserDir(@Nullable String candidate, String userDir) {
     if (candidate == null || candidate.isEmpty()) {
       return false;
