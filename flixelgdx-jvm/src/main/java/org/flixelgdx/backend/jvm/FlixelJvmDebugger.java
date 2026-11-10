@@ -66,18 +66,7 @@ public final class FlixelJvmDebugger {
       }
       endpoint = FlixelDebugEndpoint.DEFAULT;
     }
-    install(new FlixelSocketWebSocketTransport(), endpoint);
-  }
-
-  /**
-   * Installs a transport and an address into {@link FlixelDebugManager}.
-   *
-   * @param transport The transport to use.
-   * @param endpoint The address of the debugger app.
-   */
-  public static void install(@NotNull FlixelSocketWebSocketTransport transport,
-      @NotNull FlixelDebugEndpoint endpoint) {
-    FlixelDebugManager.defaultTransport = transport;
+    FlixelDebugManager.defaultTransport = new FlixelSocketWebSocketTransport();
     FlixelDebugManager.defaultEndpoint = endpoint;
   }
 }
