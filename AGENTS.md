@@ -297,7 +297,7 @@ For widely used classes, fields, methods, or anything central to correctness, in
 - If the current branch is set to `master` or something else, **create a new branch off of the latest changes from
   `master`** for each change.
 - When you're done with a change (and you haven't yet made one for it), **create a pull request** for it. Make sure it
-  follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md) exactly, describing only that change.
+  follows the [PR template](https://github.com/flixelgdx/.github/blob/master/PULL_REQUEST_TEMPLATE.md) exactly, describing only that change.
 - Pull request titles should be **past tense** and describe **only the one change** the pull request makes, in a single
   short, specific sentence. Don't write a broad headline that sums up many changes at once. Examples:
     - "Fixed FlixelCamera drawing sprites one pixel off at odd zoom levels"
