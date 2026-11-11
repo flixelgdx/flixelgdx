@@ -26,7 +26,6 @@ package org.flixelgdx.backend.jvm;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.remote.FlixelDebugEndpoint;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
