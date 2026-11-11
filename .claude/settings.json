@@ -1,0 +1,20 @@
+{
+  "extraKnownMarketplaces": {
+    "flixelgdx": {
+      "source": {
+        "source": "github",
+        "repo": "flixelgdx/claude-configs"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "flixelgdx-dev@flixelgdx": true
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "env": {
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0"
+  }
+}
