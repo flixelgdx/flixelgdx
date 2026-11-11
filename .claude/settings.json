@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "flixelgdx": {
+      "source": {
+        "source": "github",
+        "repo": "flixelgdx/claude-configs"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "flixelgdx@flixelgdx": true
+  }
+}
