@@ -8,6 +8,10 @@
     }
   },
   "enabledPlugins": {
-    "flixelgdx@flixelgdx": true
+    "flixelgdx-dev@flixelgdx": true
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }
