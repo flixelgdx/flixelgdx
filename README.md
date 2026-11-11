@@ -25,7 +25,7 @@
 > FlixelGDX is an independent project and is not officially affiliated with HaxeFlixel.
 
 > [!IMPORTANT]
-> FlixelGDX is still relatively new and currently supports desktop and HTML5. Mobile support is coming soon!
+> FlixelGDX is still relatively new and currently supports desktop, browser and Android. iOS support is coming soon!
 
 ---
 
