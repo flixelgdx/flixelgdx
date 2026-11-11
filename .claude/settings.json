@@ -13,5 +13,8 @@
   "attribution": {
     "commit": "",
     "pr": ""
+  },
+  "env": {
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0"
   }
 }
