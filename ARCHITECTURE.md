@@ -13,9 +13,6 @@ The project is split into several modules, each serving a specific purpose.
 - **`flixelgdx-html5`**: The backend for the web using [TeaVM](https://teavm.org) to transpile Java bytecode to JavaScript or WebAssembly, allowing games to run seamlessly in a browser. It draws with `flixelgdx-gpu` through jwebgpu's browser backend, so the browser needs WebGPU; there is no WebGL fallback.
 - **`flixelgdx-android`**: The backend for Android mobile devices. It draws through `flixelgdx-gpu` and jwebgpu's JNI backend (Dawn on Vulkan), so a device needs **Android 8.0 (API 26) and Vulkan 1.1**, and the app must target the 64-bit ABIs `arm64-v8a` and `x86_64`. The game runs on a dedicated render thread (`flixel-render`) that owns the GPU; the UI thread only forwards surface and activity lifecycle callbacks to it.
 - **`flixelgdx-ios`**: Planned backend for iOS mobile devices. Not supported yet. Currently only fail-fasts when attempted to be used.
-- **`flixelgdx-gpu`**: The one WebGPU renderer every platform shares. It implements core's graphics abstractions (sprite batch, textures, render targets, shaders, the global shader chain) on top of `jwebgpu-api` only, so it contains no desktop, Android or web types. Each platform supplies a jwebgpu backend, a surface for its window and a device, and hands them to `FlixelGpuGraphics`.
-
-- **`flixelgdx-jvm`**: JVM-only code that desktop and Android share, kept out of core because core is also compiled for the browser. Today it holds the `java.net.Socket` WebSocket client (`FlixelSocketWebSocketTransport`) that connects a game in debug mode to the remote debugger app. It only uses Java APIs that Android has. `flixelgdx-desktop` and `flixelgdx-android` depend on it; `flixelgdx-html5` does not, and uses the browser's own `WebSocket` instead.
 
 ### Plugins (inside [`flixelgdx-plugins`](flixelgdx-plugins/))
 
@@ -24,7 +21,15 @@ The project is split into several modules, each serving a specific purpose.
 - **`flixelgdx-packagr-plugin`**: Automates deployment and packaging for desktop games, with default options for Windows, macOS and Linux on all architectures.
 - **`flixelgdx-shader-plugin`**: Build-time shader validation. Compiles a game's `.wgsl` shaders with Dawn (a Null backend device in a forked Java 25 process, no GPU needed), fails the build with `file:line:column` errors, and copies the shaders to `build/generated/flixelgdx/shaders/shaders/<name>.wgsl`, which is added to the `main` resources.
 
-### Rendering and shaders
+### Misc.
+
+- **`flixelgdx-gpu`**: The one WebGPU renderer every platform shares. It implements core's graphics abstractions (sprite batch, textures, render targets, shaders, the global shader chain) on top of `jwebgpu-api` only, so it contains no desktop, Android or web types. Each platform supplies a jwebgpu backend, a surface for its window and a device, and hands them to `FlixelGpuGraphics`.
+- **`flixelgdx-miniaudio`**: Holds the Java API and C source code for interacting with miniaudio. It doesn't hold any natives; other backends provide their own.
+- **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSerializable`.
+- **`flixelgdx-jvm`**: JVM-only code that desktop and Android share, kept out of core because core is also compiled for the browser. It only uses Java APIs that Android supports.
+- **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
+
+## Rendering and shaders
 
 Everything is drawn with [WebGPU](https://www.w3.org/TR/webgpu/) through [jwebgpu](https://github.com/stringdotjar/jwebgpu), the project's Java WebGPU bindings. jwebgpu comes from Maven Central (`io.github.stringdotjar:jwebgpu-*`), at the version in `gradle/libs.versions.toml`.
 
@@ -44,12 +49,6 @@ Textures hold straight (non-premultiplied) color and `fs_main` returns straight 
 The renderer lays out the shader's uniform struct once, when the shader is created, with a small WGSL layout parser (`FlixelWgslLayout`), so `setUniform("name", value)` writes into a CPU copy at the right byte offset and the copy is uploaded at most once per change.
 
 The shader plugin reads the same preamble and the constants of `FlixelWgsl` at its own build time (nothing is copied by hand), assembles preamble plus shader exactly like `FlixelWgsl.assemble(...)`, and validates with a trial pipeline built from the framework's bind group layouts. Its task `processShaders` exposes the output directory as a resource root, so other plugins (such as the HTML5 plugin) can consume it as a task output. See the [plugin README](flixelgdx-plugins/flixelgdx-shader-plugin/README.md).
-
-### Misc.
-
-- **`flixelgdx-miniaudio`**: Holds the Java API and C source code for interacting with miniaudio. It doesn't hold any natives; other backends provide their own.
-- **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSerializable`.
-- **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
 ## Build System
 
