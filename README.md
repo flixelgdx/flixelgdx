@@ -1,9 +1,6 @@
 <div align="center">
-  <img src="markdown-assets/readme/flxgdx.png" width="500" alt="FlixelGDX logo">
 
   # FlixelGDX
-    
-  **Logo Artist: [LeoThM](https://www.instagram.com/leoxthm_/)**
 
   [![CI](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml)
   [![Maven Central](https://img.shields.io/maven-central/v/org.flixelgdx/flixelgdx-core)](https://central.sonatype.com/artifact/org.flixelgdx/flixelgdx-core)
