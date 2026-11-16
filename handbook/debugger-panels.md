@@ -294,8 +294,8 @@ public class TinyStatsPanel extends FlixelDebugPanel {
   public TinyStatsPanel() {
     super(FlixelDebugDefaultPanels.STATS, "Stats");
     setContent(FlixelDebugUi.column(
-        FlixelDebugUi.label(out -> out.concat("FPS: ").concat(Flixel.debug.stats.getFps())),
-        FlixelDebugUi.label(out -> out.concat("Heap: ").concat(Flixel.debug.stats.getHeapMb()).concat(" MB"))));
+        FlixelDebugUi.label(out -> out.concat("FPS: ").concat(Flixel.graphics.getFps())),
+        FlixelDebugUi.label(out -> out.concat("Heap: ").concat(Flixel.runtime.getJavaHeap() / (1024f * 1024f)).concat(" MB"))));
   }
 }
 

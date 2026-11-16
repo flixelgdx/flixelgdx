@@ -195,10 +195,10 @@ you can always see what a tool did to your game.
 | Command                 | Does                                                                     |
 |-------------------------|--------------------------------------------------------------------------|
 | `help [filter]`         | Lists commands, or only those starting with the filter.                  |
-| `pause [on|off]`        | Pauses or resumes the game.                                              |
+| `pause [on\|off]`        | Pauses or resumes the game.                                              |
 | `step`                  | Runs one frame while paused.                                             |
-| `hitboxes [on|off]`     | Shows or hides hitboxes.                                                 |
-| `freecam [on|off]`      | Turns the free camera on or off.                                         |
+| `hitboxes [on\|off]`     | Shows or hides hitboxes.                                                 |
+| `freecam [on\|off]`      | Turns the free camera on or off.                                         |
 | `goto <x> <y>`          | Centers the main camera on a world position (turns on the free camera).  |
 | `select [path]`         | Selects the object at a scene path, or the one under the mouse.          |
 | `resetState`            | Restarts the current state.                                              |

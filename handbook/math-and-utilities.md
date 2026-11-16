@@ -134,7 +134,7 @@ Two small families describe values that vary. Bounds say "pick something between
 to that over a lifetime."
 
 | Type                         | Meaning                                                                        |
-|------------------------------|--------------------------------------------------------------------------------|
+|-------------------------------------------------------------------|--------------------------------------------------------------------------------|
 | `FlixelBounds`               | A minimum and maximum to roll a number between.                                |
 | `FlixelPointBounds`          | Minimum and maximum points to roll a point between.                            |
 | `FlixelRange`                | A start and end value to blend between with `lerp(t)`.                         |
@@ -206,8 +206,8 @@ hpText.setText(buffer);
 ## Flags and constants
 
 | Class                    | What it holds                                                                 |
-|--------------------------|-------------------------------------------------------------------------------|
-| `FlixelDirectionFlags`   | `LEFT`, `RIGHT`, `UP`, `DOWN`, `FLOOR`, `CEILING`, `WALL`, `ANY`, `NONE`, for collisions and facing. Combine with `|`. |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `FlixelDirectionFlags`   | `LEFT`, `RIGHT`, `UP`, `DOWN`, `FLOOR`, `CEILING`, `WALL`, `ANY`, `NONE`, for collisions and facing. Combine with `\|`. |
 | `FlixelAxes`             | `X`, `Y`, and `XY`, for centering, shaking, and similar per-axis options.     |
 | `FlixelAlign`            | Horizontal and vertical alignment constants for text and layout helpers.      |
 | `FlixelBlendMode`        | `NORMAL`, `ADD`, `MULTIPLY`, `SCREEN`, `SUBTRACT`, `LIGHTEN`, `DARKEN`.       |
