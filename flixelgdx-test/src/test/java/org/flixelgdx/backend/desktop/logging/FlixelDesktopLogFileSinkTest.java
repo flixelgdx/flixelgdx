@@ -75,7 +75,7 @@ class FlixelDesktopLogFileSinkTest {
     assertTrue(lines.size() > 2, lines.toString());
     String first = lines.get(0);
     assertTrue(first.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3} \\[INFO\\] \\[Test\\] "
-        + "\\[FlixelJvmLogFileSinkTest\\.java:\\d+\\] \\[writesDetailedLinesWithTheStackTrace\\(\\)\\] hello 1"),
+        + "\\[FlixelDesktopLogFileSinkTest\\.java:\\d+\\] \\[writesDetailedLinesWithTheStackTrace\\(\\)\\] hello 1"),
         first);
     String second = lines.get(1);
     assertTrue(second.contains("[ERROR] [Test]"), second);
