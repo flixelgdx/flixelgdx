@@ -29,7 +29,7 @@
  * <p>When animation rules grow complex - one-shot attack clips that return to idle, transitions
  * that are only legal from certain states, enter/exit callbacks - use
  * {@link org.flixelgdx.animation.FlixelAnimationStateMachine FlixelAnimationStateMachine} instead
- * of scattering {@code playAnimation(...)} calls across gameplay code. Attach the machine to the
+ * of scattering {@code play(...)} calls across gameplay code. Attach the machine to the
  * controller via
  * {@link org.flixelgdx.animation.FlixelAnimationController#setStateMachine(org.flixelgdx.animation.FlixelAnimationStateMachine) FlixelAnimationController.setStateMachine(...)}
  * so it is ticked automatically:

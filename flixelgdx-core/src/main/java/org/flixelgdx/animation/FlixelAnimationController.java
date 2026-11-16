@@ -44,7 +44,7 @@ import java.util.Comparator;
 /**
  * Playback state and clip registration for {@link FlixelSprite} animations. Obtain a controller with
  * {@link FlixelSprite#ensureAnimation()} (or assign one directly), then call {@code sprite.ensureAnimation().addSparrowFrames(...)},
- * {@code .playAnimation(...)}, etc. Decouples animation timing from rendering and physics.
+ * {@code .play(...)}, etc. Decouples animation timing from rendering and physics.
  *
  * <p>Optionally link a {@link FlixelAnimationStateMachine} via {@link #setStateMachine} so the
  * machine is ticked automatically inside {@link #update(float)} - no separate machine update call
@@ -323,14 +323,15 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * <pre>{@code
    * var anim = sprite.ensureAnimation();
-   * anim.addAnimationByPrefix("idle", "BF idle dance", 24, true);
-   * anim.addAnimationByPrefix("singLEFT", "BF NOTE LEFT", 24, false);
+   * anim.addByPrefix("idle", "BF idle dance", 24, true);
+   * anim.addByPrefix("singLEFT", "BF NOTE LEFT", 24, false);
    * anim.addOffset("idle", 0, 0);
    * anim.addOffset("singLEFT", -12, 6);
-   * anim.playAnimation("idle"); // offset snaps to (0, 0)
+   * anim.play("idle"); // offset snaps to (0, 0)
    * }</pre>
    *
-   * @param name The animation name, as registered with one of the {@code addAnimation*} methods.
+   * @param name The animation name, as registered with {@code addAnimation(...)}, {@code addByPrefix(...)}, or
+   *     {@code addFromAtlas(...)}.
    * @param x Horizontal offset in pixels (positive moves the graphic left).
    * @param y Vertical offset in pixels (positive moves the graphic up).
    */
