@@ -239,10 +239,7 @@ focus on what's important: making a game.
 If you want to start using the framework, you don't need to worry about configuring anything too crazy — the framework's 
 already got you covered. You can get started right way with the following links:
 
-- [🔧 Project Generator](https://flixelgdx.org/getting-started)
 - [📚 Handbook](handbook/README.md)
-- [📖 Docs](https://flixelgdx.org/docs)
-- [⚙️ API Pages](https://flixelgdx.org/api)
 
 ---
 
