@@ -16,6 +16,7 @@ The project is split into several modules, each serving a specific purpose.
 
 ### Plugins (inside [`flixelgdx-plugins`](flixelgdx-plugins/))
 
+- **`flixelgdx-assets-plugin`**: Generates a type-safe `Assets` class from a game's `assets/` folder before the code compiles, with a nested class per folder and a path constant per file (for example `Assets.Shared.Sprites.PLAYER_PNG`).
 - **`flixelgdx-basisu-plugin`**: Bundles Basis Universal binaries for each OS and applies `.ktx2` compression for every `.png` asset on Android. At runtime the Android backend transcodes each file to ASTC or ETC2 (whatever the GPU supports) through `FlixelKtx2` in `flixelgdx-gpu`, so textures stay compressed in GPU memory.
 - **`flixelgdx-html5-plugin`**: Automates the workflow for web games. This includes copying assets and generating the HTML index file that boots the WebAssembly or JavaScript bundle, and more.
 - **`flixelgdx-packagr-plugin`**: Automates deployment and packaging for desktop games, with default options for Windows, macOS and Linux on all architectures.
