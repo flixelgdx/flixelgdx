@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Flixel.log.setTag("MyGame");
  * Flixel.log.setLevel(FlixelLogLevel.WARN);
- * Flixel.log.addExtraSink(entry -> history.add(entry.getMessage().toString()));
+ * Flixel.log.addSink(entry -> history.add(entry.getMessage().toString()));
  * }</pre>
  *
  * <h2>Message format</h2>

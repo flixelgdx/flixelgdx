@@ -38,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Example:
  * <pre>{@code
- * Flixel.log.addExtraSink(entry -> {
+ * Flixel.log.addSink(entry -> {
  *   if (entry.getLevel() == FlixelLogLevel.ERROR) {
  *     crashReporter.record(entry.getMessage().toString());
  *   }
