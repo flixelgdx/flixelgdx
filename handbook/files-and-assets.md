@@ -57,6 +57,10 @@ assets/
 
 Paths are always relative to `assets/` and always use forward slashes: `"images/player.png"`.
 
+Tired of typing paths as strings? The assets plugin (`org.flixelgdx.assets`) generates an `Assets` class with a
+constant for every file, so `"images/player.png"` becomes `Assets.Images.PLAYER_PNG` and a typo becomes a compile
+error. See [Building and Shipping](building-and-shipping.md#asset-paths-the-assets-plugin).
+
 ## File handles
 
 `Flixel.files` hands out `FlixelFile` handles. A handle is just an address: creating one is cheap and does not touch
