@@ -65,6 +65,10 @@
  * exactly what a tool request or your own code would call. That is why a hotkey, a panel, a console command, and an
  * AI agent always agree about the state of the game.
  *
+ * <p>Reading a feed is not what makes these panels work in the app. They reach the app the same way your panels do,
+ * as a tree of widgets. The feed is only where their data and actions come from, the same way your own game objects
+ * are where the data of your panels comes from. Your panels never need a feed.
+ *
  * <p>When a tool such as an AI agent selects, moves, or edits an object, the scene panel shows an "agent" badge on
  * it and the inspector panel says the selection came from an agent, so a person can always follow along.
  *

@@ -88,6 +88,11 @@ import org.jetbrains.annotations.Nullable;
  * <p>Feeds also send their data, in a fixed format, to programs that subscribe to it, such as the app's tools for
  * AI agents.
  *
+ * <p>Your own panels do not need a feed. A built-in panel calls a feed because the feed is where the framework keeps
+ * the logic for that system, while your panel calls your game code directly. The list of feeds is fixed, because the
+ * app must know each feed's format ahead of time. To let tools read your own data, register it with an existing feed,
+ * such as {@link #watches}, {@link #trackers}, {@link #console}, or {@link #inspector}.
+ *
  * <h2>Panels</h2>
  *
  * <p>{@link #panels} lists every tab the debugger app shows. Every panel is built by the game out of widgets, the

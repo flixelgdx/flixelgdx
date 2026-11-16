@@ -74,6 +74,13 @@ public class EnemyPanel extends FlixelDebugPanel {
 Flixel.debug.panels.register(new EnemyPanel(enemyManager));
 ```
 
+> [!NOTE]
+> This panel reads `EnemyManager` directly; it does not need a feed. The built-in panels read feeds such as
+> `Flixel.debug.save` only because that is where the framework keeps the logic for its own systems. Feeds are the
+> fixed data format that tools such as AI agents read, and games cannot add new ones. To let tools read your data too,
+> register it as a watch, tracker, console command, or inspector section, as shown in
+> [Extending the Debugger](debugger-extending.md#feeds-the-debugger-for-programs).
+
 ## Registering, docking, and ids
 
 ```java
