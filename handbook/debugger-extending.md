@@ -264,6 +264,17 @@ Feeds only send data while something subscribes to them, but they keep sampling 
 them. To stop one entirely, call `setEnabled(false)` on it. The exact data format of every feed is documented in
 `DEBUG_PROTOCOL.md` at the repository root.
 
+So a feed has three jobs: it sends data to tools in a fixed format, it holds the logic behind a built-in panel, and
+it lets your code do anything the debugger can. The list of feeds is fixed, because the app reads each one with code
+written for its format. To make your own data readable by tools, register it with a feed that already exists, using
+the watches, commands, inspector sections, and trackers from the sections above.
+
+> [!NOTE]
+> Your own panels never need a feed. Every panel, built-in or yours, reaches the app as a tree of widgets. The
+> built-in save panel gets its data from `Flixel.debug.save` only because that is where the framework keeps the save
+> logic; your panel gets its data straight from your game code. See
+> [Custom Debugger Panels](debugger-panels.md) for how to build one.
+
 ## Rules for everything you register
 
 - **Main thread only.** Register and call debugger methods from your game code, not from other threads.
