@@ -52,6 +52,7 @@ tasks.register("javadocAll") {
     ":flixelgdx-html5:javadoc",
     ":flixelgdx-ios:javadoc",
     ":flixelgdx-json-processor:javadoc",
+    ":flixelgdx-plugins:flixelgdx-assets-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-basisu-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-html5-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-shader-plugin:javadoc"
