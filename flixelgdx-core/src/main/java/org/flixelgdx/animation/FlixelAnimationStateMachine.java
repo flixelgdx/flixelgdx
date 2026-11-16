@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * A lightweight finite state machine that drives a sprite's animations.
  *
  * <h2>Why this exists</h2>
- * Calling {@link FlixelAnimationController#play(String, boolean, boolean) playAnimation}
+ * Calling {@link FlixelAnimationController#play(String, boolean, boolean) play(...)}
  * directly from gameplay code works, but it spreads animation rules everywhere: which clip plays for
  * which behavior, which transitions are legal, what should happen when a one-shot clip finishes, and
  * what side effects (sound, particles) a transition triggers. A state machine gathers those rules in
@@ -174,7 +174,7 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
 
   /**
    * Registers a state that plays {@code clipName} (a clip already registered on the controller via
-   * {@code addAnimation} / {@code addAnimationByPrefix}) when entered.
+   * {@code addAnimation} / {@code addByPrefix}) when entered.
    *
    * @param name The logical state name.
    * @param clipName The animation clip to play, or {@code null} for a logic-only state.

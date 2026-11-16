@@ -73,10 +73,10 @@
  * Flixel.gamepads.addMappingResolver(gamepad -> {
  *   if (gamepad.getVendorId() == MY_VID && gamepad.getProductId() == MY_PID) {
  *     FlixelGamepadMapping m = new FlixelGamepadMapping();
- *     m.setButton(FlixelGamepadButton.A, 0);
- *     m.setButton(FlixelGamepadButton.B, 1);
- *     m.setAxis(FlixelGamepadAxis.LEFT_X, 0);
- *     m.setAxis(FlixelGamepadAxis.LEFT_Y, 1);
+ *     m.registerButton(FlixelGamepadButton.A, 0);
+ *     m.registerButton(FlixelGamepadButton.B, 1);
+ *     m.registerAxis(FlixelGamepadAxis.LEFT_X, 0);
+ *     m.registerAxis(FlixelGamepadAxis.LEFT_Y, 1);
  *     return m;
  *   }
  *   return null; // fall through to the next resolver

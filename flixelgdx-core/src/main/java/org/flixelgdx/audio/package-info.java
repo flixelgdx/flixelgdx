@@ -10,24 +10,19 @@
  * shared across many playback instances.
  *
  * <h2>Playing a sound</h2>
- * <p>Load a source through the asset manager, then play it through
- * {@link org.flixelgdx.Flixel#sound Flixel.sound}:
+ * <p>Pass a file handle to {@link org.flixelgdx.Flixel#sound Flixel.sound} to play it right away:
  *
  * <pre>{@code
- * // Load once (at state creation or via the asset manager):
- * FlixelSoundSource boom = Flixel.assets.get("sounds/explosion.ogg", FlixelSoundSource.class);
+ * FlixelSound s = Flixel.sound.play(Flixel.files.internal("sounds/explosion.ogg"), 0.8f);
  *
- * // Play on demand:
- * FlixelSound s = Flixel.sound.play(boom, 0.8f);
- *
- * // React when the sound finishes:
- * s.onComplete.add(() -> Flixel.info("boom finished"));
+ * // React when the sound finishes. The signal carries no data, so the parameter is unnamed.
+ * s.onComplete.add(_ -> Flixel.info("boom finished"));
  * }</pre>
  *
  * <h2>Looping music</h2>
  * <pre>{@code
- * FlixelSound music = Flixel.sound.play(bgmSource, 0.6f, true); // true = loop
- * music.fadeIn(2f); // fade in over 2 seconds
+ * FlixelSound music = Flixel.sound.playMusic(Flixel.files.internal("music/theme.ogg"), 0.6f, true); // true = loop
+ * music.fadeIn(2f); // Fade in over 2 seconds.
  * }</pre>
  *
  * <h2>Sound groups</h2>
@@ -36,7 +31,7 @@
  * pre-built SFX group; pass one during creation to assign a sound to it:
  *
  * <pre>{@code
- * FlixelSound sfx = Flixel.sound.play(boomSource, 0.8f, false, Flixel.sound.getSfxGroup());
+ * FlixelSound sfx = Flixel.sound.play(Flixel.files.internal("sounds/explosion.ogg"), 0.8f, false, Flixel.sound.getSfxGroup());
  * }</pre>
  *
  * @see org.flixelgdx.audio.FlixelSoundManager

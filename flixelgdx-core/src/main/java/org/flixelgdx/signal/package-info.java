@@ -84,7 +84,7 @@
  *
  * <pre>{@code
  * // React every time the active state changes.
- * Flixel.Signals.onStateSwitch.add(data -> Flixel.info("Now in: " + data.state()));
+ * Flixel.Signals.postStateSwitch.add(data -> Flixel.info("Now in: " + data.state()));
  * }</pre>
  *
  * <h2>Signal data types and GC pressure</h2>
@@ -101,14 +101,14 @@
  *
  * <pre>{@code
  * // Correct: read elapsed inside the callback.
- * Flixel.signals.onPreUpdate.add(data -> {
+ * Flixel.Signals.preUpdate.add(data -> {
  *   float elapsed = data.elapsed(); // Read now, not later.
  *   mySystem.tick(elapsed);
  * });
  *
  * // Wrong: storing the reference for later reads will give stale or wrong values.
  * UpdateSignalData stored;
- * Flixel.signals.onPreUpdate.add(data -> stored = data); // Do not do this.
+ * Flixel.Signals.preUpdate.add(data -> stored = data); // Do not do this.
  * }</pre>
  *
  * @see org.flixelgdx.signal.FlixelSignal
