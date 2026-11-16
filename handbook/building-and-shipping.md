@@ -11,11 +11,12 @@ and bundled shaders, and compressed Android textures. It also covers versioning 
 3. [Desktop: native packages with packagr](#desktop-native-packages-with-packagr)
 4. [Web: the HTML5 plugin](#web-the-html5-plugin)
 5. [Shaders: the shader plugin](#shaders-the-shader-plugin)
-6. [Android: building and compressing textures](#android-building-and-compressing-textures)
-7. [Keeping files out of a build](#keeping-files-out-of-a-build)
-8. [Versioning your game](#versioning-your-game)
-9. [Release checklist](#release-checklist)
-10. [Check your understanding](#check-your-understanding)
+6. [Asset paths: the assets plugin](#asset-paths-the-assets-plugin)
+7. [Android: building and compressing textures](#android-building-and-compressing-textures)
+8. [Keeping files out of a build](#keeping-files-out-of-a-build)
+9. [Versioning your game](#versioning-your-game)
+10. [Release checklist](#release-checklist)
+11. [Check your understanding](#check-your-understanding)
 
 ## The plugins at a glance
 
@@ -24,6 +25,7 @@ and bundled shaders, and compressed Android textures. It also covers versioning 
 | `org.flixelgdx.packagr`  | Desktop module | Builds a double-clickable package per operating system, with its own trimmed Java runtime. |
 | `org.flixelgdx.html5`    | Web module     | Copies assets, generates the page, runs a dev server, and zips a deployable web app. |
 | `org.flixelgdx.shaders`  | Core module    | Checks WGSL shaders at build time and bundles them into resources.           |
+| `org.flixelgdx.assets`   | Core module    | Generates a type-safe `Assets` class with a path constant for every asset.   |
 | `org.flixelgdx.basisu`   | Android module | Compresses PNGs into KTX2/Basis Universal textures at build time.            |
 
 Projects from the project generator come with the right plugins already applied.
@@ -168,6 +170,32 @@ FlixelShader wave = FlixelShader.load("fx/wave"); // src/main/shaders/fx/wave.wg
 
 Its `processShaders` task runs before resources are processed, so every normal build checks shaders. Run it alone with
 `./gradlew processShaders`. See [Graphics and Shaders](graphics-and-shaders.md) for writing shaders.
+
+## Asset paths: the assets plugin
+
+Asset paths are plain strings, so a typo or a renamed file only shows up when the game fails to load it. The assets
+plugin turns the `assets/` folder into a generated `Assets` class: each folder is a nested class in PascalCase and each
+file is an UPPER_SNAKE_CASE constant holding its path. A missing file then becomes a compile error, and your IDE can
+autocomplete every path.
+
+```groovy
+// core/build.gradle
+plugins {
+  id 'java'
+  id 'org.flixelgdx.assets' version '<flixel-version>'
+}
+
+assetsClass {
+  packageName = 'com.mygame'
+}
+```
+
+```java
+Flixel.assets.load(Assets.Shared.Sprites.PLAYER_PNG); // assets/shared/sprites/player.png
+```
+
+The class is generated before the code compiles and whenever the IDE reloads the Gradle project. See the
+[plugin README](../flixelgdx-plugins/flixelgdx-assets-plugin/README.md) for the naming rules and settings.
 
 ## Android: building and compressing textures
 
