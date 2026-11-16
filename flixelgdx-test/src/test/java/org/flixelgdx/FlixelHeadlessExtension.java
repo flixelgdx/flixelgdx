@@ -23,7 +23,7 @@
  */
 package org.flixelgdx;
 
-import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
+import org.flixelgdx.backend.desktop.file.FlixelDesktopFiles;
 
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  *
  * <p>The framework's systems are normally brought up by a platform launcher. Tests do not have one,
  * so this extension fills the one gap that pure logic tests still hit: file access. It installs the
- * real java.io {@link FlixelJvmFiles} backend on {@code Flixel.files} so anything that reads or
+ * real java.io {@link FlixelDesktopFiles} backend on {@code Flixel.files} so anything that reads or
  * writes files (for example {@code FlixelSave}) works against a real temp directory instead of the
  * silent no-op default. Everything else the framework exposes already defaults to a safe no-op, so
  * no rendering, audio, or input backend is required.
@@ -42,8 +42,8 @@ public final class FlixelHeadlessExtension implements BeforeAllCallback {
 
   @Override
   public synchronized void beforeAll(ExtensionContext context) {
-    if (!(Flixel.files instanceof FlixelJvmFiles)) {
-      Flixel.files = new FlixelJvmFiles();
+    if (!(Flixel.files instanceof FlixelDesktopFiles)) {
+      Flixel.files = new FlixelDesktopFiles();
     }
   }
 }

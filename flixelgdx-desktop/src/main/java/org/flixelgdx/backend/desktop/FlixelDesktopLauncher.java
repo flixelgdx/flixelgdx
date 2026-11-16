@@ -31,7 +31,7 @@ import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.asset.FlixelDesktopAssetManager;
 import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
-import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
+import org.flixelgdx.backend.desktop.file.FlixelDesktopFiles;
 import org.flixelgdx.backend.desktop.graphics.FlixelStbImage;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
@@ -233,7 +233,7 @@ public final class FlixelDesktopLauncher {
     Flixel.alert = new FlixelDesktopAlerter();
     Flixel.window = window;
     Flixel.host = host;
-    Flixel.files = new FlixelJvmFiles();
+    Flixel.files = new FlixelDesktopFiles();
     Flixel.input = input;
     Flixel.graphics = graphics;
     FlixelSave.defaultHandler = new FlixelDesktopSaveHandler();

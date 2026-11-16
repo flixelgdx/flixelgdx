@@ -91,7 +91,7 @@
  *   <li>{@code asset} - JVM asset manager with background loading
  *       ({@code FlixelDesktopAssetManager}).</li>
  *   <li>{@code file} - classpath and OS filesystem seam
- *       ({@code FlixelJvmFiles}, {@code FlixelDesktopFile}).</li>
+ *       ({@code FlixelDesktopFiles}, built on the shared JVM file classes).</li>
  *   <li>{@code logging} - desktop logging helpers.</li>
  *   <li>{@code runtime} - JVM runtime device
  *       ({@code FlixelDesktopRuntimeDevice}).</li>
