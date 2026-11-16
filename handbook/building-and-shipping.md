@@ -251,7 +251,6 @@ seem to disappear.
 - [ ] The config has the final title, company, and version.
 - [ ] Desktop packages were built for every target, and each one was started at least once.
 - [ ] Android release builds are signed; textures are compressed if memory matters.
-- [ ] File logging is on for desktop builds (`Flixel.log.startFileLogging()`), so players can send logs with bug reports.
 
 ## Check your understanding
 

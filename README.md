@@ -245,7 +245,7 @@ already got you covered. You can get started right way with the following links:
 
 ## Project navigation
 
-- **[Handbook](handbook/README.md)**: Guides for using every part of the framework, from your first game to the boot sequence.
+- **[Handbook](handbook/README.md)**: Guides for using every part of the framework, including your first game, input, mental models, and more.
 - **[Contributing Guide](CONTRIBUTING.md)**: Coding standards, PR requirements, and how to contribute.
 - **[Project Structure](ARCHITECTURE.md)**: The multi-module layout and how Gradle is used.
 - **[Compiling & Testing](COMPILING.md)**: How to build the framework and test it as a dependency in your own projects.
