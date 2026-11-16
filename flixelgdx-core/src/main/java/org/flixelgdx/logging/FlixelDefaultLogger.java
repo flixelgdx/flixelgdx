@@ -56,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * ai.info("Path found in {} steps", 12);
  * }</pre>
  */
-public final class FlixelDefaultLogger implements FlixelLogger {
+public class FlixelDefaultLogger implements FlixelLogger {
 
   private int depth;
   private int maxLogFiles = 10;
