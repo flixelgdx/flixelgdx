@@ -13,3 +13,7 @@ gradlePlugin {
     }
   }
 }
+
+dependencies {
+  implementation(libs.jetbrains.annotations)
+}
