@@ -455,7 +455,7 @@ public class FlixelSave implements FlixelDestroyable {
    *
    * <p>Only this save object changes. The {@link #data} already in memory is kept, so the next
    * {@link #flush()} writes it to the new handler; call {@link #load()} to read from the new handler
-   * instead. A {@code null} handler is rejected and the current handler is kept.
+   * instead.
    *
    * @param handler The storage this save should read from and write to.
    */
