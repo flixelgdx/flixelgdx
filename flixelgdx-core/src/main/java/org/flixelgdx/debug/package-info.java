@@ -75,6 +75,11 @@
  * tool that reads the scene keeps working no matter how you redesign the scene panel. Both sides share the same
  * feed objects, so a panel button and a tool request run exactly the same game code.
  *
+ * <p>Panels never need a feed of their own. The built-in panels read feeds only because that is where the framework
+ * keeps the logic for its own systems; a panel you write reads your game code directly. Feeds cannot be added by
+ * games, because the app has to know each feed's format ahead of time. To make your own data readable by tools, hand
+ * it to a feed that already exists: register a watch, a tracker, a console command, or an inspector section.
+ *
  * <h2>Connecting to the debugger app</h2>
  *
  * <p>When the game starts in debug mode, the manager starts a

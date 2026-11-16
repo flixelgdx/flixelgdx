@@ -115,6 +115,25 @@
  * {@link org.flixelgdx.debug.FlixelDebugObjectIds#markAgentTouched(Object) markAgentTouched(...)}, and the built-in
  * scene and inspector panels show an "agent" badge on them, so a person can always see what a tool changed.
  *
+ * <h2>Feeds and your own panels</h2>
+ *
+ * <p>A feed has three jobs: it sends its data to tools in a fixed format, it holds the logic behind a built-in panel,
+ * and it gives your code the same powers through methods such as {@code Flixel.debug.save.set(...)}. None of these
+ * jobs makes a feed part of how panels work. Every panel, built-in or yours, reaches the app as a tree of widgets.
+ * The built-in save panel gets its data from the save feed; your shop panel gets its data from your shop. So your
+ * panels never need a feed.
+ *
+ * <p>You also cannot add a feed of your own. The app reads each feed with code written for that feed's format, so a
+ * new feed would arrive in a format nothing can read. To make your own data readable by tools, hand it to a feed that
+ * already exists:
+ *
+ * <pre>{@code
+ * Flixel.debug.watches.addInt("Coins", () -> shop.coins); // Tools read it through the watches feed.
+ * Flixel.debug.console.register("coins", "coins <amount>", "Gives the player coins.", args -> {
+ *   shop.giveCoins(args.getInt(0, 100)); // Tools run it through the console feed.
+ * });
+ * }</pre>
+ *
  * <h2>How a feed works</h2>
  *
  * <p>Every feed implements {@link org.flixelgdx.debug.feeds.FlixelDebugFeed FlixelDebugFeed}, and most extend
