@@ -240,6 +240,7 @@ If you want to start using the framework, you don't need to worry about configur
 already got you covered. You can get started right way with the following links:
 
 - [🔧 Project Generator](https://flixelgdx.org/getting-started)
+- [📚 Handbook](handbook/README.md)
 - [📖 Docs](https://flixelgdx.org/docs)
 - [⚙️ API Pages](https://flixelgdx.org/api)
 
@@ -247,6 +248,7 @@ already got you covered. You can get started right way with the following links:
 
 ## Project navigation
 
+- **[Handbook](handbook/README.md)**: Guides for using every part of the framework, from your first game to the boot sequence.
 - **[Contributing Guide](CONTRIBUTING.md)**: Coding standards, PR requirements, and how to contribute.
 - **[Project Structure](ARCHITECTURE.md)**: The multi-module layout and how Gradle is used.
 - **[Compiling & Testing](COMPILING.md)**: How to build the framework and test it as a dependency in your own projects.
