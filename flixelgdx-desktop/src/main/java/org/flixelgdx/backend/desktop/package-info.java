@@ -89,12 +89,12 @@
  *   <li>{@code text} - stb_truetype font rasterizer ({@code FlixelStbFontRasterizer},
  *       {@code FlixelStbRasterizedFont}).</li>
  *   <li>{@code asset} - JVM asset manager with background loading
- *       ({@code FlixelJvmAssetManager}).</li>
+ *       ({@code FlixelDesktopAssetManager}).</li>
  *   <li>{@code file} - classpath and OS filesystem seam
- *       ({@code FlixelJvmFiles}, {@code FlixelJvmFile}).</li>
+ *       ({@code FlixelDesktopFiles}, built on the shared JVM file classes).</li>
  *   <li>{@code logging} - desktop logging helpers.</li>
  *   <li>{@code runtime} - JVM runtime device
- *       ({@code FlixelJvmRuntimeDevice}).</li>
+ *       ({@code FlixelDesktopRuntimeDevice}).</li>
  * </ul>
  *
  * @see org.flixelgdx.backend.desktop.FlixelDesktopLauncher

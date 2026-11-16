@@ -62,14 +62,14 @@ import java.util.Arrays;
  *
  * <p>Install it from the desktop launcher and then start logging to a file:
  * <pre>{@code
- * Flixel.log.setFileSink(new FlixelJvmLogFileSink());
+ * Flixel.log.setFileSink(new FlixelDesktopLogFileSink());
  * Flixel.log.startFileLogging();
  * }</pre>
  *
  * <p>This class is for JVM platforms. It is not meant for the web, where threads and the host file
  * system are not available.
  */
-public class FlixelJvmLogFileSink implements FlixelLogFileSink {
+public class FlixelDesktopLogFileSink implements FlixelLogFileSink {
 
   /** The number of lines that can wait for the writer thread when no capacity is given. */
   public static final int DEFAULT_CAPACITY = 1024;
@@ -104,7 +104,7 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
   private final boolean deferWriter;
 
   /** Creates a sink with room for {@link #DEFAULT_CAPACITY} queued lines. */
-  public FlixelJvmLogFileSink() {
+  public FlixelDesktopLogFileSink() {
     this(DEFAULT_CAPACITY);
   }
 
@@ -114,7 +114,7 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
    * @param capacity The number of lines that can wait for the writer thread. Values below 1 are
    *   raised to 1. When all slots are in use, new lines are dropped.
    */
-  public FlixelJvmLogFileSink(int capacity) {
+  public FlixelDesktopLogFileSink(int capacity) {
     this(capacity, false);
   }
 
@@ -128,7 +128,7 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
    * @param capacity The number of lines that can wait for the writer thread.
    * @param deferWriter Whether to delay starting the writer thread. Only meant for tests.
    */
-  FlixelJvmLogFileSink(int capacity, boolean deferWriter) {
+  FlixelDesktopLogFileSink(int capacity, boolean deferWriter) {
     this.deferWriter = deferWriter;
     this.capacity = Math.max(1, capacity);
     slots = new FlixelString[this.capacity];

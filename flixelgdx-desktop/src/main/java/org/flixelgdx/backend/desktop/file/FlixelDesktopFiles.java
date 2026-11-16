@@ -23,8 +23,9 @@
  */
 package org.flixelgdx.backend.desktop.file;
 
+import org.flixelgdx.backend.jvm.file.FlixelJvmFile;
+import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
 import org.flixelgdx.file.FlixelFile;
-import org.flixelgdx.file.FlixelFiles;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -42,51 +43,29 @@ import java.io.File;
  *   <li>{@link #local(String)} - the working directory.</li>
  *   <li>{@link #absolute(String)} - an absolute filesystem path.</li>
  * </ul>
+ *
+ * <p>Every root except {@link #internal(String)} comes from {@link FlixelJvmFiles}, which Android
+ * shares.
  */
-public class FlixelJvmFiles implements FlixelFiles {
+public class FlixelDesktopFiles extends FlixelJvmFiles {
 
-  @NotNull
-  private final String externalRoot = System.getProperty("user.home", ".");
-
-  @NotNull
-  private final String localRoot = System.getProperty("user.dir", ".");
+  /** Creates the desktop file system, rooted at the working directory and the user's home. */
+  public FlixelDesktopFiles() {
+    super(new File(System.getProperty("user.dir", ".")), new File(System.getProperty("user.home", ".")));
+  }
 
   @NotNull
   @Override
   public FlixelFile internal(@NotNull String path) {
-    File onDisk = new File(localRoot, "assets/" + path);
+    File onDisk = new File(getLocalRoot(), "assets/" + path);
     if (onDisk.exists()) {
       return new FlixelJvmFile(path, onDisk, false);
     }
-    File direct = new File(localRoot, path);
+    File direct = new File(getLocalRoot(), path);
     if (direct.exists()) {
       return new FlixelJvmFile(path, direct, false);
     }
     // Fall back to the classpath so packaged games still resolve their assets.
-    return new FlixelJvmFile(path, null, true);
-  }
-
-  @NotNull
-  @Override
-  public FlixelFile classpath(@NotNull String path) {
-    return new FlixelJvmFile(path, null, true);
-  }
-
-  @NotNull
-  @Override
-  public FlixelFile external(@NotNull String path) {
-    return new FlixelJvmFile(path, new File(externalRoot, path), false);
-  }
-
-  @NotNull
-  @Override
-  public FlixelFile local(@NotNull String path) {
-    return new FlixelJvmFile(path, new File(localRoot, path), false);
-  }
-
-  @NotNull
-  @Override
-  public FlixelFile absolute(@NotNull String path) {
-    return new FlixelJvmFile(path, new File(path), false);
+    return classpath(path);
   }
 }

@@ -46,7 +46,7 @@ import java.nio.ByteOrder;
  * <p>This class implements the whole {@link FlixelAssetManager} contract with a synchronous,
  * single-threaded pipeline: loaders, the raw-content cache, wrapper handles, reference counting,
  * and compressed-texture path resolution. Platforms with threads (see
- * {@code FlixelJvmAssetManager} in the JVM module) subclass it and override
+ * {@code FlixelDesktopAssetManager} in the desktop module) subclass it and override
  * {@link #submitLoad(PendingLoad)} to run stage one of each load on a worker; everything else is
  * inherited unchanged. That keeps the pipeline identical everywhere while letting each platform
  * choose how work is scheduled.

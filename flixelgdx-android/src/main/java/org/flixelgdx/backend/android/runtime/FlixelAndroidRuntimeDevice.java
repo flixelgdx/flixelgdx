@@ -89,12 +89,6 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
 
   @Override
   @Nullable
-  public String getWorkingDirectory() {
-    return null;
-  }
-
-  @Override
-  @Nullable
   public String getDefaultLogsFolderPath() {
     return logsFolder.getAbsolutePath();
   }

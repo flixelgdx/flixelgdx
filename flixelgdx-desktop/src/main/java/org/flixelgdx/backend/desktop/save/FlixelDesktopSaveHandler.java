@@ -52,7 +52,7 @@ import java.util.Objects;
  * </ul>
  *
  * <p>The default folder is worked out each time it is needed, so it always follows the current
- * {@link Flixel#config}. Pass a folder to {@link #FlixelJvmSaveHandler(Path)} to keep saves
+ * {@link Flixel#config}. Pass a folder to {@link #FlixelDesktopSaveHandler(Path)} to keep saves
  * somewhere else, such as a cloud-synced folder or a temporary test directory.
  *
  * <p>Writes go to a temporary file first and are then moved over the real one, so a crash or power
@@ -61,10 +61,10 @@ import java.util.Objects;
  * <p>Example:
  *
  * <pre>{@code
- * Flixel.save.bind("MyGame", "slot1", new FlixelJvmSaveHandler(Path.of("D:/Saves/MyGame")));
+ * Flixel.save.bind("MyGame", "slot1", new FlixelDesktopSaveHandler(Path.of("D:/Saves/MyGame")));
  * }</pre>
  */
-public class FlixelJvmSaveHandler implements FlixelSaveHandler {
+public class FlixelDesktopSaveHandler implements FlixelSaveHandler {
 
   private static final FlixelLogger LOG = Flixel.log.tagged("Save/Desktop");
 
@@ -73,7 +73,7 @@ public class FlixelJvmSaveHandler implements FlixelSaveHandler {
   private final Path directory;
 
   /** Creates a handler that keeps saves in the default app data folder. */
-  public FlixelJvmSaveHandler() {
+  public FlixelDesktopSaveHandler() {
     this.directory = null;
   }
 
@@ -83,7 +83,7 @@ public class FlixelJvmSaveHandler implements FlixelSaveHandler {
    *
    * @param directory The folder to keep save files in.
    */
-  public FlixelJvmSaveHandler(@NotNull Path directory) {
+  public FlixelDesktopSaveHandler(@NotNull Path directory) {
     this.directory = Objects.requireNonNull(directory, "directory cannot be null");
   }
 

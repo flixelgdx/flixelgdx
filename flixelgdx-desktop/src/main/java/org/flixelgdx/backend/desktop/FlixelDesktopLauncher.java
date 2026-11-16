@@ -29,18 +29,18 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
-import org.flixelgdx.backend.desktop.asset.FlixelJvmAssetManager;
+import org.flixelgdx.backend.desktop.asset.FlixelDesktopAssetManager;
 import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
-import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
+import org.flixelgdx.backend.desktop.file.FlixelDesktopFiles;
 import org.flixelgdx.backend.desktop.graphics.FlixelStbImage;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
 import org.flixelgdx.backend.desktop.logging.FlixelAnsiConsoleSink;
-import org.flixelgdx.backend.desktop.logging.FlixelJvmLogFileSink;
-import org.flixelgdx.backend.desktop.logging.FlixelJvmLogSiteResolver;
-import org.flixelgdx.backend.desktop.runtime.FlixelJvmRuntimeDevice;
-import org.flixelgdx.backend.desktop.save.FlixelJvmSaveHandler;
+import org.flixelgdx.backend.desktop.logging.FlixelDesktopLogFileSink;
+import org.flixelgdx.backend.desktop.logging.FlixelDesktopLogSiteResolver;
+import org.flixelgdx.backend.desktop.runtime.FlixelDesktopRuntimeDevice;
+import org.flixelgdx.backend.desktop.save.FlixelDesktopSaveHandler;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
 import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.backend.jvm.FlixelJvmDebugger;
@@ -194,9 +194,9 @@ public final class FlixelDesktopLauncher {
       return;
     }
     loggingInstalled = true;
-    Flixel.log.setSiteResolver(new FlixelJvmLogSiteResolver());
+    Flixel.log.setSiteResolver(new FlixelDesktopLogSiteResolver());
     Flixel.log.setConsoleSink(new FlixelAnsiConsoleSink());
-    Flixel.log.setFileSink(new FlixelJvmLogFileSink());
+    Flixel.log.setFileSink(new FlixelDesktopLogFileSink());
     if (!FlixelDesktopLauncher.class.getModule().isNativeAccessEnabled()) {
       LOG.warn("Native access is not enabled, so Java warns about the restricted methods WebGPU and SDL use, and"
           + " a future Java release will block them. Start the game with --enable-native-access=ALL-UNNAMED (the"
@@ -213,7 +213,7 @@ public final class FlixelDesktopLauncher {
     JWebGpuFfm.install();
 
     FlixelConfig config = Flixel.config;
-    Flixel.runtime = new FlixelJvmRuntimeDevice();
+    Flixel.runtime = new FlixelDesktopRuntimeDevice();
     if (Flixel.runtime.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
     }
@@ -233,16 +233,16 @@ public final class FlixelDesktopLauncher {
     Flixel.alert = new FlixelDesktopAlerter();
     Flixel.window = window;
     Flixel.host = host;
-    Flixel.files = new FlixelJvmFiles();
+    Flixel.files = new FlixelDesktopFiles();
     Flixel.input = input;
     Flixel.graphics = graphics;
-    FlixelSave.defaultHandler = new FlixelJvmSaveHandler();
+    FlixelSave.defaultHandler = new FlixelDesktopSaveHandler();
     FlixelMiniAudio.setLoader(new FlixelDesktopMiniAudioLoader());
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads,
         iconManager, host, width, height, icons);
 
-    Flixel.assets = new FlixelJvmAssetManager();
+    Flixel.assets = new FlixelDesktopAssetManager();
 
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
 

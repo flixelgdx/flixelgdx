@@ -140,7 +140,7 @@ class FlixelAnsiConsoleSinkTest {
   private void assertPlainMatch(FlixelLogMode mode) {
     FlixelDefaultLogger logger = new FlixelDefaultLogger(mode);
     logger.setConsoleSink(null);
-    logger.setSiteResolver(new FlixelJvmLogSiteResolver());
+    logger.setSiteResolver(new FlixelDesktopLogSiteResolver());
     logger.setTag("T");
     logger.addSink(new FlixelPlainConsoleSink());
     logger.addSink(new FlixelAnsiConsoleSink(false));
@@ -167,7 +167,7 @@ class FlixelAnsiConsoleSinkTest {
   private FlixelDefaultLogger newLogger(FlixelLogMode mode, boolean color) {
     FlixelDefaultLogger logger = new FlixelDefaultLogger(mode);
     logger.setConsoleSink(new FlixelAnsiConsoleSink(color));
-    logger.setSiteResolver(new FlixelJvmLogSiteResolver());
+    logger.setSiteResolver(new FlixelDesktopLogSiteResolver());
     return logger;
   }
 
