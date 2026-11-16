@@ -23,8 +23,9 @@
  */
 package org.flixelgdx.backend.android.file;
 
+import org.flixelgdx.backend.jvm.file.FlixelJvmFile;
+import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
 import org.flixelgdx.file.FlixelFile;
-import org.flixelgdx.file.FlixelFiles;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -38,24 +39,21 @@ import android.content.res.AssetManager;
  * <p>Root mapping:
  * <ul>
  *   <li>{@link #internal(String)} - APK {@link AssetManager} first, then classpath for
- *     framework-bundled resources (fonts, shaders).</li>
+ *     framework-bundled resources (fonts, shaders). Returns a {@link FlixelAndroidAssetFile}.</li>
  *   <li>{@link #classpath(String)} - Java classpath resources.</li>
  *   <li>{@link #local(String)} - {@code Context.getFilesDir()} for private app storage.</li>
  *   <li>{@link #external(String)} - {@code Context.getExternalFilesDir(null)} when available,
  *     falls back to internal storage.</li>
  *   <li>{@link #absolute(String)} - an absolute path on the device file system.</li>
  * </ul>
+ *
+ * <p>Every root except {@link #internal(String)} comes from {@link FlixelJvmFiles}, which desktop
+ * shares, so those roots hand out a {@link FlixelJvmFile}.
  */
-public class FlixelAndroidFiles implements FlixelFiles {
+public class FlixelAndroidFiles extends FlixelJvmFiles {
 
   @NotNull
   private final AssetManager assets;
-
-  @NotNull
-  private final File localRoot;
-
-  @NotNull
-  private final File externalRoot;
 
   /**
    * Creates the file system for the given {@link Context}.
@@ -63,51 +61,24 @@ public class FlixelAndroidFiles implements FlixelFiles {
    * @param context The Android context used to resolve storage directories and the asset manager.
    */
   public FlixelAndroidFiles(@NotNull Context context) {
+    super(context.getFilesDir(), externalRoot(context));
     this.assets = context.getAssets();
-    this.localRoot = context.getFilesDir();
-    File ext = context.getExternalFilesDir(null);
-    this.externalRoot = ext != null ? ext : context.getFilesDir();
   }
 
   @NotNull
   @Override
   public FlixelFile internal(@NotNull String path) {
-    return new FlixelAndroidFile(assets, path, null, false, true);
+    return new FlixelAndroidAssetFile(assets, path);
   }
 
   @NotNull
-  @Override
-  public FlixelFile classpath(@NotNull String path) {
-    return new FlixelAndroidFile(null, path, null, true, false);
+  private static File externalRoot(@NotNull Context context) {
+    File ext = context.getExternalFilesDir(null);
+    return ext != null ? ext : context.getFilesDir();
   }
 
   @NotNull
-  @Override
-  public FlixelFile local(@NotNull String path) {
-    return new FlixelAndroidFile(null, path, new File(localRoot, path), false, false);
-  }
-
-  @NotNull
-  @Override
-  public FlixelFile external(@NotNull String path) {
-    return new FlixelAndroidFile(null, path, new File(externalRoot, path), false, false);
-  }
-
-  @NotNull
-  @Override
-  public FlixelFile absolute(@NotNull String path) {
-    return new FlixelAndroidFile(null, path, new File(path), false, false);
-  }
-
   public AssetManager getAssets() {
     return assets;
-  }
-
-  public File getLocalRoot() {
-    return localRoot;
-  }
-
-  public File getExternalRoot() {
-    return externalRoot;
   }
 }
