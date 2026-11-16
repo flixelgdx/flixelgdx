@@ -14,11 +14,11 @@
  * FlixelXmlElement root = FlixelXml.parse(xml);
  *
  * for (FlixelXmlElement frame : root.getChildrenByName("SubTexture")) {
- *   String name = frame.getAttribute("name");
- *   int x = Integer.parseInt(frame.getAttribute("x"));
- *   int y = Integer.parseInt(frame.getAttribute("y"));
- *   int w = Integer.parseInt(frame.getAttribute("width"));
- *   int h = Integer.parseInt(frame.getAttribute("height"));
+ *   String name = frame.getAttribute("name", "");
+ *   int x = Integer.parseInt(frame.getAttribute("x", "0"));
+ *   int y = Integer.parseInt(frame.getAttribute("y", "0"));
+ *   int w = Integer.parseInt(frame.getAttribute("width", "0"));
+ *   int h = Integer.parseInt(frame.getAttribute("height", "0"));
  *   // register the frame region...
  * }
  * }</pre>

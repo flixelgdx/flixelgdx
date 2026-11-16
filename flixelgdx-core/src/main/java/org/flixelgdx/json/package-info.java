@@ -17,7 +17,7 @@
  *
  * // Iterate an array:
  * FlixelJsonValue levels = root.get("levels");
- * for (int i = 0; i < levels.size(); i++) {
+ * for (int i = 0; i < levels.getSize(); i++) {
  *   FlixelJsonValue level = levels.get(i);
  *   Flixel.info("Level: " + level.getString("name", "?"));
  * }
