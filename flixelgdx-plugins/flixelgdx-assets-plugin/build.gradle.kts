@@ -16,4 +16,14 @@ gradlePlugin {
 
 dependencies {
   implementation(libs.jetbrains.annotations)
+
+  testRuntimeOnly(libs.junit.platform.launcher)
+  testImplementation(platform(libs.junit.bom))
+  testImplementation(libs.junit.jupiter)
+}
+
+// The functional tests run real Gradle builds, so they reuse this build's Gradle user home for its caches.
+tasks.named<Test>("test") {
+  useJUnitPlatform()
+  systemProperty("flixel.test.gradleUserHome", gradle.gradleUserHomeDir.absolutePath)
 }
