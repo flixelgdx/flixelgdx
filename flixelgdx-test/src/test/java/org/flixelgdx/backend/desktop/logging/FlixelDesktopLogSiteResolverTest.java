@@ -36,10 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelJvmLogSiteResolverTest {
+class FlixelDesktopLogSiteResolverTest {
 
-  private static final String FILE = "FlixelJvmLogSiteResolverTest.java";
-  private static final String CLASS = FlixelJvmLogSiteResolverTest.class.getName();
+  private static final String FILE = "FlixelDesktopLogSiteResolverTest.java";
+  private static final String CLASS = FlixelDesktopLogSiteResolverTest.class.getName();
 
   private FlixelDefaultLogger logger;
   private FlixelLogger originalLog;
@@ -54,7 +54,7 @@ class FlixelJvmLogSiteResolverTest {
     originalLog = Flixel.log;
     logger = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     logger.setConsoleSink(null);
-    logger.setSiteResolver(new FlixelJvmLogSiteResolver());
+    logger.setSiteResolver(new FlixelDesktopLogSiteResolver());
     logger.addSink(entry -> {
       FlixelLogSite site = entry.site();
       file = site.getFileName();
@@ -134,7 +134,7 @@ class FlixelJvmLogSiteResolverTest {
   @Test
   void unresolvableStackReportsUnknown() {
     FlixelLogSite out = new FlixelLogSite();
-    assertFalse(new FlixelJvmLogSiteResolver().resolve(out));
+    assertFalse(new FlixelDesktopLogSiteResolver().resolve(out));
   }
 
   private void assertSite(int expectedLine, String expectedMethod) {

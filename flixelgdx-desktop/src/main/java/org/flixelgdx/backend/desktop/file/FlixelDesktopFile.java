@@ -43,7 +43,7 @@ import java.nio.file.Files;
  * <p>Instances are created by {@link FlixelJvmFiles}; game code obtains them through
  * {@link Flixel#files} and never constructs them directly.
  */
-public class FlixelJvmFile implements FlixelFile {
+public class FlixelDesktopFile implements FlixelFile {
 
   @NotNull
   private final String path;
@@ -54,7 +54,7 @@ public class FlixelJvmFile implements FlixelFile {
 
   private final boolean classpath;
 
-  FlixelJvmFile(@NotNull String path, @Nullable File file, boolean classpath) {
+  FlixelDesktopFile(@NotNull String path, @Nullable File file, boolean classpath) {
     this.path = path;
     this.file = file;
     this.classpath = classpath;
@@ -101,7 +101,7 @@ public class FlixelJvmFile implements FlixelFile {
     }
     FlixelFile[] out = new FlixelFile[children.length];
     for (int i = 0; i < children.length; i++) {
-      out[i] = new FlixelJvmFile(childPath(children[i].getName()), children[i], false);
+      out[i] = new FlixelDesktopFile(childPath(children[i].getName()), children[i], false);
     }
     return out;
   }
@@ -123,7 +123,7 @@ public class FlixelJvmFile implements FlixelFile {
     int idx = 0;
     for (File child : children) {
       if (child.getName().endsWith(suffix)) {
-        out[idx++] = new FlixelJvmFile(childPath(child.getName()), child, false);
+        out[idx++] = new FlixelDesktopFile(childPath(child.getName()), child, false);
       }
     }
     return out;
@@ -226,7 +226,7 @@ public class FlixelJvmFile implements FlixelFile {
   @Nullable
   private InputStream openClasspath() {
     String resource = path.startsWith("/") ? path : "/" + path;
-    return FlixelJvmFile.class.getResourceAsStream(resource);
+    return FlixelDesktopFile.class.getResourceAsStream(resource);
   }
 
   private static byte @NotNull [] readAll(@NotNull InputStream in) throws IOException {

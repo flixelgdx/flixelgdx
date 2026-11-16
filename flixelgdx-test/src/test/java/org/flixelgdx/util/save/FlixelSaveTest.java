@@ -24,7 +24,7 @@
 package org.flixelgdx.util.save;
 
 import org.flixelgdx.FlixelHeadlessExtension;
-import org.flixelgdx.backend.desktop.save.FlixelJvmSaveHandler;
+import org.flixelgdx.backend.desktop.save.FlixelDesktopSaveHandler;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.save.FlixelNoopSaveHandler;
 import org.flixelgdx.save.FlixelSave;
@@ -49,7 +49,7 @@ class FlixelSaveTest {
 
   @Test
   void bindFlushRoundTrip(@TempDir Path tempDir) {
-    FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
+    FlixelSaveHandler handler = new FlixelDesktopSaveHandler(tempDir);
     String name = "flixelgdx_junit_save_" + System.nanoTime();
     FlixelSave a = new FlixelSave(handler);
     assertTrue(a.bind(name, null));
@@ -66,7 +66,7 @@ class FlixelSaveTest {
 
   @Test
   void nestedJsonStringRoundTrips(@TempDir Path tempDir) {
-    FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
+    FlixelSaveHandler handler = new FlixelDesktopSaveHandler(tempDir);
     String json = "{\"startFullscreen\":true,\"masterVolume\":0.5}";
     FlixelSave a = new FlixelSave(handler);
     assertTrue(a.bind("MIC", "settings"));
@@ -81,7 +81,7 @@ class FlixelSaveTest {
 
   @Test
   void eraseRemovesStoredSave(@TempDir Path tempDir) {
-    FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
+    FlixelSaveHandler handler = new FlixelDesktopSaveHandler(tempDir);
     FlixelSave s = new FlixelSave(handler);
     assertTrue(s.bind("flixelgdx_junit_erase", null));
     s.data.put("k", 1);
@@ -103,7 +103,7 @@ class FlixelSaveTest {
 
   @Test
   void mergeDataRespectsOverwrite(@TempDir Path tempDir) {
-    FlixelSave s = new FlixelSave(new FlixelJvmSaveHandler(tempDir));
+    FlixelSave s = new FlixelSave(new FlixelDesktopSaveHandler(tempDir));
     assertTrue(s.bind("flixelgdx_junit_merge_" + System.nanoTime(), null));
     s.data.put("k", "a");
     FlixelMap<String, Object> in = new FlixelMap<>();
@@ -119,7 +119,7 @@ class FlixelSaveTest {
   void newSavesUseDefaultHandler(@TempDir Path tempDir) {
     FlixelSaveHandler previous = FlixelSave.defaultHandler;
     try {
-      FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
+      FlixelSaveHandler handler = new FlixelDesktopSaveHandler(tempDir);
       FlixelSave.defaultHandler = handler;
       assertSame(handler, new FlixelSave().getHandler());
     } finally {
@@ -129,7 +129,7 @@ class FlixelSaveTest {
 
   @Test
   void nullHandlersAreRejected(@TempDir Path tempDir) {
-    FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
+    FlixelSaveHandler handler = new FlixelDesktopSaveHandler(tempDir);
     FlixelSave s = new FlixelSave(handler);
     assertThrows(NullPointerException.class, () -> s.setHandler(null));
   }
@@ -138,7 +138,7 @@ class FlixelSaveTest {
   void setHandlerOnlyChangesThatSave(@TempDir Path tempDir) {
     FlixelSave a = new FlixelSave(FlixelNoopSaveHandler.INSTANCE);
     FlixelSave b = new FlixelSave(FlixelNoopSaveHandler.INSTANCE);
-    FlixelSaveHandler handler = new FlixelJvmSaveHandler(tempDir);
+    FlixelSaveHandler handler = new FlixelDesktopSaveHandler(tempDir);
     a.setHandler(handler);
     assertSame(handler, a.getHandler());
     assertSame(FlixelNoopSaveHandler.INSTANCE, b.getHandler());

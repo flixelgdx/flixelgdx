@@ -56,37 +56,37 @@ public class FlixelJvmFiles implements FlixelFiles {
   public FlixelFile internal(@NotNull String path) {
     File onDisk = new File(localRoot, "assets/" + path);
     if (onDisk.exists()) {
-      return new FlixelJvmFile(path, onDisk, false);
+      return new FlixelDesktopFile(path, onDisk, false);
     }
     File direct = new File(localRoot, path);
     if (direct.exists()) {
-      return new FlixelJvmFile(path, direct, false);
+      return new FlixelDesktopFile(path, direct, false);
     }
     // Fall back to the classpath so packaged games still resolve their assets.
-    return new FlixelJvmFile(path, null, true);
+    return new FlixelDesktopFile(path, null, true);
   }
 
   @NotNull
   @Override
   public FlixelFile classpath(@NotNull String path) {
-    return new FlixelJvmFile(path, null, true);
+    return new FlixelDesktopFile(path, null, true);
   }
 
   @NotNull
   @Override
   public FlixelFile external(@NotNull String path) {
-    return new FlixelJvmFile(path, new File(externalRoot, path), false);
+    return new FlixelDesktopFile(path, new File(externalRoot, path), false);
   }
 
   @NotNull
   @Override
   public FlixelFile local(@NotNull String path) {
-    return new FlixelJvmFile(path, new File(localRoot, path), false);
+    return new FlixelDesktopFile(path, new File(localRoot, path), false);
   }
 
   @NotNull
   @Override
   public FlixelFile absolute(@NotNull String path) {
-    return new FlixelJvmFile(path, new File(path), false);
+    return new FlixelDesktopFile(path, new File(path), false);
   }
 }

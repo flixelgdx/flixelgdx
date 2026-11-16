@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelJvmLogFileSinkTest {
+class FlixelDesktopLogFileSinkTest {
 
   private static final String DROP_SUFFIX = " log lines were dropped because the queue was full]";
 
@@ -55,13 +55,13 @@ class FlixelJvmLogFileSinkTest {
   void setUp() {
     logger = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     logger.setConsoleSink(null);
-    logger.setSiteResolver(new FlixelJvmLogSiteResolver());
+    logger.setSiteResolver(new FlixelDesktopLogSiteResolver());
     logger.setTag("Test");
   }
 
   @Test
   void writesDetailedLinesWithTheStackTrace() throws IOException {
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink();
+    FlixelDesktopLogFileSink sink = new FlixelDesktopLogFileSink();
     logger.setFileSink(sink);
     sink.open(dir.toString(), 5);
     assertTrue(sink.isOpen());
@@ -88,7 +88,7 @@ class FlixelJvmLogFileSinkTest {
 
   @Test
   void closeFlushesEveryQueuedLine() throws IOException {
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink();
+    FlixelDesktopLogFileSink sink = new FlixelDesktopLogFileSink();
     logger.setFileSink(sink);
     sink.open(dir.toString(), 5);
     for (int i = 0; i < 500; i++) {
@@ -105,7 +105,7 @@ class FlixelJvmLogFileSinkTest {
 
   @Test
   void writesAfterCloseAreIgnored() throws IOException {
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink();
+    FlixelDesktopLogFileSink sink = new FlixelDesktopLogFileSink();
     logger.setFileSink(sink);
     sink.open(dir.toString(), 5);
     logger.info("kept");
@@ -119,7 +119,7 @@ class FlixelJvmLogFileSinkTest {
 
   @Test
   void openingTwiceDoesNotCreateASecondFile() {
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink();
+    FlixelDesktopLogFileSink sink = new FlixelDesktopLogFileSink();
     sink.open(dir.toString(), 5);
     String path = sink.getLogFilePath();
     sink.open(dir.toString(), 5);
@@ -131,7 +131,7 @@ class FlixelJvmLogFileSinkTest {
 
   @Test
   void nameFollowsTheTimestampPattern() {
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink();
+    FlixelDesktopLogFileSink sink = new FlixelDesktopLogFileSink();
     sink.open(dir.toString(), 5);
     sink.close();
     String name = logFiles()[0].getName();
@@ -154,7 +154,7 @@ class FlixelJvmLogFileSinkTest {
       Files.writeString(dir.resolve(name), "keep me");
     }
 
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink();
+    FlixelDesktopLogFileSink sink = new FlixelDesktopLogFileSink();
     sink.open(dir.toString(), 3);
     sink.close();
 
@@ -171,7 +171,7 @@ class FlixelJvmLogFileSinkTest {
   @Test
   void fullQueueDropsLinesAndMarksThePlaceOfTheGap() throws IOException {
     // The writer thread is held back, so the three slots fill up and the next four lines are dropped.
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink(3, true);
+    FlixelDesktopLogFileSink sink = new FlixelDesktopLogFileSink(3, true);
     assertEquals(3, sink.getCapacity());
     logger.setFileSink(sink);
     sink.open(dir.toString(), 5);
@@ -198,7 +198,7 @@ class FlixelJvmLogFileSinkTest {
 
   @Test
   void dropsAtTheEndAreReportedOnClose() throws IOException {
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink(2, true);
+    FlixelDesktopLogFileSink sink = new FlixelDesktopLogFileSink(2, true);
     logger.setFileSink(sink);
     sink.open(dir.toString(), 5);
     for (int i = 0; i < 5; i++) {
@@ -215,7 +215,7 @@ class FlixelJvmLogFileSinkTest {
   }
 
   /** Waits until the writer thread has written every queued line. The outcome does not depend on how long it takes. */
-  private static void waitUntilDrained(FlixelJvmLogFileSink sink) {
+  private static void waitUntilDrained(FlixelDesktopLogFileSink sink) {
     long deadline = System.nanoTime() + 10_000_000_000L;
     while (sink.getQueuedCount() > 0) {
       assertTrue(System.nanoTime() < deadline, "The writer thread never drained the queue");

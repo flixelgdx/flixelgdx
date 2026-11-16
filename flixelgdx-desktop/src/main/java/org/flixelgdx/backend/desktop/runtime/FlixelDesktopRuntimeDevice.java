@@ -45,7 +45,7 @@ import java.util.jar.JarFile;
  * checks, IDE detection, and default log directory resolution. Not used on TeaVM or other non-JVM
  * targets.
  */
-public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
+public class FlixelDesktopRuntimeDevice implements FlixelRuntimeDevice {
 
   private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
   private BufferPoolMXBean[] bufferPools;
@@ -159,7 +159,7 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
   @Nullable
   public String getWorkingDirectory() {
     try {
-      URI uri = FlixelJvmRuntimeDevice.class.getProtectionDomain()
+      URI uri = FlixelDesktopRuntimeDevice.class.getProtectionDomain()
           .getCodeSource()
           .getLocation()
           .toURI();

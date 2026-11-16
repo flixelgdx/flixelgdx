@@ -60,10 +60,10 @@ import java.util.stream.Stream;
  *
  * <p>Install it from the desktop launcher:
  * <pre>{@code
- * Flixel.log.setSiteResolver(new FlixelJvmLogSiteResolver());
+ * Flixel.log.setSiteResolver(new FlixelDesktopLogSiteResolver());
  * }</pre>
  */
-public class FlixelJvmLogSiteResolver implements FlixelLogSiteResolver {
+public class FlixelDesktopLogSiteResolver implements FlixelLogSiteResolver {
 
   private static final String LOGGER_CLASS = FlixelDefaultLogger.class.getName();
   private static final String LOGGING_PACKAGE_PREFIX = "org.flixelgdx.logging.";

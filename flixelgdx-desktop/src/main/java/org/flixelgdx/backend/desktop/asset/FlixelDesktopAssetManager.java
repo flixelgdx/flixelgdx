@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>Platforms without threads (web) provide their own manager instead; nothing here is
  * required by the interface contract.
  */
-public class FlixelJvmAssetManager extends FlixelBaseAssetManager {
+public class FlixelDesktopAssetManager extends FlixelBaseAssetManager {
 
   /** Worker count is capped: asset loading is I/O-bound and two workers keep the queue moving. */
   private static final int MAX_WORKERS = 2;
@@ -54,7 +54,7 @@ public class FlixelJvmAssetManager extends FlixelBaseAssetManager {
   /**
    * Creates a manager with its own daemon worker pool.
    */
-  public FlixelJvmAssetManager() {
+  public FlixelDesktopAssetManager() {
     ThreadFactory factory = new ThreadFactory() {
       private final AtomicInteger counter = new AtomicInteger();
 
