@@ -91,6 +91,9 @@ public interface Html5Extension {
   /**
    * The title that is set on the browser tab the game is running in.
    *
+   * <p>Defaults to the title in {@code project.toml} when the {@code org.flixelgdx.project} settings plugin is
+   * used.
+   *
    * @return The title of the tab.
    */
   Property<String> getTitle();

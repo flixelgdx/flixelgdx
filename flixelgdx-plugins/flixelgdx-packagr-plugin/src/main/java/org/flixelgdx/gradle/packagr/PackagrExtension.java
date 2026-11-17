@@ -93,7 +93,8 @@ public abstract class PackagrExtension {
   /**
    * The application name, used for the launcher executable and the output directory.
    *
-   * <p>Defaults to the Gradle project name.
+   * <p>Defaults to the title in {@code project.toml} when the {@code org.flixelgdx.project} settings plugin is
+   * used, and to the Gradle project name otherwise.
    *
    * @return The application-name property.
    */
@@ -102,7 +103,8 @@ public abstract class PackagrExtension {
   /**
    * The application version, recorded for reference in the package.
    *
-   * <p>Defaults to the Gradle project version.
+   * <p>Defaults to the Gradle project version, which the {@code org.flixelgdx.project} settings plugin sets from
+   * {@code project.toml}.
    *
    * @return The application-version property.
    */
