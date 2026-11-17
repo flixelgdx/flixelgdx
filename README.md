@@ -232,6 +232,10 @@ Not a problem at all. FlixelGDX is perfect for people of all experience levels.
 The framework contains many first-party plugins and extensions to automate all the tedious grunt work — allowing you to 
 focus on what's important: making a game.
 
+The repository root ships a `flxgdx.yml` manifest that describes every package it publishes (the framework, the JSON
+processor and each Gradle plugin), so the `flxgdx` command line tool can install them into a game. It uses the same
+format as any third-party library.
+
 ---
 
 ## Getting Started
