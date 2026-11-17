@@ -20,6 +20,7 @@ The project is split into several modules, each serving a specific purpose.
 - **`flixelgdx-basisu-plugin`**: Bundles Basis Universal binaries for each OS and applies `.ktx2` compression for every `.png` asset on Android. At runtime the Android backend transcodes each file to ASTC or ETC2 (whatever the GPU supports) through `FlixelKtx2` in `flixelgdx-gpu`, so textures stay compressed in GPU memory.
 - **`flixelgdx-html5-plugin`**: Automates the workflow for web games. This includes copying assets and generating the HTML index file that boots the WebAssembly or JavaScript bundle, and more.
 - **`flixelgdx-packagr-plugin`**: Automates deployment and packaging for desktop games, with default options for Windows, macOS and Linux on all architectures.
+- **`flixelgdx-project-plugin`**: A settings plugin that reads a game's `project.toml` to include the right modules, set the group and version, default the HTML5 and packagr plugins' names, and generate a `Project` class whose `config()` returns a filled-in `FlixelConfig.Builder`.
 - **`flixelgdx-shader-plugin`**: Build-time shader validation. Compiles a game's `.wgsl` shaders with Dawn (a Null backend device in a forked Java 25 process, no GPU needed), fails the build with `file:line:column` errors, and copies the shaders to `build/generated/flixelgdx/shaders/shaders/<name>.wgsl`, which is added to the `main` resources.
 
 ### Misc.

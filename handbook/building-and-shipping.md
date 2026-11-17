@@ -12,11 +12,12 @@ and bundled shaders, and compressed Android textures. It also covers versioning 
 4. [Web: the HTML5 plugin](#web-the-html5-plugin)
 5. [Shaders: the shader plugin](#shaders-the-shader-plugin)
 6. [Asset paths: the assets plugin](#asset-paths-the-assets-plugin)
-7. [Android: building and compressing textures](#android-building-and-compressing-textures)
-8. [Keeping files out of a build](#keeping-files-out-of-a-build)
-9. [Versioning your game](#versioning-your-game)
-10. [Release checklist](#release-checklist)
-11. [Check your understanding](#check-your-understanding)
+7. [Project info: the project plugin](#project-info-the-project-plugin)
+8. [Android: building and compressing textures](#android-building-and-compressing-textures)
+9. [Keeping files out of a build](#keeping-files-out-of-a-build)
+10. [Versioning your game](#versioning-your-game)
+11. [Release checklist](#release-checklist)
+12. [Check your understanding](#check-your-understanding)
 
 ## The plugins at a glance
 
@@ -26,6 +27,7 @@ and bundled shaders, and compressed Android textures. It also covers versioning 
 | `org.flixelgdx.html5`    | Web module     | Copies assets, generates the page, runs a dev server, and zips a deployable web app. |
 | `org.flixelgdx.shaders`  | Core module    | Checks WGSL shaders at build time and bundles them into resources.           |
 | `org.flixelgdx.assets`   | Core module    | Generates a type-safe `Assets` class with a path constant for every asset.   |
+| `org.flixelgdx.project`  | Settings file  | Reads `project.toml` for the modules, title, version and window settings.    |
 | `org.flixelgdx.basisu`   | Android module | Compresses PNGs into KTX2/Basis Universal textures at build time.            |
 
 Projects from the project generator come with the right plugins already applied.
@@ -196,6 +198,47 @@ Flixel.assets.load(Assets.Shared.Sprites.PLAYER_PNG); // assets/shared/sprites/p
 
 The class is generated before the code compiles and whenever the IDE reloads the Gradle project. See the
 [plugin README](../flixelgdx-plugins/flixelgdx-assets-plugin/README.md) for the naming rules and settings.
+
+## Project info: the project plugin
+
+A game's name, version and window size tend to get typed into several build files and the game's code, and then
+drift apart. The project plugin is a *settings* plugin that reads one file, `project.toml`, next to
+`settings.gradle`. The file can be written by hand or by tools.
+
+```groovy
+// settings.gradle
+plugins {
+  id 'org.flixelgdx.project' version '<flixel-version>'
+}
+```
+
+```toml
+# project.toml
+platforms = ["desktop", "html5", "android"]
+
+[app]
+title   = "My Game"
+package = "com.example.mygame"
+company = "My Studio"
+version = "0.1.0"
+
+[window]
+width  = 640
+height = 360
+```
+
+From that file the plugin includes `core` and the listed platform modules (`android` only when an Android SDK is
+found, otherwise it warns and skips it), sets `group` and `version` on every project, and makes the HTML5 plugin's page
+title and packagr's application name default to the title. It also generates a `Project` class in `core`, so the game
+can start from the file's values:
+
+```java
+FlixelConfig config = Project.config().build();
+```
+
+An invalid title, company or version fails the build with a message naming the field and the character that is wrong.
+In an Android module's `build.gradle`, use `versionName = version.toString()` to share the version. See the
+[plugin README](../flixelgdx-plugins/flixelgdx-project-plugin/README.md) for every key and the naming rules.
 
 ## Android: building and compressing textures
 

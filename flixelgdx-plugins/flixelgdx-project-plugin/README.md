@@ -1,0 +1,131 @@
+# FlixelGDX Project Plugin
+
+Describe your game once, in a `project.toml` file, and let the build read it everywhere.
+
+Without this plugin, the same facts (the title, the version, the window size) are typed into several build files and
+the game's code, and they slowly drift apart. This plugin makes `project.toml` the single source of truth: it picks
+the modules to build, sets the group and version, and generates a `Project` class so the game's `FlixelConfig` is
+filled in from the file. The file can be written by hand or by tools.
+
+## Usage
+
+Apply the plugin in `settings.gradle` (it is a settings plugin, not a project plugin):
+
+```groovy
+// settings.gradle
+plugins {
+  id 'org.flixelgdx.project' version '<flixel-version>'
+}
+```
+
+Then put a `project.toml` next to the settings file:
+
+```toml
+platforms = ["desktop", "html5", "android"]
+
+[app]
+title    = "My Game"
+package  = "com.example.mygame"
+company  = "My Studio"
+version  = "0.1.0"
+language = "java"            # or "kotlin"
+
+[window]
+width      = 640
+height     = 360
+framerate  = 60
+vsync      = true
+fullscreen = false
+
+[render]                     # optional
+resolution  = [0, 0]         # 0 means use the window size
+scale       = 1.0
+smooth      = true
+transparent = false
+```
+
+`platforms` is a top-level key, so it has to come before the first `[table]`. Tables and keys the plugin does not
+know (such as an `[installed]` table that tools write) are ignored.
+
+## The values
+
+| Key                      | Required | Default                | Notes                                                                 |
+|--------------------------|----------|------------------------|-----------------------------------------------------------------------|
+| `app.title`              | yes      |                        | Printable ASCII, see the naming rules below.                          |
+| `app.company`            | yes      |                        | Same rules as the title.                                              |
+| `app.version`            | yes      |                        | Letters, digits, `.`, `+` and `-`, and it starts with a digit.        |
+| `app.package`            | yes      |                        | A lowercase Java package such as `com.example.mygame`.                |
+| `app.language`           | no       | `java`                 | `java` or `kotlin`.                                                   |
+| `window.width`           | no       | `640`                  | Greater than 0.                                                       |
+| `window.height`          | no       | `360`                  | Greater than 0.                                                       |
+| `window.framerate`       | no       | `60`                   | Greater than 0.                                                       |
+| `window.vsync`           | no       | `true`                 |                                                                       |
+| `window.fullscreen`      | no       | `false`                |                                                                       |
+| `render.resolution`      | no       | `[0, 0]`               | Two numbers, 0 or more. 0 means the window size. `false` turns the render resolution off. |
+| `render.scale`           | no       | `1.0`                  | Greater than 0.                                                       |
+| `render.smooth`          | no       | `true`                 | `false` for crisp nearest-neighbor stretching (pixel art).            |
+| `render.transparent`     | no       | `false`                | Requests an alpha-capable framebuffer.                                |
+| `platforms`              | no       | `["desktop"]`          | Any of `desktop`, `html5` and `android`. `ios` is not supported yet.  |
+
+The defaults are the ones of `FlixelConfig.Builder`, so leaving a value out behaves like never setting it.
+
+### Naming rules for the title and company
+
+These end up in folder names, executables and save paths on every operating system, so they must:
+
+- use printable ASCII only (space through `~`),
+- not be blank, and not start or end with a space or a dot,
+- not contain any of `< > : " / \ | ? *`,
+- not be a reserved Windows name (`CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9`, `LPT1` to `LPT9`), in any letter case.
+
+A value that breaks a rule fails the build with a message that names the field and the offending character.
+
+## What the plugin does
+
+1. **Includes the modules.** `core` is always included, plus every listed platform. Each module's folder must exist,
+   or the build fails and says which one is missing. `android` is only included when an Android SDK is found
+   (`sdk.dir` in `local.properties`, or the `ANDROID_HOME` or `ANDROID_SDK_ROOT` environment variable pointing to a
+   folder). Otherwise it is skipped with a warning that explains how to point to one.
+2. **Sets the project info.** Every project gets `group` set to the package and `version` set to the version, and a
+   read-only `flixelProject` extension with the values:
+
+   ```groovy
+   // android/build.gradle
+   android {
+     defaultConfig {
+       versionName = version.toString()
+     }
+   }
+   ```
+
+3. **Sets defaults for the other plugins.** The `org.flixelgdx.html5` plugin uses the title as its page title, and the
+   `org.flixelgdx.packagr` plugin uses the title as its application name and (through `version`) the version.
+   Anything set in a build file still wins.
+4. **Generates a `Project` class** for the `core` module when it has the `java` plugin, before the code compiles.
+
+## The generated class
+
+With the file above, the `core` module gets `com.example.mygame.Project`:
+
+```java
+public final class Project {
+  public static final String TITLE = "My Game";
+  public static final String COMPANY = "My Studio";
+  public static final String VERSION = "0.1.0";
+  public static final int WIDTH = 640;
+  // HEIGHT, FRAMERATE, VSYNC and FULLSCREEN, plus RENDER_* values when there is a [render] table
+
+  public static FlixelConfig.Builder config() { ... }
+}
+```
+
+`config()` returns a builder that is already filled in, so a game can start with the file's values and tweak what it
+needs:
+
+```java
+FlixelConfig config = Project.config().framerate(144).build();
+```
+
+The task is called `generateProjectClass`. It is cacheable and reruns only when `project.toml` changes. Its output
+folder, `build/generated/sources/flixelProject/java/main`, is a Java source folder of the `main` source set, so
+compiling (Java or Kotlin) always runs it first.
