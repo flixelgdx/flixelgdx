@@ -20,7 +20,7 @@ packages:
     kind: library
     description: The FlixelGDX game framework.
     suggests:
-      # Only mentioned to Kotlin projects, never installed automatically.
+      # New Kotlin projects get this by default; other projects only see it mentioned.
       - { repo: flixelgdx/flixelgdx-ktx, language: kotlin }
     modules:
       core:
@@ -99,7 +99,7 @@ packages:
           - id: org.flixelgdx.assets
             artifact: flixelgdx-assets-plugin
     notes:
-      core: Set the generated class package with assetsClass { packageName = "com.mygame" } in your build file.
+      core: Use the generated Assets class instead of typing asset paths by hand. It is regenerated on every build.
 
   - name: shaders
     kind: plugin
