@@ -130,6 +130,20 @@ import java.util.function.Supplier;
  *
  * <h2>Example Usage</h2>
  *
+ * <p>In a project made with the {@code flxgdx} command line tool, the window values live in
+ * {@code project.toml} and reach the game through the generated {@code Project} class:
+ *
+ * <pre>{@code
+ * public class MyGame extends FlixelGame {
+ *
+ *   public MyGame() {
+ *     super(Project.config().build(), MenuState::new);
+ *   }
+ * }
+ * }</pre>
+ *
+ * <p>Without {@code project.toml}, build the {@link FlixelConfig} yourself:
+ *
  * <pre>{@code
  * public class MyGame extends FlixelGame {
  *
@@ -143,7 +157,11 @@ import java.util.function.Supplier;
  *     );
  *   }
  * }
+ * }</pre>
  *
+ * <p>Either way, a platform's launcher starts the game:
+ *
+ * <pre>{@code
  * // In your platform's launcher (i.e. desktop):
  * FlixelDesktopLauncher.launch(new MyGame());
  * }</pre>

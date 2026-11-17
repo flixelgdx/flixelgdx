@@ -83,8 +83,8 @@ Everything below is optional except `mainClass`.
 | `appName`      | project name                | Name of the launcher executable, output folder, and zip.   |
 | `appVersion`   | project version             | Version recorded for the package.                          |
 | `jvmArg(...)`  | none                        | An argument passed to the bundled JVM at startup.          |
-| `jreVersion`   | `25`                        | Feature version of the Java runtime to bundle.             |
-| `jreCacheDir`  | `~/.flixelgdx/jdks`         | Shared cache; a given runtime is downloaded only once.     |
+| `jdkVersion`   | `25`                        | Feature version of the Java runtime to bundle.             |
+| `jdkCacheDir`  | `~/.flixelgdx/jdks`         | Shared cache; a given runtime is downloaded only once.     |
 | `jlinkModules` | a desktop-game module set   | Java modules included in the trimmed runtime.              |
 
 Example using several of these:
@@ -95,7 +95,7 @@ packagr {
   appName = 'MyGame'
 
   jvmArg('-Xmx1G')
-  jreVersion = 21
+  jdkVersion = 21
 
   targets {
     windowsX64()
@@ -123,7 +123,7 @@ The `packagr.cfg` is a small text file listing the main class, the runtime and l
 each JVM argument. The launcher reads it at startup; there is nothing platform-specific to edit.
 
 The game jar is the only jar in the package, so it must be self-contained: its dependencies,
-natives, and assets are all bundled inside it (projects from the FlixelGDX project generator already
+natives, and assets are all bundled inside it (projects created with `flxgdx new` already
 build their jar this way). There is no separate dependency or assets step.
 
 ## The bundled runtime

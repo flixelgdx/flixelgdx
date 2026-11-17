@@ -30,7 +30,7 @@ and bundled shaders, and compressed Android textures. It also covers versioning 
 | `org.flixelgdx.project`  | Settings file  | Reads `project.toml` for the modules, title, version and window settings.    |
 | `org.flixelgdx.basisu`   | Android module | Compresses PNGs into KTX2/Basis Universal textures at build time.            |
 
-Projects from the project generator come with the right plugins already applied.
+Projects created with `flxgdx new` come with the right plugins already applied. `flxgdx package <target>` runs the matching packaging task for you.
 
 ## Before you ship: release mode
 
@@ -87,7 +87,7 @@ Good to know:
 
 - **The launcher runs the game in its own process**, so it shows up under your game's name in the task manager.
 - **The runtime is trimmed** with `jlink` from an Eclipse Temurin JDK, downloaded once and cached in
-  `~/.flixelgdx/jdks`. Change the version with `jreVersion` and the modules with `jlinkModules`.
+  `~/.flixelgdx/jdks`. Change the version with `jdkVersion` and the modules with `jlinkModules`.
 - **Only matching natives are bundled**, so a Windows package carries no Linux or macOS libraries.
 - **You can package every platform from one machine**, for example Windows packages from Linux.
 - **macOS packages target Apple Silicon** (`macosArm64()`); there is no Intel macOS target.

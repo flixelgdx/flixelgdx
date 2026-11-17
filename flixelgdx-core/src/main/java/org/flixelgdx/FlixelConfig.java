@@ -37,6 +37,13 @@ import java.util.Objects;
  * framework reads it once at startup. No property can change after {@link Builder#build()} returns,
  * so there is never any ambiguity between what was configured and what the game is running with.
  *
+ * <p>In a project made with the {@code flxgdx} command line tool, you rarely build one by hand:
+ * the values come from {@code project.toml}, and the generated {@code Project} class hands you a
+ * {@link Builder} that is already filled in, as in {@code Project.config().build()}. Change the
+ * title, company, version, window, and render settings in that file. The builder documented below
+ * is what that class uses underneath, and it works on its own when a project has no
+ * {@code project.toml}.
+ *
  * <p>Most properties have sensible defaults (640x360, 60 fps, VSync on, windowed), so you only
  * need to set what differs. Two properties deserve special attention:
  *

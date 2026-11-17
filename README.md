@@ -6,9 +6,8 @@
   [![Maven Central](https://img.shields.io/maven-central/v/org.flixelgdx/flixelgdx-core)](https://central.sonatype.com/artifact/org.flixelgdx/flixelgdx-core)
   [![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Website](https://img.shields.io/badge/website-flixelgdx.org-blue)](https://flixelgdx.org)
   [![Java 25+](https://img.shields.io/badge/Java-25%2B-orange)](https://adoptium.net/temurin/releases?version=25&os=any&arch=any)
-  [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web%20%7C%20Android-brightgreen)](https://flixelgdx.org)
+  [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web%20%7C%20Android-brightgreen)](handbook/platforms.md)
 
   FlixelGDX is a feature-packed game framework for the Java ecosystem, with heavy inspiration from 
   [HaxeFlixel](https://haxeflixel.com/). It's designed to bring the classic style of its Haxe-based cousin, with heavy 
@@ -244,6 +243,9 @@ If you want to start using the framework, you don't need to worry about configur
 already got you covered. You can get started right way with the following links:
 
 - [📚 Handbook](handbook/README.md)
+- [⌨️ The `flxgdx` command line tool](https://github.com/flixelgdx/flixelgdx-cli), which creates, changes, checks and
+  runs FlixelGDX projects. See [Getting Started](handbook/getting-started.md) for how to install it and make your
+  first project.
 
 ---
 
