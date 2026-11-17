@@ -30,7 +30,7 @@ packages:
           # buildSrc convention plugin can apply kotlin("jvm").
           - artifact: kotlin-gradle-plugin
             group: org.jetbrains.kotlin
-            version: "2.2.20"
+            version: "2.3.21"
             scope: buildsrc
             if-language: kotlin
       desktop:
@@ -68,7 +68,7 @@ packages:
           - id: org.jetbrains.kotlin.android
             group: org.jetbrains.kotlin
             artifact: kotlin-gradle-plugin
-            version: "2.2.20"
+            version: "2.3.21"
             if-language: kotlin
 
   # Annotation processor that generates JSON code for classes marked @JsonSerializable.
@@ -85,7 +85,7 @@ packages:
           - id: org.jetbrains.kotlin.kapt
             group: org.jetbrains.kotlin
             artifact: kotlin-gradle-plugin
-            version: "2.2.20"
+            version: "2.3.21"
             if-language: kotlin
     notes:
       core: Annotate the classes you want to save or load with @JsonSerializable.
