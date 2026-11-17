@@ -55,6 +55,7 @@ tasks.register("javadocAll") {
     ":flixelgdx-plugins:flixelgdx-assets-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-basisu-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-html5-plugin:javadoc",
+    ":flixelgdx-plugins:flixelgdx-project-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-shader-plugin:javadoc"
   )
   if (gradle.extra["includeAndroid"] as Boolean) {
