@@ -216,51 +216,58 @@ Alternatively, the universal `.tar.gz` from Option A works on openSUSE without a
 
 You need a separate test project that depends on FlixelGDX.
 
-### Generating the project
+### Creating the project
 
-Use the **Getting Started** page on the [FlixelGDX website](https://flixelgdx.org/getting-started) to generate a test project. It creates a fully wired, ready-to-run Gradle multi-module project:
+Use the [`flxgdx` command line tool](https://github.com/flixelgdx/flixelgdx-cli) to create a test project. It writes a
+fully wired, ready-to-run Gradle multi-module project. Install it by building it from source (this needs
+[Go](https://go.dev/dl/)):
+
+```bash
+go install github.com/flixelgdx/flixelgdx-cli/cmd/flxgdx@latest
+```
+
+Then create the project in a folder of your choice:
+
+```bash
+flxgdx new flixel-test --title "Flixel Test" --company "Test Studio" --app-version 0.1.0
+```
+
+Add `--platforms desktop,html5,android` if you need to test more than the default desktop and web, and
+`--language kotlin` to test Kotlin. Run `flxgdx new --help` to see every flag. The result looks like this:
 
 ```
-my-game/
+flixel-test/
+  project.toml          -- app info, window and render settings, and the platform list
   assets/               -- game assets shared across all platforms
-  core/                 -- your game’s shared logic (depends on flixelgdx-core)
+  core/                 -- your game's shared logic (depends on flixelgdx-core)
   desktop/              -- desktop launcher (depends on flixelgdx-desktop)
   html5/                -- web launcher (depends on flixelgdx-html5)
-  build.gradle          -- root build file
+  buildSrc/             -- shared Gradle build logic
+  gradle/libs.versions.toml -- the version catalog
+  settings.gradle.kts   -- applies the project plugin and lists the modules
   gradlew / gradlew.bat -- Gradle wrapper script(s)
-  settings.gradle       -- Project settings
 ```
 
-1. Fill in your project details:
-    - **Game name**: e.g. `FlixelTest`.
-    - **Game id**: e.g. `flixel-test`.
-    - **Package name**: e.g. `com.example.flixeltest`.
-    - **Language**: **Java** (or Kotlin).
-    - **JDK vendor**: **Eclipse Temurin** (recommended).
-    - **Platforms**: at minimum **Desktop**. Add others if you need to test them as well.
-    - **Template**: **Blank play state** for an empty starting point.
-2. Click **Download project** and unzip the result to a folder of your choice.
-3. Open a terminal in the unzipped folder and verify the project boots:
-   ```bash
-   ./gradlew :desktop:run
-   ```
-   (Use `gradlew.bat :desktop:run` on Windows.)
+Open a terminal in the new folder and verify the project boots:
+
+```bash
+flxgdx run desktop
+```
+
+(This runs `./gradlew :desktop:run`, so you can also use that directly, or `gradlew.bat :desktop:run` on Windows.)
 
 Gradle auto-downloads a matching JDK toolchain on the first build. After a brief first-time download you should see the empty game window.
 
-> [!TIP]
-> If you toggle on Expert mode, some new options will be available to you, including JitPack setup and an option to provide a composite build path.
-
-The template pre-creates a `FlixelGame` subclass and a `FlixelState` in `core/src/main/java/...` so you can start adding game logic immediately. Open those files and replace the state’s `create()` method with your test code.
+The template pre-creates a `FlixelGame` subclass and a `FlixelState` in `core/src/main/java/...` so you can start adding game logic immediately. Open those files and replace the state's `create()` method with your test code.
 
 **Platform run commands:**
 
-| Platform    | Run command                       |
-|-------------|-----------------------------------|
-| **Desktop** | `./gradlew :desktop:run`          |
-| **Web**     | `./gradlew :html5:run`            |
-| **Android** | `./gradlew :android:installDebug` |
-| **iOS**     | -                                 |
+| Platform    | Run command                                           |
+|-------------|-------------------------------------------------------|
+| **Desktop** | `flxgdx run desktop` or `./gradlew :desktop:run`      |
+| **Web**     | `flxgdx run html5` or `./gradlew :html5:run`          |
+| **Android** | `flxgdx run android` or `./gradlew :android:installDebug` |
+| **iOS**     | -                                                     |
 
 Now that you have the project downloaded, you need to actually test your local changes, rather than from Maven Central. There are two methods of doing this:
 
@@ -269,13 +276,13 @@ Now that you have the project downloaded, you need to actually test your local c
 
 ### Method 1: Using `mavenLocal()`
 
-The generated project targets Maven Central by default, pulling the last stable release of FlixelGDX rather than your local clone. To test your local changes:
+The project targets Maven Central by default, pulling the last stable release of FlixelGDX rather than your local clone. To test your local changes:
 
 1. In the FlixelGDX repo, publish to your local Maven repository:
    ```bash
    ./gradlew publishToMavenLocal
    ```
-2. In the test project’s root `build.gradle`, add `mavenLocal()` to the `repositories` block before `mavenCentral()`.
+2. In the test project's `settings.gradle.kts`, add `mavenLocal()` to the `repositories` blocks (in `pluginManagement` and in `dependencyResolutionManagement`) before `mavenCentral()`.
 
 > [!WARNING]
 > The published artifact version is derived from your most recent git tag using `git describe`. If git is not installed or your clone has no tags, the version will be `unspecified`, and the test project will fail to resolve the dependency. Use [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) to avoid version concerns entirely.
@@ -288,20 +295,23 @@ The generated project targets Maven Central by default, pulling the last stable 
 Composite build lets the test project use your local FlixelGDX source so changes are picked up without republishing.
 
 1. **Open your test project** in IntelliJ IDEA.
-2. **Add the composite to the test project’s `settings.gradle`**, below the existing `rootProject.name` line:
-  ```gradle
-   includeBuild ‘/path/to/flixelgdx’
-  ```
+2. **Add the composite to the test project's `settings.gradle.kts`**, below the existing `rootProject.name` line:
+   ```kotlin
+   includeBuild("/path/to/flixelgdx")
+   ```
    Replace `/path/to/flixelgdx` with the path to your FlixelGDX clone.
-  - **Windows**: use forward slashes, e.g. `C:/Users/You/flixelgdx`.
-  - **macOS/Linux**: e.g. `/home/you/projects/flixelgdx`.
-3. **Your existing dependency declaration stays as-is**; the composite build substitutes it automatically:
-  ```gradle
-   dependencies {
-     implementation ‘org.flixelgdx:flixelgdx-core:<version>’
-     // ... other dependencies
+   - **Windows**: use forward slashes, e.g. `C:/Users/You/flixelgdx`.
+   - **macOS/Linux**: e.g. `/home/you/projects/flixelgdx`.
+3. **Add the same folder to the `pluginManagement` block** at the top of the same file, so the project's Gradle plugins
+   (such as `org.flixelgdx.project`) also come from your clone:
+   ```kotlin
+   pluginManagement {
+     includeBuild("/path/to/flixelgdx")
+     // ... existing repositories
    }
-  ```
+   ```
+   The dependencies in `gradle/libs.versions.toml` stay as they are; the composite build substitutes them
+   automatically.
 4. **Refresh Gradle** (e.g. “Reload All Gradle Projects” or run a Gradle sync). The test project will compile against your FlixelGDX source; re-run or debug the game to see framework changes immediately.
 
 ---
@@ -485,7 +495,7 @@ Then run your Gradle command again.
 - **Symptom**: The test project fails to resolve the FlixelGDX dependency.
 - **Fix**:  
   - If using **Maven Local**: run `./gradlew publishToMavenLocal` in the FlixelGDX repo, and ensure the test project’s root `build.gradle` has `mavenLocal()` in `repositories`.  
-  - If using **composite build**: check that `includeBuild(...)` in the test project’s `settings.gradle` uses the correct **absolute** path to the FlixelGDX directory and that the module name is `:flixelgdx-core`.
+  - If using **composite build**: check that `includeBuild(...)` in the test project’s `settings.gradle.kts` uses the correct **absolute** path to the FlixelGDX directory and that the module name is `:flixelgdx-core`.
 
 ### Composite build path wrong (Windows)
 
