@@ -136,6 +136,32 @@ class ProjectTomlTest {
   }
 
   @Test
+  void cliBookkeepingTablesAreIgnored() {
+    ProjectModel model = ProjectToml.parse(APP + """
+        [[installed]]
+        repo = "flixelgdx/flixelgdx-ui"
+        package = "flixelgdx-ui"
+        kind = "library"
+        tag = "v0.7.2"
+        libraries = [{ alias = "flixelgdx-ui", bundles = ["core"] }]
+        plugins = [{ module = "core", id = "org.flixelgdx.assets", alias = "flixelgdx-assets-plugin" }]
+        repositories = []
+
+        [[installed]]
+        repo = ""
+        package = "my-lib"
+        kind = "library"
+        tag = ""
+        libraries = [{ alias = "my-lib", bundles = ["core"] }]
+        plugins = []
+        repositories = []
+        """);
+
+    assertEquals("My Game", model.title());
+    assertEquals(640, model.width());
+  }
+
+  @Test
   void requiredValuesAreNamed() {
     for (String key : List.of("title", "company", "version", "package")) {
       String text = APP.lines().filter(line -> !line.startsWith(key)).reduce("", (a, b) -> a + b + "\n");

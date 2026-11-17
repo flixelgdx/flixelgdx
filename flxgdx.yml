@@ -1,0 +1,135 @@
+# Describes every package this repository publishes, so the flxgdx command line tool can
+# install them into a game (flxgdx add library --repo flixelgdx/flixelgdx). The framework
+# uses the same format as any third-party library, nothing is special cased.
+# Format guide: https://github.com/flixelgdx/flixelgdx-cli/blob/master/MANIFEST.md
+schema: 1
+
+# Every artifact below belongs to this Maven group.
+group: org.flixelgdx
+
+# A release tag such as v0.7.2 becomes the artifact version 0.7.2.
+version-from-tag: strip-v
+
+# The folder of guides that ships with this repository.
+handbook:
+  path: handbook
+
+packages:
+  # The framework itself: one library per platform module.
+  - name: flixelgdx
+    kind: library
+    description: The FlixelGDX game framework.
+    suggests:
+      # New Kotlin projects get this by default; other projects only see it mentioned.
+      - { repo: flixelgdx/flixelgdx-ktx, language: kotlin }
+    modules:
+      core:
+        libraries:
+          - artifact: flixelgdx-core
+          # Kotlin games need Kotlin's Gradle plugin on the buildSrc classpath so their
+          # buildSrc convention plugin can apply kotlin("jvm").
+          - artifact: kotlin-gradle-plugin
+            group: org.jetbrains.kotlin
+            version: "2.3.21"
+            scope: buildsrc
+            if-language: kotlin
+      desktop:
+        libraries:
+          - artifact: flixelgdx-desktop
+      html5:
+        libraries:
+          - artifact: flixelgdx-html5
+        plugins:
+          # Order matters: TeaVM comes first, then the FlixelGDX plugin that wires it up.
+          # TeaVM is pinned to 0.13.0 on purpose, newer versions break WasmGC stack traces.
+          - id: org.teavm
+            group: org.teavm
+            artifact: teavm-gradle-plugin
+            version: "0.13.0"
+          - id: org.flixelgdx.html5
+            artifact: flixelgdx-html5-plugin
+      android:
+        libraries:
+          - artifact: flixelgdx-android
+          # Lets older Android versions use newer Java library classes.
+          - artifact: desugar_jdk_libs
+            group: com.android.tools
+            version: "2.1.5"
+            scope: desugar
+          - artifact: r8
+            group: com.android.tools
+            version: "8.13.25"
+            scope: buildsrc
+        plugins:
+          - id: com.android.application
+            group: com.android.tools.build
+            artifact: gradle
+            version: "8.11.0"
+          - id: org.jetbrains.kotlin.android
+            group: org.jetbrains.kotlin
+            artifact: kotlin-gradle-plugin
+            version: "2.3.21"
+            if-language: kotlin
+
+  # Annotation processor that generates JSON code for classes marked @JsonSerializable.
+  - name: json-processor
+    kind: library
+    description: Generates reflection-free JSON mapping code for @JsonSerializable classes.
+    modules:
+      core:
+        libraries:
+          - artifact: flixelgdx-json-processor
+            scope: processor
+        plugins:
+          # Kotlin projects need kapt to run annotation processors.
+          - id: org.jetbrains.kotlin.kapt
+            group: org.jetbrains.kotlin
+            artifact: kotlin-gradle-plugin
+            version: "2.3.21"
+            if-language: kotlin
+    notes:
+      core: Annotate the classes you want to save or load with @JsonSerializable.
+
+  - name: assets
+    kind: plugin
+    description: Generates a type-safe Assets class with a constant for every file in assets/.
+    modules:
+      core:
+        plugins:
+          - id: org.flixelgdx.assets
+            artifact: flixelgdx-assets-plugin
+    notes:
+      core: Use the generated Assets class instead of typing asset paths by hand. It is regenerated on every build.
+
+  - name: shaders
+    kind: plugin
+    description: Validates WGSL shaders at build time and bundles them for every platform.
+    modules:
+      core:
+        plugins:
+          - id: org.flixelgdx.shaders
+            artifact: flixelgdx-shader-plugin
+    notes:
+      core: Put your .wgsl files in src/main/shaders and load them with FlixelShader.load("name").
+
+  - name: packagr
+    kind: plugin
+    description: Packages a desktop game into a self-contained app with a trimmed JDK.
+    modules:
+      desktop:
+        plugins:
+          - id: org.flixelgdx.packagr
+            artifact: flixelgdx-packagr-plugin
+    notes:
+      desktop: Set packagr { mainClass = "..." } and choose platforms in packagr { targets { ... } }, then run ./gradlew packageAll.
+
+  - name: basisu
+    kind: plugin
+    description: Compresses PNG textures to KTX2/Basis Universal on Android.
+    modules:
+      android:
+        plugins:
+          - id: org.flixelgdx.basisu
+            artifact: flixelgdx-basisu-plugin
+    notes:
+      android: Compression is off by default. Turn it on with enableBasisuCompression=true in gradle.properties.
