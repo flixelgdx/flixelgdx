@@ -88,6 +88,7 @@ include(
   "flixelgdx-json-processor",
   ":flixelgdx-plugins:flixelgdx-assets-plugin",
   ":flixelgdx-plugins:flixelgdx-html5-plugin",
+  ":flixelgdx-plugins:flixelgdx-project-plugin",
   ":flixelgdx-plugins:flixelgdx-basisu-plugin",
   ":flixelgdx-plugins:flixelgdx-shader-plugin",
   ":flixelgdx-plugins:flixelgdx-packagr-plugin",

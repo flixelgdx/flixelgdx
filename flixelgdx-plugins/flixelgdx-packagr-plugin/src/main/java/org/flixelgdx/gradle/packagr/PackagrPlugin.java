@@ -99,7 +99,10 @@ public class PackagrPlugin implements Plugin<Project> {
   }
 
   private static void applyConventions(Project project, PackagrExtension ext) {
-    ext.getAppName().convention(project.getName());
+    // The project plugin publishes the title from project.toml as a plain project property, so this plugin does not
+    // depend on it. It is read right away (not lazily) so the convention never holds on to the project.
+    Object projectTitle = project.findProperty("flixelProject.title");
+    ext.getAppName().convention(projectTitle instanceof String title ? title : project.getName());
     ext.getAppVersion().convention(project.provider(() -> String.valueOf(project.getVersion())));
     ext.getJdkVersion().convention(25);
     ext.getJlinkModules().convention(DEFAULT_MODULES);
