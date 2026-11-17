@@ -128,4 +128,5 @@ FlixelConfig config = Project.config().framerate(144).build();
 
 The task is called `generateProjectClass`. It is cacheable and reruns only when `project.toml` changes. Its output
 folder, `build/generated/sources/flixelProject/java/main`, is a Java source folder of the `main` source set, so
-compiling (Java or Kotlin) always runs it first.
+compiling (Java or Kotlin) always runs it first. The class is also written whenever an IDE reloads the Gradle
+project, so `Project` resolves right after a sync without a build.

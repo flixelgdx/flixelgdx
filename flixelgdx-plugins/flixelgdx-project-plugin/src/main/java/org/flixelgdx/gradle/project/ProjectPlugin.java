@@ -78,7 +78,8 @@ import java.util.Properties;
  *       is found, otherwise a warning explains how to install or point to one.</li>
  *   <li>Sets {@code group} to the package and {@code version} to the version on every project, and adds the
  *       {@link ProjectExtension} as {@code flixelProject}.</li>
- *   <li>Generates a {@code Project} class for the {@code core} module, see {@link GenerateProjectClassTask}.</li>
+ *   <li>Generates a {@code Project} class for the {@code core} module, see {@link GenerateProjectClassTask}. It is
+ *       also written when an IDE reloads the Gradle project, so it resolves without a build first.</li>
  *   <li>Makes the defaults of the {@code org.flixelgdx.html5} (page title) and {@code org.flixelgdx.packagr}
  *       (application name and version) plugins follow the file, by publishing the values as the project properties
  *       {@value #TITLE_PROPERTY} and {@value #VERSION_PROPERTY}. Those plugins read plain properties, so they need no
@@ -199,5 +200,34 @@ public class ProjectPlugin implements Plugin<Settings> {
     sourceSets.getByName("main").getJava().srcDir(out);
 
     project.getTasks().matching(t -> t.getName().equals("compileKotlin")).configureEach(t -> t.dependsOn(generate));
+
+    // The idea and eclipse plugins write IDE project files from the sources, so the class should exist by then.
+    project.getTasks().matching(t -> t.getName().equals("ideaModule") || t.getName().equals("eclipseClasspath"))
+        .configureEach(t -> t.dependsOn(generate));
+
+    if (isIdeReload(project)) {
+      project.afterEvaluate(p -> generateNow(p, file, generate));
+    }
+  }
+
+  /**
+   * Tells whether Gradle is only loading the project for an IDE, without running any task.
+   *
+   * <p>IntelliJ IDEA (and Android Studio) set {@code idea.sync.active} while they sync. Other IDEs, such as Eclipse
+   * and VS Code, load the project through the Gradle tooling API without naming a task, which this also covers.
+   */
+  private static boolean isIdeReload(Project project) {
+    return Boolean.parseBoolean(System.getProperty("idea.sync.active"))
+        || project.getGradle().getStartParameter().getTaskNames().isEmpty();
+  }
+
+  /** Writes the project class right away, so it exists as soon as the IDE has reloaded the project. */
+  private static void generateNow(Project project, File file, TaskProvider<GenerateProjectClassTask> task) {
+    try {
+      GenerateProjectClassTask.generate(file, task.get().getOutputDir().get().getAsFile());
+    } catch (GradleException e) {
+      // A reload should never fail because of the file. The same error fails the next build, where it belongs.
+      project.getLogger().warn("Could not generate the project class: {}", e.getMessage());
+    }
   }
 }

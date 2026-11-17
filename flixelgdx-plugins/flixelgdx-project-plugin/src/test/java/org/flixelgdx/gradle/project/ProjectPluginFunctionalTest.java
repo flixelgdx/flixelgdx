@@ -127,6 +127,25 @@ class ProjectPluginFunctionalTest {
   }
 
   @Test
+  void ideReloadWritesTheClassWithoutRunningATask() throws IOException {
+    setUp(TOML);
+
+    BuildResult result = runner().build();
+
+    assertTrue(result.task(":core:generateProjectClass") == null, result.getOutput());
+    assertTrue(generated().contains("TITLE = \"My Game\""), generated());
+  }
+
+  @Test
+  void intellijSyncWritesTheClass() throws IOException {
+    setUp(TOML);
+
+    runner("help", "-Didea.sync.active=true").build();
+
+    assertTrue(generated().contains("TITLE = \"My Game\""), generated());
+  }
+
+  @Test
   void androidWithoutAnSdkIsSkippedWithAWarning() throws IOException {
     setUp(TOML.replace("[\"desktop\"]", "[\"desktop\", \"android\"]"));
     Files.createDirectories(dir.resolve("android"));
@@ -214,6 +233,11 @@ class ProjectPluginFunctionalTest {
     BuildResult result = runner("projects").build();
 
     assertTrue(result.getOutput().contains("INFO My Game 0.1.0"), result.getOutput());
+  }
+
+  private String generated() throws IOException {
+    return Files.readString(dir.resolve(
+        "core/build/generated/sources/flixelProject/java/main/com/example/mygame/Project.java"));
   }
 
   private void setUp(String toml) throws IOException {

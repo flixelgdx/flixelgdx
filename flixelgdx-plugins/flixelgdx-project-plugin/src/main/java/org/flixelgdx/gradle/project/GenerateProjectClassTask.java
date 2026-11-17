@@ -34,6 +34,7 @@ import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -59,19 +60,38 @@ public abstract class GenerateProjectClassTask extends DefaultTask {
   /** Writes the project class. */
   @TaskAction
   public void generate() {
+    generate(getProjectFile().get().getAsFile(), getOutputDir().get().getAsFile());
+  }
+
+  /**
+   * Writes the project class for a {@code project.toml}, replacing whatever the output directory held before.
+   *
+   * <p>The plugin also calls this while Gradle loads the project for an IDE, so the class exists right after a
+   * reload, before anything is compiled.
+   *
+   * @param projectFile The {@code project.toml} to read.
+   * @param outputDir The source folder to write the class into.
+   * @throws GradleException if the file cannot be read or is invalid, or the class cannot be written.
+   */
+  static void generate(File projectFile, File outputDir) {
     ProjectModel model;
     try {
-      model = ProjectToml.parse(Files.readString(getProjectFile().get().getAsFile().toPath(),
-          StandardCharsets.UTF_8));
+      model = ProjectToml.parse(Files.readString(projectFile.toPath(), StandardCharsets.UTF_8));
     } catch (IOException e) {
-      throw new GradleException("Could not read " + getProjectFile().get().getAsFile() + ".", e);
+      throw new GradleException("Could not read " + projectFile + ".", e);
     }
-    Path root = getOutputDir().get().getAsFile().toPath();
+    Path root = outputDir.toPath();
     Path dir = root.resolve(model.packageName().replace('.', '/'));
+    Path target = dir.resolve("Project.java");
+    String source = ProjectClassWriter.write(model);
     try {
+      // Skip the write when nothing changed, so the IDE does not see a fresh file on every reload.
+      if (Files.isRegularFile(target) && Files.readString(target, StandardCharsets.UTF_8).equals(source)) {
+        return;
+      }
       deleteContents(root);
       Files.createDirectories(dir);
-      Files.writeString(dir.resolve("Project.java"), ProjectClassWriter.write(model), StandardCharsets.UTF_8);
+      Files.writeString(target, source, StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new GradleException("Could not write the project class to " + dir + ".", e);
     }
