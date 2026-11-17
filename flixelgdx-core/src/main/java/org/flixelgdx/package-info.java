@@ -83,25 +83,38 @@
  *   <li><b>(Optional) The Android SDK</b>, only if you want to build for Android.</li>
  * </ul>
  *
- * <h3>Generating the project</h3>
+ * <h3>Creating the project</h3>
  *
- * <p>The recommended way to start is the project generator on the FlixelGDX website
- * ({@code https://flixelgdx.org/getting-started}). Fill in your game's name, an id, a Java package
- * name (such as {@code com.example.mygame}), pick Java as the language, choose the platforms you
- * want, and pick the "Blank play state" template. Download the zip and unzip it anywhere you like.
- * You will get a Gradle project with several modules:
+ * <p>The recommended way to start is {@code flxgdx}, the FlixelGDX command line tool
+ * ({@code https://github.com/flixelgdx/flixelgdx-cli}). It is installed by building it from source
+ * for now, for example with
+ * {@code go install github.com/flixelgdx/flixelgdx-cli/cmd/flxgdx@latest}. Then create a project:
+ *
+ * <pre>
+ * flxgdx new my-game --title "My Game" --company "My Studio" --app-version 0.1.0
+ * </pre>
+ *
+ * <p>You will get a Gradle project with several modules:
  *
  * <pre>
  * my-game/
+ *   project.toml      App info, window and render settings, and the platform list.
  *   assets/           Images, sounds, fonts, and data files shared by every platform.
  *   core/             Your actual game code. This is where you will spend almost all your time.
  *   desktop/          A tiny launcher that starts the game in a desktop window.
  *   html5/            A tiny launcher that starts the game in a web browser.
  *   android/          A tiny launcher that starts the game on Android (if you chose it).
- *   build.gradle      The root build file.
- *   settings.gradle   Lists the modules above.
+ *   buildSrc/         Shared Gradle build logic used by every module.
+ *   gradle/libs.versions.toml   The version catalog of every library and plugin.
+ *   settings.gradle.kts         Applies the project plugin and lists the modules.
  *   gradlew           The Gradle wrapper (gradlew.bat on Windows).
  * </pre>
+ *
+ * <p>{@code project.toml} is the single source of truth for the game's title, company, version,
+ * window size, and platforms. The {@code org.flixelgdx.project} Gradle settings plugin reads it and
+ * generates a {@code Project} class in {@code core}, so change the window settings in the file
+ * rather than in code. Libraries and plugins are managed with commands such as
+ * {@code flxgdx add library --repo owner/repo}, {@code flxgdx upgrade}, and {@code flxgdx doctor}.
  *
  * <p>The important idea here is the split between {@code core} and the launchers. Your game is
  * written once, in {@code core}, and it only depends on {@code flixelgdx-core}. Each platform
@@ -113,10 +126,13 @@
  * <p>Open a terminal in the project folder and run one of these:
  *
  * <pre>
- * ./gradlew :desktop:run           Desktop window.
- * ./gradlew :html5:run             Web browser.
- * ./gradlew :android:installDebug  Android device or emulator.
+ * flxgdx run desktop    Desktop window.
+ * flxgdx run html5      Web browser.
+ * flxgdx run android    Android device or emulator.
  * </pre>
+ *
+ * <p>These run the same Gradle tasks you can start yourself: {@code ./gradlew :desktop:run},
+ * {@code ./gradlew :html5:run}, and {@code ./gradlew :android:installDebug}.
  *
  * <p>On Windows, use {@code gradlew.bat} instead of {@code ./gradlew}. The first build takes a little
  * longer because Gradle downloads the JDK and the framework. After that you should see an empty
@@ -184,28 +200,37 @@
  *
  * <p>Subclass {@link org.flixelgdx.FlixelGame FlixelGame} and hand its constructor two things: a
  * {@link org.flixelgdx.FlixelConfig FlixelConfig} describing the window, and a "recipe" for the
- * first state to show.
+ * first state to show. A project made by {@code flxgdx} already has this class. The window values
+ * come from {@code project.toml} through the generated {@code Project} class:
  *
  * <pre>{@code
  * package com.example.mygame;
  *
- * import org.flixelgdx.FlixelConfig;
  * import org.flixelgdx.FlixelGame;
  *
  * public class MyGame extends FlixelGame {
  *
  *   public MyGame() {
- *     super(
- *         new FlixelConfig.Builder("My Game")
- *             .company("My Studio")    // Used to pick the save folder.
- *             .version("1.0.0")
- *             .size(640, 360)          // The design resolution, in game pixels.
- *             .framerate(60)
- *             .vsync(true)
- *             .build(),
- *         PlayState::new);             // The first state to show.
+ *     super(Project.config().build(), PlayState::new); // PlayState::new is the first state.
  *   }
  * }
+ * }</pre>
+ *
+ * <p>{@code Project.config()} returns a {@link org.flixelgdx.FlixelConfig.Builder} that is already
+ * filled in, so you can still tweak a value before building. When a project does not use
+ * {@code project.toml}, build the config by hand with
+ * {@link org.flixelgdx.FlixelConfig.Builder FlixelConfig.Builder}:
+ *
+ * <pre>{@code
+ * super(
+ *     new FlixelConfig.Builder("My Game")
+ *         .company("My Studio")    // Used to pick the save folder.
+ *         .version("1.0.0")
+ *         .size(640, 360)          // The design resolution, in game pixels.
+ *         .framerate(60)
+ *         .vsync(true)
+ *         .build(),
+ *     PlayState::new);             // The first state to show.
  * }</pre>
  *
  * <p>Two details are worth understanding right away:
