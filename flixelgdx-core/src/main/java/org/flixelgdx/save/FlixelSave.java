@@ -416,8 +416,12 @@ public class FlixelSave implements FlixelDestroyable {
       case Boolean bool -> out.concat(bool.booleanValue());
       case Number number -> {
         double d = number.doubleValue();
-        // Integers write without a decimal point so they read back naturally.
-        if (d == Math.floor(d) && !Double.isInfinite(d) && Math.abs(d) < 1e15) {
+        // JSON has no way to spell NaN or infinity, so they are stored as null to keep the save readable.
+        if (!Double.isFinite(d)) {
+          LOG.warn("Save value {} is not a finite number; it will be stored as null.", d);
+          out.concat("null");
+        } else if (d == Math.floor(d) && Math.abs(d) < 1e15) {
+          // Integers write without a decimal point so they read back naturally.
           out.concat((long) d);
         } else {
           out.concat(String.valueOf(d));

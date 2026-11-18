@@ -61,7 +61,7 @@ Without one, `bind(...)` logs an error and returns `false`.
 | Type                                   | Notes                                               |
 |----------------------------------------|-----------------------------------------------------|
 | `String`                               |                                                     |
-| Numbers (`int`, `float`, `double`, ...) | Stored as JSON numbers.                            |
+| Numbers (`int`, `float`, `double`, ...) | Stored as JSON numbers. `NaN` and infinity are stored as `null`, since JSON cannot hold them. |
 | `Boolean`                              |                                                     |
 | `FlixelMap<String, Object>`            | Nested groups of values.                            |
 | `FlixelArray<Object>`                  | Lists.                                              |

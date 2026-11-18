@@ -43,6 +43,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -177,6 +178,26 @@ class FlixelSaveTest {
     FlixelJsonValue json = b.toJson();
     assertEquals(99, json.getInt("best", 0));
     assertTrue(json.getBool("done", false));
+  }
+
+  @Test
+  void nonFiniteNumbersAreStoredAsNull(@TempDir Path tempDir) {
+    FlixelSaveHandler handler = new FlixelDesktopSaveHandler(tempDir);
+    FlixelSave a = new FlixelSave(handler);
+    assertTrue(a.bind("flixelgdx_junit_nan", null));
+    a.data.put("nan", Double.NaN);
+    a.data.put("inf", Float.POSITIVE_INFINITY);
+    a.data.put("score", 5);
+    assertTrue(a.toJson().get("nan").isNull());
+    assertTrue(a.flush());
+
+    FlixelSave b = new FlixelSave(handler);
+    assertTrue(b.bind("flixelgdx_junit_nan", null));
+    assertEquals(FlixelSaveStatus.OK, b.getStatus());
+    assertTrue(b.data.containsKey("nan"));
+    assertNull(b.data.get("nan"));
+    assertNull(b.data.get("inf"));
+    assertEquals(5, b.getInt("score", 0));
   }
 
   @Test
