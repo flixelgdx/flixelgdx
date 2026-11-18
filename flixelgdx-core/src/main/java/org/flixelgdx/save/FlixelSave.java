@@ -30,6 +30,7 @@ import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.json.FlixelJson;
 import org.flixelgdx.json.FlixelJsonValue;
+import org.flixelgdx.json.JsonSerializable;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
@@ -300,6 +301,57 @@ public class FlixelSave implements FlixelDestroyable {
       }
     }
     return !flushAfter || flush();
+  }
+
+  /**
+   * Returns a copy of {@link #data} as a parsed JSON tree.
+   *
+   * <p>This lets save data flow straight into anything that reads {@link FlixelJsonValue}, such
+   * as the serializers generated for {@link JsonSerializable} classes. Think of it as taking a
+   * photocopy of the notebook: you can read the copy freely, but writing on it does not change the
+   * save. Change {@link #data} or call {@link #fromJson(FlixelJsonValue)} for that.
+   *
+   * <p>Each call builds a brand new tree, so call it when loading or exporting data, not every
+   * frame.
+   *
+   * <pre>{@code
+   * FlixelJsonValue root = Flixel.save.toJson();
+   * FlixelJsonValue run = root.get("run");
+   * RunState state = run != null ? RunStateJsonSerializer.fromJson(run) : new RunState();
+   * }</pre>
+   *
+   * @return A JSON object holding every entry in {@link #data}; never {@code null}.
+   */
+  @NotNull
+  public FlixelJsonValue toJson() {
+    FlixelString out = new FlixelString(256);
+    writeValue(out, data);
+    return FlixelJson.parse(out.toString());
+  }
+
+  /**
+   * Replaces everything in {@link #data} with the entries of a JSON object.
+   *
+   * <p>Nested JSON objects become {@link FlixelMap}{@code <String, Object>} values, arrays become
+   * {@link FlixelArray}{@code <Object>} values, and numbers become {@link Double} values, exactly
+   * as if the save had been loaded from storage. Nothing is written until you call
+   * {@link #flush()}.
+   *
+   * <pre>{@code
+   * String text = RunStateJsonSerializer.toJson(run);
+   * Flixel.save.fromJson(FlixelJson.parse(text));
+   * Flixel.save.flush();
+   * }</pre>
+   *
+   * @param json The JSON object whose entries become the new save data.
+   * @throws IllegalArgumentException If {@code json} is not a JSON object.
+   */
+  public void fromJson(@NotNull FlixelJsonValue json) {
+    if (!json.isObject()) {
+      throw new IllegalArgumentException("Save data must be a JSON object, but got " + json.getKind() + ".");
+    }
+    data.clear();
+    readObjectInto(json, data);
   }
 
   @Override
