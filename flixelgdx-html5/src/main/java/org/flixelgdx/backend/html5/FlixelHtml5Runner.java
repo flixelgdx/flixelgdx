@@ -32,6 +32,7 @@ import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5Gpu;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
+import org.flixelgdx.backend.html5.input.FlixelHtml5MouseIconManager;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -100,6 +101,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   @NotNull
   private final FlixelHtml5HostIntegration host;
 
+  /** CSS cursor manager, bound to the canvas once it exists. */
+  private final FlixelHtml5MouseIconManager iconManager;
+
   @NotNull
   private final String canvasId;
 
@@ -125,10 +129,11 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * @param window The HTML5 window implementation.
    * @param host The HTML5 host integration.
    * @param input The HTML5 input device.
+   * @param iconManager The CSS cursor manager to bind to the canvas.
    */
   public FlixelHtml5Runner(@NotNull String canvasId, int width, int height, @NotNull FlixelGpuGraphics graphics,
       @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5HostIntegration host,
-      @NotNull FlixelHtml5InputDevice input) {
+      @NotNull FlixelHtml5InputDevice input, @NotNull FlixelHtml5MouseIconManager iconManager) {
     this.canvasId = canvasId;
     this.width = width;
     this.height = height;
@@ -137,6 +142,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     this.window = window;
     this.host = host;
     this.input = input;
+    this.iconManager = iconManager;
   }
 
   /**
@@ -169,6 +175,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
     window.bind(element, startWidth, startHeight);
     input.attach(element);
+    iconManager.bind(element);
 
     registerLifecycleListeners(document);
 
@@ -449,6 +456,10 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
   public FlixelHtml5HostIntegration getHost() {
     return host;
+  }
+
+  public FlixelHtml5MouseIconManager getIconManager() {
+    return iconManager;
   }
 
   @Nullable

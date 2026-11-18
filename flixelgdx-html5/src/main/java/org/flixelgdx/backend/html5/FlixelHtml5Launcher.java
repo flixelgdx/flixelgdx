@@ -35,6 +35,7 @@ import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5ImageDecoder;
 import org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
+import org.flixelgdx.backend.html5.input.FlixelHtml5MouseIconManager;
 import org.flixelgdx.backend.html5.logging.FlixelHtml5ConsoleSink;
 import org.flixelgdx.backend.html5.save.FlixelHtml5SaveHandler;
 import org.flixelgdx.backend.html5.text.FlixelHtml5FontRasterizer;
@@ -111,6 +112,7 @@ public final class FlixelHtml5Launcher {
     FlixelHtml5HostIntegration host = new FlixelHtml5HostIntegration();
     FlixelHtml5InputDevice input = new FlixelHtml5InputDevice();
     FlixelHtml5GamepadProvider gamepads = new FlixelHtml5GamepadProvider();
+    FlixelHtml5MouseIconManager iconManager = new FlixelHtml5MouseIconManager();
 
     // The browser cannot walk the stack, so the TeaVM plugin marks each log call's source location
     // before the call and the marker resolver reads it back. There is no file sink on the web.
@@ -134,6 +136,7 @@ public final class FlixelHtml5Launcher {
     Flixel.boot.afterStart(() -> {
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
+      Flixel.mouse.setMouseIconManager(iconManager);
     });
 
     Flixel.runtime.setMode(runtimeMode);
@@ -143,7 +146,7 @@ public final class FlixelHtml5Launcher {
     }
 
     FlixelHtml5Runner runner = new FlixelHtml5Runner(CANVAS_ID, config.getWidth(), config.getHeight(),
-        graphics, window, host, input);
+        graphics, window, host, input, iconManager);
     window.setRunner(runner);
     Flixel.start(game, runner);
   }
