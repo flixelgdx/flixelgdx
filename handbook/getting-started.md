@@ -40,23 +40,24 @@ The plugin is not published on the JetBrains Marketplace yet, so you build it fr
 Once it is installed, choose **File > New > Project > FlixelGDX**. The wizard asks for the game title, company,
 version, package, window size, language (Java or Kotlin), and platforms (Desktop, Web, Android). The title, company,
 and version are required, and the package is made from the company and title unless you type your own. When you
-finish, the project opens as a Gradle project with run configurations for every platform you chose.
+finish, the project opens as a Gradle project with run configurations for every platform you chose. For the template,
+choose `blank` for the sake of this guide.
 
 ## A tour of the project
 
 ```
 my-game/
-  project.toml        The single source of truth: app info, window, render settings, and platforms.
+  android/            A tiny launcher that starts the game on Android (if you chose it).
   assets/             Images, sounds, fonts, and data files shared by every platform.
+  buildSrc/           Shared Gradle build logic used by every module.
   core/               Your actual game code. This is where you spend almost all your time.
   desktop/            A tiny launcher that starts the game in a desktop window.
   html5/              A tiny launcher that starts the game in a web browser.
-  android/            A tiny launcher that starts the game on Android (if you chose it).
-  buildSrc/           Shared Gradle build logic used by every module.
   gradle/
     libs.versions.toml  The version catalog: every library and plugin version, grouped into bundles.
-  settings.gradle.kts Applies the project plugin and lists the modules.
+  project.toml        The single source of truth: app info, window, render settings, and platforms.
   gradlew             The Gradle wrapper (gradlew.bat on Windows).
+  settings.gradle.kts Applies the project plugin and lists the modules.
 ```
 
 The important idea is the split between `core` and the launchers. Your game is written once, in `core`, and it only
@@ -222,7 +223,8 @@ name, so most real games use the builder.
 
 ### Step 2: the first state
 
-Subclass `FlixelState`. Build your scene in `create()` and run your game logic in `update(float)`.
+Subclass `FlixelState`. Build your scene in `create()` and run your game logic in `update(float)`. If your project
+was created with the IntelliJ plugin, `PlayState` is automatically made for you.
 
 ```java
 package com.example.mygame;
@@ -328,16 +330,16 @@ release mode.
 If your project was not created with the IntelliJ plugin, the pieces are published to Maven Central under the group `org.flixelgdx`. Your
 shared game module depends on `flixelgdx-core`, and each platform module depends on its backend:
 
-```groovy
-// core/build.gradle
+```kotlin
+// core/build.gradle.kts
 dependencies {
-  api "org.flixelgdx:flixelgdx-core:$flixelVersion"
+  api("org.flixelgdx:flixelgdx-core:$flixelVersion")
 }
 
-// desktop/build.gradle
+// desktop/build.gradle.kts
 dependencies {
-  implementation project(':core')
-  implementation "org.flixelgdx:flixelgdx-desktop:$flixelVersion"
+  implementation(project(":core"))
+  implementation("org.flixelgdx:flixelgdx-desktop:$flixelVersion")
 }
 ```
 

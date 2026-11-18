@@ -238,9 +238,9 @@ focus on what's important: making a game.
 If you want to start using the framework, you don't need to worry about configuring anything too crazy — the framework's 
 already got you covered. You can get started right way with the following links:
 
-- [📚 Handbook](handbook/README.md)
-- [🧩 The IntelliJ IDEA plugin](https://github.com/flixelgdx/flixelgdx-intellij), which creates and manages FlixelGDX
-  projects. See [Getting Started](handbook/getting-started.md) for how to install it and make your first project.
+- [📚 Official Handbook](handbook/README.md), with 30+ comprehensible and detailed guides for how to use the engine's API.
+- [🧩 IntelliJ IDEA plugin](https://github.com/flixelgdx/flixelgdx-intellij), which creates and manages FlixelGDX projects. See [Getting Started](handbook/getting-started.md) for how 
+- to install it and make your first project.
 
 ---
 
