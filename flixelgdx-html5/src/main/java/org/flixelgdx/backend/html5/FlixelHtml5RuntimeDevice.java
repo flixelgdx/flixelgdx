@@ -65,12 +65,6 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
   }
 
   @Override
-  @NotNull
-  public String getDeviceDescription() {
-    return userAgent();
-  }
-
-  @Override
   public FlixelRunEnvironment getEnvironment() {
     return FlixelRunEnvironment.BROWSER;
   }
@@ -249,9 +243,6 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
       }
       """)
   private static native void showJavaCrashOverlay(String title, String message);
-
-  @JSBody(script = "return navigator.userAgent || 'Browser';")
-  private static native String userAgent();
 
   @JSBody(script = """
       return (window.performance && window.performance.memory)

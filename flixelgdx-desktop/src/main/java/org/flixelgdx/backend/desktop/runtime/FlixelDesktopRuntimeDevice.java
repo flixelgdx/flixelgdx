@@ -86,13 +86,6 @@ public class FlixelDesktopRuntimeDevice implements FlixelRuntimeDevice {
   }
 
   @Override
-  @NotNull
-  public String getDeviceDescription() {
-    return System.getProperty("os.name", "Unknown OS") + " " + System.getProperty("os.version", "")
-        + " (" + System.getProperty("os.arch", "?") + "), Java " + System.getProperty("java.version", "?");
-  }
-
-  @Override
   public FlixelRunEnvironment getEnvironment() {
     if (isRunningInIDE()) {
       return FlixelRunEnvironment.IDE;

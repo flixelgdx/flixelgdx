@@ -229,7 +229,6 @@ The framework's crash handler also uses it to show uncaught errors to the player
 FlixelRuntimeMode mode = Flixel.runtime.getMode();         // RELEASE, DEBUG, or TEST.
 long javaHeap = Flixel.runtime.getJavaHeap();              // Bytes of Java memory in use.
 long nativeHeap = Flixel.runtime.getNativeHeap();
-String device = Flixel.runtime.getDeviceDescription();     // For bug reports.
 boolean packaged = Flixel.runtime.isRunningFromJar();
 boolean inIde = Flixel.runtime.isRunningInIDE();
 FlixelRunEnvironment env = Flixel.runtime.getEnvironment();
@@ -251,6 +250,13 @@ quitButton.visible = platform == FlixelPlatform.DESKTOP;
 The values are `DESKTOP`, `HTML`, `ANDROID`, `IOS`, and `UNKNOWN`. `FlixelPlatform` is an open type, so a custom
 backend can define its own. Prefer the `supports...()` checks when they exist: they keep working if a platform gains a
 feature later.
+
+For a human-readable description of the machine (the OS and Java version on desktop, the phone model on Android, or the
+browser on the web), useful in bug reports, ask the host too:
+
+```java
+String device = Flixel.host.getDeviceDescription();
+```
 
 ## Check your understanding
 

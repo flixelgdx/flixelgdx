@@ -47,6 +47,7 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.OpenableColumns;
 import android.webkit.MimeTypeMap;
 
@@ -84,6 +85,13 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
   @NotNull
   public FlixelPlatform getPlatform() {
     return FlixelPlatform.ANDROID;
+  }
+
+  @Override
+  @NotNull
+  public String getDeviceDescription() {
+    return Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ", API "
+        + Build.VERSION.SDK_INT + ")";
   }
 
   @Override
