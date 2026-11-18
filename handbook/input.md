@@ -148,8 +148,33 @@ Flixel.mouse.icons.resetCursor();                       // Back to the arrow.
 
 The presets are `ARROW`, `IBEAM`, `WAIT`, `CROSSHAIR`, `HAND`, `GRAB`, `GRABBING`, `HORIZONTAL_RESIZE`,
 `VERTICAL_RESIZE`, `NORTH_WEST_SOUTH_EAST_RESIZE`, `NORTH_EAST_SOUTH_WEST_RESIZE`, `ALL_RESIZE`, and `NOT_ALLOWED`.
-Not every platform has every shape. `setCustomCursor(graphic, hotspotX, hotspotY)` uses your own image where the
-platform supports it.
+Not every platform has every shape.
+
+You can give any preset your own image with `setCustomCursor(...)`. The preset still decides *when* the cursor shows
+(your game or UI keeps calling `setCursor(...)` as usual); the image only changes *what* it looks like:
+
+```java
+FlixelFile pointer = Flixel.files.internal("images/pointer.png");
+FlixelFile caret = Flixel.files.internal("images/caret.png");
+
+Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.ARROW, pointer);       // Hotspot at the top-left.
+Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.IBEAM, caret, 4, 8);  // Hotspot at (4, 8).
+Flixel.mouse.icons.clearCustomCursor(FlixelMouseCursor.IBEAM);             // Back to the system caret.
+```
+
+If you already loaded the image as a `FlixelGraphic`, you can pass that instead of a file; the cursor is built from the
+file the graphic was loaded from. Graphics made at runtime with `makeGraphic(...)` have no file, so they can't be
+cursors.
+
+The hotspot is the pixel that counts as the cursor's point, such as an arrow's tip or a crosshair's center. Images stay
+registered until you call `clearCustomCursor(...)`, so `resetCursor()` shows your custom arrow if you gave it one.
+`NONE` can't have an image. Check `supportsCustomCursors()` to see whether the platform can show custom images at all.
+
+On the web, the cursor only changes while the pointer is over the game canvas, since browsers style cursors per page
+element. Every preset is available there. Custom cursor files must be bundled assets (`internal(...)` or
+`classpath(...)`) or full URLs (`absolute(...)`), since the browser downloads the image itself; `external(...)` and
+`local(...)` files live in browser storage and can't be used. Keep cursor images at 32 by 32 pixels or smaller; most browsers ignore
+anything over 128 by 128.
 
 ### Letting UI eat a click
 
