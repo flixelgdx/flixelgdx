@@ -257,6 +257,8 @@ annotation processing is enabled in the IDE's settings.
   `if (data.speed == 0f) data.speed = 200f;`
 - **Enums are stored by name.** Renaming an enum constant breaks old files that used the old name.
 - **`long` values pass through a `double`**, so numbers above about 9 quadrillion lose precision.
+- **`NaN` and infinity are written as `null`**, because JSON cannot hold them. A `float` or `double` field that held one
+  reads back as `0`.
 - **Multidimensional arrays are "jagged."** `int[][]` is an array of rows, and each row can have its own length. If
   every row must have the same width (a tilemap), prefer a flat `int[] tiles` plus `width` and `height` fields, and
   check `tiles.length == width * height` right after loading.
