@@ -135,7 +135,7 @@
  *
  * // Give the arrow a game-themed image where supportsCustomCursors() returns true.
  * // setCursor(ARROW) and resetCursor() now show this image instead of the system arrow.
- * Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.ARROW, cursorGraphic);
+ * Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.ARROW, Flixel.files.internal("images/cursor.png"));
  * }</pre>
  *
  * <p>{@link org.flixelgdx.input.mouse.FlixelMouseCursor FlixelMouseCursor} lists all available

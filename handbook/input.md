@@ -154,18 +154,26 @@ You can give any preset your own image with `setCustomCursor(...)`. The preset s
 (your game or UI keeps calling `setCursor(...)` as usual); the image only changes *what* it looks like:
 
 ```java
-Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.ARROW, pointerGraphic);       // Hotspot at the top-left.
-Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.IBEAM, caretGraphic, 4, 8);  // Hotspot at (4, 8).
-Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.IBEAM, null);                // Back to the system caret.
+FlixelFile pointer = Flixel.files.internal("images/pointer.png");
+FlixelFile caret = Flixel.files.internal("images/caret.png");
+
+Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.ARROW, pointer);       // Hotspot at the top-left.
+Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.IBEAM, caret, 4, 8);  // Hotspot at (4, 8).
+Flixel.mouse.icons.clearCustomCursor(FlixelMouseCursor.IBEAM);             // Back to the system caret.
 ```
 
+If you already loaded the image as a `FlixelGraphic`, you can pass that instead of a file; the cursor is built from the
+file the graphic was loaded from. Graphics made at runtime with `makeGraphic(...)` have no file, so they can't be
+cursors.
+
 The hotspot is the pixel that counts as the cursor's point, such as an arrow's tip or a crosshair's center. Images stay
-registered until you pass `null`, so `resetCursor()` shows your custom arrow if you gave it one. `NONE` can't have an
-image. Check `supportsCustomCursors()` to see whether the platform can show custom images at all.
+registered until you call `clearCustomCursor(...)`, so `resetCursor()` shows your custom arrow if you gave it one.
+`NONE` can't have an image. Check `supportsCustomCursors()` to see whether the platform can show custom images at all.
 
 On the web, the cursor only changes while the pointer is over the game canvas, since browsers style cursors per page
-element. Every preset is available there, and custom cursors must be graphics loaded from a bundled image asset, not
-ones made at runtime with `makeGraphic(...)`. Keep cursor images at 32 by 32 pixels or smaller; most browsers ignore
+element. Every preset is available there. Custom cursor files must be bundled assets (`internal(...)` or
+`classpath(...)`) or full URLs (`absolute(...)`), since the browser downloads the image itself; `external(...)` and
+`local(...)` files live in browser storage and can't be used. Keep cursor images at 32 by 32 pixels or smaller; most browsers ignore
 anything over 128 by 128.
 
 ### Letting UI eat a click
