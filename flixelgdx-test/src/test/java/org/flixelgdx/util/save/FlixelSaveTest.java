@@ -25,7 +25,10 @@ package org.flixelgdx.util.save;
 
 import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.backend.desktop.save.FlixelDesktopSaveHandler;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.json.FlixelJson;
+import org.flixelgdx.json.FlixelJsonValue;
 import org.flixelgdx.save.FlixelNoopSaveHandler;
 import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.save.FlixelSaveHandler;
@@ -113,6 +116,67 @@ class FlixelSaveTest {
     assertEquals("a", s.data.get("k"));
     s.mergeData(in, true, false);
     assertEquals("b", s.data.get("k"));
+  }
+
+  @Test
+  void toJsonCopiesData() {
+    FlixelSave s = new FlixelSave(FlixelNoopSaveHandler.INSTANCE);
+    FlixelMap<String, Object> options = new FlixelMap<>();
+    options.put("volume", 0.5);
+    FlixelArray<Object> levels = new FlixelArray<>();
+    levels.add("forest");
+    s.data.put("score", 42);
+    s.data.put("name", "Ada");
+    s.data.put("options", options);
+    s.data.put("levels", levels);
+
+    FlixelJsonValue json = s.toJson();
+    assertTrue(json.isObject());
+    assertEquals(42, json.getInt("score", 0));
+    assertEquals("Ada", json.getString("name", null));
+    FlixelJsonValue opts = json.get("options");
+    Assertions.assertNotNull(opts);
+    assertEquals(0.5f, opts.getFloat("volume", 0f), 1e-6f);
+    FlixelJsonValue list = json.get("levels");
+    Assertions.assertNotNull(list);
+    assertEquals(1, list.getSize());
+  }
+
+  @Test
+  void fromJsonReplacesData() {
+    FlixelSave s = new FlixelSave(FlixelNoopSaveHandler.INSTANCE);
+    s.data.put("stale", true);
+    s.fromJson(FlixelJson.parse("{\"score\":7,\"options\":{\"music\":false},\"levels\":[\"a\",\"b\"]}"));
+
+    assertFalse(s.data.containsKey("stale"));
+    assertEquals(7, s.getInt("score", 0));
+    assertTrue(s.data.get("options") instanceof FlixelMap<?, ?>);
+    Object levels = s.data.get("levels");
+    assertTrue(levels instanceof FlixelArray<?>);
+    assertEquals(2, ((FlixelArray<?>) levels).getSize());
+  }
+
+  @Test
+  void fromJsonRejectsNonObjects() {
+    FlixelSave s = new FlixelSave(FlixelNoopSaveHandler.INSTANCE);
+    s.data.put("k", 1);
+    assertThrows(IllegalArgumentException.class, () -> s.fromJson(FlixelJson.parse("[1,2]")));
+    assertEquals(1, s.getInt("k", 0));
+  }
+
+  @Test
+  void jsonRoundTripThroughFlush(@TempDir Path tempDir) {
+    FlixelSaveHandler handler = new FlixelDesktopSaveHandler(tempDir);
+    FlixelSave a = new FlixelSave(handler);
+    assertTrue(a.bind("flixelgdx_junit_json", null));
+    a.fromJson(FlixelJson.parse("{\"best\":99,\"done\":true}"));
+    assertTrue(a.flush());
+
+    FlixelSave b = new FlixelSave(handler);
+    assertTrue(b.bind("flixelgdx_junit_json", null));
+    FlixelJsonValue json = b.toJson();
+    assertEquals(99, json.getInt("best", 0));
+    assertTrue(json.getBool("done", false));
   }
 
   @Test

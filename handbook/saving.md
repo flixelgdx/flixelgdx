@@ -221,6 +221,28 @@ String json = Flixel.save.getString("run", null);
 RunState run = json != null ? RunStateJsonSerializer.fromJson(FlixelJson.parse(json)) : new RunState();
 ```
 
+### Working with the whole save as JSON
+
+`toJson()` returns a copy of all of `data` as a `FlixelJsonValue` tree, and `fromJson(...)` replaces all of `data` with
+the entries of a JSON object. Together they let a save plug straight into the rest of the JSON system:
+
+```java
+// Read the nested "options" map from earlier with typed getters instead of casts...
+FlixelJsonValue options = Flixel.save.toJson().get("options");
+float music = options != null ? options.getFloat("musicVolume", 0.8f) : 0.8f;
+
+// ...or hand it straight to a generated serializer, if Options is a @JsonSerializable class.
+Options opts = options != null ? OptionsJsonSerializer.fromJson(options) : new Options();
+
+// Replace the whole save with a JSON object (for example an imported or downloaded save).
+Flixel.save.fromJson(FlixelJson.parse(importedText));
+Flixel.save.flush();
+```
+
+`toJson()` is a copy: editing the tree it returns does not change the save. `fromJson(...)` throws an
+`IllegalArgumentException` if the value is not a JSON object, and like any other change, nothing is stored until you
+`flush()`. Both build new objects, so use them when loading or exporting, not every frame.
+
 See [JSON and XML](data-serialization.md) for how `@JsonSerializable` works and how to set it up.
 
 ## Custom storage: cloud saves and tests
