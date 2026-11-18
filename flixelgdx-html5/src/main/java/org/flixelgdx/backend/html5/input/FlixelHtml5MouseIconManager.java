@@ -45,27 +45,30 @@ import org.teavm.jso.dom.html.HTMLCanvasElement;
  * {@link FlixelMouseCursor#GRAB} and {@link FlixelMouseCursor#GRABBING}, which have no desktop
  * equivalent. {@link FlixelMouseCursor#ALL_RESIZE} uses the {@code move} keyword.
  *
- * <p>Custom cursor images are supported for graphics loaded from a bundled asset path. The browser
- * downloads the image itself from the published {@code assets/} folder, so graphics created at
- * runtime (such as those made with {@code makeGraphic(...)}) cannot be used as cursors and are
- * ignored with a warning. Most browsers also refuse cursor images larger than 128 by 128 pixels,
- * and 32 by 32 pixels is the safest size across browsers.
+ * <p>Any preset except {@link FlixelMouseCursor#NONE} can also be given a custom image. The browser
+ * downloads the image itself from the published {@code assets/} folder, so only graphics loaded
+ * from a bundled asset path can be used. Graphics created at runtime (such as those made with
+ * {@code makeGraphic(...)}) are ignored with a warning. Most browsers also refuse cursor images
+ * larger than 128 by 128 pixels, and 32 by 32 pixels is the safest size across browsers. If an
+ * image fails to load, the browser shows its default arrow.
  *
- * <p>Cursor changes made before the canvas exists are remembered and applied once the runner binds
- * the canvas.
+ * <p>Each preset's CSS value is built once when its image changes, so {@link #setCursor(FlixelMouseCursor)}
+ * is cheap enough to call every frame (for example, when syncing the cursor from a UI pointer). The
+ * canvas style is only written when the value actually changes. Cursor changes made before the
+ * canvas exists are remembered and applied once the runner binds the canvas.
  *
  * <p>Example:
  *
  * <pre>{@code
+ * Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.ARROW, pointerGraphic);
  * Flixel.mouse.icons.setCursor(FlixelMouseCursor.HAND);
- * Flixel.mouse.icons.setCustomCursor(cursorGraphic, 0, 0);
- * Flixel.mouse.icons.resetCursor();
+ * Flixel.mouse.icons.resetCursor(); // Shows pointerGraphic again.
  * }</pre>
  */
 public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
 
   /** The CSS cursor keyword for each {@link FlixelMouseCursor} ordinal. */
-  private static final String[] CSS_CURSORS = {
+  private static final String[] KEYWORDS = {
       "default",     // ARROW
       "text",        // IBEAM
       "wait",        // WAIT
@@ -82,9 +85,14 @@ public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
       "none",        // NONE
   };
 
+  /** The CSS value shown for each {@link FlixelMouseCursor} ordinal, including any custom image. */
+  private final String[] styles = KEYWORDS.clone();
+
   private HTMLCanvasElement canvas;
   private FlixelMouseCursor current = FlixelMouseCursor.ARROW;
-  private String style = CSS_CURSORS[FlixelMouseCursor.ARROW.ordinal()];
+
+  /** The CSS value last written to the canvas, or {@code null} when nothing has been written yet. */
+  private String applied;
 
   /**
    * Binds this manager to the canvas the game renders into and applies the current cursor to it.
@@ -95,13 +103,13 @@ public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
    */
   public void bind(@NotNull HTMLCanvasElement canvas) {
     this.canvas = canvas;
+    applied = null;
     apply();
   }
 
   @Override
   public void setCursor(@NotNull FlixelMouseCursor cursor) {
     current = cursor;
-    style = CSS_CURSORS[cursor.ordinal()];
     apply();
   }
 
@@ -111,19 +119,30 @@ public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
   }
 
   /**
-   * Replaces the cursor over the canvas with a bundled image asset.
+   * Gives a cursor preset a custom image loaded from a bundled asset.
    *
    * <p>The browser loads the image from the published {@code assets/} folder using the graphic's
-   * original path. If the image cannot be loaded or is too large, the browser falls back to the
-   * default arrow. Graphics that own a runtime-created texture have no asset path, so they are
-   * ignored with a warning.
+   * original path. Graphics that own a runtime-created texture have no asset path, so they are
+   * ignored with a warning, as is {@link FlixelMouseCursor#NONE}.
    *
-   * @param image The cursor image; must not be {@code null}.
+   * @param cursor The preset to give an image; {@link FlixelMouseCursor#NONE} is ignored.
+   * @param image The cursor image, or {@code null} to go back to the browser cursor for this preset.
    * @param hotspotX The click point's X offset from the image's left edge, in pixels.
    * @param hotspotY The click point's Y offset from the image's top edge, in pixels.
    */
   @Override
-  public void setCustomCursor(@NotNull FlixelGraphic image, int hotspotX, int hotspotY) {
+  public void setCustomCursor(@NotNull FlixelMouseCursor cursor, @Nullable FlixelGraphic image, int hotspotX,
+      int hotspotY) {
+    if (cursor == FlixelMouseCursor.NONE) {
+      Flixel.warn("FlixelMouseCursor.NONE hides the cursor, so it cannot have a custom image.");
+      return;
+    }
+    int ordinal = cursor.ordinal();
+    if (image == null) {
+      styles[ordinal] = KEYWORDS[ordinal];
+      apply();
+      return;
+    }
     if (image.isOwned()) {
       Flixel.warn("Cannot use runtime-created graphic '{}' as a web cursor. Use a bundled image asset instead.",
           image.getPath());
@@ -135,8 +154,8 @@ public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
       path = path.substring(1);
     }
     // A CSS cursor needs a fallback keyword after the image, used while the image is loading or if it fails.
-    style = "url(\"" + FlixelHtml5Files.ASSET_ROOT + escape(path) + "\") "
-        + Math.max(0, hotspotX) + " " + Math.max(0, hotspotY) + ", auto";
+    styles[ordinal] = "url(\"" + FlixelHtml5Files.ASSET_ROOT + escape(path) + "\") "
+        + Math.max(0, hotspotX) + " " + Math.max(0, hotspotY) + ", " + KEYWORDS[ordinal];
     apply();
   }
 
@@ -157,12 +176,16 @@ public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
   }
 
   /**
-   * Writes the current cursor style onto the canvas, if one is bound yet.
+   * Writes the active cursor's CSS value onto the canvas, if one is bound and the value changed.
    */
   private void apply() {
-    if (canvas != null) {
-      canvas.getStyle().setProperty("cursor", style);
+    String style = styles[current.ordinal()];
+    // Identity comparison is enough, since each style string is only replaced when its image changes.
+    if (canvas == null || style == applied) {
+      return;
     }
+    canvas.getStyle().setProperty("cursor", style);
+    applied = style;
   }
 
   /**
