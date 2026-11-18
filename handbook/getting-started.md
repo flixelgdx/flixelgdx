@@ -8,14 +8,13 @@ each folder is for, and writing a tiny game where you move a square with the arr
 1. [What you need](#what-you-need)
 2. [Creating a project](#creating-a-project)
 3. [A tour of the project](#a-tour-of-the-project)
-4. [Reading the handbook inside your project](#reading-the-handbook-inside-your-project)
-5. [Running the game](#running-the-game)
-6. [Your first game in two classes](#your-first-game-in-two-classes)
-7. [Understanding the coordinate system](#understanding-the-coordinate-system)
-8. [Runtime modes: release, debug, and test](#runtime-modes-release-debug-and-test)
-9. [Adding FlixelGDX to an existing project](#adding-flixelgdx-to-an-existing-project)
-10. [Common first-day problems](#common-first-day-problems)
-11. [Where to go next](#where-to-go-next)
+4. [Running the game](#running-the-game)
+5. [Your first game in two classes](#your-first-game-in-two-classes)
+6. [Understanding the coordinate system](#understanding-the-coordinate-system)
+7. [Runtime modes: release, debug, and test](#runtime-modes-release-debug-and-test)
+8. [Adding FlixelGDX to an existing project](#adding-flixelgdx-to-an-existing-project)
+9. [Common first-day problems](#common-first-day-problems)
+10. [Where to go next](#where-to-go-next)
 
 ## What you need
 
@@ -25,59 +24,23 @@ each folder is for, and writing a tiny game where you move a square with the arr
 - **An IDE.** IntelliJ IDEA, Eclipse, or VS Code with the Java extensions. Anything that understands Gradle projects
   works.
 - **(Optional) The Android SDK**, only if you want to build for Android.
-- **The `flxgdx` command line tool**, which creates and manages projects. See the next section.
 
 You do not need to install Gradle. Every project ships with the Gradle wrapper (`gradlew`), which downloads the right
 version of Gradle by itself.
 
 ## Creating a project
 
-The recommended way to start is `flxgdx`, the FlixelGDX command line tool
-([source and issues](https://github.com/flixelgdx/flixelgdx-cli)). Think of it as a cake mix: all the boring
-ingredients (Gradle files, launchers, platform settings) are measured out for you, and you only add the fun part.
+The recommended way to start is the [FlixelGDX plugin for IntelliJ IDEA](https://github.com/flixelgdx/flixelgdx-intellij).
+Think of it as a cake mix: all the boring ingredients (Gradle files, launchers, platform settings) are measured out
+for you, and you only add the fun part.
 
-### Installing flxgdx
+The plugin is not published on the JetBrains Marketplace yet, so you build it from its repository and install it with
+**Settings > Plugins > Install Plugin from Disk...**. Its README explains how.
 
-For now, `flxgdx` is installed by building it from source, which needs [Go](https://go.dev/dl/). Either let Go do it
-for you:
-
-```bash
-go install github.com/flixelgdx/flixelgdx-cli/cmd/flxgdx@latest
-```
-
-or clone the repository and build it yourself:
-
-```bash
-git clone https://github.com/flixelgdx/flixelgdx-cli
-cd flixelgdx-cli
-go build ./cmd/flxgdx
-```
-
-`go install` puts the program in `~/go/bin` (or `$GOBIN`), so make sure that folder is on your `PATH`. Check it works
-with `flxgdx version`. Installing through package managers is planned for later.
-
-If you use IntelliJ IDEA, there is also a [plugin](https://github.com/flixelgdx/flixelgdx-intellij) with a New Project
-wizard that uses `flxgdx` for you. It is not published on the JetBrains Marketplace yet, so you build it from its
-repository.
-
-### Making the project
-
-```bash
-flxgdx new my-game --title "My Game" --company "My Studio" --app-version 0.1.0
-```
-
-The title, company, and app version are required. When one is missing and you are at a terminal, `flxgdx` asks for
-it. A few useful extras:
-
-| Flag                          | What it does                                                          |
-|-------------------------------|-----------------------------------------------------------------------|
-| `--package com.example.mygame` | The Java package. By default it is made from the company and title.  |
-| `--platforms desktop,html5,android` | Which platforms to create. The default is `desktop,html5`.      |
-| `--language kotlin`           | Use Kotlin instead of Java.                                           |
-| `--width 640 --height 360`    | The window size.                                                      |
-| `--handbook`                  | Also copy the framework's handbook into the project.                  |
-
-Run `flxgdx new --help` to see every flag. Then open the new folder in your IDE.
+Once it is installed, choose **File > New > Project > FlixelGDX**. The wizard asks for the game title, company,
+version, package, window size, language (Java or Kotlin), and platforms (Desktop, Web, Android). The title, company,
+and version are required, and the package is made from the company and title unless you type your own. When you
+finish, the project opens as a Gradle project with run configurations for every platform you chose.
 
 ## A tour of the project
 
@@ -94,7 +57,6 @@ my-game/
     libs.versions.toml  The version catalog: every library and plugin version, grouped into bundles.
   settings.gradle.kts Applies the project plugin and lists the modules.
   gradlew             The Gradle wrapper (gradlew.bat on Windows).
-  handbooks/          Offline docs, only if you installed them (see below).
 ```
 
 The important idea is the split between `core` and the launchers. Your game is written once, in `core`, and it only
@@ -127,18 +89,19 @@ The [project plugin README](../flixelgdx-plugins/flixelgdx-project-plugin/README
 ### Dependencies
 
 Libraries and Gradle plugins live in `gradle/libs.versions.toml`, grouped into bundles that the module build files
-use. You rarely edit it by hand. Let `flxgdx` do it:
+use. To add a library, add an entry under `[libraries]` and append its alias to the bundle of the module that uses
+it (`core` for game code, or a platform name such as `desktop`):
 
-```bash
-flxgdx add library --repo flixelgdx/flixelgdx-ui   # add a library from a GitHub repository
-flxgdx add plugin --repo owner/repo                # add a Gradle plugin
-flxgdx add platform android                        # add a platform to an existing project
-flxgdx remove library --repo flixelgdx/flixelgdx-ui
-flxgdx upgrade                                     # move installed packages to their latest release
+```toml
+[libraries]
+flixelgdx-ui = { module = "org.flixelgdx:flixelgdx-ui", version = "0.7.2" }
+
+[bundles]
+core = ["flixelgdx-core", "flixelgdx-ui"]
 ```
 
-A library tells `flxgdx` how to install it with a small `flxgdx.yml` file in its repository. If you write libraries,
-see the [manifest format](https://github.com/flixelgdx/flixelgdx-cli/blob/master/MANIFEST.md).
+In IntelliJ IDEA, the plugin's **Tools > FlixelGDX** menu can do this for you, and it can also add or remove a
+platform and upgrade the framework to its latest release.
 
 ### The launchers
 
@@ -186,32 +149,9 @@ FlixelDesktopLauncher.launch(new MyGame(), "icons/icon16.png", "icons/icon32.png
 
 What actually happens inside that one line is described in [The Boot Sequence](boot-sequence.md).
 
-## Reading the handbook inside your project
-
-A library can ship its own documentation. `flxgdx install handbook` copies it into your project, so you can read it
-offline, next to the code, and so can your editor and tools:
-
-```bash
-flxgdx install handbook --repo flixelgdx/flixelgdx
-```
-
-The docs go to `handbooks/<repo-name>/` (here, `handbooks/flixelgdx/`). They match the version of that library that
-is installed in your project, so they never describe a different release than the one you are using. Any library
-whose `flxgdx.yml` has a `handbook` entry works the same way. Run the command again after `flxgdx upgrade` to refresh
-the docs, and use `flxgdx uninstall handbook --repo flixelgdx/flixelgdx` to remove them. You can also pass
-`--handbook` to `flxgdx new` to get them from the start.
-
 ## Running the game
 
 Open a terminal in the project folder and run one of these:
-
-```bash
-flxgdx run desktop
-flxgdx run html5
-flxgdx run android
-```
-
-`flxgdx run` runs the Gradle wrapper of your project for you, so these are the same as the Gradle tasks:
 
 ```bash
 ./gradlew :desktop:run
@@ -219,7 +159,8 @@ flxgdx run android
 ./gradlew :android:installDebug
 ```
 
-Add `--debug` to `flxgdx run desktop` or `flxgdx run html5` to start in debug mode. On Windows, use `gradlew.bat`
+Use `:desktop:debug` or `:html5:debug` instead to start in debug mode. In IntelliJ IDEA, the run configurations the
+plugin created do the same thing from the green Run button. On Windows, use `gradlew.bat`
 instead of `./gradlew`. The first build takes a little longer because Gradle downloads
 the JDK and the framework. After that you should see an empty game window, which means everything is wired
 correctly. The web task builds the game, starts a small local server, and opens your browser.
@@ -232,7 +173,7 @@ you can move with the arrow keys.
 ### Step 1: the game class
 
 Subclass `FlixelGame` and hand its constructor two things: a `FlixelConfig` describing the window, and a "recipe"
-for the first state to show. A project made by `flxgdx` already has this class. The window values come from
+for the first state to show. A project made by the IntelliJ plugin already has this class. The window values come from
 `project.toml` through the generated `Project` class, so there is nothing to type twice:
 
 ```java
@@ -329,7 +270,7 @@ public class PlayState extends FlixelState {
 
 ### Step 3: run it
 
-Make sure your launcher creates `new MyGame()` and run `flxgdx run desktop`. You now have a white square you can
+Make sure your launcher creates `new MyGame()` and run `./gradlew :desktop:run`. You now have a white square you can
 move with the arrow keys. Everything else in this handbook builds on these two classes.
 
 ### Step 4: make it yours
@@ -384,7 +325,7 @@ release mode.
 
 ## Adding FlixelGDX to an existing project
 
-If your project was not created with `flxgdx`, the pieces are published to Maven Central under the group `org.flixelgdx`. Your
+If your project was not created with the IntelliJ plugin, the pieces are published to Maven Central under the group `org.flixelgdx`. Your
 shared game module depends on `flixelgdx-core`, and each platform module depends on its backend:
 
 ```groovy
@@ -401,9 +342,9 @@ dependencies {
 ```
 
 The web module also needs the TeaVM and FlixelGDX HTML5 Gradle plugins, and the Android module needs the Android
-Gradle plugin. Copying these from a project made with `flxgdx new` is far easier than writing them by hand, which is why
-`flxgdx` is the recommended path. The `flxgdx add`, `run`, and `upgrade` commands only work in projects that have a
-`project.toml`. See [Building and Shipping](building-and-shipping.md) for the plugins.
+Gradle plugin. Copying these from a project made with the IntelliJ plugin is far easier than writing them by hand, which
+is why the plugin is the recommended path. The plugin's menu actions only work in projects that have a `project.toml`.
+See [Building and Shipping](building-and-shipping.md) for the plugins.
 
 ## Common first-day problems
 
@@ -416,7 +357,6 @@ Gradle plugin. Copying these from a project made with `flxgdx new` is far easier
 | Saving does nothing and logs an error.            | Set `company` in `project.toml` (or `.company(...)` in your `FlixelConfig.Builder`).                   |
 | The game is faster on one computer than another.  | You moved things by a fixed amount per frame. Multiply speeds by `elapsed`.                            |
 | Desktop warns about native access.                | Start the JVM with `--enable-native-access=ALL-UNNAMED`. The project's run tasks and packaged games already do. |
-| Something fails to build or run and the cause is unclear. | Run `flxgdx doctor`. It checks your JDK, Git, Android SDK, and project files, and prints a fix for each problem. Use `flxgdx doctor --fix` to repair what is safe to repair. |
 
 ## Where to go next
 

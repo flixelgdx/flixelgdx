@@ -123,8 +123,8 @@ The `packagr.cfg` is a small text file listing the main class, the runtime and l
 each JVM argument. The launcher reads it at startup; there is nothing platform-specific to edit.
 
 The game jar is the only jar in the package, so it must be self-contained: its dependencies,
-natives, and assets are all bundled inside it (projects created with `flxgdx new` already
-build their jar this way). There is no separate dependency or assets step.
+natives, and assets are all bundled inside it (projects created with the IntelliJ IDEA plugin
+already build their jar this way). There is no separate dependency or assets step.
 
 ## The bundled runtime
 

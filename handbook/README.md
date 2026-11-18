@@ -53,7 +53,7 @@ The core ideas everything else builds on. Read these first, in order.
 | # | Guide | What you will learn |
 |---|-------|---------------------|
 | 1 | [What FlixelGDX Is: The Mental Model](introduction.md) | The theater analogy, the five big ideas, the rules of the house, and the modules. |
-| 2 | [Getting Started: Your First Project and Your First Game](getting-started.md) | Tools, the `flxgdx` CLI, the project layout, launchers, and a first game in two classes. |
+| 2 | [Getting Started: Your First Project and Your First Game](getting-started.md) | Tools, creating a project, the project layout, launchers, and a first game in two classes. |
 | 3 | [The Game Loop: Create, Update, Draw, and Destroy](game-loop.md) | What `elapsed` is, the exact order of a frame, time scale, pausing, and platform events. |
 | 4 | [States and Substates: Organizing Your Game into Screens](states-and-substates.md) | Switching and restarting states, passing data, pause menus, and transitions. |
 | 5 | [Basics, Objects, and Sprites: The Building Blocks](sprites-and-objects.md) | Lifecycle flags, kill versus destroy, graphics, scaling, tinting, hitboxes, and draw order. |

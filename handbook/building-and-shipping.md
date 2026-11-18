@@ -30,7 +30,7 @@ and bundled shaders, and compressed Android textures. It also covers versioning 
 | `org.flixelgdx.project`  | Settings file  | Reads `project.toml` for the modules, title, version and window settings.    |
 | `org.flixelgdx.basisu`   | Android module | Compresses PNGs into KTX2/Basis Universal textures at build time.            |
 
-Projects created with `flxgdx new` come with the right plugins already applied. `flxgdx package <target>` runs the matching packaging task for you.
+Projects created with the IntelliJ IDEA plugin come with the right plugins already applied.
 
 ## Before you ship: release mode
 

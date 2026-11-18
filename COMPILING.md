@@ -218,22 +218,13 @@ You need a separate test project that depends on FlixelGDX.
 
 ### Creating the project
 
-Use the [`flxgdx` command line tool](https://github.com/flixelgdx/flixelgdx-cli) to create a test project. It writes a
-fully wired, ready-to-run Gradle multi-module project. Install it by building it from source (this needs
-[Go](https://go.dev/dl/)):
+Use the [FlixelGDX plugin for IntelliJ IDEA](https://github.com/flixelgdx/flixelgdx-intellij) to create a test
+project. Its **File > New > Project > FlixelGDX** wizard writes a fully wired, ready-to-run Gradle multi-module
+project. The plugin is not on the JetBrains Marketplace yet, so build it from its repository and install it with
+**Settings > Plugins > Install Plugin from Disk...**.
 
-```bash
-go install github.com/flixelgdx/flixelgdx-cli/cmd/flxgdx@latest
-```
-
-Then create the project in a folder of your choice:
-
-```bash
-flxgdx new flixel-test --title "Flixel Test" --company "Test Studio" --app-version 0.1.0
-```
-
-Add `--platforms desktop,html5,android` if you need to test more than the default desktop and web, and
-`--language kotlin` to test Kotlin. Run `flxgdx new --help` to see every flag. The result looks like this:
+In the wizard, pick the platforms you need to test (Desktop, Web, Android) and the language (Java or Kotlin). The
+result looks like this:
 
 ```
 flixel-test/
@@ -251,10 +242,10 @@ flixel-test/
 Open a terminal in the new folder and verify the project boots:
 
 ```bash
-flxgdx run desktop
+./gradlew :desktop:run
 ```
 
-(This runs `./gradlew :desktop:run`, so you can also use that directly, or `gradlew.bat :desktop:run` on Windows.)
+(Use `gradlew.bat :desktop:run` on Windows, or the **Desktop** run configuration the plugin created.)
 
 Gradle auto-downloads a matching JDK toolchain on the first build. After a brief first-time download you should see the empty game window.
 
@@ -262,12 +253,12 @@ The template pre-creates a `FlixelGame` subclass and a `FlixelState` in `core/sr
 
 **Platform run commands:**
 
-| Platform    | Run command                                           |
-|-------------|-------------------------------------------------------|
-| **Desktop** | `flxgdx run desktop` or `./gradlew :desktop:run`      |
-| **Web**     | `flxgdx run html5` or `./gradlew :html5:run`          |
-| **Android** | `flxgdx run android` or `./gradlew :android:installDebug` |
-| **iOS**     | -                                                     |
+| Platform    | Run command                       |
+|-------------|-----------------------------------|
+| **Desktop** | `./gradlew :desktop:run`          |
+| **Web**     | `./gradlew :html5:run`            |
+| **Android** | `./gradlew :android:installDebug` |
+| **iOS**     | -                                 |
 
 Now that you have the project downloaded, you need to actually test your local changes, rather than from Maven Central. There are two methods of doing this:
 
