@@ -45,6 +45,23 @@ class FlixelJsonWriterTest {
   }
 
   @Test
+  void nonFiniteNumbersAreWrittenAsNull() {
+    String json = new FlixelJsonWriter()
+        .beginObject()
+        .name("nan").value(Double.NaN)
+        .name("inf").value(Double.POSITIVE_INFINITY)
+        .name("negInf").value(Float.NEGATIVE_INFINITY)
+        .name("speed").value(1.5)
+        .endObject()
+        .toString();
+
+    assertEquals("{\"nan\":null,\"inf\":null,\"negInf\":null,\"speed\":1.5}", json);
+    FlixelJsonValue root = FlixelJson.parse(json);
+    assertTrue(root.get("nan").isNull());
+    assertEquals(1.5, root.get("speed").asDouble(), 1e-9);
+  }
+
+  @Test
   void prettyPrintObjectWithTwoSpaceIndent() {
     String json = new FlixelJsonWriter()
         .setIndent(2)
