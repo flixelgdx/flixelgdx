@@ -271,7 +271,7 @@ public final class FlixelDebugAgent {
         .writeU16(FlixelDebugProtocol.VERSION_MAJOR)
         .writeU16(FlixelDebugProtocol.VERSION_MINOR)
         .writeString(platformName(Flixel.host.getPlatform()))
-        .writeString(Flixel.runtime.getDeviceDescription())
+        .writeString(Flixel.host.getDeviceDescription())
         .writeI32(width)
         .writeI32(height)
         .writeString(config != null ? config.getTitle() : "")

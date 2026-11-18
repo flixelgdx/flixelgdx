@@ -216,6 +216,12 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
     return FlixelPlatform.HTML5;
   }
 
+  @Override
+  @NotNull
+  public String getDeviceDescription() {
+    return userAgent();
+  }
+
   /**
    * Updates the current {@link #monitors} array from the provided JavaScript array.
    *
@@ -409,6 +415,9 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
       }, 500);
       """)
   private static native void flashTitle();
+
+  @JSBody(script = "return navigator.userAgent || 'Browser';")
+  private static native String userAgent();
 
   /** Receives a resolved clipboard string from the browser's asynchronous read. */
   @JSFunctor

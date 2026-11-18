@@ -201,6 +201,13 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
     return FlixelPlatform.DESKTOP;
   }
 
+  @Override
+  @NotNull
+  public String getDeviceDescription() {
+    return System.getProperty("os.name", "Unknown OS") + " " + System.getProperty("os.version", "")
+        + " (" + System.getProperty("os.arch", "?") + "), Java " + System.getProperty("java.version", "?");
+  }
+
   public FlixelLogger getLogger() {
     return log;
   }
