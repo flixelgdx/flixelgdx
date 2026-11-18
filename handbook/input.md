@@ -149,7 +149,12 @@ Flixel.mouse.icons.resetCursor();                       // Back to the arrow.
 The presets are `ARROW`, `IBEAM`, `WAIT`, `CROSSHAIR`, `HAND`, `GRAB`, `GRABBING`, `HORIZONTAL_RESIZE`,
 `VERTICAL_RESIZE`, `NORTH_WEST_SOUTH_EAST_RESIZE`, `NORTH_EAST_SOUTH_WEST_RESIZE`, `ALL_RESIZE`, and `NOT_ALLOWED`.
 Not every platform has every shape. `setCustomCursor(graphic, hotspotX, hotspotY)` uses your own image where the
-platform supports it.
+platform supports it (check `supportsCustomCursors()`).
+
+On the web, the cursor only changes while the pointer is over the game canvas, since browsers style cursors per page
+element. Every preset is available there, and custom cursors must be graphics loaded from a bundled image asset, not
+ones made at runtime with `makeGraphic(...)`. Keep cursor images at 32 by 32 pixels or smaller; most browsers ignore
+anything over 128 by 128.
 
 ### Letting UI eat a click
 

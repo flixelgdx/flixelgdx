@@ -133,7 +133,7 @@
  * // Restore the default arrow when the user leaves.
  * Flixel.mouse.icons.resetCursor();
  *
- * // Use a custom game-themed cursor (desktop only).
+ * // Use a custom game-themed cursor where supportsCustomCursors() returns true.
  * Flixel.mouse.icons.setCustomCursor(cursorGraphic, 0, 0);
  * }</pre>
  *

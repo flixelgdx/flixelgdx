@@ -75,7 +75,10 @@
  *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider FlixelHtml5GamepadProvider}
  *       adds gamepad support through the Web Gamepad API with the standard layout mapping. Browser
  *       games are played with a mouse, keyboard, or gamepad, so touch events are not handled
- *       directly; taps still work through the browser's own mouse emulation.</li>
+ *       directly; taps still work through the browser's own mouse emulation.
+ *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5MouseIconManager FlixelHtml5MouseIconManager}
+ *       changes the cursor over the game canvas through the CSS {@code cursor} property, including
+ *       custom cursor images loaded from bundled assets.</li>
  *   <li><b>File system</b> -
  *       {@link org.flixelgdx.backend.html5.file.FlixelHtml5Files FlixelHtml5Files} in the
  *       {@code file} sub-package backs asset reads from a warm in-memory cache populated before
