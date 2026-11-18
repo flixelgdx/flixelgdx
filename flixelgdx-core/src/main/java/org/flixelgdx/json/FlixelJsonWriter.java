@@ -225,13 +225,22 @@ public final class FlixelJsonWriter {
   /**
    * Writes a floating-point value.
    *
+   * <p>JSON has no way to spell {@code NaN} or infinity, so those values are written as
+   * {@code null} instead. This keeps the output valid JSON that {@link FlixelJson#parse(String)}
+   * can always read back. A generated {@link JsonSerializable} serializer reads such a
+   * {@code null} back into a {@code float} or {@code double} field as {@code 0}.
+   *
    * @param value The double to write.
    * @return This writer, for method chaining.
    */
   @NotNull
   public FlixelJsonWriter value(double value) {
     separateValue();
-    out.append(value);
+    if (Double.isFinite(value)) {
+      out.append(value);
+    } else {
+      out.append("null");
+    }
     needComma = true;
     return this;
   }
