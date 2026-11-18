@@ -130,7 +130,7 @@ import java.util.function.Supplier;
  *
  * <h2>Example Usage</h2>
  *
- * <p>In a project made with the {@code flxgdx} command line tool, the window values live in
+ * <p>In a project made with the FlixelGDX IntelliJ IDEA plugin, the window values live in
  * {@code project.toml} and reach the game through the generated {@code Project} class:
  *
  * <pre>{@code

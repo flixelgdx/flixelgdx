@@ -37,7 +37,7 @@ import java.util.Objects;
  * framework reads it once at startup. No property can change after {@link Builder#build()} returns,
  * so there is never any ambiguity between what was configured and what the game is running with.
  *
- * <p>In a project made with the {@code flxgdx} command line tool, you rarely build one by hand:
+ * <p>In a project made with the FlixelGDX IntelliJ IDEA plugin, you rarely build one by hand:
  * the values come from {@code project.toml}, and the generated {@code Project} class hands you a
  * {@link Builder} that is already filled in, as in {@code Project.config().build()}. Change the
  * title, company, version, window, and render settings in that file. The builder documented below

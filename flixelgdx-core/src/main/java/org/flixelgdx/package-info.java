@@ -85,14 +85,10 @@
  *
  * <h3>Creating the project</h3>
  *
- * <p>The recommended way to start is {@code flxgdx}, the FlixelGDX command line tool
- * ({@code https://github.com/flixelgdx/flixelgdx-cli}). It is installed by building it from source
- * for now, for example with
- * {@code go install github.com/flixelgdx/flixelgdx-cli/cmd/flxgdx@latest}. Then create a project:
- *
- * <pre>
- * flxgdx new my-game --title "My Game" --company "My Studio" --app-version 0.1.0
- * </pre>
+ * <p>The recommended way to start is the FlixelGDX plugin for IntelliJ IDEA
+ * ({@code https://github.com/flixelgdx/flixelgdx-intellij}). It is installed by building it from
+ * source for now. Then choose File, New, Project, FlixelGDX, and fill in the game's title, company,
+ * version, window size, language, and platforms.
  *
  * <p>You will get a Gradle project with several modules:
  *
@@ -113,8 +109,8 @@
  * <p>{@code project.toml} is the single source of truth for the game's title, company, version,
  * window size, and platforms. The {@code org.flixelgdx.project} Gradle settings plugin reads it and
  * generates a {@code Project} class in {@code core}, so change the window settings in the file
- * rather than in code. Libraries and plugins are managed with commands such as
- * {@code flxgdx add library --repo owner/repo}, {@code flxgdx upgrade}, and {@code flxgdx doctor}.
+ * rather than in code. Libraries and plugins live in the version catalog,
+ * {@code gradle/libs.versions.toml}.
  *
  * <p>The important idea here is the split between {@code core} and the launchers. Your game is
  * written once, in {@code core}, and it only depends on {@code flixelgdx-core}. Each platform
@@ -126,13 +122,10 @@
  * <p>Open a terminal in the project folder and run one of these:
  *
  * <pre>
- * flxgdx run desktop    Desktop window.
- * flxgdx run html5      Web browser.
- * flxgdx run android    Android device or emulator.
+ * ./gradlew :desktop:run             Desktop window.
+ * ./gradlew :html5:run               Web browser.
+ * ./gradlew :android:installDebug    Android device or emulator.
  * </pre>
- *
- * <p>These run the same Gradle tasks you can start yourself: {@code ./gradlew :desktop:run},
- * {@code ./gradlew :html5:run}, and {@code ./gradlew :android:installDebug}.
  *
  * <p>On Windows, use {@code gradlew.bat} instead of {@code ./gradlew}. The first build takes a little
  * longer because Gradle downloads the JDK and the framework. After that you should see an empty
@@ -200,8 +193,8 @@
  *
  * <p>Subclass {@link org.flixelgdx.FlixelGame FlixelGame} and hand its constructor two things: a
  * {@link org.flixelgdx.FlixelConfig FlixelConfig} describing the window, and a "recipe" for the
- * first state to show. A project made by {@code flxgdx} already has this class. The window values
- * come from {@code project.toml} through the generated {@code Project} class:
+ * first state to show. A project made by the IntelliJ IDEA plugin already has this class. The
+ * window values come from {@code project.toml} through the generated {@code Project} class:
  *
  * <pre>{@code
  * package com.example.mygame;
