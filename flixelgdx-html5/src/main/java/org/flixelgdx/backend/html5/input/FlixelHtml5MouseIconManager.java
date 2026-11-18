@@ -24,8 +24,10 @@
 package org.flixelgdx.backend.html5.input;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.backend.html5.file.FlixelHtml5File;
+import org.flixelgdx.backend.html5.file.FlixelHtml5File.Kind;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
-import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.input.mouse.FlixelMouseCursor;
 import org.flixelgdx.input.mouse.FlixelMouseIconManager;
 import org.jetbrains.annotations.NotNull;
@@ -46,11 +48,12 @@ import org.teavm.jso.dom.html.HTMLCanvasElement;
  * equivalent. {@link FlixelMouseCursor#ALL_RESIZE} uses the {@code move} keyword.
  *
  * <p>Any preset except {@link FlixelMouseCursor#NONE} can also be given a custom image. The browser
- * downloads the image itself from the published {@code assets/} folder, so only graphics loaded
- * from a bundled asset path can be used. Graphics created at runtime (such as those made with
+ * downloads the image itself, so the file must have a URL: bundled assets (served from the
+ * published {@code assets/} folder) and {@code absolute(...)} URLs work, while files kept in
+ * {@code localStorage} and graphics created at runtime (such as those made with
  * {@code makeGraphic(...)}) are ignored with a warning. Most browsers also refuse cursor images
  * larger than 128 by 128 pixels, and 32 by 32 pixels is the safest size across browsers. If an
- * image fails to load, the browser shows its default arrow.
+ * image fails to load, the browser shows that preset's own cursor instead.
  *
  * <p>Each preset's CSS value is built once when its image changes, so {@link #setCursor(FlixelMouseCursor)}
  * is cheap enough to call every frame (for example, when syncing the cursor from a UI pointer). The
@@ -60,9 +63,9 @@ import org.teavm.jso.dom.html.HTMLCanvasElement;
  * <p>Example:
  *
  * <pre>{@code
- * Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.ARROW, pointerGraphic);
+ * Flixel.mouse.icons.setCustomCursor(FlixelMouseCursor.ARROW, Flixel.files.internal("images/pointer.png"));
  * Flixel.mouse.icons.setCursor(FlixelMouseCursor.HAND);
- * Flixel.mouse.icons.resetCursor(); // Shows pointerGraphic again.
+ * Flixel.mouse.icons.resetCursor(); // Shows pointer.png again.
  * }</pre>
  */
 public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
@@ -118,44 +121,44 @@ public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
     setCursor(FlixelMouseCursor.ARROW);
   }
 
+  @Override
+  public void clearCustomCursor(@NotNull FlixelMouseCursor cursor) {
+    int ordinal = cursor.ordinal();
+    styles[ordinal] = KEYWORDS[ordinal];
+    apply();
+  }
+
   /**
-   * Gives a cursor preset a custom image loaded from a bundled asset.
+   * Gives a cursor preset a custom image that the browser downloads from a URL.
    *
-   * <p>The browser loads the image from the published {@code assets/} folder using the graphic's
-   * original path. Graphics that own a runtime-created texture have no asset path, so they are
-   * ignored with a warning, as is {@link FlixelMouseCursor#NONE}.
+   * <p>Bundled asset handles (from {@code Flixel.files.internal(...)} or {@code classpath(...)}) point
+   * at the published {@code assets/} folder, and {@code Flixel.files.absolute(...)} handles are used
+   * as the URL they already are. Handles stored in {@code localStorage} (from {@code external(...)}
+   * or {@code local(...)}) have no URL the browser can load, so they are ignored with a warning, as
+   * is {@link FlixelMouseCursor#NONE}.
    *
    * @param cursor The preset to give an image; {@link FlixelMouseCursor#NONE} is ignored.
-   * @param image The cursor image, or {@code null} to go back to the browser cursor for this preset.
+   * @param file The image file to show, such as a PNG.
    * @param hotspotX The click point's X offset from the image's left edge, in pixels.
    * @param hotspotY The click point's Y offset from the image's top edge, in pixels.
    */
   @Override
-  public void setCustomCursor(@NotNull FlixelMouseCursor cursor, @Nullable FlixelGraphic image, int hotspotX,
+  public void setCustomCursor(@NotNull FlixelMouseCursor cursor, @NotNull FlixelFile file, int hotspotX,
       int hotspotY) {
     if (cursor == FlixelMouseCursor.NONE) {
       Flixel.warn("FlixelMouseCursor.NONE hides the cursor, so it cannot have a custom image.");
       return;
     }
+    String url = urlOf(file);
+    if (url == null) {
+      Flixel.warn("Cannot use '{}' as a web cursor because it is stored in localStorage. Use a bundled image asset.",
+          file.getPath());
+      return;
+    }
     int ordinal = cursor.ordinal();
-    if (image == null) {
-      styles[ordinal] = KEYWORDS[ordinal];
-      apply();
-      return;
-    }
-    if (image.isOwned()) {
-      Flixel.warn("Cannot use runtime-created graphic '{}' as a web cursor. Use a bundled image asset instead.",
-          image.getPath());
-      return;
-    }
-    String path = image.getPath();
-    // Asset paths may start with a slash, which would make the URL point at the site root instead of the assets folder.
-    if (path.startsWith("/")) {
-      path = path.substring(1);
-    }
     // A CSS cursor needs a fallback keyword after the image, used while the image is loading or if it fails.
-    styles[ordinal] = "url(\"" + FlixelHtml5Files.ASSET_ROOT + escape(path) + "\") "
-        + Math.max(0, hotspotX) + " " + Math.max(0, hotspotY) + ", " + KEYWORDS[ordinal];
+    styles[ordinal] = "url(\"" + escape(url) + "\") " + Math.max(0, hotspotX) + " " + Math.max(0, hotspotY) + ", "
+        + KEYWORDS[ordinal];
     apply();
   }
 
@@ -189,10 +192,37 @@ public class FlixelHtml5MouseIconManager implements FlixelMouseIconManager {
   }
 
   /**
+   * Returns the URL the browser should download a cursor image from.
+   *
+   * <p>Paths with a scheme (such as {@code https:} or {@code data:}) or a leading slash are already
+   * URLs and are used as they are. Every other path is a bundled asset, so it is placed under the
+   * published {@code assets/} folder.
+   *
+   * @param file The image file handle.
+   * @return The URL, or {@code null} if the handle lives in {@code localStorage} and has no URL.
+   */
+  @Nullable
+  private static String urlOf(@NotNull FlixelFile file) {
+    String path;
+    if (file instanceof FlixelHtml5File web) {
+      if (web.getKind() == Kind.STORAGE) {
+        return null;
+      }
+      path = web.getAbsolutePath();
+    } else {
+      path = file.getPath();
+    }
+    if (path.startsWith("/") || path.indexOf(':') >= 0) {
+      return path;
+    }
+    return FlixelHtml5Files.ASSET_ROOT + path;
+  }
+
+  /**
    * Escapes the characters that would end a quoted CSS {@code url("...")} string early.
    *
-   * @param path The asset path to escape.
-   * @return The path, safe to place inside double quotes in CSS.
+   * @param path The URL to escape.
+   * @return The URL, safe to place inside double quotes in CSS.
    */
   @NotNull
   private static String escape(@NotNull String path) {
