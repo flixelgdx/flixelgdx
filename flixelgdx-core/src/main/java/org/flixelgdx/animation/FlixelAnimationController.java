@@ -330,8 +330,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * anim.play("idle"); // offset snaps to (0, 0)
    * }</pre>
    *
-   * @param name The animation name, as registered with {@code addAnimation(...)}, {@code addByPrefix(...)}, or
-   *     {@code addFromAtlas(...)}.
+   * @param name The animation name, as registered with {@code add(...)}, {@code addByPrefix(...)},
+   *     {@code addByIndices(...)}, or {@code addFromAtlas(...)}.
    * @param x Horizontal offset in pixels (positive moves the graphic left).
    * @param y Vertical offset in pixels (positive moves the graphic up).
    */
@@ -533,27 +533,219 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
-   * Adds an animation to the controller by specifying the frame indices.
+   * Adds a looping clip built from frame numbers in the sprite's own frame list.
    *
-   * @param name The name of the animation.
-   * @param frameIndices The indices of the frames to add.
-   * @param frameDuration The duration of each frame.
+   * @param name The name of the clip, used later with {@link #play(String)}.
+   * @param frames Frame numbers to play, in order. See {@link #add(String, int[], int, boolean)}.
+   * @param frameRate How many frames the clip shows per second.
+   * @see #add(String, int[], int, boolean)
    */
-  public void addAnimation(@NotNull String name, int[] frameIndices, float frameDuration) {
+  public void add(@NotNull String name, @NotNull int[] frames, int frameRate) {
+    add(name, frames, frameRate, true);
+  }
+
+  /**
+   * Adds a clip built from frame numbers in the sprite's own frame list.
+   *
+   * <p>Think of the sprite's frames as a numbered deck of cards: this method picks cards out of the
+   * deck by number and lays them down in the order you list them. Where the deck comes from depends
+   * on how the sprite was loaded:
+   * <ul>
+   *   <li>A sprite sheet loaded with {@link FlixelSprite#loadGraphic(FlixelFile, int, int)} is cut
+   *   into a grid, and its frames are numbered left to right, then top to bottom, starting at
+   *   {@code 0}.</li>
+   *   <li>A sprite with an atlas (Sparrow XML or a spritemap) numbers its frames in the order they
+   *   appear in {@link FlixelSprite#getAtlasRegions()}. Most atlas clips are easier to build by name
+   *   with {@link #addByPrefix(String, String, int, boolean)} or
+   *   {@link #addByIndices(String, String, int[], String, int, boolean)} instead.</li>
+   * </ul>
+   *
+   * <p>Frame numbers may repeat, which is handy for holding a pose. Numbers that do not exist are
+   * skipped with a warning, and if none of them exist no clip is registered.
+   *
+   * <pre>{@code
+   * sprite.loadGraphic(Flixel.files.internal("images/player.png"), 32, 32);
+   * sprite.ensureAnimation().add("idle", new int[] {0, 1}, 4, true);
+   * sprite.animation.add("walk", new int[] {2, 3, 4, 5}, 10, true);
+   * sprite.animation.play("walk");
+   * }</pre>
+   *
+   * @param name The name of the clip, used later with {@link #play(String)}.
+   * @param frames Frame numbers to play, in order.
+   * @param frameRate How many frames the clip shows per second.
+   * @param loop Whether the clip loops when played with {@link #play(String)}.
+   */
+  public void add(@NotNull String name, @NotNull int[] frames, int frameRate, boolean loop) {
+    FlixelArray<FlixelFrame> atlas = owner.getAtlasRegions();
     FlixelFrame[][] grid = owner.getFrames();
-    if (grid == null || grid.length == 0 || grid[0] == null) {
+    FlixelArray<FlixelFrame> clipFrames = new FlixelArray<>(frames.length);
+    for (int index : frames) {
+      FlixelFrame frame = (atlas != null) ? atlasFrame(atlas, index) : gridFrame(grid, index);
+      if (frame != null) {
+        clipFrames.add(frame);
+      } else {
+        Flixel.log.warn("Animation '{}' skipped frame {}, which does not exist on this sprite.", name, index);
+      }
+    }
+    register(name, clipFrames, frameRate, loop);
+  }
+
+  /**
+   * Adds a clip from atlas frames picked by number, for frames named without a postfix.
+   *
+   * @param name The name of the clip, used later with {@link #play(String)}.
+   * @param prefix The text every frame name in the clip starts with.
+   * @param indices Frame numbers to play, in order.
+   * @param frameRate How many frames the clip shows per second.
+   * @param loop Whether the clip loops when played with {@link #play(String)}.
+   * @see #addByIndices(String, String, int[], String, int, boolean)
+   */
+  public void addByIndices(
+      @NotNull String name, @NotNull String prefix, @NotNull int[] indices, int frameRate, boolean loop) {
+    addByIndices(name, prefix, indices, "", frameRate, loop);
+  }
+
+  /**
+   * Adds a clip from atlas frames picked by the number in their names.
+   *
+   * <p>Atlas exporters name each frame as a prefix followed by a number, such as
+   * {@code "BF idle dance0000"}, {@code "BF idle dance0001"}, and so on, sometimes with a postfix
+   * after the number. Where {@link #addByPrefix(String, String, int, boolean)} grabs every frame
+   * that shares a prefix, this method grabs only the numbers you list, in the order you list them.
+   * That lets you reuse part of a sequence, play it backwards, or hold a frame by repeating it.
+   *
+   * <p>A frame matches number {@code n} when its name is exactly {@code prefix}, then digits whose
+   * value is {@code n}, then {@code postfix}. Leading zeros are ignored, so index {@code 3} matches
+   * both {@code "idle3"} and {@code "idle0003"}. Frames with extra text between the prefix and the
+   * number (like {@code "idle-alt0003"}) never match, so similar prefixes do not bleed into each
+   * other. Numbers with no matching frame are skipped with a warning, and if none match no clip is
+   * registered.
+   *
+   * <pre>{@code
+   * var anim = sprite.ensureAnimation();
+   * anim.addSparrowFrames(Flixel.files.internal("images/gf"));
+   * // Split one dance sequence into two halves that alternate on each beat.
+   * anim.addByIndices("danceLeft", "GF Dancing Beat", new int[] {0, 1, 2, 3, 4, 5, 6, 7}, "", 24, false);
+   * anim.addByIndices("danceRight", "GF Dancing Beat", new int[] {8, 9, 10, 11, 12, 13, 14}, "", 24, false);
+   * anim.play("danceLeft");
+   * }</pre>
+   *
+   * @param name The name of the clip, used later with {@link #play(String)}.
+   * @param prefix The text every frame name in the clip starts with.
+   * @param indices Frame numbers to play, in order.
+   * @param postfix The text every frame name in the clip ends with, or {@code ""} for none.
+   * @param frameRate How many frames the clip shows per second.
+   * @param loop Whether the clip loops when played with {@link #play(String)}.
+   */
+  public void addByIndices(
+      @NotNull String name,
+      @NotNull String prefix,
+      @NotNull int[] indices,
+      @NotNull String postfix,
+      int frameRate,
+      boolean loop) {
+    FlixelArray<FlixelFrame> atlas = owner.getAtlasRegions();
+    if (atlas == null) {
+      Flixel.log.warn("Animation '{}' needs an atlas, but this sprite has none.", name);
       return;
     }
-
-    // Get the number of columns in the grid.
-    int cols = grid[0].length;
-    FlixelArray<FlixelFrame> animFrames = new FlixelArray<>();
-    for (int index : frameIndices) {
-      int row = index / cols;
-      int col = index % cols;
-      animFrames.add(grid[row][col]);
+    FlixelArray<FlixelFrame> clipFrames = new FlixelArray<>(indices.length);
+    for (int index : indices) {
+      FlixelFrame frame = findNumberedFrame(atlas, prefix, index, postfix);
+      if (frame != null) {
+        clipFrames.add(frame);
+      } else {
+        Flixel.log.warn("Animation '{}' found no frame named '{}' + {} + '{}'.", name, prefix, index, postfix);
+      }
     }
-    animations.put(name, new FlixelAnimation<>(frameDuration, animFrames));
+    register(name, clipFrames, frameRate, loop);
+  }
+
+  /**
+   * Reads the frame number out of an atlas frame name shaped like {@code prefix + digits + postfix}.
+   *
+   * <p>This is the matching rule behind {@link #addByIndices(String, String, int[], String, int, boolean)},
+   * split out so it can be unit tested without a texture.
+   *
+   * @param frameName The atlas frame name to read, or {@code null}.
+   * @param prefix The text the name must start with.
+   * @param postfix The text the name must end with.
+   * @return The number between the prefix and postfix, or {@code -1} when the name does not have
+   *     that shape (missing prefix or postfix, no digits, non-digit characters, or a number too large
+   *     for an {@code int}).
+   */
+  static int frameNumber(@Nullable String frameName, @NotNull String prefix, @NotNull String postfix) {
+    if (frameName == null || !frameName.startsWith(prefix) || !frameName.endsWith(postfix)) {
+      return -1;
+    }
+    int start = prefix.length();
+    int end = frameName.length() - postfix.length();
+    if (end <= start) {
+      return -1;
+    }
+    int value = 0;
+    for (int i = start; i < end; i++) {
+      char c = frameName.charAt(i);
+      if (c < '0' || c > '9') {
+        return -1;
+      }
+      int digit = c - '0';
+      if (value > (Integer.MAX_VALUE - digit) / 10) {
+        return -1;
+      }
+      value = value * 10 + digit;
+    }
+    return value;
+  }
+
+  /** Returns the first atlas frame whose name is {@code prefix + index + postfix}, or {@code null}. */
+  @Nullable
+  private static FlixelFrame findNumberedFrame(
+      @NotNull FlixelArray<FlixelFrame> atlas, @NotNull String prefix, int index, @NotNull String postfix) {
+    if (index < 0) {
+      return null;
+    }
+    for (int i = 0; i < atlas.getSize(); i++) {
+      FlixelFrame frame = atlas.get(i);
+      if (frame != null && frameNumber(frame.name, prefix, postfix) == index) {
+        return frame;
+      }
+    }
+    return null;
+  }
+
+  /** Returns the atlas frame at {@code index}, or {@code null} when it is out of range. */
+  @Nullable
+  private static FlixelFrame atlasFrame(@NotNull FlixelArray<FlixelFrame> atlas, int index) {
+    return (index >= 0 && index < atlas.getSize()) ? atlas.get(index) : null;
+  }
+
+  /** Returns grid frame {@code index}, counted left to right then top to bottom, or {@code null}. */
+  @Nullable
+  private static FlixelFrame gridFrame(@Nullable FlixelFrame[][] grid, int index) {
+    if (grid == null || grid.length == 0 || grid[0] == null || grid[0].length == 0 || index < 0) {
+      return null;
+    }
+    int cols = grid[0].length;
+    int row = index / cols;
+    if (row >= grid.length || grid[row] == null) {
+      return null;
+    }
+    return grid[row][index % cols];
+  }
+
+  /** Registers a clip under {@code name}, or does nothing when {@code clipFrames} is empty. */
+  private void register(
+      @NotNull String name, @NotNull FlixelArray<FlixelFrame> clipFrames, int frameRate, boolean loop) {
+    if (clipFrames.isEmpty()) {
+      return;
+    }
+    animations.put(
+        name,
+        new FlixelAnimation<>(
+            1f / frameRate,
+            clipFrames,
+            loop ? FlixelAnimation.PlayMode.LOOP : FlixelAnimation.PlayMode.NORMAL));
   }
 
   /**
