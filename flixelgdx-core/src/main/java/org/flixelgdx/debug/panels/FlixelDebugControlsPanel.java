@@ -40,6 +40,7 @@ import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * The built-in "Controls" panel: pause, step, hitboxes, the free camera, the stats sample rate, the log level, and
@@ -124,7 +125,7 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanel {
       return false;
     }
     for (int i = 0, n = keys.getSize(); i < n; i++) {
-      if (keys.get(i) != shownKeys.get(i)) {
+      if (!Objects.equals(keys.get(i), shownKeys.get(i))) {
         return false;
       }
     }
