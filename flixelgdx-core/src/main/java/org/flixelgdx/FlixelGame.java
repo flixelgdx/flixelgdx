@@ -37,6 +37,7 @@ import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.math.FlixelMatrix;
+import org.flixelgdx.signal.FlixelSignalData.GamePausedSignalData;
 import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.timer.FlixelTimer;
@@ -110,6 +111,8 @@ import java.util.function.Supplier;
  *       the start and end of {@link #destroy()}.</li>
  *   <li>{@link Flixel.Signals#gameSuspended} - fired from {@link #onSuspended()} when the
  *       platform may stop the game without a clean shutdown. Save important data here.</li>
+ *   <li>{@link Flixel.Signals#gamePaused} - fired from {@link #setGamePaused(boolean)} when the
+ *       game loop is paused or resumed, such as by the debugger.</li>
  * </ul>
  *
  * <h2>Global shaders</h2>
@@ -676,6 +679,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * Pauses the game's update loop. This is mostly used by the debugger, although
    * you might find it useful for other purposes.
    *
+   * <p>Each real change dispatches {@link Flixel.Signals#gamePaused} after the game is paused or
+   * resumed, so external systems can follow along. Setting the value the game already has does
+   * nothing and does not dispatch the signal.
+   *
    * @param gamePaused Whether the game should be paused or not.
    */
   public void setGamePaused(boolean gamePaused) {
@@ -690,6 +697,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.sound.resume();
     }
     this.gamePaused = gamePaused;
+    Flixel.Signals.gamePaused.dispatch(gamePaused ? GamePausedSignalData.PAUSED : GamePausedSignalData.RESUMED);
   }
 
   /**

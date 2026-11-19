@@ -32,7 +32,7 @@ and ask for what you need. The front desk always knows where everything is.
 ## The services at a glance
 
 | Field               | Type                         | What it is for                                                         | Guide |
-|---------------------|------------------------------|------------------------------------------------------------------------|-------|
+|---------------------|------------------------------|------------------------------------------------------------------------|-------------------------------------|
 | `Flixel.keys`       | `FlixelKeyInputManager`      | The keyboard.                                                          | [Input](input.md) |
 | `Flixel.mouse`      | `FlixelMouseInputManager`    | The mouse: buttons, position, scroll wheel, cursor icons.              | [Input](input.md) |
 | `Flixel.touches`    | `FlixelTouchManager`         | Touch screens, up to ten fingers.                                      | [Input](input.md) |
@@ -83,7 +83,7 @@ Flixel.info("Running {} version {}", Flixel.config.getTitle(), Flixel.config.get
 There are two kinds of "screen size," and choosing the right one avoids layout bugs on unusual windows.
 
 | Method                                         | Returns                                                                                       |
-|------------------------------------------------|-----------------------------------------------------------------------------------------------|
+|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `Flixel.getDesignWidth()` / `getDesignHeight()`   | The size you asked for in `FlixelConfig`. Never changes. Use it for layout in game pixels.  |
 | `Flixel.getVisibleWidth()` / `getVisibleHeight()` | The part of the world the first camera actually shows. It equals the design size with the default letterboxing viewport, but can be bigger with an "extend" viewport, and can change when the window is resized. |
 
@@ -155,13 +155,14 @@ Each `{}` is filled in with the next argument. See [Logging](logging.md).
 anywhere:
 
 | Signal                                  | Fires                                                        | Data                     |
-|-----------------------------------------|--------------------------------------------------------------|--------------------------|
+|-----------------------------------------|-------------------------------------------------------------------|----------------------------------------------------------|
 | `preUpdate` / `postUpdate`              | Before and after each update pass.                           | `UpdateSignalData` (reused, read `elapsed()` right away) |
 | `preDraw` / `postDraw`                  | Before and after each draw pass.                             | none                     |
 | `preStateSwitch` / `postStateSwitch`    | Around every state switch.                                   | `StateSwitchSignalData` with the old or new `state()` |
 | `windowFocused` / `windowUnfocused`     | When the window gains or loses focus.                        | none                     |
 | `windowMinimized`                       | When the desktop window is minimized.                        | none                     |
 | `gameSuspended`                         | When the platform may stop the game soon. Save here.         | none                     |
+| `gamePaused`                            | When the game loop is paused or resumed, such as by the debugger. | `GamePausedSignalData` with `paused()` |
 | `preGameClose` / `postGameClose`        | At the start and end of a clean shutdown.                    | none                     |
 
 ```java

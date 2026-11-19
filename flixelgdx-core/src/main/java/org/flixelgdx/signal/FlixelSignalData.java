@@ -68,5 +68,23 @@ public final class FlixelSignalData {
   public record StateSwitchSignalData(FlixelState state) {
   }
 
+  /**
+   * Carries whether the game loop was just paused or resumed when {@link Flixel.Signals#gamePaused}
+   * fires.
+   *
+   * <p>The framework only ever dispatches the two shared constants, {@link #PAUSED} and
+   * {@link #RESUMED}, so toggling the pause never allocates a new object.
+   *
+   * @param paused {@code true} when the game loop was just paused, {@code false} when it resumed.
+   */
+  public record GamePausedSignalData(boolean paused) {
+
+    /** Shared data dispatched when the game loop is paused. */
+    public static final GamePausedSignalData PAUSED = new GamePausedSignalData(true);
+
+    /** Shared data dispatched when the game loop is resumed. */
+    public static final GamePausedSignalData RESUMED = new GamePausedSignalData(false);
+  }
+
   private FlixelSignalData() {}
 }

@@ -72,6 +72,7 @@ import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelRandom;
 import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.signal.FlixelSignal;
+import org.flixelgdx.signal.FlixelSignalData.GamePausedSignalData;
 import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.timer.FlixelTimer;
@@ -1791,6 +1792,8 @@ public final class Flixel {
     public static final FlixelSignal<Void> postGameClose = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> gameSuspended = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
+    public static final FlixelSignal<GamePausedSignalData> gamePaused = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowFocused = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
