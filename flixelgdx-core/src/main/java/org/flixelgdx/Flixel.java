@@ -72,6 +72,7 @@ import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelRandom;
 import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.signal.FlixelSignal;
+import org.flixelgdx.signal.FlixelSignalData.GamePausedSignalData;
 import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.timer.FlixelTimer;
@@ -1791,6 +1792,26 @@ public final class Flixel {
     public static final FlixelSignal<Void> postGameClose = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> gameSuspended = new FlixelLifecycleSignal<>();
+    /**
+     * Fires whenever {@link FlixelGame#setGamePaused(boolean)} pauses or resumes the game loop, such
+     * as when the debugger's pause button is pressed.
+     *
+     * <p>Read {@link GamePausedSignalData#paused()} to know which way it went. Think of it like the
+     * pause button on a TV remote: anything else in the room playing along with the show (a video,
+     * a custom audio system, a network clock) can listen for it and pause too.
+     *
+     * <pre>{@code
+     * Flixel.Signals.gamePaused.add(data -> {
+     *   if (data.paused()) {
+     *     myClock.stop();
+     *   } else {
+     *     myClock.start();
+     *   }
+     * });
+     * }</pre>
+     */
+    @SuppressWarnings("checkstyle:ConstantName")
+    public static final FlixelSignal<GamePausedSignalData> gamePaused = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowFocused = new FlixelLifecycleSignal<>();
     @SuppressWarnings("checkstyle:ConstantName")
