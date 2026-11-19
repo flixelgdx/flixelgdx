@@ -81,7 +81,7 @@ import org.jetbrains.annotations.Nullable;
  * sprite counts. Call {@link #ensureAnimation()} to create it lazily, then register clips:
  * <pre>{@code
  * FlixelSprite sprite = new FlixelSprite(0, 0, Flixel.files.internal("player.png"));
- * sprite.ensureAnimation().addAnimation("walk", new int[]{0, 1, 2, 3}, 1f / 12f);
+ * sprite.ensureAnimation().add("walk", new int[] {0, 1, 2, 3}, 12);
  * sprite.ensureAnimation().play("walk");
  * }</pre>
  *

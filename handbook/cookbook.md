@@ -80,7 +80,7 @@ Keep antialiasing off (the default), and use `renderResolution(w, h, false)` in 
 ([Graphics and Shaders](graphics-and-shaders.md#crisp-pixel-art))
 
 **...play an animation?**
-`sprite.loadGraphic(file, 32, 32); sprite.ensureAnimation().addAnimation("walk", new int[] {0, 1, 2, 3}, 0.1f); sprite.animation.play("walk", true);`
+`sprite.loadGraphic(file, 32, 32); sprite.ensureAnimation().add("walk", new int[] {0, 1, 2, 3}, 10); sprite.animation.play("walk", true);`
 ([Animation](animation.md))
 
 **...use a Sparrow atlas?**

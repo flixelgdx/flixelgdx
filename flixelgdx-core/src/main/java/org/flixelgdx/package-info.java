@@ -638,8 +638,8 @@
  * <pre>{@code
  * player.loadGraphic(Flixel.files.internal("images/hero.png"), 32, 32);
  * player.ensureAnimation();
- * player.animation.addAnimation("idle", new int[] {0, 1}, 0.25f);       // 4 frames per second.
- * player.animation.addAnimation("walk", new int[] {2, 3, 4, 5}, 0.1f);  // 10 frames per second.
+ * player.animation.add("idle", new int[] {0, 1}, 4);         // 4 frames per second.
+ * player.animation.add("walk", new int[] {2, 3, 4, 5}, 10);  // 10 frames per second.
  * player.animation.play("idle", true); // true = loop.
  *
  * // Later, in update(...):
