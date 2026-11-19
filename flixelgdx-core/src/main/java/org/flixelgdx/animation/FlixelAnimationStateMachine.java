@@ -174,7 +174,7 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
 
   /**
    * Registers a state that plays {@code clipName} (a clip already registered on the controller via
-   * {@code addAnimation} / {@code addByPrefix}) when entered.
+   * {@code add}, {@code addByPrefix}, or {@code addByIndices}) when entered.
    *
    * @param name The logical state name.
    * @param clipName The animation clip to play, or {@code null} for a logic-only state.

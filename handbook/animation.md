@@ -54,9 +54,9 @@ numbers for each clip. Numbers count from the top-left cell, left to right, then
 ```java
 player.loadGraphic(Flixel.files.internal("images/hero.png"), 32, 32); // Each cell is 32 by 32.
 player.ensureAnimation();
-player.animation.addAnimation("idle", new int[] {0, 1}, 0.25f);       // 0.25 seconds per frame (4 FPS).
-player.animation.addAnimation("walk", new int[] {2, 3, 4, 5}, 0.1f);  // 0.1 seconds per frame (10 FPS).
-player.animation.play("idle", true);                                  // true = loop.
+player.animation.add("idle", new int[] {0, 1}, 4);         // Name, frames, frames per second.
+player.animation.add("walk", new int[] {2, 3, 4, 5}, 10);  // Clips loop by default.
+player.animation.play("idle", true);                       // true = loop.
 ```
 
 Frames can repeat and appear in any order, so `new int[] {0, 1, 2, 1}` makes a back-and-forth breathing clip from
@@ -83,8 +83,20 @@ hero.animation.addByPrefix("jump", "Hero Jump", 24, false);
 hero.animation.play("idle");
 ```
 
-If the PNG and XML do not share a name, pass both files: `addSparrowFrames(pngFile, xmlFile)`. To pick specific frames
-from an atlas by number instead of by prefix, use `addFromAtlas(name, frameIndices, frameDuration, loop)`.
+If the PNG and XML do not share a name, pass both files: `addSparrowFrames(pngFile, xmlFile)`.
+
+To pick specific frames by the **number in their name** instead of taking the whole prefix, use `addByIndices`. The
+number after the prefix is matched by value, so index `3` finds `Hero Idle0003`. Frames can be picked in any order and
+repeated, which is handy for splitting one long sequence into two clips:
+
+```java
+// Name, prefix, frame numbers, postfix (often ""), frames per second, loop.
+hero.animation.addByIndices("danceLeft", "Hero Dance", new int[] {0, 1, 2, 3, 4, 5}, "", 24, false);
+hero.animation.addByIndices("danceRight", "Hero Dance", new int[] {6, 7, 8, 9, 10, 11}, "", 24, false);
+```
+
+Use the postfix when your exporter adds text after the number, such as `"Hero Dance0003.png"` with a postfix of
+`".png"`. Numbers with no matching frame are skipped and logged as a warning.
 
 ## Playing, pausing, and reversing
 
@@ -248,11 +260,11 @@ State options at a glance:
 
 ## Check your understanding
 
-1. Your idle clip is frames 0 and 1 at 4 frames per second. What do you pass to `addAnimation(...)`?
+1. Your idle clip is frames 0 and 1 at 4 frames per second. What do you pass to `add(...)`?
 2. You call `anim.play("walk")` every frame. Does the walk clip keep restarting?
 3. A one-shot "attack" must always finish before the character can run. What tool makes that rule easy?
 
-(Answers: `addAnimation("idle", new int[] {0, 1}, 0.25f)`; no, playing the current clip again does nothing; a
+(Answers: `add("idle", new int[] {0, 1}, 4)`; no, playing the current clip again does nothing; a
 `FlixelAnimationStateMachine` where `attack` has no `allowTo("run")` and auto-advances to `idle`.)
 
 **Next:** [Cameras](cameras.md)
