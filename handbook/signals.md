@@ -141,6 +141,7 @@ defer changes or worry about the list changing under you.
 | `windowFocused` / `windowUnfocused`   | The window gains or loses focus.                            | none |
 | `windowMinimized`                     | The desktop window is minimized.                            | none |
 | `gameSuspended`                       | The platform may stop the game soon. Save here.             | none |
+| `gamePaused`                          | The game loop is paused or resumed (such as by the debugger). | `GamePausedSignalData`: read `paused()` |
 | `preGameClose` / `postGameClose`      | Around a clean shutdown.                                    | none |
 
 ```java
