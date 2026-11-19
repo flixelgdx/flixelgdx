@@ -134,7 +134,7 @@ defer changes or worry about the list changing under you.
 `Flixel.Signals` holds the events the framework fires at important moments:
 
 | Signal                                | Fires                                                       | Data |
-|---------------------------------------|-------------------------------------------------------------|------|
+|---------------------------------------|---------------------------------------------------------------|-----------------------------------------|
 | `preUpdate` / `postUpdate`            | Before and after every update pass.                         | `UpdateSignalData`: read `elapsed()` |
 | `preDraw` / `postDraw`                | Before and after every draw pass.                           | none |
 | `preStateSwitch` / `postStateSwitch`  | Around every state switch.                                  | `StateSwitchSignalData`: read `state()` |
