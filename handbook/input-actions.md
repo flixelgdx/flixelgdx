@@ -79,8 +79,8 @@ public class PlayerControls extends FlixelActionSet {
     move = new FlixelActionAnalog("move");
     move.addBinding("left", FlixelAnalogBinding.negXKey(FlixelKey.A));
     move.addBinding("right", FlixelAnalogBinding.posXKey(FlixelKey.D));
-    move.addBinding("down", FlixelAnalogBinding.negYKey(FlixelKey.S));
-    move.addBinding("up", FlixelAnalogBinding.posYKey(FlixelKey.W));
+    move.addBinding("up", FlixelAnalogBinding.negYKey(FlixelKey.W));
+    move.addBinding("down", FlixelAnalogBinding.posYKey(FlixelKey.S));
     move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadAxis.LEFT_X));
     move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadAxis.LEFT_Y));
     add(move);
@@ -152,16 +152,17 @@ keys can be mixed freely.
 | `flicked()`                | True for one frame when the stick first crosses the flick threshold. |
 | `flickedRepeating()`       | Like `flicked()`, plus hold-repeat while it stays pushed.     |
 
-**Watch the Y direction.** Actions use "up is positive Y," like a math graph, because that is how sticks and the
-`posYKey` binding are usually described. The game world uses "down is positive Y." So when you move something in the
-world, flip the sign:
+**Y points down, just like the world.** Actions use the same y-down coordinate system as every position and
+velocity in the framework: negative Y is up and positive Y is down. So you can feed an action straight into
+movement with no sign flips:
 
 ```java
-player.setVelocity(controls.move.getX() * 150f, -controls.move.getY() * 150f);
+player.setVelocity(controls.move.getX() * 150f, controls.move.getY() * 150f);
 ```
 
-If you would rather keep the raw, down-is-positive value from a stick, create the binding with
-`FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadAxis.LEFT_Y, true)`, and swap your key bindings to match.
+Gamepad sticks already report down as positive on every platform, so their values pass through untouched. Steam
+Input reports up as positive, so the action flips Steam's Y for you; your `FlixelSteamActionReader` should return
+Steam's value as-is.
 
 ## Every kind of binding
 
@@ -181,10 +182,9 @@ If you would rather keep the raw, down-is-positive value from a stick, create th
 | Factory                                  | Adds                                                      |
 |------------------------------------------|-----------------------------------------------------------|
 | `negXKey(key)` / `posXKey(key)`          | -1 or +1 on X while the key is held.                      |
-| `negYKey(key)` / `posYKey(key)`          | -1 or +1 on Y while the key is held (+1 is up).           |
+| `negYKey(key)` / `posYKey(key)`          | -1 or +1 on Y while the key is held (-1 is up).           |
 | `gamepadAxisX(slot, axis)`               | The stick's X value.                                      |
-| `gamepadAxisY(slot, axis)`               | The stick's Y value, flipped so up is positive.           |
-| `gamepadAxisY(slot, axis, true)`         | The stick's raw Y value, down is positive.                |
+| `gamepadAxisY(slot, axis)`               | The stick's Y value, as reported (down is positive).      |
 
 Both binding types are tiny interfaces (`evaluate()` for digital, `accumulate(FlixelVector)` for analog), so you can
 write your own, for example a binding driven by an on-screen joystick widget:
@@ -286,7 +286,7 @@ So action values are always ready inside `update(...)`, and they never lag a fra
 2. How do you give "jump" a second keyboard key without losing the first one?
 3. Why should you call `destroy()` on an action set when its state ends?
 
-(Answers: actions use up-is-positive Y while the world uses down-is-positive Y, so negate `getY()`; add it under a new
+(Answers: W is probably bound with `posYKey`, but up is negative Y, so bind it with `negYKey` instead; add it under a new
 slot name, such as `jump.addBinding("kb2", FlixelDigitalBinding.key(FlixelKey.UP))`; the set registers itself
 globally and would keep updating after the state is gone.)
 

@@ -39,9 +39,20 @@ import java.util.Objects;
  *
  * <p>Each frame, key halves add {@code -1}, {@code 0}, or {@code +1} per axis;
  * {@link Flixel#gamepads} axis bindings add smooth stick values.
- * Steam {@link FlixelSteamActionReader#getAnalogX} / {@code getAnalogY} are added on top. The
+ * Steam {@link FlixelSteamActionReader#getAnalogX} / {@code getAnalogY} are added on top (Steam's
+ * up-positive Y is flipped so it matches everything else). The
  * result is clamped to a maximum length of {@code 1} so diagonals do not exceed unit speed when
  * mixing keys and sticks.
+ *
+ * <h2>Coordinate system</h2>
+ *
+ * <p>The vector uses the framework's y-down coordinate system: negative Y is up and positive Y is
+ * down, exactly like world positions and velocities. You can feed {@link #getY()} straight into
+ * movement without negating it:
+ *
+ * <pre>{@code
+ * player.setVelocity(move.getX() * 150f, move.getY() * 150f);
+ * }</pre>
  *
  * <h2>Typical setup</h2>
  *
@@ -49,8 +60,8 @@ import java.util.Objects;
  * move = new FlixelActionAnalog("move");
  * move.addBinding("negX", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
  * move.addBinding("posX", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
- * move.addBinding("negY", FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
- * move.addBinding("posY", FlixelAnalogBinding.posYKey(FlixelKey.UP));
+ * move.addBinding("negY", FlixelAnalogBinding.negYKey(FlixelKey.UP));
+ * move.addBinding("posY", FlixelAnalogBinding.posYKey(FlixelKey.DOWN));
  * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadAxis.LEFT_X));
  * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadAxis.LEFT_Y));
  * }</pre>
@@ -79,8 +90,8 @@ import java.util.Objects;
  * <pre>{@code
  * // Navigate a menu; hold the stick to keep scrolling.
  * if (navigate.flickedRepeating()) {
- *   if (navigate.getY() > 0) selectPreviousItem();
- *   else if (navigate.getY() < 0) selectNextItem();
+ *   if (navigate.getY() < 0) selectPreviousItem();
+ *   else if (navigate.getY() > 0) selectNextItem();
  * }
  * }</pre>
  *
@@ -221,7 +232,8 @@ public class FlixelActionAnalog extends FlixelAction {
     FlixelSteamActionReader steam = owner != null ? owner.steamReader : null;
     if (steam != null) {
       scratch.x += steam.getAnalogX(getName());
-      scratch.y += steam.getAnalogY(getName());
+      // Steam Input reports up as positive Y, so flip it to match the framework's y-down system.
+      scratch.y -= steam.getAnalogY(getName());
     }
     float sx = scratch.x;
     float sy = scratch.y;
@@ -348,8 +360,8 @@ public class FlixelActionAnalog extends FlixelAction {
    *
    * <pre>{@code
    * if (navigate.flickedRepeating()) {
-   *   if (navigate.getY() > 0) selectPreviousItem();
-   *   else if (navigate.getY() < 0) selectNextItem();
+   *   if (navigate.getY() < 0) selectPreviousItem();
+   *   else if (navigate.getY() > 0) selectNextItem();
    * }
    * }</pre>
    *

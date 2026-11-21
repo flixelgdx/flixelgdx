@@ -47,11 +47,14 @@ import org.flixelgdx.math.FlixelVector;
  *
  * <h2>Axis conventions</h2>
  *
+ * <p>Analog actions use the same y-down coordinate system as the rest of the framework: negative X
+ * is left, positive X is right, negative Y is up, and positive Y is down. That means an action's
+ * vector can be fed straight into world movement, such as {@code player.setVelocityY(move.getY() * 200f)},
+ * without flipping any signs.
+ *
  * <p>Key bindings contribute exactly -1 or +1 per axis. Gamepad axes contribute a smooth value in
- * the range -1..1. {@link #gamepadAxisY(int, FlixelGamepadAxis)} corrects the hardware Y axis (where
- * up is negative in screen-space) so that up = positive Y, matching key bindings. Use
- * {@link #gamepadAxisY(int, FlixelGamepadAxis, boolean) gamepadAxisY(slot, axis, true)} when you need
- * the raw hardware value instead.
+ * the range -1..1, passed through exactly as the device reports it. Every supported backend already
+ * reports stick Y as down-positive, so no correction is needed to match key bindings.
  *
  * @see FlixelActionAnalog
  */
@@ -94,7 +97,7 @@ public interface FlixelAnalogBinding {
   }
 
   /**
-   * Subtracts 1 from {@code out.y} while the key is held (down / negative Y).
+   * Subtracts 1 from {@code out.y} while the key is held (up / negative Y).
    *
    * @param keycode Keycode.
    * @return Binding that contributes -1 on Y when the key is pressed.
@@ -108,7 +111,7 @@ public interface FlixelAnalogBinding {
   }
 
   /**
-   * Adds 1 to {@code out.y} while the key is held (up / positive Y).
+   * Adds 1 to {@code out.y} while the key is held (down / positive Y).
    *
    * @param keycode Keycode.
    * @return Binding that contributes +1 on Y when the key is pressed.
@@ -122,8 +125,8 @@ public interface FlixelAnalogBinding {
   }
 
   /**
-   * Adds the X component of a gamepad stick. Most drivers report X in math-space already (left is
-   * negative, right is positive), so no correction is applied.
+   * Adds the X component of a gamepad stick, passed through as the device reports it (left is
+   * negative, right is positive).
    *
    * @param slot Gamepad slot (0 and up).
    * @param axis {@link FlixelGamepadAxis#LEFT_X} or similar.
@@ -138,37 +141,20 @@ public interface FlixelAnalogBinding {
   }
 
   /**
-   * Adds the Y component of a gamepad stick with the screen-space inversion corrected so that
-   * up = positive Y, matching key bindings. This is the right choice for almost every game.
+   * Adds the Y component of a gamepad stick, passed through as the device reports it (up is
+   * negative, down is positive).
+   *
+   * <p>This already matches the framework's y-down coordinate system and the Y key bindings, so the
+   * stick and keys can share one action without any sign flips.
    *
    * @param slot Gamepad slot (0 and up).
    * @param axis {@link FlixelGamepadAxis#LEFT_Y} or similar.
-   * @return Binding that contributes the stick Y value (up = positive).
+   * @return Binding that contributes the stick Y value (down = positive).
    */
   static FlixelAnalogBinding gamepadAxisY(int slot, FlixelGamepadAxis axis) {
-    return gamepadAxisY(slot, axis, false);
-  }
-
-  /**
-   * Adds the Y component of a gamepad stick.
-   *
-   * @param slot Gamepad slot (0 and up).
-   * @param axis {@link FlixelGamepadAxis#LEFT_Y} or similar.
-   * @param raw When {@code false} (the default), the raw hardware Y is negated so that up = positive
-   *   Y, matching key bindings. Pass {@code true} to use the raw screen-space value unchanged.
-   * @return Binding that contributes the stick Y value.
-   */
-  static FlixelAnalogBinding gamepadAxisY(int slot, FlixelGamepadAxis axis, boolean raw) {
-    if (raw) {
-      return out -> {
-        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-          out.y += Flixel.gamepads.getAxis(slot, axis);
-        }
-      };
-    }
     return out -> {
       if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-        out.y -= Flixel.gamepads.getAxis(slot, axis);
+        out.y += Flixel.gamepads.getAxis(slot, axis);
       }
     };
   }

@@ -57,13 +57,13 @@ public final class FlixelGamepadAxis {
   /** Horizontal axis of the left analog stick. Negative = left, positive = right. */
   public static final FlixelGamepadAxis LEFT_X = of("LeftX");
 
-  /** Vertical axis of the left analog stick. Negative = up, positive = down (backend-dependent). */
+  /** Vertical axis of the left analog stick. Negative = up, positive = down. */
   public static final FlixelGamepadAxis LEFT_Y = of("LeftY");
 
   /** Horizontal axis of the right analog stick. Negative = left, positive = right. */
   public static final FlixelGamepadAxis RIGHT_X = of("RightX");
 
-  /** Vertical axis of the right analog stick. Negative = up, positive = down (backend-dependent). */
+  /** Vertical axis of the right analog stick. Negative = up, positive = down. */
   public static final FlixelGamepadAxis RIGHT_Y = of("RightY");
 
   /**
