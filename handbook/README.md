@@ -68,7 +68,7 @@ Everything that turns a scene into a game.
 | 7 | [Groups and Recycling: Managing Many Objects at Once](groups-and-recycling.md) | Group types, garbage-free iteration, recycling, sprite groups, and sorting. |
 | 8 | [Movement, Physics, and Collisions](physics-and-collisions.md) | Velocity, acceleration, drag, platformer and top-down movement, overlap and collide. |
 | 9 | [Input: Keyboard, Mouse, Touch, and Gamepads](input.md) | Polling, the three questions, screen versus world space, gamepads, and typed text. |
-| 10 | [Input Actions: Rebindable Controls for Every Device](input-actions.md) | Digital and analog actions, bindings, menu repeat, rebinding screens, and Steam Input. |
+| 10 | [Input Actions: Rebindable Controls for Every Device](input-actions.md) | Digital and analog actions, bindings, menu repeat, and rebinding screens. |
 | 11 | [Animation: Spritesheets, Atlases, Rigs, and State Machines](animation.md) | Grid sheets, Sparrow atlases, offsets, frame events, Adobe Animate rigs, and state machines. |
 | 12 | [Cameras: Following, Effects, HUDs, and Split Screens](cameras.md) | Following, bounds, zoom, shake, flash, fade, parallax, HUD cameras, and viewports. |
 | 13 | [Text, HUDs, and Bars](text-and-ui.md) | Text, fonts, borders, wrapping, garbage-free text, bars, and simple buttons. |

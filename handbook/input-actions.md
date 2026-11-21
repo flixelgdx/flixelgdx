@@ -3,7 +3,7 @@
 Input actions let you describe *what the player wants to do* ("jump," "move," "pause") separately from *which buttons
 do it*. You define each action once, bind it to any number of keys, mouse buttons, gamepad buttons, sticks, and touch
 areas, and then your game only asks about the action. This guide covers digital and analog actions, every kind of
-binding, menu-friendly repeat timing, rebinding screens, and Steam Input.
+binding, menu-friendly repeat timing, and rebinding screens.
 
 ## Table of contents
 
@@ -17,9 +17,8 @@ binding, menu-friendly repeat timing, rebinding screens, and Steam Input.
 8. [Hold-repeat for menus](#hold-repeat-for-menus)
 9. [Callbacks](#callbacks)
 10. [Building a rebinding screen](#building-a-rebinding-screen)
-11. [Steam Input](#steam-input)
-12. [When actions update](#when-actions-update)
-13. [Check your understanding](#check-your-understanding)
+11. [When actions update](#when-actions-update)
+12. [Check your understanding](#check-your-understanding)
 
 ## Why actions?
 
@@ -160,9 +159,7 @@ movement with no sign flips:
 player.setVelocity(controls.move.getX() * 150f, controls.move.getY() * 150f);
 ```
 
-Gamepad sticks already report down as positive on every platform, so their values pass through untouched. Steam
-Input reports up as positive, so the action flips Steam's Y for you; your `FlixelSteamActionReader` should return
-Steam's value as-is.
+Gamepad sticks already report down as positive on every platform, so their values pass through untouched.
 
 ## Every kind of binding
 
@@ -251,23 +248,6 @@ if (waitingFor != null) {
 
 When the game starts, read the saved names back with `FlixelKey.fromString(...)` and apply them before play begins.
 Gamepads work the same way with `Flixel.gamepads.firstJustPressed(slot)`.
-
-## Steam Input
-
-Steam Input lets players configure any controller in Steam's own overlay. To support it, ship a Steam Input manifest
-(a `.vdf` file in the `steam_input` layout) whose action names match your actions' names. At runtime, give each action
-set a `FlixelSteamActionReader` that reads Steam's state each frame, usually backed by a Steamworks library:
-
-```java
-controls.steamReader = mySteamReader; // Implements getDigital(name), getAnalogX(name), and getAnalogY(name).
-```
-
-Each action then merges its hardware bindings with Steam's values. When Steam is not running, use the safe empty
-reader so nothing crashes:
-
-```java
-controls.steamReader = FlixelSteamActionReaders.EMPTY;
-```
 
 ## When actions update
 

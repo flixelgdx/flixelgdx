@@ -167,32 +167,6 @@ class FlixelActionSystemTest {
   }
 
   @Test
-  void steamAnalogYIsFlippedToDownPositive() {
-    FlixelActionSet set = new FlixelActionSet(false) {
-    };
-    set.steamReader = new FlixelSteamActionReader() {
-      @Override
-      public boolean getDigital(String actionName) {
-        return false;
-      }
-
-      @Override
-      public float getAnalogX(String actionName) {
-        return 0f;
-      }
-
-      @Override
-      public float getAnalogY(String actionName) {
-        return 1f; // Steam Input reports up as positive.
-      }
-    };
-    FlixelActionAnalog move = new FlixelActionAnalog("move");
-    set.add(move);
-    set.update(0f);
-    assertEquals(-1f, move.getY(), 1e-5f);
-  }
-
-  @Test
   void registryRegistersOnConstructAndClearsOnDestroy() {
     FlixelActionSet set = new FlixelActionSet(true) {
     };
@@ -443,31 +417,5 @@ class FlixelActionSystemTest {
     Flixel.keys.keyDown(FlixelKey.RIGHT);
     set.update(0f);
     assertEquals(0f, move.getX(), 1e-5f);
-  }
-
-  @Test
-  void steamReaderMergesDigital() {
-    FlixelActionSet set = new FlixelActionSet(false) {
-    };
-    set.steamReader = new FlixelSteamActionReader() {
-      @Override
-      public boolean getDigital(String actionName) {
-        return "jump".equals(actionName);
-      }
-
-      @Override
-      public float getAnalogX(String actionName) {
-        return 0f;
-      }
-
-      @Override
-      public float getAnalogY(String actionName) {
-        return 0f;
-      }
-    };
-    FlixelActionDigital jump = new FlixelActionDigital("jump");
-    set.add(jump);
-    set.update(0f);
-    assertTrue(jump.pressed());
   }
 }

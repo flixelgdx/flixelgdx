@@ -1,11 +1,11 @@
 /**
- * Rebindable logical input actions that sit above the raw device managers and support Steam Input.
+ * Rebindable logical input actions that sit above the raw device managers.
  *
  * <h2>Why use actions instead of direct key checks</h2>
  *
  * <p>Writing {@code Flixel.keys.pressed(FlixelKey.SPACE)} everywhere works for a prototype, but it
- * becomes a problem the moment you add controller support, player-configurable bindings, or Steam
- * Input. Every hardcoded key reference has to be tracked down and updated.
+ * becomes a problem the moment you add controller support or player-configurable bindings. Every hardcoded key
+ * reference has to be tracked down and updated.
  *
  * <p>An action inverts this relationship: game code asks whether an abstract control (for example
  * {@code jump}) is active, and the action figures out which physical inputs map to it. Changing a
@@ -18,21 +18,18 @@
  *   <li>{@link org.flixelgdx.input.action.FlixelAction} - base class. Holds the action name, hold-repeat timing, an optional
  *       callback, and an {@code active} flag.</li>
  *   <li>{@link org.flixelgdx.input.action.FlixelActionDigital} - boolean action. True when any bound
- *       {@link org.flixelgdx.input.action.FlixelDigitalBinding} fires, or when Steam digital input matches the name.</li>
+ *       {@link org.flixelgdx.input.action.FlixelDigitalBinding} fires.</li>
  *   <li>{@link org.flixelgdx.input.action.FlixelActionAnalog} - 2D vector action. Sums bound {@link org.flixelgdx.input.action.FlixelAnalogBinding}
- *       contributors plus optional Steam analog input, then clamps the result to a unit vector.</li>
+ *       contributors, then clamps the result to a unit vector.</li>
  *   <li>{@link org.flixelgdx.input.action.FlixelDigitalBinding} - connects a key, mouse button, or gamepad button to a
  *       {@link org.flixelgdx.input.action.FlixelActionDigital}.</li>
  *   <li>{@link org.flixelgdx.input.action.FlixelAnalogBinding} - connects a key half or gamepad axis to one component of a
  *       {@link org.flixelgdx.input.action.FlixelActionAnalog}.</li>
  *   <li>{@link org.flixelgdx.input.action.FlixelActionSet} - groups actions together, drives their update/endFrame cycle,
- *       and holds the optional Steam reader.</li>
+ *       and owns their lifecycle.</li>
  *   <li>{@link org.flixelgdx.input.action.FlixelActionSets} - global registry; {@link org.flixelgdx.FlixelGame FlixelGame}
  *       calls {@link org.flixelgdx.input.action.FlixelActionSets#update(float) update()} and
  *       {@link org.flixelgdx.input.action.FlixelActionSets#endFrameAll() endFrameAll()} automatically each frame.</li>
- *   <li>{@link org.flixelgdx.input.action.FlixelSteamActionReader} - interface for reading Steam Input state each frame.</li>
- *   <li>{@link org.flixelgdx.input.action.FlixelSteamActionReaders} - static factory; {@link org.flixelgdx.input.action.FlixelSteamActionReaders#EMPTY}
- *       is the safe default when Steam is not active.</li>
  * </ul>
  *
  * <h2>Minimal setup</h2>
@@ -152,21 +149,5 @@
  *       {@link org.flixelgdx.input.action.FlixelActionSets#endFrameAll() FlixelActionSets.endFrameAll()} clears
  *       {@code justPressed} and {@code justReleased} flags so they are accurate next frame.</li>
  * </ol>
- *
- * <h2>Steam Input</h2>
- *
- * <p>Ship a Steam Input manifest (a {@code .vdf} file under the {@code steam_input} layout) and
- * keep action {@link org.flixelgdx.input.action.FlixelAction#getName() names} in sync with the manifest entries. At runtime,
- * set {@link org.flixelgdx.input.action.FlixelActionSet#steamReader steamReader} on each action set to an implementation of
- * {@link org.flixelgdx.input.action.FlixelSteamActionReader} that reads Steam Input state each frame (for example, backed by
- * steamworks4j). The action's digital/analog value merges hardware bindings and Steam Input
- * together each frame.
- *
- * <p>Before Steam is initialized (or when shipping without Steam), assign the no-op reader to
- * satisfy the field without crashes:
- *
- * <pre>{@code
- * controls.steamReader = FlixelSteamActionReaders.EMPTY;
- * }</pre>
  */
 package org.flixelgdx.input.action;

@@ -31,8 +31,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Boolean action: any {@link FlixelDigitalBinding} that evaluates true, OR optional Steam digital
- * for the same {@link #getName()}, makes {@link #pressed()} true for this frame.
+ * Boolean action: any {@link FlixelDigitalBinding} that evaluates true makes {@link #pressed()} true
+ * for this frame.
  *
  * <h2>Setup</h2>
  *
@@ -170,10 +170,6 @@ public class FlixelActionDigital extends FlixelAction {
       return;
     }
     boolean v = false;
-    FlixelSteamActionReader steam = owner != null ? owner.steamReader : null;
-    if (steam != null && steam.getDigital(getName())) {
-      v = true;
-    }
     FlixelMap.Values<FlixelDigitalBinding> vals = namedBindings.values();
     while (vals.hasNext()) {
       v |= vals.next().evaluate();

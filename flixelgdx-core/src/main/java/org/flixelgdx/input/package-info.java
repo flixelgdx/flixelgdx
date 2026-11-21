@@ -30,7 +30,7 @@
  *       on {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}.</li>
  * </ul>
  *
- * <p>For rebindable controls (keyboard + gamepad sharing one action, Steam Input support), see the
+ * <p>For rebindable controls (keyboard + gamepad sharing one action), see the
  * {@link org.flixelgdx.input.action action} sub-package.
  *
  * <h2>Polling versus event callbacks</h2>
@@ -100,7 +100,7 @@
  *   <li>{@link org.flixelgdx.input.mouse mouse} - button codes, mouse manager, and cursor styling.</li>
  *   <li>{@link org.flixelgdx.input.touch touch} - per-finger state and multitouch manager.</li>
  *   <li>{@link org.flixelgdx.input.gamepad gamepad} - gamepad manager, haptics, and mapping system.</li>
- *   <li>{@link org.flixelgdx.input.action action} - rebindable logical actions with Steam Input support.</li>
+ *   <li>{@link org.flixelgdx.input.action action} - rebindable logical actions.</li>
  * </ul>
  */
 package org.flixelgdx.input;
