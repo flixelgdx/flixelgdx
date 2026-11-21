@@ -13,7 +13,7 @@ plug each one in.
 5. [Custom save storage](#custom-save-storage)
 6. [Custom log destinations](#custom-log-destinations)
 7. [Replacing a platform service](#replacing-a-platform-service)
-8. [Gamepad mappings and Steam Input](#gamepad-mappings-and-steam-input)
+8. [Gamepad mappings and custom bindings](#gamepad-mappings-and-custom-bindings)
 9. [Camera scaling for every camera](#camera-scaling-for-every-camera)
 10. [Custom eases and tween types](#custom-eases-and-tween-types)
 11. [Your own class hierarchy in states and groups](#your-own-class-hierarchy-in-states-and-groups)
@@ -132,13 +132,11 @@ class adds one behavior and passes everything else through. Services you might r
 `Flixel.files`, `Flixel.alert` (a styled in-game error screen instead of a native box), `Flixel.profiler` (send
 sections to your own profiler), and `FlixelSoundManager.defaultFactory`.
 
-## Gamepad mappings and Steam Input
+## Gamepad mappings and custom bindings
 
 - Add support for unusual controllers with `Flixel.gamepads.addMappingResolver(...)`. Your resolvers are asked first.
   See [Input](input.md#unusual-controllers).
-- Connect Steam Input to [input actions](input-actions.md#steam-input) by assigning a `FlixelSteamActionReader` to each
-  action set's `steamReader`.
-- Write your own action bindings by implementing `FlixelDigitalBinding` (`evaluate()`) or `FlixelAnalogBinding`
+- Write your own [input action](input-actions.md) bindings by implementing `FlixelDigitalBinding` (`evaluate()`) or `FlixelAnalogBinding`
   (`accumulate(vector)`).
 
 ## Camera scaling for every camera

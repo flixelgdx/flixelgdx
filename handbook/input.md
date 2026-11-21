@@ -418,8 +418,7 @@ boolean jump = Flixel.keys.justPressed(FlixelKey.SPACE)
 ```
 
 The [Input Actions](input-actions.md) system lets you define "jump" once, bind it to any number of keys, buttons,
-and touch areas, and then only ask about "jump." It also makes rebindable controls and Steam Input support much
-easier.
+and touch areas, and then only ask about "jump." It also makes rebindable controls much easier.
 
 ## Platform differences
 
