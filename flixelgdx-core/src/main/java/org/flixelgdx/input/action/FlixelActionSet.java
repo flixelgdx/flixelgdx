@@ -32,7 +32,6 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.input.FlixelInputManager;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Groups logical {@link FlixelAction} instances (digital and analog) and advances them on the same frame
@@ -103,12 +102,6 @@ import org.jetbrains.annotations.Nullable;
  * }
  * }</pre>
  *
- * <h2>Steam Input</h2>
- *
- * <p>Set {@link #steamReader} to an implementation that reads Steam Input API (for example via steamworks4j). Action
- * {@link FlixelAction#getName()} strings should match your in-game actions manifest. Use {@link FlixelSteamActionReaders#EMPTY}
- * when Steam is unavailable.
- *
  * <h2>Tests</h2>
  *
  * <p>Pass {@code false} to {@link #FlixelActionSet(boolean)} from an anonymous subclass so the set does not register globally,
@@ -117,13 +110,6 @@ import org.jetbrains.annotations.Nullable;
 public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
 
   protected final FlixelArray<FlixelAction> members;
-
-  /**
-   * Optional Steam Input bridge; when non-null, digital and analog actions also read these values
-   * each {@link #update(float)}. Implement outside core with steamworks4j or similar.
-   */
-  @Nullable
-  public FlixelSteamActionReader steamReader;
 
   private final boolean registerForGlobalLifecycle;
 
@@ -149,7 +135,7 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
   }
 
   /**
-   * Adds an action to this set and assigns ownership for Steam name resolution and lifecycle.
+   * Adds an action to this set and assigns ownership for lifecycle management.
    *
    * @param action Non-null action instance.
    */
@@ -191,6 +177,5 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
       a.resetAction();
     }
     members.clear();
-    steamReader = null;
   }
 }

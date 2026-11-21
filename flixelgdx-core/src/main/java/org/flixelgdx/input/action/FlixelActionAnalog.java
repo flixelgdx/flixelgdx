@@ -32,15 +32,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Two-axis vector built from {@link FlixelAnalogBinding} contributors plus optional Steam analog
- * for {@link #getName()}.
+ * Two-axis vector built from {@link FlixelAnalogBinding} contributors.
  *
  * <h2>How values combine</h2>
  *
  * <p>Each frame, key halves add {@code -1}, {@code 0}, or {@code +1} per axis;
- * {@link Flixel#gamepads} axis bindings add smooth stick values.
- * Steam {@link FlixelSteamActionReader#getAnalogX} / {@code getAnalogY} are added on top (Steam's
- * up-positive Y is flipped so it matches everything else). The
+ * {@link Flixel#gamepads} axis bindings add smooth stick values. The
  * result is clamped to a maximum length of {@code 1} so diagonals do not exceed unit speed when
  * mixing keys and sticks.
  *
@@ -228,12 +225,6 @@ public class FlixelActionAnalog extends FlixelAction {
     FlixelMap.Values<FlixelAnalogBinding> vals = namedBindings.values();
     while (vals.hasNext()) {
       vals.next().accumulate(scratch);
-    }
-    FlixelSteamActionReader steam = owner != null ? owner.steamReader : null;
-    if (steam != null) {
-      scratch.x += steam.getAnalogX(getName());
-      // Steam Input reports up as positive Y, so flip it to match the framework's y-down system.
-      scratch.y -= steam.getAnalogY(getName());
     }
     float sx = scratch.x;
     float sy = scratch.y;

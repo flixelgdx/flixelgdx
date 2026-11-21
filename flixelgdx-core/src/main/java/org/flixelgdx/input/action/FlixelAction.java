@@ -30,11 +30,11 @@ import org.jetbrains.annotations.Nullable;
  * Base type for a named logical control inside a {@link FlixelActionSet}.
  *
  * <p>Concrete types are {@link FlixelActionDigital} (boolean, many {@link FlixelDigitalBinding}s OR'd together) and
- * {@link FlixelActionAnalog} (2D vector from keys and gamepad axes, optional Steam vector merge). Subclasses are updated
+ * {@link FlixelActionAnalog} (2D vector from keys and gamepad axes). Subclasses are updated
  * by the owning set's {@link FlixelActionSet#update(float)} and finalized by {@link FlixelActionSet#endFrame()}.
  *
- * <p>The {@link #getName()} string is used for Steam Input alignment and logging; keep names stable if players rebind or
- * use cloud profiles.
+ * <p>The {@link #getName()} string identifies the action in logs and debugging tools; keep names stable if players
+ * rebind or use cloud profiles.
  *
  * <h2>Hold-repeat</h2>
  *
@@ -81,7 +81,7 @@ public abstract class FlixelAction {
   }
 
   /**
-   * Logical name for Steam manifest alignment and debugging.
+   * Logical name used for logging and debugging.
    *
    * @return Non-null name string.
    */
