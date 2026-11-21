@@ -135,8 +135,8 @@ class FlixelActionSystemTest {
     FlixelActionAnalog move = new FlixelActionAnalog("move");
     move.addBinding("negX", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
     move.addBinding("posX", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
-    move.addBinding("negY", FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
-    move.addBinding("posY", FlixelAnalogBinding.posYKey(FlixelKey.UP));
+    move.addBinding("negY", FlixelAnalogBinding.negYKey(FlixelKey.UP));
+    move.addBinding("posY", FlixelAnalogBinding.posYKey(FlixelKey.DOWN));
     set.add(move);
 
     Flixel.keys.keyDown(FlixelKey.RIGHT);
@@ -144,6 +144,52 @@ class FlixelActionSystemTest {
     set.update(0f);
     float len = (float) Math.sqrt(move.getX() * move.getX() + move.getY() * move.getY());
     assertEquals(1f, len, 1e-5f);
+  }
+
+  @Test
+  void analogYIsDownPositive() {
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
+    FlixelActionAnalog move = new FlixelActionAnalog("move");
+    move.addBinding("up", FlixelAnalogBinding.negYKey(FlixelKey.UP));
+    move.addBinding("down", FlixelAnalogBinding.posYKey(FlixelKey.DOWN));
+    set.add(move);
+
+    Flixel.keys.keyDown(FlixelKey.UP);
+    set.update(0f);
+    assertEquals(-1f, move.getY(), 1e-5f);
+
+    Flixel.keys.keyUp(FlixelKey.UP);
+    Flixel.keys.keyDown(FlixelKey.DOWN);
+    set.endFrame();
+    set.update(0f);
+    assertEquals(1f, move.getY(), 1e-5f);
+  }
+
+  @Test
+  void steamAnalogYIsFlippedToDownPositive() {
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
+    set.steamReader = new FlixelSteamActionReader() {
+      @Override
+      public boolean getDigital(String actionName) {
+        return false;
+      }
+
+      @Override
+      public float getAnalogX(String actionName) {
+        return 0f;
+      }
+
+      @Override
+      public float getAnalogY(String actionName) {
+        return 1f; // Steam Input reports up as positive.
+      }
+    };
+    FlixelActionAnalog move = new FlixelActionAnalog("move");
+    set.add(move);
+    set.update(0f);
+    assertEquals(-1f, move.getY(), 1e-5f);
   }
 
   @Test
@@ -160,8 +206,8 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
-    navigate.addBinding("down", FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
-    navigate.addBinding("up", FlixelAnalogBinding.posYKey(FlixelKey.UP));
+    navigate.addBinding("up", FlixelAnalogBinding.negYKey(FlixelKey.UP));
+    navigate.addBinding("down", FlixelAnalogBinding.posYKey(FlixelKey.DOWN));
     set.add(navigate);
 
     // First press: flicked() fires on the first frame.
@@ -234,7 +280,7 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
-    navigate.addBinding("down", FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
+    navigate.addBinding("down", FlixelAnalogBinding.posYKey(FlixelKey.DOWN));
     navigate.setHoldDelay(0.5f);
     navigate.setHoldInterval(0.1f);
     set.add(navigate);
