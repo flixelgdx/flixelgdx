@@ -4,7 +4,8 @@
  * <h2>Why use actions instead of direct key checks</h2>
  *
  * <p>Writing {@code Flixel.keys.pressed(FlixelKey.SPACE)} everywhere works for a prototype, but it
- * becomes a problem the moment you add controller support or player-configurable bindings. Every hardcoded key reference has to be tracked down and updated.
+ * becomes a problem the moment you add controller support or player-configurable bindings. Every hardcoded key
+ * reference has to be tracked down and updated.
  *
  * <p>An action inverts this relationship: game code asks whether an abstract control (for example
  * {@code jump}) is active, and the action figures out which physical inputs map to it. Changing a
