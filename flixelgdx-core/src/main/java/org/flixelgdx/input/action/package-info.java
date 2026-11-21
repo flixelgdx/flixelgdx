@@ -58,8 +58,8 @@
  *     move = new FlixelActionAnalog("move");
  *     move.addBinding("negX",   FlixelAnalogBinding.negXKey(FlixelKey.A));
  *     move.addBinding("posX",   FlixelAnalogBinding.posXKey(FlixelKey.D));
- *     move.addBinding("negY",   FlixelAnalogBinding.negYKey(FlixelKey.S));
- *     move.addBinding("posY",   FlixelAnalogBinding.posYKey(FlixelKey.W));
+ *     move.addBinding("negY",   FlixelAnalogBinding.negYKey(FlixelKey.W));
+ *     move.addBinding("posY",   FlixelAnalogBinding.posYKey(FlixelKey.S));
  *     move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadAxis.LEFT_X));
  *     move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadAxis.LEFT_Y));
  *     add(move);
@@ -113,7 +113,8 @@
  * <ul>
  *   <li>{@link org.flixelgdx.input.action.FlixelActionAnalog#getX() getX()} / {@link org.flixelgdx.input.action.FlixelActionAnalog#getY() getY()} -
  *       the normalized 2D vector for this frame, clamped to a maximum length of 1 so diagonal
- *       keyboard input does not exceed unit speed.</li>
+ *       keyboard input does not exceed unit speed. Y follows the framework's y-down system (negative is up,
+ *       positive is down), so it can drive world movement directly.</li>
  *   <li>{@link org.flixelgdx.input.action.FlixelActionAnalog#getPrevX() getPrevX()} / {@link org.flixelgdx.input.action.FlixelActionAnalog#getPrevY()
  *       getPrevY()} - the vector from the previous frame, useful for computing delta movement.</li>
  *   <li>{@link org.flixelgdx.input.action.FlixelActionAnalog#flickedRepeating() flickedRepeating()} - autorepeat equivalent

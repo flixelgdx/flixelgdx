@@ -57,8 +57,12 @@ public interface FlixelSteamActionReader {
   /**
    * Analog Y for the named vector action, typically in {@code -1..1}.
    *
+   * <p>Return the value exactly as Steam Input reports it, where up is positive. The owning
+   * {@link FlixelActionAnalog} flips it to match the framework's y-down coordinate system, so
+   * implementations should not negate it themselves.
+   *
    * @param actionName Logical action name.
-   * @return Y component.
+   * @return Y component, with up as positive.
    */
   float getAnalogY(@NotNull String actionName);
 }
