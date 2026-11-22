@@ -21,8 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx;
+package org.flixelgdx.physics;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelBasic;
+import org.flixelgdx.FlixelObject;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.group.FlixelGroupable;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +37,11 @@ import java.util.function.BiPredicate;
 
 /**
  * The broad phase behind {@link Flixel#overlap} and {@link Flixel#collide}.
+ *
+ * <p>Game code normally never touches this class: call {@code Flixel.overlap(...)} or
+ * {@code Flixel.collide(...)} instead, which handle {@code null} arguments (meaning the current state) and pass the
+ * right callbacks. Calling {@link #overlap(FlixelBasic, FlixelBasic, BiConsumer, BiPredicate)} directly is fine for
+ * power users, but it skips that convenience.
  *
  * <p>Checking every object on one side against every object on the other side gets slow fast: two groups of 200 are
  * 40,000 checks. This class first flattens both sides into plain lists of {@link FlixelObject}s, then decides how to
@@ -54,16 +62,16 @@ import java.util.function.BiPredicate;
  * game's largest groups. Objects whose bounds cover too many cells (such as a long floor) are kept in a separate list
  * that every query checks, so they never flood the grid.
  */
-final class FlixelCollisionGrid {
+public final class FlixelCollisionGrid {
 
   /** The largest number of cells one object may cover before it is tested against everything instead. */
-  static final int MAX_CELLS_PER_OBJECT = 16;
+  public static final int MAX_CELLS_PER_OBJECT = 16;
 
   /**
    * How expensive a grid insert or query is compared to one plain pair test. The grid is only used when
    * {@code count1 * count2 > GRID_COST * (count1 + count2)}.
    */
-  static final int GRID_COST = 16;
+  public static final int GRID_COST = 16;
 
   /** One grid per nesting level, so a callback can safely call {@link Flixel#overlap} again. */
   @SuppressWarnings("checkstyle:ConstantName")
@@ -105,7 +113,7 @@ final class FlixelCollisionGrid {
    * @param processCallback Must return {@code true} for a pair to count. May be {@code null}.
    * @return {@code true} if any pair overlapped.
    */
-  static boolean overlap(@NotNull FlixelBasic obj1,
+  public static boolean overlap(@NotNull FlixelBasic obj1,
       @NotNull FlixelBasic obj2,
       @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback,
       @Nullable BiPredicate<FlixelObject, FlixelObject> processCallback) {

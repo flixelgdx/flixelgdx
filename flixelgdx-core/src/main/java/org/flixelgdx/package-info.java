@@ -1411,6 +1411,8 @@
  *       and ease.</li>
  *   <li>{@link org.flixelgdx.text text} - fonts and text layout.</li>
  *   <li>{@link org.flixelgdx.particle particle} - emitters and particles.</li>
+ *   <li>{@link org.flixelgdx.physics physics} - the broad phase behind overlap and collide
+ *       checks.</li>
  *   <li>{@link org.flixelgdx.graphics graphics} - shaders, blend modes, and rendering.</li>
  *   <li>{@link org.flixelgdx.math math} and {@link org.flixelgdx.util util} - vectors, rectangles,
  *       random numbers, colors, and helpers.</li>

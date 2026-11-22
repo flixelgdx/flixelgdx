@@ -70,6 +70,7 @@ import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelRandom;
+import org.flixelgdx.physics.FlixelCollisionGrid;
 import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.signal.FlixelSignal;
 import org.flixelgdx.signal.FlixelSignalData.GamePausedSignalData;
