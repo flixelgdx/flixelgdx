@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.debug.panels;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugObjectIds;
 import org.flixelgdx.debug.feeds.FlixelDebugControls;
@@ -124,6 +125,10 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanel {
             new FlixelDebugButton("Step", controls::stepFrame).setName("step")
                 .setTooltip("Advance one frame while paused"),
             new FlixelDebugToggle("Hitboxes", controls::isHitboxes, controls::setHitboxes).setName("hitboxes"),
+            FlixelDebugUi.button("Reset state", Flixel::resetState)
+                .setStyle(FlixelDebugProtocol.TONE_ACCENT)
+                .setTooltip("Calls Flixel.resetState(), which destroys the current state and recreates it using the " +
+                  "provided supplier when switched to."),
             readout),
         noCamera,
         canvas,

@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.debug.panels;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.feeds.FlixelDebugControls;
@@ -43,8 +44,8 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * The built-in "Controls" panel: pause, step, hitboxes, the free camera, the stats sample rate, the log level, and
- * the game's debugger keys.
+ * The built-in "Controls" panel: pause, step, hitboxes, the free camera, the stats sample rate, the log level,
+ * resetting the state, and the game's debugger keys.
  *
  * <p>Every control reads and writes the {@linkplain FlixelDebugManager#controls controls feed}, so pressing the pause
  * hotkey in the game ticks the box here too. A game can replace the panel under the id
@@ -94,6 +95,10 @@ public class FlixelDebugControlsPanel extends FlixelDebugPanel {
         FlixelDebugUi.checkbox("Show hitboxes", controls::isHitboxes, controls::setHitboxes).setName("hitboxes"),
         FlixelDebugUi.checkbox("Pause", controls::isPaused, controls::setPaused).setName("pause"),
         FlixelDebugUi.checkbox("Free camera", controls::isFreeCam, controls::setFreeCam).setName("freecam"),
+        FlixelDebugUi.button("Reset state", Flixel::resetState)
+            .setStyle(FlixelDebugProtocol.TONE_ACCENT)
+            .setTooltip("Calls Flixel.resetState(), which destroys the current state and recreates it using the " +
+                "provided supplier when switched to."),
         new FlixelDebugButton("Step frame", controls::stepFrame).setName("step")
             .setTooltip("Runs one frame while the game is paused"),
         FlixelDebugUi.heading("Update rate"),
