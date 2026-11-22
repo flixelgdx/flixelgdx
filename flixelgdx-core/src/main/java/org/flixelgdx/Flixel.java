@@ -96,7 +96,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 /**
@@ -903,6 +903,7 @@ public final class Flixel {
 
   /**
    * World bounds used by {@link #overlap} and {@link #collide} for broad-phase culling.
+   * Objects that lie completely outside these bounds are skipped by collision checks.
    * Format: {@code [x, y, width, height]}. Defaults to a very large area.
    */
   @SuppressWarnings("checkstyle:ConstantName")
@@ -1605,6 +1606,8 @@ public final class Flixel {
 
   /**
    * Returns the world bounds used for collision broad-phase culling.
+   *
+   * <p>{@link #overlap} and {@link #collide} skip any object that lies completely outside these bounds.
    * The returned array is {@code [x, y, width, height]}.
    *
    * @return A float array of length 4 containing {@code [x, y, width, height]}.
@@ -1615,6 +1618,10 @@ public final class Flixel {
 
   /**
    * Sets the world bounds used for collision culling.
+   *
+   * <p>{@link #overlap} and {@link #collide} skip any object that lies completely outside these bounds,
+   * so make them cover your whole level if it is larger than the default 20,000 by 20,000 pixel area
+   * centered on the origin.
    *
    * @param x Left edge of the world.
    * @param y Top edge of the world.
@@ -1632,17 +1639,43 @@ public final class Flixel {
    * Checks for overlaps between two objects or groups. Can be called with
    * any combination of single {@link FlixelObject}s and {@link FlixelGroupable}s.
    *
+   * <p>Groups are flattened (nested groups included), and objects that do not exist or lie completely
+   * outside the {@linkplain #setWorldBounds(float, float, float, float) world bounds} are skipped. When
+   * both sides hold many objects, the objects are sorted into a uniform spatial grid first, so only
+   * objects that are near each other are tested. When one side is small (for example a single player
+   * against a group of coins), every pair is tested directly, because that is faster. Either way, the
+   * call creates no garbage, as long as the callbacks are stored in fields instead of being written as
+   * new lambdas every frame.
+   *
+   * <p>A callback may safely call {@code overlap(...)} or {@code collide(...)} again.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * // Store the callbacks in fields so no lambda is created every frame.
+   * private final BiConsumer<FlixelObject, FlixelObject> onHit = (bullet, enemy) -> {
+   *   bullet.kill();
+   *   enemy.kill();
+   * };
+   * private final BiPredicate<FlixelObject, FlixelObject> canHit = (bullet, enemy) -> !enemy.isKilled();
+   *
+   * @Override
+   * public void update(float elapsed) {
+   *   super.update(elapsed);
+   *   Flixel.overlap(bullets, enemies, onHit, canHit);
+   * }
+   * }</pre>
+   *
    * @param objectOrGroup1 First object or group (may be {@code null} to use the current state).
    * @param objectOrGroup2 Second object or group (may be {@code null} to use the current state).
    * @param notifyCallback Called for each overlapping pair. May be {@code null}.
    * @param processCallback If provided, must return {@code true} for the pair to count as overlapping.
-   *   Pass {@code null} for simple AABB overlap.
+   *   It returns a plain {@code boolean}, so nothing is boxed. Pass {@code null} for simple AABB overlap.
    * @return {@code true} if any overlaps were detected.
    */
   public static boolean overlap(@Nullable FlixelBasic objectOrGroup1,
       @Nullable FlixelBasic objectOrGroup2,
       @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback,
-      @Nullable BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
+      @Nullable BiPredicate<FlixelObject, FlixelObject> processCallback) {
     if (objectOrGroup1 == null) {
       objectOrGroup1 = state;
     }
@@ -1652,11 +1685,11 @@ public final class Flixel {
     if (objectOrGroup1 == null || objectOrGroup2 == null) {
       return false;
     }
-    return overlapInternal(objectOrGroup1, objectOrGroup2, notifyCallback, processCallback);
+    return FlixelCollisionGrid.overlap(objectOrGroup1, objectOrGroup2, notifyCallback, processCallback);
   }
 
   /**
-   * Shorthand for {@link #overlap(FlixelBasic, FlixelBasic, BiConsumer, BiFunction)}
+   * Shorthand for {@link #overlap(FlixelBasic, FlixelBasic, BiConsumer, BiPredicate)}
    * with no callbacks.
    *
    * @param objectOrGroup1 First object or group (may be {@code null} to use the current state).
@@ -1693,67 +1726,6 @@ public final class Flixel {
   public static boolean collide(@Nullable FlixelBasic objectOrGroup1,
       @Nullable FlixelBasic objectOrGroup2) {
     return collide(objectOrGroup1, objectOrGroup2, null);
-  }
-
-  private static boolean overlapInternal(FlixelBasic obj1, FlixelBasic obj2,
-      BiConsumer<FlixelObject, FlixelObject> notifyCallback,
-      BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
-    boolean result = false;
-
-    if (obj1 instanceof FlixelGroupable<?> group1) {
-      FlixelArray<?> members = group1.getMembers();
-      if (members != null) {
-        for (Object o : members) {
-          if (o instanceof FlixelBasic member && member.isExists()) {
-            result |= overlapInternal(member, obj2, notifyCallback, processCallback);
-          }
-        }
-      }
-      return result;
-    }
-
-    if (obj2 instanceof FlixelGroupable<?> group2) {
-      FlixelArray<?> members = group2.getMembers();
-      if (members != null) {
-        for (Object o : members) {
-          if (o instanceof FlixelBasic member && member.isExists()) {
-            result |= overlapInternal(obj1, member, notifyCallback, processCallback);
-          }
-        }
-      }
-      return result;
-    }
-
-    if (!(obj1 instanceof FlixelObject fo1) || !(obj2 instanceof FlixelObject fo2)) {
-      return false;
-    }
-    if (obj1 == obj2) {
-      return false;
-    }
-    if (!fo1.exists || !fo2.exists) {
-      return false;
-    }
-
-    boolean overlaps = fo1.getX() < fo2.getX() + fo2.getWidth()
-        && fo1.getX() + fo1.getWidth() > fo2.getX()
-        && fo1.getY() < fo2.getY() + fo2.getHeight()
-        && fo1.getY() + fo1.getHeight() > fo2.getY();
-
-    if (!overlaps) {
-      return false;
-    }
-
-    if (processCallback != null) {
-      if (!processCallback.apply(fo1, fo2)) {
-        return false;
-      }
-    }
-
-    if (notifyCallback != null) {
-      notifyCallback.accept(fo1, fo2);
-    }
-
-    return true;
   }
 
   /**
