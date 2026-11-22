@@ -196,7 +196,7 @@ ignore that pair; the notify callback then does not run for it. This is how you 
 enemies for a moment after being hit:
 
 ```java
-private final BiFunction<FlixelObject, FlixelObject, Boolean> canBeHurt = (p, e) -> !player.isInvincible();
+private final BiPredicate<FlixelObject, FlixelObject> canBeHurt = (p, e) -> !player.isInvincible();
 private final BiConsumer<FlixelObject, FlixelObject> onEnemyTouch = (p, e) -> player.hurt(1);
 
 // In update(...):

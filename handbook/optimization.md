@@ -202,12 +202,20 @@ shader changes. See [Graphics and Shaders](graphics-and-shaders.md#batching-why-
 
 ## Collisions
 
-`Flixel.overlap` and `Flixel.collide` test every pair between the two sides. A group of 200 against a group of 200 is
-40,000 tests per call.
+`Flixel.overlap` and `Flixel.collide` flatten both sides into plain lists and then pick the cheaper strategy:
+
+- **Few pairs** (for example one player against a group of coins): every pair is tested directly.
+- **Many pairs** (for example 200 bullets against 200 enemies): the second side is sorted into a uniform spatial
+  grid first, and each object on the first side is only tested against objects in the cells it touches. Instead of
+  40,000 tests, most objects are only checked against a handful of neighbors.
+
+Neither path creates garbage, as long as the callbacks live in fields. You can still help:
 
 - Collide only the groups that can actually interact (player bullets against enemies, not against everything).
 - Keep groups small by killing what leaves the screen.
-- For very large worlds, split objects into regions (grid cells or rooms) and only check nearby regions.
+- Keep `Flixel.setWorldBounds(...)` close to the level size. Objects completely outside it are skipped entirely.
+- Very large objects (a floor spanning the whole level) are tested against every object on the other side, so a level
+  built from many long walls is cheaper as several shorter pieces or a tilemap.
 
 ## Assets and memory
 
