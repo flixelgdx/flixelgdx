@@ -128,7 +128,7 @@ public class FlixelDebugViewportPanel extends FlixelDebugPanel {
             FlixelDebugUi.button("Reset state", Flixel::resetState)
                 .setStyle(FlixelDebugProtocol.TONE_ACCENT)
                 .setTooltip("Calls Flixel.resetState(), which destroys the current state and recreates it using the " +
-                  "provided supplier when switched to."),
+                    "provided supplier when switched to."),
             readout),
         noCamera,
         canvas,
