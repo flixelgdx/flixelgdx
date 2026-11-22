@@ -184,7 +184,7 @@ are always bundled. Changing the list re-runs `copyAssets` on the next build.
 
 Desktop and Android do not need this option because Gradle already has a way to do it for each:
 
-- **Desktop:** add an `exclude` inside the jar's `from` block in the game's `lwjgl3/build.gradle`:
+- **Desktop:** add an `exclude` inside the jar's `from` block in the game's `desktop/build.gradle`:
 
   ```groovy
   from(rootProject.file('assets')) {
