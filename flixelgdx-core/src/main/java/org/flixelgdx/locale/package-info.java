@@ -20,8 +20,23 @@
  *     settings menu or a saved preference.</li>
  *   <li><b>Show</b> text with {@link org.flixelgdx.locale.FlixelLocalization#get(String) get(...)}, or with
  *     {@link org.flixelgdx.locale.FlixelLocalization#format(org.flixelgdx.util.FlixelString, String, CharSequence) format(...)}
- *     when it has {@code {0}}-style placeholders.</li>
+ *     when it has {@code {0}}-style placeholders, or with
+ *     {@link org.flixelgdx.locale.FlixelLocalization#plural(org.flixelgdx.util.FlixelString, String, long) plural(...)}
+ *     when its wording depends on a count.</li>
  * </ol>
+ *
+ * <h2>Plurals</h2>
+ *
+ * <p>A JSON object whose keys are all {@link org.flixelgdx.locale.FlixelPluralCategory plural category}
+ * names (and includes {@code other}) becomes a plural entry. You register a
+ * {@link org.flixelgdx.locale.FlixelPluralRule FlixelPluralRule} for each language tag; the framework
+ * never guesses one from the tag, so you stay in control of which rule each language uses.
+ *
+ * <pre>{@code
+ * // "hud": { "coins": { "one": "{0} coin", "other": "{0} coins" } }
+ * Flixel.locale.setPluralRule("en", FlixelPluralRule.ONE_OTHER);
+ * coinsText.setText(Flixel.locale.plural(coinsLine, "hud.coins", coins));
+ * }</pre>
  *
  * <pre>{@code
  * // lang/en.json: { "menu": { "play": "Play" }, "hud": { "coins": "Coins: {0}" } }
@@ -45,5 +60,6 @@
  *
  * @see org.flixelgdx.locale.FlixelLocalization
  * @see org.flixelgdx.locale.FlixelLocalizationTable
+ * @see org.flixelgdx.locale.FlixelPluralRule
  */
 package org.flixelgdx.locale;

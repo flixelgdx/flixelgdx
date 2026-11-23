@@ -86,7 +86,7 @@ Loading files, saving progress, and working with data.
 | 18 | [Files and Assets: Loading, Caching, and Loading Screens](files-and-assets.md) | File roots, reading and writing, the asset manager, loading screens, and reference counting. |
 | 19 | [Saving Progress: Persistent Game Data](saving.md) | Bind, write, flush, slots, defaults, saving safely on phones and browsers, and custom storage. |
 | 20 | [JSON and XML: Load, Parse, and Handle Data Formats](data-serialization.md) | Reading and writing JSON, `@JsonSerializable` code generation, XML, and data recipes. |
-| 21 | [Localization: Translating Your Game's Text](localization.md) | String files, loading, the fallback chain, `{0}` placeholders, and switching language. |
+| 21 | [Localization: Translating Your Game's Text](localization.md) | String files, loading, the fallback chain, `{0}` placeholders, plurals, and switching language. |
 | 22 | [Collections and Pooling: Garbage-Free Lists, Maps, and Pools](collections-and-pooling.md) | `FlixelArray`, `FlixelMap`, primitive collections, snapshot iteration, and object pools. |
 | 23 | [Math, Randomness, Colors, and Utilities](math-and-utilities.md) | `FlixelMath`, random numbers and seeds, vectors, bounds and ranges, and colors. |
 

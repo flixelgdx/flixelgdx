@@ -180,6 +180,10 @@ A reused `FlixelString`: `buffer.set("Score: ").concat(score); text.setText(buff
 `Flixel.locale.load("es", Flixel.files.internal("lang/es.json")); Flixel.locale.setLocale("es");` then
 `text.setText(Flixel.locale.get("menu.play"));` ([Localization](localization.md))
 
+**...say "1 coin" but "2 coins"?**
+`"coins": { "one": "{0} coin", "other": "{0} coins" }` in the string file, then
+`text.setText(Flixel.locale.plural(buffer, "hud.coins", coins));` ([Localization](localization.md#plurals-1-coin-versus-2-coins))
+
 **...use a custom font?**
 `FlixelFontRegistry.register("ui", Flixel.files.internal("fonts/Nunito.ttf")); text.setFont("ui");`
 
