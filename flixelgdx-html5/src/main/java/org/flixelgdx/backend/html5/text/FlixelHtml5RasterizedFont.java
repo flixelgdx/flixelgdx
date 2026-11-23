@@ -26,6 +26,7 @@ package org.flixelgdx.backend.html5.text;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.text.FlixelGlyphBitmap;
 import org.flixelgdx.text.FlixelRasterizedFont;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.typedarrays.Int8Array;
 
@@ -41,8 +42,9 @@ import java.nio.ByteBuffer;
  *
  * <p>Two WASM heap pointers are kept alive for the lifetime of this object: {@code ctxPtr} (the
  * stb_truetype context) and {@code fontDataPtr} (the raw font bytes). stb_truetype holds an
- * internal pointer into the font data rather than copying it, so both must survive together and
- * are freed together in {@link #destroy()}.
+ * internal pointer into the font data rather than copying it, so the data must outlive the
+ * context. {@link #destroy()} frees the context, then frees the data, or, when the data is shared
+ * with other sizes of the same font, releases this font's share of it.
  *
  * <p>Glyph advances come from the font's own horizontal metrics through
  * {@link StbWasm#stbAdvance(int, int)}, so spacing matches the desktop and Android backends.
@@ -56,12 +58,45 @@ public class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
   protected final float descent;
   protected final float lineHeight;
 
+  /** The rasterizer that shares {@link #fontDataPtr}, or {@code null} when this font owns it alone. */
+  @Nullable
+  private final FlixelHtml5FontRasterizer owner;
+
+  /** This font's share of the font data, or {@code null} when this font owns it alone. */
+  @Nullable
+  private final FlixelHtml5FontRasterizer.SharedFontData sharedData;
+
   protected boolean destroyed;
 
+  /**
+   * Creates a font that owns its font data and frees it when destroyed.
+   *
+   * @param ctxPtr The stb_truetype context pointer.
+   * @param fontDataPtr The pointer to the font bytes in WASM memory.
+   * @param pixelHeight The size the font was opened at, in pixels.
+   * @param ascent The ascent in pixels.
+   * @param descent The descent in pixels, as a positive value.
+   * @param lineHeight The line height in pixels.
+   */
   protected FlixelHtml5RasterizedFont(int ctxPtr, int fontDataPtr, float pixelHeight,
       float ascent, float descent, float lineHeight) {
     this.ctxPtr = ctxPtr;
     this.fontDataPtr = fontDataPtr;
+    this.owner = null;
+    this.sharedData = null;
+    this.pixelHeight = pixelHeight;
+    this.ascent = ascent;
+    this.descent = descent;
+    this.lineHeight = lineHeight;
+  }
+
+  /** Creates a font whose font data is shared through {@code owner} with other sizes of the same font. */
+  FlixelHtml5RasterizedFont(int ctxPtr, @NotNull FlixelHtml5FontRasterizer.SharedFontData sharedData,
+      @NotNull FlixelHtml5FontRasterizer owner, float pixelHeight, float ascent, float descent, float lineHeight) {
+    this.ctxPtr = ctxPtr;
+    this.fontDataPtr = sharedData.pointer;
+    this.owner = owner;
+    this.sharedData = sharedData;
     this.pixelHeight = pixelHeight;
     this.ascent = ascent;
     this.descent = descent;
@@ -122,7 +157,11 @@ public class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
     if (!destroyed) {
       destroyed = true;
       StbWasm.stbFreeCtx(ctxPtr);
-      StbWasm.free(fontDataPtr);
+      if (owner != null && sharedData != null) {
+        owner.release(sharedData);
+      } else {
+        StbWasm.free(fontDataPtr);
+      }
     }
   }
 
