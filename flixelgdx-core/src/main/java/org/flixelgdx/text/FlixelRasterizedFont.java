@@ -29,8 +29,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A font file opened at one pixel size, able to rasterize individual glyphs.
  *
- * <p>Produced by the platform's {@link FlixelFontRasterizer}. {@link FlixelFont} drives it
- * while baking a glyph atlas, then destroys it; game code never uses it directly.
+ * <p>Produced by the platform's {@link FlixelFontRasterizer}. {@link FlixelFont} takes
+ * ownership of it: it bakes the common glyphs up front, keeps it open to bake any other
+ * character the first time it is drawn, and destroys it when the font is destroyed. Game code
+ * never uses it directly.
  *
  * <p>All metrics are in pixels at the size the font was opened with. The vertical metrics
  * follow the usual convention: {@code ascent} is the distance from the baseline to the top of
