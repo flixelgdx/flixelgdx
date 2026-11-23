@@ -361,9 +361,12 @@ public final class FlixelFont implements FlixelDestroyable {
         return;
       }
     }
-    // The page is full (or there is none yet): start a fresh one, big enough for this glyph.
+    // The page is full (or there is none yet): start a fresh one, big enough for this glyph. It is
+    // created empty on the GPU (where it starts out transparent) instead of from a blank image, so no
+    // page-sized pixel buffer is allocated. On the web those buffers come from a small, separate heap
+    // that is only freed when the browser collects garbage, and a blank page there could run it out.
     int size = Math.max(DYNAMIC_PAGE_SIZE, nextPowerOfTwo(Math.max(w, h) + BAKE_PADDING * 2));
-    FlixelTexture page = Flixel.graphics.createTexture(new FlixelImage(size, size));
+    FlixelTexture page = Flixel.graphics.createTexture(size, size);
     page.setSmooth(smooth);
     pages.add(page);
     dynamicPage = pages.getSize() - 1;
