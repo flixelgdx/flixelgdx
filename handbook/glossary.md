@@ -125,10 +125,16 @@ size. [Graphics and Shaders](graphics-and-shaders.md#three-sizes-design-render-r
 
 ## L
 
+**Language tag.** A short name for a language and optional region, such as `en`, `es`, or `pt-BR`.
+[Localization](localization.md)
+
 **Launcher.** The one-line platform entry point that installs the backend and starts your game.
 [The Boot Sequence](boot-sequence.md)
 
 **Lerp.** Linear interpolation: a value part of the way between two others. [Math and Utilities](math-and-utilities.md)
+
+**Localization.** Showing the game's text in the player's language, by looking strings up by key.
+[Localization](localization.md)
 
 ## M
 

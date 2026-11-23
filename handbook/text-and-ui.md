@@ -160,6 +160,13 @@ booleans, or characters without creating objects. For decimals, use `concatFloat
 timerBuffer.set("Time: ").concatFloatRounded(timeLeft, 1).concat("s");
 ```
 
+To fill values into a message, use `{0}`-style placeholders with `setFormat(...)`, which also works with translated
+text from [Localization](localization.md):
+
+```java
+hpBuffer.setFormat("HP {0}/{1}", hpValue, maxValue); // hpValue and maxValue are FlixelStrings holding numbers.
+```
+
 `setText(...)` also checks whether the text actually changed, and skips all the layout work when it did not, so
 calling it every frame with the same value is cheap. Avoid `getText()` in per-frame code, because it creates a new
 `String`; read `getTextBuffer()` instead. See [Optimization](optimization.md) for more garbage-free habits.
