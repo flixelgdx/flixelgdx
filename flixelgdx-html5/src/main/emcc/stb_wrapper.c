@@ -30,6 +30,12 @@ unsigned char* stb_rasterize(FontCtx* ctx, int codepoint, int* metrics_out) {
       &metrics_out[1], &metrics_out[2], &metrics_out[3]);
 }
 
+float stb_advance(FontCtx* ctx, int codepoint) {
+  int advance, left_bearing;
+  stbtt_GetCodepointHMetrics(&ctx->info, codepoint, &advance, &left_bearing);
+  return advance * ctx->scale;
+}
+
 void stb_free_bitmap(unsigned char* bitmap) {
   stbtt_FreeBitmap(bitmap, 0);
 }

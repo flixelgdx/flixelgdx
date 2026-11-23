@@ -104,6 +104,15 @@ final class StbWasm {
       script = "return Module._stb_rasterize(ctxPtr, codepoint, metricsPtr) | 0;")
   static native int stbRasterize(int ctxPtr, int codepoint, int metricsPtr);
 
+  /**
+   * Returns how far the pen moves after drawing {@code codepoint}, in pixels at the size the
+   * font was opened with. This is the font's real advance width, including the space after the
+   * glyph's ink, so wide punctuation and blank glyphs such as the space character are measured
+   * correctly.
+   */
+  @JSBody(params = { "ctxPtr", "codepoint" }, script = "return Module._stb_advance(ctxPtr, codepoint);")
+  static native float stbAdvance(int ctxPtr, int codepoint);
+
   /** Frees a coverage bitmap pointer previously returned by {@link #stbRasterize}. */
   @JSBody(params = "bitmapPtr", script = "Module._stb_free_bitmap(bitmapPtr);")
   static native void stbFreeBitmap(int bitmapPtr);
