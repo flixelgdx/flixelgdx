@@ -158,6 +158,9 @@ size. [Graphics and Shaders](graphics-and-shaders.md#three-sizes-design-render-r
 
 **Parallax.** Layers that scroll at different speeds to suggest depth. [Cameras](cameras.md#parallax-with-scroll-factors)
 
+**Plural rule.** A small function that picks which plural form ("one", "few", "other", and so on) a language uses
+for a count. [Localization](localization.md#plurals-1-coin-versus-2-coins)
+
 **Polling.** Asking for input state each frame instead of waiting for events. [Input](input.md)
 
 **Pool.** A store of reusable objects handed out and returned instead of created and destroyed.

@@ -2,7 +2,7 @@
 
 `Flixel.locale` shows your game's text in the player's language. You write one JSON file per language, load them,
 pick a language, and ask for text by key instead of hard-coding it. This guide covers string files, loading, switching
-languages, the fallback chain, filling in values with `{0}` placeholders, and the mistakes to avoid.
+languages, the fallback chain, filling in values with `{0}` placeholders, plurals, and the mistakes to avoid.
 
 ## Table of contents
 
@@ -11,11 +11,12 @@ languages, the fallback chain, filling in values with `{0}` placeholders, and th
 3. [Loading and choosing a language](#loading-and-choosing-a-language)
 4. [Showing text](#showing-text)
 5. [Placeholders: filling in values](#placeholders-filling-in-values)
-6. [The fallback chain](#the-fallback-chain)
-7. [Switching language while the game runs](#switching-language-while-the-game-runs)
-8. [Missing keys](#missing-keys)
-9. [Things to keep in mind](#things-to-keep-in-mind)
-10. [Check your understanding](#check-your-understanding)
+6. [Plurals: "1 coin" versus "2 coins"](#plurals-1-coin-versus-2-coins)
+7. [The fallback chain](#the-fallback-chain)
+8. [Switching language while the game runs](#switching-language-while-the-game-runs)
+9. [Missing keys](#missing-keys)
+10. [Things to keep in mind](#things-to-keep-in-mind)
+11. [Check your understanding](#check-your-understanding)
 
 ## The phrasebook analogy
 
@@ -139,6 +140,68 @@ label.concatFormat(" ({0})", status);             // Appends.
 The one, two, and three value versions are allocation-free. Passing four or more values uses a varargs array, which
 allocates, so avoid that in per-frame code.
 
+## Plurals: "1 coin" versus "2 coins"
+
+Words change with the count, and every language does it differently. English has two forms ("1 coin", "2 coins"),
+Japanese has one, Polish has three or more, and Arabic has six. So the choice of form cannot live in your code; it
+lives in the string file and in a **plural rule** for each language.
+
+Write the forms as an object whose keys are the standard plural category names: `zero`, `one`, `two`, `few`, `many`,
+and `other`. Every plural entry needs `other`, which is used whenever a form is missing:
+
+```json
+{
+  "hud": {
+    "coins": { "one": "{0} coin", "other": "{0} coins" }
+  }
+}
+```
+
+```json
+{
+  "hud": {
+    "coins": { "one": "{0} moneta", "few": "{0} monety", "many": "{0} monet", "other": "{0} monety" }
+  }
+}
+```
+
+Then register a rule for each language tag and call `plural(...)`. The count picks the form and is written into
+`{0}` for you, so you do not need a second buffer for the number:
+
+```java
+Flixel.locale.setPluralRule("en", FlixelPluralRule.ONE_OTHER);
+Flixel.locale.setPluralRule("pl", n -> {
+  long ones = n % 10;
+  long tens = n % 100;
+  if (n == 1) {
+    return FlixelPluralCategory.ONE;
+  }
+  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) {
+    return FlixelPluralCategory.FEW;
+  }
+  return FlixelPluralCategory.MANY;
+});
+
+coinText.setText(Flixel.locale.plural(coinLine, "hud.coins", coins)); // "1 coin", "5 coins", "3 monety"...
+```
+
+Extra values come after the count: `plural(out, "hud.found", keys, areaName)` fills `{0}` with the count and `{1}`
+with the area name.
+
+A few things to know:
+
+- **You choose the rules.** The framework never guesses a rule from a language tag, so your tags always pair with the
+  rules you picked. The Unicode CLDR project publishes the plural rules for every language if you need to look one up.
+  `FlixelPluralRule.ONE_OTHER` (English-like) and `FlixelPluralRule.OTHER_ONLY` (no plurals) are ready-made.
+- **Tags without a rule** use the rule of their shorter form (a rule for `pt` also covers `pt-BR`), and then the
+  default rule, which is `ONE_OTHER` unless you change it with `setDefaultPluralRule(...)`.
+- **Fallback text uses its own language's rule.** If a Polish player gets English fallback text, the English rule picks
+  the form, so it never asks English for a `few` form it does not have.
+- **It is fast.** Plural entries are stored as a small array per key when the file loads, and each language's rule is
+  looked up ahead of time, so `plural(...)` creates no garbage. Rules you write must not allocate either.
+- An object only counts as a plural entry when **every** key is a category name and `other` is present. Anything else
+  flattens into dotted keys as usual.
+
 ## The fallback chain
 
 Translations are rarely complete. When a key is missing, `Flixel.locale` looks further down a **fallback chain**
@@ -184,16 +247,16 @@ off with `Flixel.locale.setWarnMissing(false)`.
   other scripts. Register a font that covers the languages you ship (see [Text, HUDs, and Bars](text-and-ui.md)).
 - **Leave room.** Translations are often longer than English. German and French text can easily be a third longer.
 - **Main thread only.** `FlixelLocalization` is not thread-safe.
-- **No plural rules yet.** For "1 coin" versus "2 coins", use separate keys (`hud.coin` and `hud.coins`) and pick one
-  in code.
 
 ## Check your understanding
 
 1. The language is `es-MX`, you loaded `es` and `en`, and `menu.play` exists only in `es`. Which text appears?
 2. Why does `format(...)` take a `FlixelString` to write into instead of returning a new `String`?
 3. A translator writes `"Hola {name}"`. What does the player see?
+4. You set the language to `pl` but forgot `setPluralRule("pl", ...)`. What happens to `plural(out, "hud.coins", 5)`?
 
 (Answers: the `es` text, because `es-MX` is not loaded so the chain moves on to `es`; so the call can reuse one buffer
-every frame without creating garbage; `Hola {name}` unchanged, because only numbered placeholders are filled.)
+every frame without creating garbage; `Hola {name}` unchanged, because only numbered placeholders are filled; the
+default `ONE_OTHER` rule picks `other`, so the player sees `5 monety` instead of the correct `5 monet`.)
 
 **Next:** [Collections and Pooling](collections-and-pooling.md)
