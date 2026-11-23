@@ -88,9 +88,7 @@ public class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
     StbWasm.free(metricsPtr);
 
     FlixelGlyphBitmap glyph = new FlixelGlyphBitmap();
-    // Advance approximation: xoff + w for visible glyphs (assumes zero right-side bearing),
-    // and one third of the pixel height for blank glyphs such as space.
-    glyph.advance = (bitmapPtr != 0 && w > 0) ? xoff + w : pixelHeight * 0.333f;
+    glyph.advance = StbWasm.stbAdvance(ctxPtr, codepoint);
     glyph.bearingX = xoff;
     // yoff from stb is negative above the baseline; bearingY is positive upward.
     glyph.bearingY = -yoff;
