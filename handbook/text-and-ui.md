@@ -114,6 +114,17 @@ heading.setFont("title");
 **3. Use a bitmap font.** Pixel-art games often ship a hand-drawn font in the AngelCode `.fnt` format plus a page image.
 Build a `FlixelFont` from it with `FlixelFont.fromFnt(...)` and pass it to `setFont(FlixelFont)`.
 
+### Text in other languages
+
+A scalable font can draw any character its file contains: accented letters (`ę`, `ñ`, `ç`), Cyrillic, Greek,
+Japanese, Chinese, and so on. The common Latin characters are prepared when the font loads, and every other character
+is prepared the first time it is drawn, then reused. That first time costs a little work, so a screen full of new
+Japanese text can take slightly longer to show its first frame; after that it is as cheap as English.
+
+The font file itself still has to contain the characters. Most Latin fonts have no Japanese or Chinese characters, so
+those show up as empty boxes. Pick a font made for the language, such as one of the Noto fonts, and register it for the
+text that needs it. Bitmap (`.fnt`) fonts cannot grow, so characters they lack are drawn as `?`.
+
 If a font cannot be found or the platform cannot rasterize it, the built-in font is used and a warning is logged, so
 text never disappears. Font smoothing follows the text's antialiasing setting: turn antialiasing off for crisp pixel
 fonts.
