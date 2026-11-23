@@ -44,11 +44,8 @@ import java.nio.ByteBuffer;
  * internal pointer into the font data rather than copying it, so both must survive together and
  * are freed together in {@link #destroy()}.
  *
- * <p><b>Advance approximation:</b> the current WASM wrapper does not export stb's horizontal
- * metrics function ({@code stbtt_GetCodepointHMetrics}), so glyph advance is approximated as the
- * bitmap x-offset plus its width for visible glyphs, and as one third of the pixel height for
- * blank glyphs such as the space character. A future wrapper update that adds a proper
- * {@code stb_advance} export will remove this approximation.
+ * <p>Glyph advances come from the font's own horizontal metrics through
+ * {@link StbWasm#stbAdvance(int, int)}, so spacing matches the desktop and Android backends.
  */
 public class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
 
