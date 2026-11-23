@@ -81,6 +81,23 @@ import org.jetbrains.annotations.Nullable;
  * }
  * }</pre>
  *
+ * <h2>Plurals</h2>
+ *
+ * <p>Words like "coin" change with the count, and every language does it differently. Write the
+ * forms as a {@link FlixelPluralCategory plural entry} in the JSON file, register a
+ * {@link FlixelPluralRule} for each language tag, and use {@link #plural(FlixelString, String, long)}:
+ *
+ * <pre>{@code
+ * // en.json: "hud": { "coins": { "one": "{0} coin", "other": "{0} coins" } }
+ * Flixel.locale.setPluralRule("en", FlixelPluralRule.ONE_OTHER);
+ *
+ * coinText.setText(Flixel.locale.plural(coinLine, "hud.coins", coins)); // "1 coin", "5 coins"
+ * }</pre>
+ *
+ * <p>The framework never guesses a rule from a language tag. Tags without a registered rule (or a
+ * registered rule for a shorter form of the tag, such as {@code pt} for {@code pt-BR}) use
+ * {@link #getDefaultPluralRule()}.
+ *
  * <p>Language tags follow the usual {@code language-REGION} shape ({@code "en"}, {@code "en-US"},
  * {@code "zh-Hant-TW"}). Underscores are turned into hyphens, so {@code "pt_BR"} and {@code "pt-BR"}
  * mean the same thing, but letter case is kept as given, so pick one style and use it everywhere.
@@ -110,6 +127,18 @@ public class FlixelLocalization {
   @NotNull
   private final FlixelArray<FlixelLocalizationTable> chain = new FlixelArray<>(4);
 
+  /** The plural rule for each table in {@link #chain}, at the same index. */
+  @NotNull
+  private final FlixelArray<FlixelPluralRule> chainRules = new FlixelArray<>(4);
+
+  /** Plural rules registered by language tag. */
+  @NotNull
+  private final FlixelMap<String, FlixelPluralRule> rules = new FlixelMap<>();
+
+  /** Holds the count while {@link #plural(FlixelString, String, long)} writes it into {@code {0}}. */
+  @NotNull
+  private final FlixelString countText = new FlixelString(24);
+
   /** Keys that were already reported as missing, so each one is only logged once. */
   @NotNull
   private final FlixelSet<String> reported = new FlixelSet<>();
@@ -119,6 +148,9 @@ public class FlixelLocalization {
 
   @NotNull
   private String fallback = DEFAULT_TAG;
+
+  @NotNull
+  private FlixelPluralRule defaultRule = FlixelPluralRule.ONE_OTHER;
 
   /** Whether missing keys are reported through {@link Flixel#log}. */
   private boolean warnMissing = true;
@@ -201,6 +233,7 @@ public class FlixelLocalization {
     tables.clear();
     reported.clear();
     chain.clear();
+    chainRules.clear();
   }
 
   /**
@@ -235,13 +268,13 @@ public class FlixelLocalization {
   }
 
   /**
-   * Returns whether any table in the fallback chain has {@code key}.
+   * Returns whether any table in the fallback chain has {@code key}, as a plain string or a plural entry.
    *
    * @param key The key to check.
    * @return {@code true} if a translation exists.
    */
   public boolean has(@NotNull String key) {
-    return find(key) != null;
+    return find(key) != null || findPlural(key) >= 0;
   }
 
   /**
@@ -323,6 +356,107 @@ public class FlixelLocalization {
   }
 
   /**
+   * Writes the plural form of {@code key} that matches {@code count} into {@code out}, with the count in {@code {0}}.
+   *
+   * <p>The first table in the fallback chain that has a plural entry for {@code key} is used, and
+   * the form is picked by that table's own {@link FlixelPluralRule}. If no table has a plural entry
+   * but one has a plain string for {@code key}, that string is used instead. If neither exists, the
+   * key itself is written, as with {@link #get(String)}.
+   *
+   * <pre>{@code
+   * // "hud": { "coins": { "one": "{0} coin", "other": "{0} coins" } }
+   * Flixel.locale.plural(coinLine, "hud.coins", 1); // "1 coin"
+   * Flixel.locale.plural(coinLine, "hud.coins", 7); // "7 coins"
+   * }</pre>
+   *
+   * @param out The buffer to write into. It is cleared first.
+   * @param key The key of the plural entry.
+   * @param count The number that picks the form. It is also written into {@code {0}}.
+   * @return {@code out}, for passing straight to a text object.
+   */
+  @NotNull
+  public FlixelString plural(@NotNull FlixelString out, @NotNull String key, long count) {
+    return out.setFormat(pluralText(key, count), countText.set(count));
+  }
+
+  /**
+   * Writes the plural form of {@code key} into {@code out}, with the count in {@code {0}} and {@code a1} in {@code {1}}.
+   *
+   * @param out The buffer to write into. It is cleared first.
+   * @param key The key of the plural entry.
+   * @param count The number that picks the form. It is also written into {@code {0}}.
+   * @param a1 The value for {@code {1}}.
+   * @return {@code out}, for passing straight to a text object.
+   * @see #plural(FlixelString, String, long)
+   */
+  @NotNull
+  public FlixelString plural(@NotNull FlixelString out, @NotNull String key, long count, @Nullable CharSequence a1) {
+    return out.setFormat(pluralText(key, count), countText.set(count), a1);
+  }
+
+  /**
+   * Writes the plural form of {@code key} into {@code out}, with the count in {@code {0}} and the other values after it.
+   *
+   * @param out The buffer to write into. It is cleared first.
+   * @param key The key of the plural entry.
+   * @param count The number that picks the form. It is also written into {@code {0}}.
+   * @param a1 The value for {@code {1}}.
+   * @param a2 The value for {@code {2}}.
+   * @return {@code out}, for passing straight to a text object.
+   * @see #plural(FlixelString, String, long)
+   */
+  @NotNull
+  public FlixelString plural(
+      @NotNull FlixelString out, @NotNull String key, long count, @Nullable CharSequence a1,
+      @Nullable CharSequence a2) {
+    return out.setFormat(pluralText(key, count), countText.set(count), a1, a2);
+  }
+
+  /**
+   * Writes the plural form of {@code key} into {@code out}, with the count in {@code {0}} and every other value after it.
+   *
+   * <p>This overload allocates an array on every call; prefer the fixed overloads in per-frame code.
+   *
+   * @param out The buffer to write into. It is cleared first.
+   * @param key The key of the plural entry.
+   * @param count The number that picks the form. It is also written into {@code {0}}.
+   * @param args The values for {@code {1}}, {@code {2}}, and so on.
+   * @return {@code out}, for passing straight to a text object.
+   * @see #plural(FlixelString, String, long)
+   */
+  @NotNull
+  public FlixelString plural(@NotNull FlixelString out, @NotNull String key, long count,
+      @Nullable CharSequence... args) {
+    int extra = args != null ? args.length : 0;
+    CharSequence[] all = new CharSequence[extra + 1];
+    all[0] = countText.set(count);
+    if (extra > 0) {
+      System.arraycopy(args, 0, all, 1, extra);
+    }
+    return out.setFormat(pluralText(key, count), all);
+  }
+
+  /**
+   * Returns the plural form of {@code key} that matches {@code count}, without filling in any placeholders.
+   *
+   * @param key The key of the plural entry.
+   * @param count The number that picks the form.
+   * @return The text, falling back like {@link #plural(FlixelString, String, long)} does.
+   */
+  @NotNull
+  public String pluralText(@NotNull String key, long count) {
+    int index = findPlural(key);
+    if (index >= 0) {
+      FlixelPluralCategory category = chainRules.get(index).select(count);
+      String text = chain.get(index).getPlural(key, category != null ? category : FlixelPluralCategory.OTHER);
+      if (text != null) {
+        return text;
+      }
+    }
+    return get(key);
+  }
+
+  /**
    * Turns a language tag into the form used for lookups: trimmed, with underscores replaced by hyphens.
    *
    * @param tag The tag to normalize.
@@ -344,6 +478,16 @@ public class FlixelLocalization {
     return null;
   }
 
+  /** Returns the chain index of the first table with a plural entry for {@code key}, or {@code -1}. */
+  private int findPlural(@NotNull String key) {
+    for (int i = 0; i < chain.getSize(); i++) {
+      if (chain.get(i).hasPlural(key)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   private void reportMissing(@NotNull String key) {
     if (warnMissing && reported.add(key)) {
       Flixel.log.warn("Missing localization key \"{}\" for locale \"{}\".", key, locale);
@@ -354,6 +498,33 @@ public class FlixelLocalization {
     chain.clear();
     appendTagChain(locale);
     appendTagChain(fallback);
+    rebuildChainRules();
+  }
+
+  /** Resolves the plural rule for every table in the chain, so plural lookups never search for one. */
+  private void rebuildChainRules() {
+    chainRules.clear();
+    for (int i = 0; i < chain.getSize(); i++) {
+      chainRules.add(resolveRule(chain.get(i).getTag()));
+    }
+  }
+
+  /** Finds the rule registered for {@code tag} or its closest shorter form, or the default rule. */
+  @NotNull
+  private FlixelPluralRule resolveRule(@NotNull String tag) {
+    String current = tag;
+    while (!current.isEmpty()) {
+      FlixelPluralRule rule = rules.get(current);
+      if (rule != null) {
+        return rule;
+      }
+      int dash = current.lastIndexOf('-');
+      if (dash < 0) {
+        break;
+      }
+      current = current.substring(0, dash);
+    }
+    return defaultRule;
   }
 
   /** Adds the tables for {@code tag} and each shorter form of it, such as {@code zh-Hant-TW}, {@code zh-Hant}, {@code zh}. */
@@ -432,6 +603,52 @@ public class FlixelLocalization {
   @Nullable
   public FlixelLocalizationTable getTable(@NotNull String tag) {
     return tables.get(normalize(tag));
+  }
+
+  /**
+   * Returns the plural rule that tables for {@code tag} use, after checking shorter forms of the tag
+   * and falling back to the default rule.
+   *
+   * @param tag The language tag.
+   * @return The rule that applies to {@code tag}.
+   */
+  @NotNull
+  public FlixelPluralRule getPluralRule(@NotNull String tag) {
+    return resolveRule(normalize(tag));
+  }
+
+  /**
+   * Registers the plural rule for a language tag.
+   *
+   * <p>The rule also applies to longer tags that have no rule of their own, so a rule for {@code pt}
+   * covers {@code pt-BR} and {@code pt-PT} unless you register those separately.
+   *
+   * @param tag The language tag, such as {@code "pl"}.
+   * @param rule The rule, or {@code null} to remove the registered rule for {@code tag}.
+   */
+  public void setPluralRule(@NotNull String tag, @Nullable FlixelPluralRule rule) {
+    String key = normalize(tag);
+    if (rule == null) {
+      rules.remove(key);
+    } else {
+      rules.put(key, rule);
+    }
+    rebuildChainRules();
+  }
+
+  @NotNull
+  public FlixelPluralRule getDefaultPluralRule() {
+    return defaultRule;
+  }
+
+  /**
+   * Sets the plural rule used by language tags that have no registered rule.
+   *
+   * @param rule The rule. Defaults to {@link FlixelPluralRule#ONE_OTHER}.
+   */
+  public void setDefaultPluralRule(@NotNull FlixelPluralRule rule) {
+    defaultRule = rule;
+    rebuildChainRules();
   }
 
   public boolean getWarnMissing() {

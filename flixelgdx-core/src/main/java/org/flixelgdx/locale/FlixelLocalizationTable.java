@@ -27,6 +27,7 @@ import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.json.FlixelJson;
 import org.flixelgdx.json.FlixelJsonValue;
+import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,6 +55,20 @@ import org.jetbrains.annotations.Nullable;
  * {@code intro.0}, and {@code intro.1}. Numbers and booleans are stored as text, and {@code null}
  * values are skipped.
  *
+ * <h2>Plural entries</h2>
+ *
+ * <p>An object whose keys are all {@link FlixelPluralCategory plural category} names, and that
+ * includes {@code "other"}, is stored as one plural entry instead of being flattened:
+ *
+ * <pre>{@code
+ * "coins": { "one": "{0} coin", "other": "{0} coins" }
+ * }</pre>
+ *
+ * <p>That entry is read with {@link #getPlural(String, FlixelPluralCategory)}, usually through
+ * {@link FlixelLocalization#plural(FlixelString, String, long)}, and is not reachable through
+ * {@link #get(String)}. Each plural entry is stored as a small array indexed by category, so a
+ * lookup is one map read plus an array index.
+ *
  * <p>Lookups with {@link #get(String)} do not allocate. Loading does, so load tables during boot or a
  * loading screen, not every frame.
  */
@@ -65,6 +80,10 @@ public final class FlixelLocalizationTable {
   @NotNull
   private final FlixelMap<String, String> entries;
 
+  /** Plural entries, each an array of forms indexed by {@link FlixelPluralCategory#ordinal()}. */
+  @NotNull
+  private final FlixelMap<String, String[]> plurals;
+
   /**
    * Creates an empty table for the given language tag.
    *
@@ -73,6 +92,7 @@ public final class FlixelLocalizationTable {
   public FlixelLocalizationTable(@NotNull String tag) {
     this.tag = FlixelLocalization.normalize(tag);
     this.entries = new FlixelMap<>();
+    this.plurals = new FlixelMap<>();
   }
 
   /**
@@ -85,6 +105,29 @@ public final class FlixelLocalizationTable {
   @NotNull
   public FlixelLocalizationTable put(@NotNull String key, @NotNull String value) {
     entries.put(key, value);
+    return this;
+  }
+
+  /**
+   * Stores one form of a plural entry, replacing any earlier text for that form.
+   *
+   * <p>Remember to store a {@link FlixelPluralCategory#OTHER} form for every plural entry, since it is
+   * used whenever the form a count asks for is missing.
+   *
+   * @param key The key of the plural entry, such as {@code "hud.coins"}.
+   * @param category The form to store.
+   * @param value The translated text for that form.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelLocalizationTable putPlural(@NotNull String key, @NotNull FlixelPluralCategory category,
+      @NotNull String value) {
+    String[] forms = plurals.get(key);
+    if (forms == null) {
+      forms = new String[FlixelPluralCategory.ALL.length];
+      plurals.put(key, forms);
+    }
+    forms[category.ordinal()] = value;
     return this;
   }
 
@@ -145,19 +188,51 @@ public final class FlixelLocalizationTable {
   }
 
   /**
-   * Removes one string from this table.
+   * Returns one form of a plural entry, falling back to {@link FlixelPluralCategory#OTHER} when that
+   * form is missing.
+   *
+   * @param key The key of the plural entry.
+   * @param category The form to look up.
+   * @return The text, or {@code null} when this table has no plural entry for {@code key} (or the
+   *     entry has neither the requested form nor an {@code other} form).
+   */
+  @Nullable
+  public String getPlural(@NotNull String key, @NotNull FlixelPluralCategory category) {
+    String[] forms = plurals.get(key);
+    if (forms == null) {
+      return null;
+    }
+    String text = forms[category.ordinal()];
+    return text != null ? text : forms[FlixelPluralCategory.OTHER.ordinal()];
+  }
+
+  /**
+   * Returns whether this table has a plural entry for {@code key}.
+   *
+   * @param key The key to check.
+   * @return {@code true} if a plural entry exists.
+   */
+  public boolean hasPlural(@NotNull String key) {
+    return plurals.containsKey(key);
+  }
+
+  /**
+   * Removes one string or plural entry from this table.
    *
    * @param key The key to remove.
-   * @return The removed text, or {@code null} when the key was missing.
+   * @return The removed plain text, or {@code null} when the key had no plain string (a removed
+   *     plural entry also returns {@code null}).
    */
   @Nullable
   public String remove(@NotNull String key) {
+    plurals.remove(key);
     return entries.remove(key);
   }
 
-  /** Removes every string from this table. */
+  /** Removes every string and plural entry from this table. */
   public void clear() {
     entries.clear();
+    plurals.clear();
   }
 
   private void flatten(@NotNull FlixelJsonValue node, @Nullable String prefix) {
@@ -172,7 +247,15 @@ public final class FlixelLocalizationTable {
         continue;
       }
       String key = prefix == null ? part : prefix + '.' + part;
-      if (child.isObject() || child.isArray()) {
+      if (isPluralObject(child)) {
+        for (int j = 0; j < child.getSize(); j++) {
+          FlixelJsonValue form = child.get(j);
+          String text = form != null ? form.asString() : null;
+          if (text != null) {
+            putPlural(key, FlixelPluralCategory.fromKey(form.getName()), text);
+          }
+        }
+      } else if (child.isObject() || child.isArray()) {
         flatten(child, key);
       } else if (child.getKind() == FlixelJsonValue.Kind.NUMBER) {
         double d = child.asDouble();
@@ -188,6 +271,26 @@ public final class FlixelLocalizationTable {
   }
 
   /**
+   * Returns whether {@code node} is an object made only of plural category names, including {@code other}.
+   */
+  private static boolean isPluralObject(@NotNull FlixelJsonValue node) {
+    if (!node.isObject() || node.getSize() == 0) {
+      return false;
+    }
+    boolean hasOther = false;
+    for (int i = 0; i < node.getSize(); i++) {
+      FlixelJsonValue form = node.get(i);
+      String name = form != null ? form.getName() : null;
+      FlixelPluralCategory category = name != null ? FlixelPluralCategory.fromKey(name) : null;
+      if (category == null || form.isObject() || form.isArray()) {
+        return false;
+      }
+      hasOther |= category == FlixelPluralCategory.OTHER;
+    }
+    return hasOther;
+  }
+
+  /**
    * Returns the normalized language tag this table belongs to.
    *
    * @return The tag, such as {@code "pt-BR"}.
@@ -198,9 +301,9 @@ public final class FlixelLocalizationTable {
   }
 
   /**
-   * Returns how many strings this table holds.
+   * Returns how many plain strings this table holds, not counting plural entries.
    *
-   * @return The number of keys.
+   * @return The number of plain keys.
    */
   public int getSize() {
     return entries.getSize();
