@@ -113,7 +113,8 @@ Flixel.overlap(player, coins, onCoin, null);
 
 The framework also keeps a **world bounds** rectangle, which defaults to a very large square around the origin
 (20,000 by 20,000 pixels starting at -10,000). Ask any object whether it is inside with `object.inWorldBounds()`,
-which is handy for killing things that fell out of the level. Set it to match your level:
+which is handy for killing things that fell out of the level. `overlap(...)` and `collide(...)` also skip any object
+that is completely outside it, so a level larger than the default needs bigger bounds. Set it to match your level:
 
 ```java
 Flixel.setWorldBounds(0f, 0f, levelWidth, levelHeight);
