@@ -89,6 +89,16 @@ import java.util.function.Supplier;
  * // line is now "Hel".
  * }</pre>
  *
+ * <h2>Numbered placeholders</h2>
+ *
+ * <p>{@link #setFormat(CharSequence, CharSequence)} and {@link #concatFormat(CharSequence, CharSequence)} fill
+ * {@code {0}}-style placeholders:
+ *
+ * <pre>{@code
+ * scoreText.set(score);
+ * label.setFormat("Score: {0}", scoreText);
+ * }</pre>
+ *
  * <h2>Example Usage</h2>
  *
  * <pre>{@code
@@ -613,6 +623,184 @@ public class FlixelString implements CharSequence {
   }
 
   /**
+   * Clears the buffer and writes {@code pattern} with its {@code {0}} placeholder replaced by {@code a0}.
+   *
+   * <p>See {@link #setFormat(CharSequence, CharSequence...)} for the full placeholder rules.
+   *
+   * @param pattern The text to format, for example {@code "Score: {0}"}.
+   * @param a0 The value for {@code {0}}; {@code null} writes the literal {@code "null"}.
+   * @return {@code this} for chaining.
+   * @throws IllegalArgumentException If {@code pattern} or {@code a0} is this buffer.
+   */
+  @NotNull
+  public FlixelString setFormat(@NotNull CharSequence pattern, @Nullable CharSequence a0) {
+    checkFormatSources(pattern, a0, null, null, null);
+    buffer.clear();
+    appendFormat(pattern, 1, a0, null, null, null);
+    return this;
+  }
+
+  /**
+   * Clears the buffer and writes {@code pattern} with {@code {0}} and {@code {1}} replaced.
+   *
+   * <p>See {@link #setFormat(CharSequence, CharSequence...)} for the full placeholder rules.
+   *
+   * @param pattern The text to format, for example {@code "{0} hit {1}!"}.
+   * @param a0 The value for {@code {0}}.
+   * @param a1 The value for {@code {1}}.
+   * @return {@code this} for chaining.
+   * @throws IllegalArgumentException If {@code pattern} or any argument is this buffer.
+   */
+  @NotNull
+  public FlixelString setFormat(@NotNull CharSequence pattern, @Nullable CharSequence a0, @Nullable CharSequence a1) {
+    checkFormatSources(pattern, a0, a1, null, null);
+    buffer.clear();
+    appendFormat(pattern, 2, a0, a1, null, null);
+    return this;
+  }
+
+  /**
+   * Clears the buffer and writes {@code pattern} with {@code {0}}, {@code {1}}, and {@code {2}} replaced.
+   *
+   * <p>See {@link #setFormat(CharSequence, CharSequence...)} for the full placeholder rules.
+   *
+   * @param pattern The text to format.
+   * @param a0 The value for {@code {0}}.
+   * @param a1 The value for {@code {1}}.
+   * @param a2 The value for {@code {2}}.
+   * @return {@code this} for chaining.
+   * @throws IllegalArgumentException If {@code pattern} or any argument is this buffer.
+   */
+  @NotNull
+  public FlixelString setFormat(
+      @NotNull CharSequence pattern,
+      @Nullable CharSequence a0,
+      @Nullable CharSequence a1,
+      @Nullable CharSequence a2) {
+    checkFormatSources(pattern, a0, a1, a2, null);
+    buffer.clear();
+    appendFormat(pattern, 3, a0, a1, a2, null);
+    return this;
+  }
+
+  /**
+   * Clears the buffer and writes {@code pattern} with every numbered placeholder replaced by the matching argument.
+   *
+   * <p>A placeholder is a zero-based index in curly braces: {@code {0}} is the first argument, {@code {1}} the
+   * second, and so on. The same placeholder may appear more than once, and placeholders may appear in any order,
+   * which is what lets a translation move words around:
+   *
+   * <pre>{@code
+   * // English: "{0} defeated {1}!"  Japanese might put the words in a different order.
+   * label.setFormat("{0} defeated {1}!", playerName, bossName);
+   * }</pre>
+   *
+   * <p>The rules are deliberately small so they behave the same on every platform:
+   *
+   * <ul>
+   *   <li><code>{{</code> writes a single <code>{</code>, and <code>}}</code> writes a single <code>}</code>.</li>
+   *   <li>A placeholder whose index has no matching argument (or that is not a plain number, such as
+   *     {@code {name}}) is copied through unchanged, so a typo stays visible instead of vanishing.</li>
+   *   <li>A {@code null} argument writes the literal {@code "null"}, matching {@link #set(CharSequence)}.</li>
+   * </ul>
+   *
+   * <p>Arguments are {@link CharSequence}s so numbers can be passed without creating a {@link String}: keep a
+   * second {@link FlixelString} around, {@link #set(int) set} the number into it, and pass that.
+   *
+   * <p>The one, two, and three argument overloads are allocation-free. This varargs overload allocates an
+   * array on every call, so prefer the fixed overloads in per-frame code.
+   *
+   * @param pattern The text to format.
+   * @param args The values for {@code {0}}, {@code {1}}, and so on.
+   * @return {@code this} for chaining.
+   * @throws IllegalArgumentException If {@code pattern} or any argument is this buffer.
+   */
+  @NotNull
+  public FlixelString setFormat(@NotNull CharSequence pattern, @Nullable CharSequence... args) {
+    checkFormatSources(pattern, null, null, null, args);
+    buffer.clear();
+    appendFormat(pattern, args != null ? args.length : 0, null, null, null, args);
+    return this;
+  }
+
+  /**
+   * Appends {@code pattern} with its {@code {0}} placeholder replaced by {@code a0}, without clearing.
+   *
+   * <p>See {@link #setFormat(CharSequence, CharSequence...)} for the full placeholder rules.
+   *
+   * @param pattern The text to format.
+   * @param a0 The value for {@code {0}}.
+   * @return {@code this} for chaining.
+   * @throws IllegalArgumentException If {@code pattern} or {@code a0} is this buffer.
+   */
+  @NotNull
+  public FlixelString concatFormat(@NotNull CharSequence pattern, @Nullable CharSequence a0) {
+    checkFormatSources(pattern, a0, null, null, null);
+    appendFormat(pattern, 1, a0, null, null, null);
+    return this;
+  }
+
+  /**
+   * Appends {@code pattern} with {@code {0}} and {@code {1}} replaced, without clearing.
+   *
+   * <p>See {@link #setFormat(CharSequence, CharSequence...)} for the full placeholder rules.
+   *
+   * @param pattern The text to format.
+   * @param a0 The value for {@code {0}}.
+   * @param a1 The value for {@code {1}}.
+   * @return {@code this} for chaining.
+   * @throws IllegalArgumentException If {@code pattern} or any argument is this buffer.
+   */
+  @NotNull
+  public FlixelString concatFormat(@NotNull CharSequence pattern, @Nullable CharSequence a0,
+      @Nullable CharSequence a1) {
+    checkFormatSources(pattern, a0, a1, null, null);
+    appendFormat(pattern, 2, a0, a1, null, null);
+    return this;
+  }
+
+  /**
+   * Appends {@code pattern} with {@code {0}}, {@code {1}}, and {@code {2}} replaced, without clearing.
+   *
+   * <p>See {@link #setFormat(CharSequence, CharSequence...)} for the full placeholder rules.
+   *
+   * @param pattern The text to format.
+   * @param a0 The value for {@code {0}}.
+   * @param a1 The value for {@code {1}}.
+   * @param a2 The value for {@code {2}}.
+   * @return {@code this} for chaining.
+   * @throws IllegalArgumentException If {@code pattern} or any argument is this buffer.
+   */
+  @NotNull
+  public FlixelString concatFormat(
+      @NotNull CharSequence pattern,
+      @Nullable CharSequence a0,
+      @Nullable CharSequence a1,
+      @Nullable CharSequence a2) {
+    checkFormatSources(pattern, a0, a1, a2, null);
+    appendFormat(pattern, 3, a0, a1, a2, null);
+    return this;
+  }
+
+  /**
+   * Appends {@code pattern} with every numbered placeholder replaced, without clearing.
+   *
+   * <p>See {@link #setFormat(CharSequence, CharSequence...)} for the full placeholder rules. This overload
+   * allocates an array on every call.
+   *
+   * @param pattern The text to format.
+   * @param args The values for {@code {0}}, {@code {1}}, and so on.
+   * @return {@code this} for chaining.
+   * @throws IllegalArgumentException If {@code pattern} or any argument is this buffer.
+   */
+  @NotNull
+  public FlixelString concatFormat(@NotNull CharSequence pattern, @Nullable CharSequence... args) {
+    checkFormatSources(pattern, null, null, null, args);
+    appendFormat(pattern, args != null ? args.length : 0, null, null, null, args);
+    return this;
+  }
+
+  /**
    * Copies the current buffer into a new {@link String}. Intended for cold paths (for example a debug
    * {@code forEach} callback), not per-frame drawing.
    *
@@ -622,6 +810,99 @@ public class FlixelString implements CharSequence {
   public String copyContentToNewString() {
     int n = buffer.getSize();
     return n == 0 ? "" : new String(buffer.getItems(), 0, n);
+  }
+
+  /**
+   * Rejects formatting sources that are this buffer, because the buffer would be read while it is
+   * being cleared or written.
+   */
+  private void checkFormatSources(
+      @NotNull CharSequence pattern,
+      @Nullable CharSequence a0,
+      @Nullable CharSequence a1,
+      @Nullable CharSequence a2,
+      @Nullable CharSequence[] rest) {
+    Objects.requireNonNull(pattern, "pattern");
+    boolean self = pattern == this || a0 == this || a1 == this || a2 == this;
+    if (!self && rest != null) {
+      for (int i = 0; i < rest.length; i++) {
+        if (rest[i] == this) {
+          self = true;
+          break;
+        }
+      }
+    }
+    if (self) {
+      throw new IllegalArgumentException("A FlixelString cannot format itself into itself.");
+    }
+  }
+
+  /**
+   * Writes {@code pattern} into the buffer, replacing placeholders with arguments.
+   *
+   * <p>Arguments come from {@code a0} to {@code a2} when {@code rest} is {@code null}, or from
+   * {@code rest} otherwise. This keeps the fixed-count overloads free of array allocation.
+   */
+  private void appendFormat(
+      @NotNull CharSequence pattern,
+      int argc,
+      @Nullable CharSequence a0,
+      @Nullable CharSequence a1,
+      @Nullable CharSequence a2,
+      @Nullable CharSequence[] rest) {
+    int len = pattern.length();
+    int i = 0;
+    while (i < len) {
+      char c = pattern.charAt(i);
+      if (c == '}') {
+        buffer.append('}');
+        // A doubled closing brace is an escape for a single one.
+        i += (i + 1 < len && pattern.charAt(i + 1) == '}') ? 2 : 1;
+        continue;
+      }
+      if (c != '{') {
+        buffer.append(c);
+        i++;
+        continue;
+      }
+      if (i + 1 < len && pattern.charAt(i + 1) == '{') {
+        buffer.append('{');
+        i += 2;
+        continue;
+      }
+
+      // Read the digits after the opening brace and check that a closing brace follows them.
+      int j = i + 1;
+      int index = 0;
+      while (j < len && j - i <= 9) {
+        char d = pattern.charAt(j);
+        if (d < '0' || d > '9') {
+          break;
+        }
+        index = index * 10 + (d - '0');
+        j++;
+      }
+      boolean valid = j > i + 1 && j < len && pattern.charAt(j) == '}' && index < argc;
+      if (!valid) {
+        // Not a usable placeholder, so copy the opening brace through and keep scanning after it.
+        buffer.append('{');
+        i++;
+        continue;
+      }
+
+      CharSequence arg;
+      if (rest != null) {
+        arg = rest[index];
+      } else {
+        arg = switch (index) {
+          case 0 -> a0;
+          case 1 -> a1;
+          default -> a2;
+        };
+      }
+      buffer.append(Objects.requireNonNullElse(arg, "null"));
+      i = j + 1;
+    }
   }
 
   @Override
