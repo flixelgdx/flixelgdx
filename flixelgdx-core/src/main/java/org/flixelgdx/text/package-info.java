@@ -57,7 +57,9 @@
  * <p>{@link org.flixelgdx.text.FlixelFont FlixelFont} is the low-level object: a set of glyph
  * metrics baked into one or more atlas textures. Scalable files are turned into atlases through
  * the platform's {@link org.flixelgdx.text.FlixelFontRasterizer FlixelFontRasterizer} (installed
- * by the backend when the launcher runs). Bitmap fonts in AngelCode {@code .fnt} format are
+ * by the backend when the launcher runs). Common Latin characters are baked up front, and any
+ * other character the font file contains (accented letters, Cyrillic, Greek, Japanese, Chinese,
+ * and so on) is baked the first time it is drawn. Bitmap fonts in AngelCode {@code .fnt} format are
  * parsed directly. The packaged default bitmap font is used as a fallback whenever no custom
  * font is selected or the rasterizer is unavailable. Line-breaking and glyph placement are
  * handled by {@link org.flixelgdx.text.FlixelTextLayout FlixelTextLayout}; you rarely need to

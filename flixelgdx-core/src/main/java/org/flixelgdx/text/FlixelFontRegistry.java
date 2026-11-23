@@ -198,8 +198,8 @@ public final class FlixelFontRegistry {
       LOG.warn("Could not open font '{}'; is it a valid .ttf/.otf file?", id);
       return null;
     }
+    // The baked font keeps the opened file so it can bake new characters on demand, and destroys it itself.
     FlixelFont baked = FlixelFont.bake(opened, smooth);
-    opened.destroy();
     bakedFonts.put(key, baked);
     return baked;
   }
