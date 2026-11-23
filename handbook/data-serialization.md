@@ -370,4 +370,4 @@ need into your own objects or fields, and let the tree go.
 (Answers: `200f`, the default; the generated code reads fields directly and cannot see private ones, so make it public
 or package-private; `0f`, because missing fields become the type's empty value, not the field's initial value.)
 
-**Next:** [Collections and Pooling](collections-and-pooling.md)
+**Next:** [Localization](localization.md)

@@ -173,6 +173,13 @@ Wait for `Flixel.keys.firstJustPressed()`, then `action.addBinding("kb", FlixelD
 **...show a score that changes every frame?**
 A reused `FlixelString`: `buffer.set("Score: ").concat(score); text.setText(buffer);`
 
+**...fill numbers or names into a message?**
+`buffer.setFormat("{0} / {1}", hp, maxHp); text.setText(buffer);`
+
+**...translate my game into other languages?**
+`Flixel.locale.load("es", Flixel.files.internal("lang/es.json")); Flixel.locale.setLocale("es");` then
+`text.setText(Flixel.locale.get("menu.play"));` ([Localization](localization.md))
+
 **...use a custom font?**
 `FlixelFontRegistry.register("ui", Flixel.files.internal("fonts/Nunito.ttf")); text.setFont("ui");`
 

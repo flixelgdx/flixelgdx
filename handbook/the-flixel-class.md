@@ -42,6 +42,7 @@ and ask for what you need. The front desk always knows where everything is.
 | `Flixel.files`      | `FlixelFiles`                | Open files from the assets folder and other locations.                 | [Files and Assets](files-and-assets.md) |
 | `Flixel.assets`     | `FlixelAssetManager`         | Preload and cache images, sounds, and data.                            | [Files and Assets](files-and-assets.md) |
 | `Flixel.save`       | `FlixelSave`                 | A ready-to-use save file.                                              | [Saving](saving.md) |
+| `Flixel.locale`     | `FlixelLocalization`         | Translated text for the player's language.                             | [Localization](localization.md) |
 | `Flixel.cameras`    | `FlixelArray<FlixelCamera>`  | The list of active cameras. `Flixel.cameras.first()` is the main one.  | [Cameras](cameras.md) |
 | `Flixel.graphics`   | `FlixelGraphicsManager`      | The GPU: textures, shaders, render resolution, display modes, FPS.     | [Graphics and Shaders](graphics-and-shaders.md) |
 | `Flixel.window`     | `FlixelWindow`               | The window: title, size, fullscreen, position, opacity.                | [Window and Platform Services](window-and-platform-services.md) |

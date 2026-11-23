@@ -86,8 +86,9 @@ Loading files, saving progress, and working with data.
 | 18 | [Files and Assets: Loading, Caching, and Loading Screens](files-and-assets.md) | File roots, reading and writing, the asset manager, loading screens, and reference counting. |
 | 19 | [Saving Progress: Persistent Game Data](saving.md) | Bind, write, flush, slots, defaults, saving safely on phones and browsers, and custom storage. |
 | 20 | [JSON and XML: Load, Parse, and Handle Data Formats](data-serialization.md) | Reading and writing JSON, `@JsonSerializable` code generation, XML, and data recipes. |
-| 21 | [Collections and Pooling: Garbage-Free Lists, Maps, and Pools](collections-and-pooling.md) | `FlixelArray`, `FlixelMap`, primitive collections, snapshot iteration, and object pools. |
-| 22 | [Math, Randomness, Colors, and Utilities](math-and-utilities.md) | `FlixelMath`, random numbers and seeds, vectors, bounds and ranges, and colors. |
+| 21 | [Localization: Translating Your Game's Text](localization.md) | String files, loading, the fallback chain, `{0}` placeholders, and switching language. |
+| 22 | [Collections and Pooling: Garbage-Free Lists, Maps, and Pools](collections-and-pooling.md) | `FlixelArray`, `FlixelMap`, primitive collections, snapshot iteration, and object pools. |
+| 23 | [Math, Randomness, Colors, and Utilities](math-and-utilities.md) | `FlixelMath`, random numbers and seeds, vectors, bounds and ranges, and colors. |
 
 ## Part 4: Graphics and the platform
 
@@ -95,8 +96,8 @@ How things are drawn, and how the game talks to the world around it.
 
 | # | Guide | What you will learn |
 |---|-------|---------------------|
-| 23 | [Graphics, Rendering, and Shaders](graphics-and-shaders.md) | Batching, design size versus render resolution and scale, blend modes, render targets, and WGSL shaders. |
-| 24 | [Window and Platform Services](window-and-platform-services.md) | The window, fullscreen, clipboard, notifications, file dialogs, vibration, and device facts. |
+| 24 | [Graphics, Rendering, and Shaders](graphics-and-shaders.md) | Batching, design size versus render resolution and scale, blend modes, render targets, and WGSL shaders. |
+| 25 | [Window and Platform Services](window-and-platform-services.md) | The window, fullscreen, clipboard, notifications, file dialogs, vibration, and device facts. |
 
 ## Part 5: Debugging and performance
 
@@ -104,11 +105,11 @@ Finding out what your game is doing, and making it fast.
 
 | # | Guide | What you will learn |
 |---|-------|---------------------|
-| 25 | [Logging: Messages, Levels, Tags, and Sinks](logging.md) | Log levels, placeholders, tagged loggers, log files, and custom sinks. |
-| 26 | [Debugging and the Debugger App](debugging.md) | Debug mode, hotkeys, the debugger app and its panels, phones, browsers, and AI agents. |
-| 27 | [Extending the Debugger: Watches, Commands, Inspectors, and Trackers](debugger-extending.md) | Live values, console commands, inspector sections, trackers, and feeds. |
-| 28 | [Custom Debugger Panels: The Widget Toolkit](debugger-panels.md) | Building panels, widgets, tables, graphs, events, and replacing built-in panels. |
-| 29 | [Optimization: Writing Fast, Garbage-Free Games](optimization.md) | Why garbage stutters, measuring, the seven habits, drawing, collisions, and memory. |
+| 26 | [Logging: Messages, Levels, Tags, and Sinks](logging.md) | Log levels, placeholders, tagged loggers, log files, and custom sinks. |
+| 27 | [Debugging and the Debugger App](debugging.md) | Debug mode, hotkeys, the debugger app and its panels, phones, browsers, and AI agents. |
+| 28 | [Extending the Debugger: Watches, Commands, Inspectors, and Trackers](debugger-extending.md) | Live values, console commands, inspector sections, trackers, and feeds. |
+| 29 | [Custom Debugger Panels: The Widget Toolkit](debugger-panels.md) | Building panels, widgets, tables, graphs, events, and replacing built-in panels. |
+| 30 | [Optimization: Writing Fast, Garbage-Free Games](optimization.md) | Why garbage stutters, measuring, the seven habits, drawing, collisions, and memory. |
 
 ## Part 6: Shipping and under the hood
 
@@ -116,11 +117,11 @@ Getting the game to players, and how the framework works inside.
 
 | # | Guide | What you will learn |
 |---|-------|---------------------|
-| 30 | [Platform Guide: Desktop, Web, and Android](platforms.md) | Requirements, feature differences, and the gotchas of each platform. |
-| 31 | [Building and Shipping: Packaging for Desktop, Web, and Android](building-and-shipping.md) | The packagr, HTML5, shader, and Basis Universal plugins, and a release checklist. |
-| 32 | [Architecture: Core, Backends, and the Seams Between Them](architecture.md) | Modules, seams, no-op defaults, the shared WebGPU renderer, threads, and the package map. |
-| 33 | [The Boot Sequence: How a Game Starts Up](boot-sequence.md) | Every step from `main` to the first frame, shutdown, web and Android startup, and boot callbacks. |
-| 34 | [Extending the Framework: Custom Services, Loaders, and Backends](extending-the-framework.md) | Custom asset types, mod folders, save storage, log sinks, replacing services, and new backends. |
+| 31 | [Platform Guide: Desktop, Web, and Android](platforms.md) | Requirements, feature differences, and the gotchas of each platform. |
+| 32 | [Building and Shipping: Packaging for Desktop, Web, and Android](building-and-shipping.md) | The packagr, HTML5, shader, and Basis Universal plugins, and a release checklist. |
+| 33 | [Architecture: Core, Backends, and the Seams Between Them](architecture.md) | Modules, seams, no-op defaults, the shared WebGPU renderer, threads, and the package map. |
+| 34 | [The Boot Sequence: How a Game Starts Up](boot-sequence.md) | Every step from `main` to the first frame, shutdown, web and Android startup, and boot callbacks. |
+| 35 | [Extending the Framework: Custom Services, Loaders, and Backends](extending-the-framework.md) | Custom asset types, mod folders, save storage, log sinks, replacing services, and new backends. |
 
 ## Appendices
 
