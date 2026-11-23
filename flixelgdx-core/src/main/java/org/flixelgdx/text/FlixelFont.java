@@ -42,11 +42,24 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  *   <li><b>Scalable files</b> ({@code .ttf}, {@code .otf}) are baked at an exact pixel size
  *     through the platform's {@link FlixelFontRasterizer}; see
- *     {@link #bake(FlixelRasterizedFont, boolean)}.</li>
+ *     {@link #bake(FlixelRasterizedFont, boolean)}. Any character the font file contains can
+ *     be drawn, including accented letters, Cyrillic, Greek, Japanese, and Chinese.</li>
  *   <li><b>Bitmap fonts</b> (AngelCode {@code .fnt} text format plus a page image) are parsed
  *     directly; see {@link #fromFnt(String, FlixelImage)}. The framework's packaged default
  *     font uses this path, so text works even before any font is registered.</li>
  * </ul>
+ *
+ * <h2>How characters get into the atlas</h2>
+ *
+ * <p>Think of the atlas as a sticker sheet. Baking prints the most common stickers up front
+ * (ASCII and Latin-1, codepoints 32 to 255). The first time text asks for any other character,
+ * such as {@code 'ę'} or {@code '日'}, the font prints that one sticker onto a spare sheet and
+ * keeps it for every later use. So a Japanese string costs a little work the first frame each
+ * new character appears, and nothing after that.
+ *
+ * <p>Characters the font file does not contain are drawn however the platform's rasterizer
+ * draws a missing glyph (usually the font's own empty box). Bitmap fonts cannot grow, so
+ * characters they lack fall back to {@code '?'}.
  *
  * <p>Fonts are cached and shared by {@link FlixelFontRegistry}; {@link FlixelText} looks them
  * up there. Metrics are stored in baked pixels; drawing code passes a scale factor to
@@ -67,31 +80,55 @@ public final class FlixelFont implements FlixelDestroyable {
   /** Padding around every baked glyph so linear filtering never bleeds neighbors. */
   private static final int BAKE_PADDING = 1;
 
+  /** Smallest width and height of an atlas page created for glyphs baked on demand. */
+  private static final int DYNAMIC_PAGE_SIZE = 512;
+
+  /** Shared marker stored for codepoints the rasterizer could not produce, so they are only tried once. */
+  private static final FlixelGlyph MISSING = new FlixelGlyph();
+
   @NotNull
   private final FlixelIntMap<FlixelGlyph> glyphs = new FlixelIntMap<>();
 
   @NotNull
   private final FlixelArray<FlixelTexture> pages = new FlixelArray<>(1);
 
+  /** The opened font file used to bake new glyphs on demand, or {@code null} for bitmap fonts. */
+  @Nullable
+  private FlixelRasterizedFont raster;
+
   private float lineHeight;
   private float base;
+
+  /** Index into {@link #pages} of the page that receives glyphs baked on demand, or {@code -1}. */
+  private int dynamicPage = -1;
+
+  /** Shelf-packing pen for the dynamic page. */
+  private int dynamicX;
+  private int dynamicY;
+  private int dynamicShelf;
+
+  private boolean smooth;
 
   private FlixelFont() {}
 
   /**
    * Bakes a scalable font into an atlas at the size the rasterized font was opened with.
    *
-   * <p>ASCII and Latin-1 codepoints (32 to 255) are baked up front. Codepoints outside that
-   * range fall back to {@code '?'} when drawn; full dynamic Unicode baking can layer on later
-   * without changing this API.
+   * <p>ASCII and Latin-1 codepoints (32 to 255) are baked up front. Every other codepoint is
+   * baked the first time {@link #getGlyph(int)} asks for it.
    *
-   * @param raster The opened font to pull glyphs from; the caller destroys it afterward.
+   * <p>The font takes ownership of {@code raster}: it stays open so new glyphs can be baked
+   * later, and {@link #destroy()} destroys it. Do not destroy it yourself.
+   *
+   * @param raster The opened font to pull glyphs from.
    * @param smooth {@code true} for linear filtering on the atlas texture.
    * @return The baked font; never {@code null}.
    */
   @NotNull
   public static FlixelFont bake(@NotNull FlixelRasterizedFont raster, boolean smooth) {
     FlixelFont font = new FlixelFont();
+    font.raster = raster;
+    font.smooth = smooth;
     font.lineHeight = raster.getLineHeight();
     font.base = raster.getAscent();
 
@@ -206,7 +243,12 @@ public final class FlixelFont implements FlixelDestroyable {
   }
 
   /**
-   * Looks a glyph up, falling back to {@code '?'} for codepoints the font does not cover.
+   * Looks a glyph up, baking it first if this is the first time it is needed.
+   *
+   * <p>For scalable fonts, a codepoint that is not in the atlas yet is rasterized and added to
+   * it right away, which allocates once per new character. Later lookups of the same codepoint
+   * are a single map read. Codepoints that cannot be produced (and every missing codepoint of a
+   * bitmap font) fall back to {@code '?'}.
    *
    * @param codepoint The Unicode codepoint to look up.
    * @return The glyph, or {@code null} when even the fallback is missing.
@@ -215,6 +257,9 @@ public final class FlixelFont implements FlixelDestroyable {
   public FlixelGlyph getGlyph(int codepoint) {
     FlixelGlyph glyph = glyphs.get(codepoint);
     if (glyph == null) {
+      glyph = bakeGlyph(codepoint);
+    }
+    if (glyph == MISSING) {
       glyph = glyphs.get(FALLBACK_CODEPOINT);
     }
     return glyph;
@@ -226,6 +271,7 @@ public final class FlixelFont implements FlixelDestroyable {
    * @param smooth {@code true} for linear filtering.
    */
   public void setSmooth(boolean smooth) {
+    this.smooth = smooth;
     for (int i = 0; i < pages.getSize(); i++) {
       pages.get(i).setSmooth(smooth);
     }
@@ -238,6 +284,11 @@ public final class FlixelFont implements FlixelDestroyable {
     }
     pages.clear();
     glyphs.clear();
+    if (raster != null) {
+      raster.destroy();
+      raster = null;
+    }
+    dynamicPage = -1;
   }
 
   /**
@@ -256,6 +307,69 @@ public final class FlixelFont implements FlixelDestroyable {
    */
   public float getBase() {
     return base;
+  }
+
+  /**
+   * Rasterizes one codepoint, packs it onto the dynamic page, and remembers the result.
+   *
+   * @return The new glyph, or {@link #MISSING} when it cannot be produced.
+   */
+  @NotNull
+  private FlixelGlyph bakeGlyph(int codepoint) {
+    FlixelGlyphBitmap bitmap = raster != null && codepoint >= 0 ? raster.rasterize(codepoint) : null;
+    if (bitmap == null) {
+      glyphs.put(codepoint, MISSING);
+      return MISSING;
+    }
+    FlixelGlyph glyph = new FlixelGlyph();
+    glyph.xAdvance = bitmap.advance;
+    glyph.xOffset = bitmap.bearingX;
+    FlixelImage image = bitmap.image;
+    if (image != null && image.getWidth() > 0 && image.getHeight() > 0) {
+      int w = image.getWidth();
+      int h = image.getHeight();
+      reserveDynamicSpace(w, h);
+      FlixelTexture page = pages.get(dynamicPage);
+      page.update(dynamicX, dynamicY, image);
+      glyph.page = dynamicPage;
+      glyph.x = dynamicX;
+      glyph.y = dynamicY;
+      glyph.width = w;
+      glyph.height = h;
+      glyph.yOffset = base - bitmap.bearingY;
+      glyph.frame = new FlixelFrame(page, dynamicX, dynamicY, w, h);
+      dynamicX += w + BAKE_PADDING;
+      dynamicShelf = Math.max(dynamicShelf, h + BAKE_PADDING);
+    }
+    glyphs.put(codepoint, glyph);
+    return glyph;
+  }
+
+  /**
+   * Moves the dynamic pen to a spot with room for a {@code w} by {@code h} glyph, starting a new
+   * shelf or a new page when the current one is full.
+   */
+  private void reserveDynamicSpace(int w, int h) {
+    if (dynamicPage >= 0) {
+      FlixelTexture page = pages.get(dynamicPage);
+      if (dynamicX + w + BAKE_PADDING > page.getWidth()) {
+        dynamicX = BAKE_PADDING;
+        dynamicY += dynamicShelf;
+        dynamicShelf = 0;
+      }
+      if (dynamicY + h + BAKE_PADDING <= page.getHeight() && dynamicX + w + BAKE_PADDING <= page.getWidth()) {
+        return;
+      }
+    }
+    // The page is full (or there is none yet): start a fresh one, big enough for this glyph.
+    int size = Math.max(DYNAMIC_PAGE_SIZE, nextPowerOfTwo(Math.max(w, h) + BAKE_PADDING * 2));
+    FlixelTexture page = Flixel.graphics.createTexture(new FlixelImage(size, size));
+    page.setSmooth(smooth);
+    pages.add(page);
+    dynamicPage = pages.getSize() - 1;
+    dynamicX = BAKE_PADDING;
+    dynamicY = BAKE_PADDING;
+    dynamicShelf = 0;
   }
 
   /** Builds the reusable draw frame for every glyph once the pages exist. */
