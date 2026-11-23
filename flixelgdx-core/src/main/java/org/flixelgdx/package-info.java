@@ -437,6 +437,7 @@
  *       data.</li>
  *   <li>{@link org.flixelgdx.Flixel#cameras Flixel.cameras} - the list of active cameras.</li>
  *   <li>{@link org.flixelgdx.Flixel#save Flixel.save} - a ready-to-use save file.</li>
+ *   <li>{@link org.flixelgdx.Flixel#locale Flixel.locale} - translated text for the player's language.</li>
  *   <li>{@link org.flixelgdx.Flixel#random Flixel.random} - random numbers, booleans, and
  *       picks.</li>
  *   <li>{@link org.flixelgdx.Flixel#log Flixel.log}, plus the shortcuts

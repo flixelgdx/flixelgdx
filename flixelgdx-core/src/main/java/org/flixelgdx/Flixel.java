@@ -66,6 +66,7 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.input.touch.FlixelTouch;
 import org.flixelgdx.input.touch.FlixelTouchManager;
+import org.flixelgdx.locale.FlixelLocalization;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
@@ -582,6 +583,26 @@ public final class Flixel {
    */
   @NotNull
   public static FlixelSave save;
+
+  /**
+   * The translation table for the game's text, used to show menus, dialogue, and HUD labels in the
+   * player's language.
+   *
+   * <p>Load one JSON file per language, pick the language with {@link FlixelLocalization#setLocale(String)},
+   * then ask for text by key. Missing strings fall back from the exact language ({@code "pt-BR"}) to its
+   * general form ({@code "pt"}) and then to the fallback language ({@code "en"} by default).
+   *
+   * <pre>{@code
+   * Flixel.locale.load("en", Flixel.files.internal("lang/en.json"));
+   * Flixel.locale.load("fr", Flixel.files.internal("lang/fr.json"));
+   * Flixel.locale.setLocale("fr");
+   *
+   * title.setText(Flixel.locale.get("menu.title"));
+   * }</pre>
+   *
+   * <p>This is ready before the game starts, so tables can be loaded during boot.
+   */
+  public static FlixelLocalization locale = new FlixelLocalization();
 
   /**
    * The mouse and pointer input manager for the game.

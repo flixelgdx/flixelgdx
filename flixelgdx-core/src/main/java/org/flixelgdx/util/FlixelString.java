@@ -24,6 +24,7 @@
 package org.flixelgdx.util;
 
 import org.flixelgdx.collections.FlixelCharArray;
+import org.flixelgdx.locale.FlixelLocalization;
 import org.flixelgdx.text.FlixelText;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -92,7 +93,8 @@ import java.util.function.Supplier;
  * <h2>Numbered placeholders</h2>
  *
  * <p>{@link #setFormat(CharSequence, CharSequence)} and {@link #concatFormat(CharSequence, CharSequence)} fill
- * {@code {0}}-style placeholders:
+ * {@code {0}}-style placeholders, which is how translated text from
+ * {@link FlixelLocalization} gets its values:
  *
  * <pre>{@code
  * scoreText.set(score);
