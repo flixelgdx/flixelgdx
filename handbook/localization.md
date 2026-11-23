@@ -170,17 +170,7 @@ Then register a rule for each language tag and call `plural(...)`. The count pic
 
 ```java
 Flixel.locale.setPluralRule("en", FlixelPluralRule.ONE_OTHER);
-Flixel.locale.setPluralRule("pl", n -> {
-  long ones = n % 10;
-  long tens = n % 100;
-  if (n == 1) {
-    return FlixelPluralCategory.ONE;
-  }
-  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) {
-    return FlixelPluralCategory.FEW;
-  }
-  return FlixelPluralCategory.MANY;
-});
+Flixel.locale.setPluralRule("pl", FlixelPluralRule.POLISH);
 
 coinText.setText(Flixel.locale.plural(coinLine, "hud.coins", coins)); // "1 coin", "5 coins", "3 monety"...
 ```
@@ -192,7 +182,11 @@ A few things to know:
 
 - **You choose the rules.** The framework never guesses a rule from a language tag, so your tags always pair with the
   rules you picked. The Unicode CLDR project publishes the plural rules for every language if you need to look one up.
-  `FlixelPluralRule.ONE_OTHER` (English-like) and `FlixelPluralRule.OTHER_ONLY` (no plurals) are ready-made.
+  `FlixelPluralRule` ships ready-made rules for most languages, each listing the tags it fits in its Javadoc:
+  `ONE_OTHER` (English, German, and many more), `OTHER_ONLY` (Japanese, Chinese, Korean), `HINDI`, `FRENCH`,
+  `SPANISH`, `EAST_SLAVIC` (Russian, Ukrainian), `SOUTH_SLAVIC` (Croatian, Serbian), `POLISH`, `CZECH`, `SLOVENIAN`,
+  `ICELANDIC`, `LITHUANIAN`, `LATVIAN`, `ROMANIAN`, `HEBREW`, `ARABIC`, `MALTESE`, `IRISH`, `SCOTTISH_GAELIC`,
+  `WELSH`, and `FILIPINO`. Write your own lambda for anything else.
 - **Tags without a rule** use the rule of their shorter form (a rule for `pt` also covers `pt-BR`), and then the
   default rule, which is `ONE_OTHER` unless you change it with `setDefaultPluralRule(...)`.
 - **Fallback text uses its own language's rule.** If a Polish player gets English fallback text, the English rule picks
