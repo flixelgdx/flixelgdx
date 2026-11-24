@@ -72,7 +72,7 @@ See [The Game Loop](game-loop.md) for both.
 | `Flixel.state`                 | The active state.                                                                  |
 | `Flixel.switchState(recipe)`   | Move to another state. See [States and Substates](states-and-substates.md).        |
 | `Flixel.resetState()`          | Build a fresh copy of the current state.                                           |
-| `Flixel.quit()`                | Close the game (desktop).                                                          |
+| `Flixel.quit()`                | Close the game.                                                          |
 | `Flixel.isDebugMode()`         | `true` when the game runs in debug mode.                                           |
 
 ```java
