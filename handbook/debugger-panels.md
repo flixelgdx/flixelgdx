@@ -156,7 +156,7 @@ so setting the same value every frame sends nothing.
 Live text uses an **appender** instead of a getter that returns a `String`, so no new string is created each frame:
 
 ```java
-label(out -> out.concat("FPS: ").concat(Flixel.debug.stats.getFps()))
+label(out -> out.concat("FPS: ").concat(Flixel.graphics.getFps()))
 ```
 
 ## Tables
