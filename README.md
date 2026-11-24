@@ -239,8 +239,7 @@ If you want to start using the framework, you don't need to worry about configur
 already got you covered. You can get started right way with the following links:
 
 - [📚 Official Handbook](handbook/README.md), with 30+ comprehensible and detailed guides for how to use the engine's API.
-- [🧩 IntelliJ IDEA plugin](https://github.com/flixelgdx/flixelgdx-intellij), which creates and manages FlixelGDX projects. See [Getting Started](handbook/getting-started.md) for how 
-- to install it and make your first project.
+- [🧩 IntelliJ IDEA plugin](https://github.com/flixelgdx/flixelgdx-intellij), which creates and manages FlixelGDX projects. See [Getting Started](handbook/getting-started.md) for how to install it and make your first project.
 
 ---
 
