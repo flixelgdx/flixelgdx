@@ -283,6 +283,7 @@ and pick it with the `flixel.profile` property:
 
 ```toml
 [profile.dev]
+app.mode              = "debug"
 window.fullscreen     = false
 defines.enable_cheats = true
 
@@ -299,6 +300,11 @@ platforms    = ["desktop", "html5"]
 
 Without the property the file is used as written. A profile can change everything except `app.package`, and
 `Project.PROFILE` holds the name of the selected one (an empty string when none is selected).
+
+`app.mode` (`release`, `debug` or `test`) picks the mode the game starts in on every platform, and it can **only** be
+set inside a profile. That way a build without a profile always starts in release mode, and a debug build cannot
+reach players by accident. Think of it as a thermostat's default temperature: a launch setting such as
+`-Dflixel.mode` or `?flixel.mode=` can still turn the dial for one run.
 
 ### Checking your setup
 
@@ -444,7 +450,7 @@ The game reads these when it starts. How to pass one depends on the platform:
 
 | Setting                 | Platforms                | Values                                                               | Does |
 |-------------------------|--------------------------|----------------------------------------------------------------------|------|
-| `flixel.mode`           | Desktop, web, Android    | `release` (default), `debug`, `test`                                 | Picks the runtime mode. See [Debugging](debugging.md). |
+| `flixel.mode`           | Desktop, web, Android    | `release`, `debug`, `test`                                           | Picks the runtime mode for one launch. It wins over a profile's `app.mode`, which wins over the platform's choice (release, or debug for a debuggable Android build). See [Debugging](debugging.md). |
 | `flixel.debugHost`      | Desktop, web, Android    | `host` or `host:port` (default `127.0.0.1:6510`)                     | Where the game looks for the remote debugger app in debug mode. |
 | `flixel.render.backend` | Desktop                  | `auto` (default), `vulkan`, `metal`, `direct3d11`, `direct3d12`, `opengl`, `opengles`, `noop` | Forces the graphics API WebGPU uses. Useful when a machine's preferred driver misbehaves. An unknown value logs a warning and uses `auto`. |
 | `flixel.render.stats`   | Desktop                  | `log` (or `true`)                                                    | Logs renderer statistics (frame times, memory, pipelines, textures) once a second. |

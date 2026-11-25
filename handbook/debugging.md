@@ -55,8 +55,10 @@ A game runs in release mode unless told otherwise, so nothing debug-related ever
 | Desktop  | Run `./gradlew :desktop:debug` in a generated project, or pass `-Dflixel.mode=debug` to the JVM. |
 | Web      | Run `./gradlew :html5:debug`, or add `?flixel.mode=debug` (or just `?debug`) to the page address. |
 | Android  | Any debuggable build (a normal debug build) runs in debug mode. Override with the `flixel.mode` intent extra. |
+| Every platform | Select a profile with `app.mode = "debug"` in `project.toml`, such as `-Pflixel.profile=dev`. See [Profiles](building-and-shipping.md#profiles). |
 
-Your code can check with `Flixel.isDebugMode()`.
+A launch setting (the JVM flag, the page address, or the intent extra) always wins over a profile's `app.mode`, so one
+build can still be switched for a single run. Your code can check with `Flixel.isDebugMode()`.
 
 ## Hotkeys that work without the app
 

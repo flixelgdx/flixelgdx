@@ -117,6 +117,7 @@ A value that breaks a rule fails the build with a message that names the field a
    | `game.isVsync`, `game.isFullscreen` | The `[window]` switches (`game.vsync` and `game.fullscreen` in Groovy). |
    | `game.platforms`   | `platforms`                                                            |
    | `game.profile`     | The selected profile, or an empty string, see profiles below.          |
+   | `game.mode`        | The selected profile's `app.mode`, or an empty string.                  |
    | `game.defines`     | The `[defines]` table, looked up by key, such as `game.defines["demo"]`. |
    | `game.model`       | Every value, including the `[render]` ones.                            |
 
@@ -234,8 +235,9 @@ fullscreen = true
 demo          = false
 enable_cheats = false
 
-# Local development: windowed, cheats on.
+# Local development: debug mode, windowed, cheats on.
 [profile.dev]
+app.mode              = "debug"
 window.fullscreen     = false
 defines.enable_cheats = true
 
@@ -260,6 +262,12 @@ of the `flixel.` prefix.
 
 - A profile can change any value in this README except `app.package`, because the game's code imports the generated
   `Project` class from that package. For a separate Android app ID, use `applicationIdSuffix` in the Android module.
+- `app.mode` (`release`, `debug` or `test`) picks the runtime mode the game starts in, on every platform. It is the
+  one key that **only a profile may set**: putting it anywhere else fails the build, so a build without a profile
+  always starts in release mode and a debug build cannot be shipped by accident. The generated `Project.config()`
+  passes it to `FlixelConfig.Builder.mode(...)`, and a launch setting still wins over it: `-Dflixel.mode` on
+  desktop, `?flixel.mode=` in the page address, or the `flixel.mode` intent extra on Android. Without `app.mode`,
+  each platform decides as before (release, or debug for a debuggable Android build).
 - A profile can change defines the file already has (they keep their place) and add new ones (they come after the
   file's own).
 - `Project.PROFILE` holds the selected profile's name, or an empty string, so the game can show it:
