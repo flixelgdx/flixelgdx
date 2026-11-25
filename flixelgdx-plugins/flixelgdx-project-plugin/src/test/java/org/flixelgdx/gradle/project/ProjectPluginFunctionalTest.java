@@ -266,6 +266,42 @@ class ProjectPluginFunctionalTest {
   }
 
   @Test
+  void aSelectedProfileChangesTheClassAndRerunsTheTask() throws IOException {
+    setUp(TOML + "\n[window]\nfullscreen = true\n\n[profile.dev]\nwindow.fullscreen = false\n");
+
+    assertEquals(TaskOutcome.SUCCESS, runner(":core:generateProjectClass").build()
+        .task(":core:generateProjectClass").getOutcome());
+    assertTrue(generated().contains("PROFILE = \"\";") && generated().contains("FULLSCREEN = true;"), generated());
+
+    BuildResult dev = runner(":core:generateProjectClass", "-Pflixel.profile=dev").build();
+
+    assertEquals(TaskOutcome.SUCCESS, dev.task(":core:generateProjectClass").getOutcome());
+    assertTrue(generated().contains("PROFILE = \"dev\";") && generated().contains("FULLSCREEN = false;"),
+        generated());
+  }
+
+  @Test
+  void aProfileFromGradlePropertiesIsUsed() throws IOException {
+    setUp(TOML + "\n[profile.demo]\napp.title = \"My Game Demo\"\nplatforms = []\n");
+    write("gradle.properties", "flixel.profile=demo\n");
+    write("build.gradle", "println 'INFO ' + game.title + ' ' + game.profile\n");
+
+    BuildResult result = runner("projects").build();
+
+    assertTrue(result.getOutput().contains("INFO My Game Demo demo"), result.getOutput());
+    assertFalse(result.getOutput().contains("':desktop'"), result.getOutput());
+  }
+
+  @Test
+  void anUnknownProfileFailsTheBuild() throws IOException {
+    setUp(TOML + "\n[profile.dev]\nwindow.fullscreen = false\n");
+
+    BuildResult result = runner("projects", "-Pflixel.profile=release").buildAndFail();
+
+    assertTrue(result.getOutput().contains("'release'") && result.getOutput().contains("dev"), result.getOutput());
+  }
+
+  @Test
   void bumpBuildRaisesTheNumberInTheFile() throws IOException {
     setUp(TOML + "build = 14 # keep me\n");
 

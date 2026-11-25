@@ -80,6 +80,8 @@ import java.util.Properties;
  *       is found, otherwise a warning explains how to install or point to one.</li>
  *   <li>Sets {@code group} to the package and {@code version} to the version on every project, and adds the
  *       {@link ProjectExtension} as {@code game} (and as {@code flixelProject}, its earlier name).</li>
+ *   <li>Applies a profile's overrides when one is selected with {@value #PROFILE_PROPERTY}, see
+ *       {@link ProjectToml}.</li>
  *   <li>Adds a {@code bumpBuild} task to the root project, see {@link BumpBuildTask}.</li>
  *   <li>Generates a {@code Project} class for the {@code core} module, see {@link GenerateProjectClassTask}. It is
  *       also written when an IDE reloads the Gradle project, so it resolves without a build first.</li>
@@ -98,6 +100,12 @@ public class ProjectPlugin implements Plugin<Settings> {
 
   /** The name of the task that generates the {@code Project} class. */
   public static final String TASK_NAME = "generateProjectClass";
+
+  /**
+   * The Gradle property that selects a profile, such as {@code -Pflixel.profile=dev} or {@code flixel.profile=dev} in
+   * {@code gradle.properties}.
+   */
+  public static final String PROFILE_PROPERTY = "flixel.profile";
 
   /** The project property that holds the title, read by other FlixelGDX plugins for their defaults. */
   public static final String TITLE_PROPERTY = "flixelProject.title";
@@ -118,7 +126,9 @@ public class ProjectPlugin implements Plugin<Settings> {
       throw new GradleException("Could not find " + FILE_NAME + ". It is expected next to the settings file, at "
           + file.getAbsolutePath() + ".");
     }
-    ProjectModel model = ProjectToml.parse(text);
+    // Also read through the providers, so switching profiles drops a configuration cache entry too.
+    String profile = settings.getProviders().gradleProperty(PROFILE_PROPERTY).getOrElse("").strip();
+    ProjectModel model = ProjectToml.parse(text, profile);
 
     includeModules(settings, model, dir);
 
@@ -182,7 +192,7 @@ public class ProjectPlugin implements Plugin<Settings> {
     project.getExtensions().getExtraProperties().set(VERSION_PROPERTY, model.version());
 
     if (project.getPath().equals(":core")) {
-      project.getPlugins().withId("java", plugin -> registerCodegen(project, file));
+      project.getPlugins().withId("java", plugin -> registerCodegen(project, info, file));
     }
     if (project == project.getRootProject()) {
       // Registered after the build script ran, so a game that already has a task with this name keeps its own.
@@ -202,12 +212,13 @@ public class ProjectPlugin implements Plugin<Settings> {
     project.getTasks().register(name, type, setup);
   }
 
-  private static void registerCodegen(Project project, File file) {
+  private static void registerCodegen(Project project, ProjectExtension info, File file) {
     TaskProvider<GenerateProjectClassTask> generate =
         project.getTasks().register(TASK_NAME, GenerateProjectClassTask.class, task -> {
           task.setGroup("build");
           task.setDescription("Generates the Project class from project.toml.");
           task.getProjectFile().set(file);
+          task.getProfile().set(info.getProfile());
           task.getOutputDir().convention(
               project.getLayout().getBuildDirectory().dir(GenerateProjectClassTask.OUTPUT_DIR));
         });
@@ -244,7 +255,8 @@ public class ProjectPlugin implements Plugin<Settings> {
   /** Writes the project class right away, so it exists as soon as the IDE has reloaded the project. */
   private static void generateNow(Project project, File file, TaskProvider<GenerateProjectClassTask> task) {
     try {
-      GenerateProjectClassTask.generate(file, task.get().getOutputDir().get().getAsFile());
+      GenerateProjectClassTask generate = task.get();
+      GenerateProjectClassTask.generate(file, generate.getOutputDir().get().getAsFile(), generate.getProfile().get());
     } catch (GradleException e) {
       // A reload should never fail because of the file. The same error fails the next build, where it belongs.
       project.getLogger().warn("Could not generate the project class: {}", e.getMessage());
