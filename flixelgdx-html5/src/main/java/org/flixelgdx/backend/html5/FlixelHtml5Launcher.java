@@ -70,9 +70,10 @@ import org.teavm.jso.JSBody;
  * <p>The runtime mode is chosen from the page URL rather than a command-line flag, since a browser
  * has no launch arguments. Adding {@code ?flixel.mode=debug} (or the shorthand {@code ?debug}) to
  * the address starts the game in {@link FlixelRuntimeMode#DEBUG DEBUG} without a rebuild, and
- * {@code ?flixel.mode=test} selects {@link FlixelRuntimeMode#TEST TEST}. With no such parameter the
- * game runs in {@link FlixelRuntimeMode#RELEASE RELEASE}. The web build plugin can bake a default
- * into the generated page, which the URL parameter then overrides.
+ * {@code ?flixel.mode=test} selects {@link FlixelRuntimeMode#TEST TEST}. The web build plugin can bake a default
+ * into the generated page, which the URL parameter then overrides. With neither, the game starts in the config's
+ * default mode (see {@link FlixelConfig#getMode()}, set per profile with {@code app.mode} in {@code project.toml}),
+ * and in {@link FlixelRuntimeMode#RELEASE RELEASE} when that is not set either.
  *
  * <p>In debug mode the game also connects to the remote debugger app on {@code 127.0.0.1:6510}. Add
  * {@code ?flixel.debugHost=host[:port]} to the address to connect to another computer.
@@ -170,12 +171,14 @@ public final class FlixelHtml5Launcher {
   }
 
   /**
-   * Resolves the runtime mode from the page URL, defaulting to {@link FlixelRuntimeMode#RELEASE}.
+   * Resolves the runtime mode from the page URL, then the config's default mode, defaulting to
+   * {@link FlixelRuntimeMode#RELEASE}.
    *
-   * @return The runtime mode requested in the URL, or {@code RELEASE} when none was.
+   * @return The runtime mode requested in the URL, else the config's default, else {@code RELEASE}.
    */
   private static FlixelRuntimeMode resolveRuntimeMode() {
-    return FlixelRuntimeMode.parse(urlMode(), FlixelRuntimeMode.RELEASE);
+    FlixelRuntimeMode configured = Flixel.config == null ? null : Flixel.config.getMode();
+    return FlixelRuntimeMode.parse(urlMode(), configured != null ? configured : FlixelRuntimeMode.RELEASE);
   }
 
   /**

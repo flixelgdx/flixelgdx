@@ -25,6 +25,7 @@ package org.flixelgdx.backend.android;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelRuntimeMode;
@@ -96,6 +97,8 @@ public final class FlixelAndroidLauncher {
    *   <li>A {@code flixel.mode} string extra on the activity's intent wins when present. Accepted
    *       values are {@code debug}, {@code test} and {@code release}. For example:
    *       {@code adb shell am start -n <package>/<activity> -e flixel.mode debug}.</li>
+   *   <li>Otherwise the config's default mode is used when it has one (see {@link FlixelConfig#getMode()}), which a
+   *       {@code project.toml} profile sets with {@code app.mode}.</li>
    *   <li>Otherwise a debuggable app (a normal debug build) starts in
    *       {@link FlixelRuntimeMode#DEBUG DEBUG}.</li>
    *   <li>Otherwise the app starts in {@link FlixelRuntimeMode#RELEASE RELEASE}.</li>
@@ -224,8 +227,9 @@ public final class FlixelAndroidLauncher {
   }
 
   /**
-   * Resolves the runtime mode from the {@code flixel.mode} intent extra, falling back to
-   * {@code DEBUG} for debuggable apps and {@code RELEASE} otherwise.
+   * Resolves the runtime mode from the {@code flixel.mode} intent extra, then the config's default mode (see
+   * {@link FlixelConfig#getMode()}), falling back to {@code DEBUG} for debuggable apps and {@code RELEASE}
+   * otherwise.
    *
    * @param activity The host activity.
    * @return The runtime mode to start with.
@@ -233,7 +237,9 @@ public final class FlixelAndroidLauncher {
   @NotNull
   private static FlixelRuntimeMode resolveRuntimeMode(@NotNull Activity activity) {
     boolean debuggable = (activity.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-    FlixelRuntimeMode fallback = debuggable ? FlixelRuntimeMode.DEBUG : FlixelRuntimeMode.RELEASE;
+    FlixelRuntimeMode configured = Flixel.config == null ? null : Flixel.config.getMode();
+    FlixelRuntimeMode fallback = configured != null ? configured
+        : debuggable ? FlixelRuntimeMode.DEBUG : FlixelRuntimeMode.RELEASE;
     Intent intent = activity.getIntent();
     String extra = intent == null ? null : intent.getStringExtra("flixel.mode");
     return FlixelRuntimeMode.parse(extra, fallback);
