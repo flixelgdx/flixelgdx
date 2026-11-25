@@ -99,7 +99,7 @@ public class BasisuPlugin implements Plugin<Project> {
     boolean enabledByProperty = "true".equalsIgnoreCase(String.valueOf(project.findProperty(ENABLE_PROPERTY)));
     ext.getEnabled().convention(enabledByProperty);
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
-    ext.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/basisuAssets"));
+    ext.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/flixelgdx/basisu"));
     ext.getGenerateMipmaps().convention(false);
     ext.getUseUastc().convention(false);
     ext.getEtc1sQuality().convention(128);
