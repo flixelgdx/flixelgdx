@@ -27,7 +27,6 @@ import org.gradle.api.GradleException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -36,54 +35,47 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProfileTasksTest {
 
-  private static final List<String> PROFILES = List.of("dev", "demo", "steam-demo");
+  private static final List<String> PROFILES = List.of("playtest", "demo", "steam-demo");
 
   @Test
-  void profileNamesBecomePascalCaseSuffixes() {
-    assertEquals("Dev", ProfileTasks.suffix("dev"));
-    assertEquals("SteamDemo", ProfileTasks.suffix("steam-demo"));
-    assertEquals("SteamDemo", ProfileTasks.suffix("steamDemo"));
-    assertEquals("V2", ProfileTasks.suffix("v2"));
-    assertNull(ProfileTasks.suffix("--"));
-  }
+  void onlyPlainUnusedNamesGetATask() {
+    List<String> names = ProfileTasks.taskProfiles(
+        List.of("playtest", "steam-demo", "v2_beta", "build", "Clean", "with space", "a.b", "doctor"), false);
 
-  @Test
-  void profilesWithTheSameSuffixGetNoTasks() {
-    Map<String, String> suffixes = ProfileTasks.suffixes(List.of("dev", "steam-demo", "steam_demo"));
-
-    assertEquals(Map.of("Dev", "dev"), suffixes);
+    assertEquals(List.of("playtest", "steam-demo", "v2_beta"), names);
   }
 
   @Test
   void theRequestedTaskPicksTheProfile() {
-    assertEquals("dev", ProfileTasks.requested(List.of(":desktop:runDev"), PROFILES));
-    assertEquals("demo", ProfileTasks.requested(List.of("packageAllDemo"), PROFILES));
-    assertEquals("steam-demo", ProfileTasks.requested(List.of(":android:installSteamDemo"), PROFILES));
-    assertEquals("dev", ProfileTasks.requested(List.of("clean", ":html5:debugDev", ":desktop:runDev"), PROFILES));
+    assertEquals("playtest", ProfileTasks.requested(List.of(":desktop:playtest"), PROFILES));
+    assertEquals("demo", ProfileTasks.requested(List.of("demo"), PROFILES));
+    assertEquals("steam-demo", ProfileTasks.requested(List.of(":android:steam-demo"), PROFILES));
+    assertEquals("demo", ProfileTasks.requested(List.of("clean", ":html5:demo", ":desktop:demo"), PROFILES));
   }
 
   @Test
   void otherTasksPickNoProfile() {
-    assertNull(ProfileTasks.requested(List.of(":desktop:run", "build", "--tests", "FooDev"), PROFILES));
-    assertNull(ProfileTasks.requested(List.of("compileDev"), PROFILES));
+    assertNull(ProfileTasks.requested(List.of(":desktop:run", "build", "--tests", "demo2"), PROFILES));
+    assertNull(ProfileTasks.requested(List.of("runDemo", "demoRun"), PROFILES));
     assertNull(ProfileTasks.requested(List.of(), PROFILES));
+    assertNull(ProfileTasks.requested(List.of("build"), List.of("build")));
   }
 
   @Test
   void twoProfilesInOneRunFail() {
     String message = assertThrows(GradleException.class,
-        () -> ProfileTasks.requested(List.of(":desktop:runDev", ":desktop:runDemo"), PROFILES)).getMessage();
+        () -> ProfileTasks.requested(List.of(":desktop:playtest", ":desktop:demo"), PROFILES)).getMessage();
 
-    assertTrue(message.contains("'dev'") && message.contains("'demo'"), message);
+    assertTrue(message.contains("'playtest'") && message.contains("'demo'"), message);
   }
 
   @Test
   void aTaskOfALeftOutPlatformSaysSo() {
     String message = assertThrows(GradleException.class, () -> ProfileTasks.checkModules(
-        List.of(":android:installDemo"), PROFILES, "demo", List.of("desktop", "html5"))).getMessage();
+        List.of(":android:demo"), "demo", List.of("desktop", "html5"))).getMessage();
 
-    assertTrue(message.contains(":android:installDemo") && message.contains("'demo'"), message);
+    assertTrue(message.contains(":android:demo") && message.contains("'demo'"), message);
 
-    ProfileTasks.checkModules(List.of(":desktop:runDemo"), PROFILES, "demo", List.of("desktop", "html5"));
+    ProfileTasks.checkModules(List.of(":desktop:demo", ":android:installDebug"), "demo", List.of("desktop"));
   }
 }

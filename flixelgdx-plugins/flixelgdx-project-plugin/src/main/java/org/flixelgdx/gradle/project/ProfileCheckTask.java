@@ -33,7 +33,7 @@ import org.gradle.api.tasks.UntrackedTask;
 /**
  * Fails the build when a profile task runs with a different profile than its own, see {@link ProfileTasks}.
  *
- * <p>This happens when a profile task is started by a shortened name, such as {@code runD} for {@code runDev}. The
+ * <p>This happens when a profile task is started by a shortened name, such as {@code dem} for {@code demo}. The
  * settings plugin picks the profile from the exact task names, so it cannot see that one.
  */
 @UntrackedTask(because = "It only checks which profile is active, so there is nothing to keep up to date.")

@@ -86,8 +86,8 @@ import java.util.Properties;
  *       {@link ProjectExtension} as {@code game}.</li>
  *   <li>Applies a profile's overrides when one is selected with {@value #PROFILE_PROPERTY}, see
  *       {@link ProjectToml}.</li>
- *   <li>Adds a task per profile for the usual run and package tasks of the platform modules, such as
- *       {@code :desktop:runDev}, see {@link ProfileTasks}.</li>
+ *   <li>Adds a task per profile to each platform module, named after the profile, such as {@code :desktop:demo},
+ *       which starts the game with that profile, see {@link ProfileTasks}.</li>
  *   <li>Adds a {@code bumpBuild} task to the root project, see {@link BumpBuildTask}.</li>
  *   <li>Adds a {@code doctor} task to the root project, see {@link DoctorTask}. When it is the only task requested, a
  *       broken {@code project.toml} is shown in its report instead of failing the build first.</li>
@@ -157,7 +157,7 @@ public class ProjectPlugin implements Plugin<Settings> {
     if (model != null) {
       includeModules(settings, model, dir, sdk, lenient, modules, notes);
       if (!lenient) {
-        ProfileTasks.checkModules(settings.getGradle().getStartParameter().getTaskNames(), profiles, model.profile(),
+        ProfileTasks.checkModules(settings.getGradle().getStartParameter().getTaskNames(), model.profile(),
             model.platforms());
       }
     }
@@ -170,7 +170,7 @@ public class ProjectPlugin implements Plugin<Settings> {
   }
 
   /**
-   * Picks the profile for this run: the one a profile task such as {@code runDev} asks for, else the
+   * Picks the profile for this run: the one a profile task such as {@code demo} asks for, else the
    * {@value #PROFILE_PROPERTY} property.
    */
   private static String selectProfile(Settings settings, List<String> profiles, String property) {
