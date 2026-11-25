@@ -55,7 +55,8 @@ public final class Jlink {
    *
    * @param jlinkExe The {@code jlink} executable to run, whose version matches {@code targetVersion}.
    * @param targetVersion The target JDK feature version, used to pick a compatible compression flag.
-   * @param jmods The target JDK's {@code jmods} directory, used as the module path.
+   * @param jmods The folder of the target platform's {@code .jmod} files, from the same JDK release as
+   *     {@code jlinkExe}, used as the module path.
    * @param modules The module names to include in the image.
    * @param output The directory the runtime image is written to (must not already exist).
    * @param logger The Gradle logger used to report progress.
