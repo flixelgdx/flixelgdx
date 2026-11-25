@@ -77,7 +77,7 @@ import java.util.Properties;
  *   <li>Includes {@code core} and every listed platform module. {@code android} is only included when an Android SDK
  *       is found, otherwise a warning explains how to install or point to one.</li>
  *   <li>Sets {@code group} to the package and {@code version} to the version on every project, and adds the
- *       {@link ProjectExtension} as {@code flixelProject}.</li>
+ *       {@link ProjectExtension} as {@code game} (and as {@code flixelProject}, its earlier name).</li>
  *   <li>Generates a {@code Project} class for the {@code core} module, see {@link GenerateProjectClassTask}. It is
  *       also written when an IDE reloads the Gradle project, so it resolves without a build first.</li>
  *   <li>Makes the defaults of the {@code org.flixelgdx.html5} (page title) and {@code org.flixelgdx.packagr}
@@ -173,6 +173,7 @@ public class ProjectPlugin implements Plugin<Settings> {
     ProjectModel model = info.getModel();
     project.setGroup(model.packageName());
     project.setVersion(model.version());
+    project.getExtensions().add(ProjectExtension.class, ProjectExtension.GAME_NAME, info);
     project.getExtensions().add(ProjectExtension.class, ProjectExtension.NAME, info);
     project.getExtensions().getExtraProperties().set(TITLE_PROPERTY, model.title());
     project.getExtensions().getExtraProperties().set(VERSION_PROPERTY, model.version());

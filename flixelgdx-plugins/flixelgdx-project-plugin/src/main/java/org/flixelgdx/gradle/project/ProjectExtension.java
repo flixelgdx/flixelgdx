@@ -26,24 +26,29 @@ package org.flixelgdx.gradle.project;
 import java.util.List;
 
 /**
- * Read-only view of a game's {@code project.toml}, available on every project as {@code flixelProject}.
+ * Read-only view of a game's {@code project.toml}, available on every project as {@code game}.
  *
  * <p>Build scripts can read the values instead of repeating them:
  *
  * <pre>{@code
  * android {
  *   defaultConfig {
- *     versionName = flixelProject.version.toString()
+ *     applicationId = game.packageName
+ *     versionName = game.version
  *   }
  * }
  * }</pre>
  *
- * <p>Gradle's own {@code project.version} is set to the same version, so {@code version.toString()} works
- * everywhere without this extension.
+ * <p>The same object is also registered as {@code flixelProject}, the name earlier versions used, so existing build
+ * scripts keep working. Gradle's own {@code project.version} is set to the same version, so
+ * {@code version.toString()} works everywhere without this extension.
  */
 public final class ProjectExtension {
 
-  /** The name the extension is registered under. */
+  /** The name the extension is registered under, which build scripts should use. */
+  public static final String GAME_NAME = "game";
+
+  /** The name earlier versions registered the extension under, kept so existing build scripts keep working. */
   public static final String NAME = "flixelProject";
 
   private final ProjectModel model;
