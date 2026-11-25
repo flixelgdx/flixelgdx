@@ -55,7 +55,8 @@ my-game/
   html5/              A tiny launcher that starts the game in a web browser.
   gradle/
     libs.versions.toml  The version catalog: every library and plugin version, grouped into bundles.
-  project.toml        The single source of truth: app info, window, render settings, and platforms.
+  project.toml        The single source of truth: app info, build number, window, render settings, platforms,
+                      your own constants, and profiles.
   gradlew             The Gradle wrapper (gradlew.bat on Windows).
   settings.gradle.kts Applies the project plugin and lists the modules.
 ```
@@ -85,7 +86,10 @@ width  = 640
 height = 360
 ```
 
-The [project plugin README](../flixelgdx-plugins/flixelgdx-project-plugin/README.md) lists every key.
+The same file also holds the build number (`build`, raised with `./gradlew bumpBuild` before each release), your own
+constants in a `[defines]` table, and profiles that change a few values for one build. See
+[Building and Shipping](building-and-shipping.md#project-info-the-project-plugin) for those, and the
+[project plugin README](../flixelgdx-plugins/flixelgdx-project-plugin/README.md) for every key.
 
 ### Dependencies
 
@@ -359,6 +363,7 @@ See [Building and Shipping](building-and-shipping.md) for the plugins.
 | Saving does nothing and logs an error.            | Set `company` in `project.toml` (or `.company(...)` in your `FlixelConfig.Builder`).                   |
 | The game is faster on one computer than another.  | You moved things by a fixed amount per frame. Multiply speeds by `elapsed`.                            |
 | Desktop warns about native access.                | Start the JVM with `--enable-native-access=ALL-UNNAMED`. The project's run tasks and packaged games already do. |
+| The project does not build and the error is unclear. | Run `./gradlew doctor`. It checks your JDK, Android SDK, module folders, and `project.toml`, and says how to fix each problem. |
 
 ## Where to go next
 

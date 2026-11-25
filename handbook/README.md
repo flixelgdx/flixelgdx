@@ -118,7 +118,7 @@ Getting the game to players, and how the framework works inside.
 | # | Guide | What you will learn |
 |---|-------|---------------------|
 | 31 | [Platform Guide: Desktop, Web, and Android](platforms.md) | Requirements, feature differences, and the gotchas of each platform. |
-| 32 | [Building and Shipping: Packaging for Desktop, Web, and Android](building-and-shipping.md) | The packagr, HTML5, shader, and Basis Universal plugins, and a release checklist. |
+| 32 | [Building and Shipping: Packaging for Desktop, Web, and Android](building-and-shipping.md) | The packagr, HTML5, shader, assets, project, and Basis Universal plugins, versioning, every `flixel.` setting, and a release checklist. |
 | 33 | [Architecture: Core, Backends, and the Seams Between Them](architecture.md) | Modules, seams, no-op defaults, the shared WebGPU renderer, threads, and the package map. |
 | 34 | [The Boot Sequence: How a Game Starts Up](boot-sequence.md) | Every step from `main` to the first frame, shutdown, web and Android startup, and boot callbacks. |
 | 35 | [Extending the Framework: Custom Services, Loaders, and Backends](extending-the-framework.md) | Custom asset types, mod folders, save storage, log sinks, replacing services, and new backends. |
