@@ -294,15 +294,15 @@ platforms    = ["desktop", "html5"]
 ```
 
 ```bash
-./gradlew :desktop:runDev
-./gradlew :desktop:packageAllDemo
+./gradlew :desktop:playtest
+./gradlew :desktop:packageAll -Pflixel.profile=demo
 ```
 
-Every profile gets its own version of the usual tasks, named after it: `runDev`, `debugDev` and `packageAllDev` on
-desktop, `runDev`, `debugDev` and `packageDev` on the web, and `installDev`, `assembleDev` and `bundleDev` on Android.
-They are listed under **profiles** in your IDE's Gradle tool window. `./gradlew :desktop:runDev` is the same as
-`./gradlew :desktop:run -Pflixel.profile=dev`, and the property works for any other task. Run profile tasks by their
-full name, and one profile per Gradle run.
+Every profile gets a task named after it in each platform module (`:desktop:playtest`, `:html5:playtest` and
+`:android:playtest`), listed under **profiles** in your IDE's Gradle tool window. It starts the game with that profile,
+the same as `./gradlew :desktop:run -Pflixel.profile=playtest`, and in the mode the profile's `app.mode` asks for. For
+any other task, such as packaging, add `-Pflixel.profile`. Run profile tasks by their full name, and one profile per
+Gradle run.
 
 Without the property the file is used as written. A profile can change everything except `app.package`, and
 `Project.PROFILE` holds the name of the selected one (an empty string when none is selected).
@@ -443,7 +443,7 @@ The one next to `settings.gradle` is shared with everyone who builds the game; t
 
 | Property                  | Values           | Does                                                                         |
 |---------------------------|------------------|------------------------------------------------------------------------------|
-| `flixel.profile`          | A profile name   | Applies that `[profile.<name>]` table of `project.toml`. A profile task such as `runDev` selects its profile without it. See [Profiles](#profiles). |
+| `flixel.profile`          | A profile name   | Applies that `[profile.<name>]` table of `project.toml`. A profile task such as `:desktop:playtest` selects its profile without it. See [Profiles](#profiles). |
 | `enableBasisuCompression` | `true`, `false`  | Compresses Android textures with Basis Universal. See [Compressed textures](#compressed-textures-with-basis-universal). |
 
 The project plugin also sets `flixel.project.title` and `flixel.project.version` on every Gradle project, so the
