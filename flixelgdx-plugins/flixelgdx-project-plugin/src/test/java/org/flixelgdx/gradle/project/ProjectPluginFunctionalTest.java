@@ -208,7 +208,7 @@ class ProjectPluginFunctionalTest {
         """
             allprojects {
               tasks.register('show') {
-                def line = "${project.path} ${project.group} ${project.version} ${game.title} ${flixelProject.width}"
+                def line = "${project.path} ${project.group} ${project.version} ${game.title} ${game.width}"
                 doLast { println 'INFO ' + line }
               }
             }
@@ -433,13 +433,21 @@ class ProjectPluginFunctionalTest {
     write("desktop/build.gradle.kts",
         """
             println("INFO " + game.title + " " + game.packageName + " " + game.version + " " + game.isVsync)
-            println("OLD " + flixelProject.title)
             """);
 
     BuildResult result = runner("projects").build();
 
     assertTrue(result.getOutput().contains("INFO My Game com.example.mygame 0.1.0 true"), result.getOutput());
-    assertTrue(result.getOutput().contains("OLD My Game"), result.getOutput());
+  }
+
+  @Test
+  void theOldExtensionNameIsGone() throws IOException {
+    setUp(TOML);
+    write("build.gradle", "println 'OLD ' + extensions.findByName('flixelProject')\n");
+
+    BuildResult result = runner("projects").build();
+
+    assertTrue(result.getOutput().contains("OLD null"), result.getOutput());
   }
 
   @Test
@@ -447,7 +455,7 @@ class ProjectPluginFunctionalTest {
     setUp(TOML);
     write("desktop/build.gradle",
         """
-            println 'INFO ' + project.findProperty('flixelProject.title') + ' ' + project.findProperty('flixelProject.version')
+            println 'INFO ' + project.findProperty('flixel.project.title') + ' ' + project.findProperty('flixel.project.version')
             """);
 
     BuildResult result = runner("projects").build();

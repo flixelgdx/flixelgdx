@@ -120,12 +120,10 @@ A value that breaks a rule fails the build with a message that names the field a
    | `game.defines`     | The `[defines]` table, looked up by key, such as `game.defines["demo"]`. |
    | `game.model`       | Every value, including the `[render]` ones.                            |
 
-   The extension is also available as `flixelProject`, the name earlier versions used, so older build scripts keep
-   working. New scripts should use `game`.
-
 3. **Sets defaults for the other plugins.** The `org.flixelgdx.html5` plugin uses the title as its page title, and the
    `org.flixelgdx.packagr` plugin uses the title as its application name and (through `version`) the version.
-   Anything set in a build file still wins.
+   Anything set in a build file still wins. The plugin hands the values over as the project properties
+   `flixel.project.title` and `flixel.project.version`, so those plugins do not depend on this one.
 4. **Adds `bumpBuild` and `doctor` tasks** to the root project, see the build number and checking your setup below.
 5. **Generates a `Project` class** for the `core` module when it has the `java` plugin, before the code compiles.
 
