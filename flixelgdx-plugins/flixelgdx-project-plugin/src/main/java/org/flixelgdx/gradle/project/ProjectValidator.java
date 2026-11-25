@@ -169,6 +169,19 @@ public final class ProjectValidator {
     }
   }
 
+  /**
+   * Checks a runtime mode.
+   *
+   * @param field The field name used in messages, such as {@code profile.dev.app.mode}.
+   * @param value The value to check.
+   * @throws GradleException if the mode is not {@code release}, {@code debug} or {@code test}.
+   */
+  public static void checkMode(String field, String value) {
+    if (!value.equals("release") && !value.equals("debug") && !value.equals("test")) {
+      throw fail(field, "must be \"release\", \"debug\" or \"test\", not \"" + value + "\"");
+    }
+  }
+
   private static String describe(char c) {
     if (c < 0x20 || c > 0x7E) {
       return String.format("the character U+%04X", (int) c);

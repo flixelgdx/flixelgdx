@@ -171,6 +171,21 @@ class ProjectClassWriterTest {
   }
 
   @Test
+  void aProfileModeIsPassedToTheConfig() {
+    String file = APP + "\n[profile.dev]\napp.mode = \"debug\"\n";
+
+    String source = ProjectClassWriter.write(ProjectToml.parse(file, "dev"));
+    assertTrue(source.contains("import org.flixelgdx.backend.FlixelRuntimeMode;\n"), source);
+    assertTrue(source.contains("""
+                .fullscreen(FULLSCREEN)
+                .mode(FlixelRuntimeMode.DEBUG);
+        """), source);
+
+    String plain = ProjectClassWriter.write(ProjectToml.parse(file));
+    assertFalse(plain.contains("FlixelRuntimeMode"), plain);
+  }
+
+  @Test
   void quotesAndBackslashesAreEscaped() {
     ProjectModel model = new ProjectModel(640, 360, 60, 0, 0, 1f, "The \"Best\" Game", "A\\B", "1",
         "com.example", "java", List.of("desktop"), true, false, false, true, true, false);

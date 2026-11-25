@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.gradle.project;
 
+import java.util.Locale;
+
 /**
  * Writes the Java source of the generated {@code Project} class from a {@link ProjectModel}.
  *
@@ -51,6 +53,9 @@ public final class ProjectClassWriter {
     out.append("package ").append(model.packageName()).append(";\n");
     out.append('\n');
     out.append("import org.flixelgdx.FlixelConfig;\n");
+    if (!model.mode().isEmpty()) {
+      out.append("import org.flixelgdx.backend.FlixelRuntimeMode;\n");
+    }
     out.append('\n');
     out.append("/** Values from this game's project.toml, generated at build time. */\n");
     out.append("public final class Project {\n");
@@ -93,6 +98,10 @@ public final class ProjectClassWriter {
       }
       out.append("        .renderScale(RENDER_SCALE, RENDER_SMOOTH)\n");
       out.append("        .transparentFramebuffer(TRANSPARENT)");
+    }
+    if (!model.mode().isEmpty()) {
+      out.append('\n');
+      out.append("        .mode(FlixelRuntimeMode.").append(model.mode().toUpperCase(Locale.ROOT)).append(')');
     }
     out.append(";\n");
     out.append("  }\n");

@@ -121,6 +121,15 @@ public final class ProjectExtension {
   }
 
   /**
+   * The runtime mode the selected profile starts the game in, set with {@code app.mode}.
+   *
+   * @return {@code release}, {@code debug} or {@code test}, or an empty string when the platform decides.
+   */
+  public String getMode() {
+    return model.mode();
+  }
+
+  /**
    * The language of the game's code, {@code java} or {@code kotlin}.
    *
    * @return The language.

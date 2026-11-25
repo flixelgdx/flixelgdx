@@ -82,6 +82,7 @@ class ProjectPluginFunctionalTest {
           public Builder disableRenderResolution() { return this; }
           public Builder renderScale(float scale, boolean smooth) { return this; }
           public Builder transparentFramebuffer(boolean transparent) { return this; }
+          public Builder mode(Object mode) { return this; }
           public FlixelConfig build() { return config; }
         }
       }
@@ -252,6 +253,19 @@ class ProjectPluginFunctionalTest {
   }
 
   @Test
+  void gameCodeCompilesWithAProfileMode() throws IOException {
+    setUp(TOML + "\n[profile.dev]\napp.mode = \"debug\"\n");
+    write("core/src/main/java/org/flixelgdx/FlixelConfig.java", CONFIG_STUB);
+    write("core/src/main/java/org/flixelgdx/backend/FlixelRuntimeMode.java",
+        "package org.flixelgdx.backend;\n\npublic enum FlixelRuntimeMode { TEST, DEBUG, RELEASE }\n");
+
+    BuildResult result = runner(":core:compileJava", "-Pflixel.profile=dev").build();
+
+    assertEquals(TaskOutcome.SUCCESS, result.task(":core:compileJava").getOutcome());
+    assertTrue(generated().contains(".mode(FlixelRuntimeMode.DEBUG)"), generated());
+  }
+
+  @Test
   void definesReachBuildScripts() throws IOException {
     setUp(TOML + "\n[defines]\ndemo = true\nmax_saves = 3\n");
     write("desktop/build.gradle.kts", """
@@ -303,13 +317,14 @@ class ProjectPluginFunctionalTest {
 
   @Test
   void doctorReportsAHealthyProject() throws IOException {
-    setUp(TOML + "build = 14\n\n[defines]\ndemo = false\n\n[profile.dev]\nwindow.fullscreen = false\n");
+    setUp(TOML
+        + "build = 14\n\n[defines]\ndemo = false\n\n[profile.dev]\napp.mode = \"debug\"\nwindow.fullscreen = false\n");
     Files.createDirectories(dir.resolve("assets"));
 
     String output = runner("doctor", "-Pflixel.profile=dev").build().getOutput();
 
     assertTrue(output.contains("FlixelGDX project: My Game 0.1.0 (build 14)"), output);
-    assertTrue(output.contains("Profile:  dev"), output);
+    assertTrue(output.contains("Profile:  dev, starts in debug mode"), output);
     assertTrue(output.contains("Modules:  core, desktop"), output);
     assertTrue(output.contains("[ok] Gradle "), output);
     assertTrue(output.contains("[ok] assets folder found"), output);
