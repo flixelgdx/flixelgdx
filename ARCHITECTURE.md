@@ -23,6 +23,8 @@ The project is split into several modules, each serving a specific purpose.
 - **`flixelgdx-project-plugin`**: A settings plugin that reads a game's `project.toml` to include the right modules, set the group and version, default the HTML5 and packagr plugins' names, and generate a `Project` class whose `config()` returns a filled-in `FlixelConfig.Builder`.
 - **`flixelgdx-shader-plugin`**: Build-time shader validation. Compiles a game's `.wgsl` shaders with Dawn (a Null backend device in a forked Java 25 process, no GPU needed), fails the build with `file:line:column` errors, and copies the shaders to `build/generated/flixelgdx/shaders/shaders/<name>.wgsl`, which is added to the `main` resources.
 
+Every plugin that generates files during a build writes them into its own folder under `build/generated/flixelgdx/` (`project`, `assets`, `shaders` and `basisu`), so all FlixelGDX output sits together in a game's build folder. New plugins should follow the same layout. The two exceptions are finished builds meant for shipping: the HTML5 web root, which is TeaVM's own output folder, and packagr's `build/packagr/`.
+
 ### Misc.
 
 - **`flixelgdx-gpu`**: The one WebGPU renderer every platform shares. It implements core's graphics abstractions (sprite batch, textures, render targets, shaders, the global shader chain) on top of `jwebgpu-api` only, so it contains no desktop, Android or web types. Each platform supplies a jwebgpu backend, a surface for its window and a device, and hands them to `FlixelGpuGraphics`.
