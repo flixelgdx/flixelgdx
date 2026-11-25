@@ -43,6 +43,12 @@ import java.util.List;
  */
 public final class ProjectToml {
 
+  /** The build number used when {@code app.build} is left out. */
+  public static final int DEFAULT_BUILD = 1;
+
+  /** The highest build number allowed, which is the highest {@code versionCode} Google Play accepts. */
+  public static final int MAX_BUILD = 2_100_000_000;
+
   private static final List<String> PLATFORMS = List.of("desktop", "html5", "android");
 
   private ProjectToml() {}
@@ -69,6 +75,11 @@ public final class ProjectToml {
     String version = requiredString(toml, "app.version");
     String packageName = requiredString(toml, "app.package");
     String language = string(toml, "app.language", "java");
+    int build = positive(toml, "app.build", DEFAULT_BUILD);
+    if (build > MAX_BUILD) {
+      throw new GradleException("Invalid app.build in project.toml: it must be " + MAX_BUILD + " or less, not "
+          + build + ", because that is the highest version code Android accepts.");
+    }
     ProjectValidator.checkName("app.title", title);
     ProjectValidator.checkName("app.company", company);
     ProjectValidator.checkVersion("app.version", version);
@@ -102,7 +113,7 @@ public final class ProjectToml {
     boolean renderSmooth = bool(toml, "render.smooth", true);
     boolean transparent = bool(toml, "render.transparent", false);
 
-    return new ProjectModel(width, height, framerate, renderWidth, renderHeight, renderScale, title, company,
+    return new ProjectModel(width, height, framerate, build, renderWidth, renderHeight, renderScale, title, company,
         version, packageName, language, platforms(toml), vsync, fullscreen, hasRender, renderResolution,
         renderSmooth, transparent);
   }

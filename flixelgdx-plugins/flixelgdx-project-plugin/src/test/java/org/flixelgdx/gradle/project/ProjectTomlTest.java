@@ -54,6 +54,7 @@ class ProjectTomlTest {
     assertFalse(model.fullscreen());
     assertFalse(model.hasRender());
     assertEquals("java", model.language());
+    assertEquals(1, model.build());
     assertEquals(List.of("desktop"), model.platforms());
     assertTrue(model.renderResolution());
     assertEquals(1f, model.renderScale());
@@ -100,6 +101,22 @@ class ProjectTomlTest {
     assertFalse(model.renderSmooth());
     assertTrue(model.transparent());
     assertEquals(List.of("desktop", "html5", "android"), model.platforms());
+  }
+
+  @Test
+  void buildNumberIsRead() {
+    assertEquals(14, ProjectToml.parse(APP + "build = 14\n").build());
+    assertEquals(ProjectToml.MAX_BUILD, ProjectToml.parse(APP + "build = 2_100_000_000\n").build());
+  }
+
+  @Test
+  void buildNumberMustBePositiveAndFitAndroid() {
+    String zero = assertThrows(GradleException.class, () -> ProjectToml.parse(APP + "build = 0\n")).getMessage();
+    assertTrue(zero.contains("app.build"), zero);
+    String big = assertThrows(GradleException.class,
+        () -> ProjectToml.parse(APP + "build = 2100000001\n")).getMessage();
+    assertTrue(big.contains("2100000000"), big);
+    assertThrows(GradleException.class, () -> ProjectToml.parse(APP + "build = \"14\"\n"));
   }
 
   @Test
