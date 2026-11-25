@@ -108,7 +108,7 @@ class ProjectPluginFunctionalTest {
     assertEquals(TaskOutcome.SUCCESS, result.task(":core:compileJava").getOutcome());
     assertTrue(Files.isRegularFile(dir.resolve("core/build/classes/java/main/com/example/mygame/Project.class")));
     assertTrue(Files.readString(dir.resolve(
-        "core/build/generated/sources/flixelProject/java/main/com/example/mygame/Project.java"))
+        "core/build/generated/flixelgdx/project/com/example/mygame/Project.java"))
         .contains("TITLE = \"My Game\""));
   }
 
@@ -237,7 +237,7 @@ class ProjectPluginFunctionalTest {
 
   private String generated() throws IOException {
     return Files.readString(dir.resolve(
-        "core/build/generated/sources/flixelProject/java/main/com/example/mygame/Project.java"));
+        "core/build/generated/flixelgdx/project/com/example/mygame/Project.java"));
   }
 
   private void setUp(String toml) throws IOException {
