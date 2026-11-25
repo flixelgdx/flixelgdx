@@ -59,7 +59,7 @@ basisu {
   // Directory scanned recursively for .png files (default: rootProject/assets/).
   assetsDir = file('../assets')
 
-  // Where .ktx2 files are written, mirroring the source layout (default: build/generated/basisuAssets).
+  // Where .ktx2 files are written, mirroring the source layout (default: build/generated/flixelgdx/basisu).
   outputDir = file('build/compressedAssets')
 
   // Generate a full mipmap chain for each texture (default: false).
