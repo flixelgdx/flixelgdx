@@ -31,8 +31,9 @@ package org.flixelgdx.gradle.project;
  * {@code Project.config().build()} and only spell out what is different. The output depends only on the model, so
  * the same file always produces byte-for-byte the same class.
  *
- * <p>Titles and companies are checked to be printable ASCII before they get here, so escaping only has to cover the
- * quote and the backslash.
+ * <p>Strings are escaped so any text from the file is safe in Java source, including line breaks and characters
+ * outside ASCII. Entries of the {@code [defines]} table go into a nested {@code Defines} class, so their names can
+ * never clash with the constants the class itself has.
  */
 public final class ProjectClassWriter {
 
@@ -94,6 +95,18 @@ public final class ProjectClassWriter {
     }
     out.append(";\n");
     out.append("  }\n");
+    if (!model.defines().isEmpty()) {
+      out.append('\n');
+      out.append("  /** Values from the [defines] table of project.toml. */\n");
+      out.append("  public static final class Defines {\n");
+      for (ProjectDefine define : model.defines()) {
+        out.append("  ");
+        constant(out, define.javaType(), define.name(), literal(define.value()));
+      }
+      out.append('\n');
+      out.append("    private Defines() {}\n");
+      out.append("  }\n");
+    }
     out.append("}\n");
     return out.toString();
   }
@@ -103,14 +116,37 @@ public final class ProjectClassWriter {
         .append(";\n");
   }
 
+  private static String literal(Object value) {
+    return switch (value) {
+      case Long number -> number + "L";
+      case Float number -> number + "f";
+      case String text -> literal(text);
+      default -> String.valueOf(value);
+    };
+  }
+
   private static String literal(String text) {
     StringBuilder out = new StringBuilder("\"");
     for (int i = 0; i < text.length(); i++) {
       char c = text.charAt(i);
-      if (c == '"' || c == '\\') {
-        out.append('\\');
+      switch (c) {
+        case '"' -> out.append("\\\"");
+        case '\\' -> out.append("\\\\");
+        case '\n' -> out.append("\\n");
+        case '\r' -> out.append("\\r");
+        case '\t' -> out.append("\\t");
+        default -> {
+          if (c < 0x20 || c == 0x7F) {
+            // An octal escape, because javac turns a backslash-u escape into the real character before it reads the
+            // string, and a real line break there would end the string early.
+            out.append(String.format("\\%03o", (int) c));
+          } else if (c > 0x7F) {
+            out.append(String.format("\\u%04X", (int) c));
+          } else {
+            out.append(c);
+          }
+        }
       }
-      out.append(c);
     }
     return out.append('"').toString();
   }
