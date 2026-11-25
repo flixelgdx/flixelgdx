@@ -223,6 +223,37 @@ class ProjectPluginFunctionalTest {
   }
 
   @Test
+  void bumpBuildRaisesTheNumberInTheFile() throws IOException {
+    setUp(TOML + "build = 14 # keep me\n");
+
+    BuildResult result = runner("bumpBuild").build();
+
+    assertTrue(result.getOutput().contains("app.build 14 -> 15"), result.getOutput());
+    assertTrue(Files.readString(dir.resolve("project.toml")).contains("build = 15 # keep me"));
+  }
+
+  @Test
+  void aGamesOwnBumpBuildTaskWins() throws IOException {
+    setUp(TOML);
+    write("build.gradle", "tasks.register('bumpBuild') {\n  doLast { println 'MINE' }\n}\n");
+
+    BuildResult result = runner("bumpBuild").build();
+
+    assertTrue(result.getOutput().contains("MINE"), result.getOutput());
+    assertFalse(Files.readString(dir.resolve("project.toml")).contains("build ="));
+  }
+
+  @Test
+  void buildNumberReachesBuildScripts() throws IOException {
+    setUp(TOML + "build = 7\n");
+    write("desktop/build.gradle.kts", "println(\"INFO build \" + game.build)\n");
+
+    BuildResult result = runner("projects").build();
+
+    assertTrue(result.getOutput().contains("INFO build 7"), result.getOutput());
+  }
+
+  @Test
   void gameExtensionWorksInKotlinScripts() throws IOException {
     setUp(TOML);
     write("desktop/build.gradle.kts",
