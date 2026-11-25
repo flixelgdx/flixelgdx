@@ -295,13 +295,18 @@ platforms    = ["desktop", "html5"]
 
 ```bash
 ./gradlew :desktop:playtest
-./gradlew :desktop:packageAll -Pflixel.profile=demo
+./gradlew :desktop:demoPackage
 ```
 
-Every profile gets a task named after it in each platform module (`:desktop:playtest`, `:html5:playtest` and
-`:android:playtest`), listed under **profiles** in your IDE's Gradle tool window. It starts the game with that profile,
-the same as `./gradlew :desktop:run -Pflixel.profile=playtest`, and in the mode the profile's `app.mode` asks for. For
-any other task, such as packaging, add `-Pflixel.profile`. Run profile tasks by their full name, and one profile per
+Every profile gets tasks in each platform module, listed under **profiles** in your IDE's Gradle tool window:
+
+- `:desktop:playtest`, `:html5:playtest` and `:android:playtest` start the game with that profile, the same as
+  `./gradlew :desktop:run -Pflixel.profile=playtest`.
+- `:desktop:demoPackage`, `:html5:demoPackage`, `:android:demoPackage` (an `.apk`) and `:android:demoBundle` (an
+  `.aab` for Google Play) package the game with it, which is how you build a demo next to the full game.
+
+The game always starts in the mode the profile's `app.mode` asks for, and a packaging task warns when that is not
+`release`. For any other task, add `-Pflixel.profile`. Run profile tasks by their full name, and one profile per
 Gradle run.
 
 Without the property the file is used as written. A profile can change everything except `app.package`, and
