@@ -44,6 +44,9 @@ import java.util.List;
  */
 final class ProjectDoctor {
 
+  /** Where FlixelGDX bugs are reported, with the bug report form already picked. */
+  static final String BUG_REPORT_URL = "https://github.com/flixelgdx/flixelgdx/issues/new?template=bug_report.yml";
+
   private ProjectDoctor() {}
 
   /**
@@ -89,6 +92,10 @@ final class ProjectDoctor {
     lines.add("");
     lines.add(problems == 0 ? "Everything looks good."
         : problems + (problems == 1 ? " problem" : " problems") + " found.");
+    lines.add("");
+    lines.add(
+        "Found a bug in FlixelGDX? Open a bug report and paste this whole report into its \"Logs or Screenshots\"");
+    lines.add("field: " + BUG_REPORT_URL);
     return lines;
   }
 

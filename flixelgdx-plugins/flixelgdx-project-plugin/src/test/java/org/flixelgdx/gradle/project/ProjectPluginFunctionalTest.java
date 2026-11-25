@@ -315,6 +315,7 @@ class ProjectPluginFunctionalTest {
     assertTrue(output.contains("[ok] assets folder found"), output);
     assertTrue(output.contains("[ok] project.toml: 1 define, 1 profile (dev)"), output);
     assertTrue(output.contains("Everything looks good."), output);
+    assertTrue(output.contains("issues/new?template=bug_report.yml"), output);
   }
 
   @Test

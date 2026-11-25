@@ -344,6 +344,9 @@ Modules:  core, desktop, html5
 [ok] project.toml: 4 defines, 2 profiles (dev, demo)
 
 2 problems found.
+
+Found a bug in FlixelGDX? Open a bug report and paste this whole report into its "Logs or Screenshots"
+field: https://github.com/flixelgdx/flixelgdx/issues/new?template=bug_report.yml
 ```
 
 - `[ok]` means a check passed, `[!!]` is a problem with how to fix it, and `[--]` is worth knowing but not a problem.
@@ -352,5 +355,7 @@ Modules:  core, desktop, html5
 - **Every profile is checked**, even the ones that are not selected, because a mistake inside a profile otherwise only
   shows up when someone selects it.
 - The Java toolchain line appears when the `core` module asks for one with `java { toolchain { ... } }`.
-- The report never fails the build, so it can always be pasted into a bug report. If a build script already has its
+- The report never fails the build, so it can always be pasted into a bug report. Its last lines link to the
+  [bug report form](https://github.com/flixelgdx/flixelgdx/issues/new?template=bug_report.yml), whose "Logs or
+  Screenshots" field is the place for it. If a build script already has its
   own task named `doctor`, that one is kept and the plugin does not add its own.
