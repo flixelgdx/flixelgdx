@@ -116,6 +116,7 @@ A value that breaks a rule fails the build with a message that names the field a
    | `game.width`, `game.height`, `game.framerate` | The `[window]` numbers.                        |
    | `game.isVsync`, `game.isFullscreen` | The `[window]` switches (`game.vsync` and `game.fullscreen` in Groovy). |
    | `game.platforms`   | `platforms`                                                            |
+   | `game.profile`     | The selected profile, or an empty string, see profiles below.          |
    | `game.defines`     | The `[defines]` table, looked up by key, such as `game.defines["demo"]`. |
    | `game.model`       | Every value, including the `[render]` ones.                            |
 
@@ -138,6 +139,7 @@ public final class Project {
   public static final String COMPANY = "My Studio";
   public static final String VERSION = "0.1.0";
   public static final int BUILD = 1;
+  public static final String PROFILE = "";   // the selected profile, see below
   public static final int WIDTH = 640;
   // HEIGHT, FRAMERATE, VSYNC and FULLSCREEN, plus RENDER_* values when there is a [render] table
 
@@ -216,6 +218,65 @@ if (game.defines["demo"] == true) {
 ```
 
 Defines end up in the built game as plain text, so they are not a place for passwords or secret keys.
+
+## Profiles
+
+Often you want the same game with a few lines changed: windowed with cheats while you develop, or a demo with its own
+title. A profile is a named set of overrides, written as a `[profile.<name>]` table. Think of the rest of the file as
+a recipe and each profile as a sticky note that changes only the lines it mentions:
+
+```toml
+[app]
+title = "My Game"
+
+[window]
+fullscreen = true
+
+[defines]
+demo          = false
+enable_cheats = false
+
+# Local development: windowed, cheats on.
+[profile.dev]
+window.fullscreen     = false
+defines.enable_cheats = true
+
+# The free demo: its own title, the demo flag on, and no Android build.
+[profile.demo]
+app.title    = "My Game Demo"
+defines.demo = true
+platforms    = ["desktop", "html5"]
+```
+
+Select one with the `flixel.profile` Gradle property:
+
+```
+./gradlew desktop:run -Pflixel.profile=dev
+./gradlew desktop:packagr -Pflixel.profile=demo
+./gradlew desktop:packagr                         # no profile: the file as written
+```
+
+To use one by default on your own computer, put `flixel.profile=dev` in a `gradle.properties` that is not committed,
+such as the one in your Gradle user home (`~/.gradle/gradle.properties`). Every other Gradle build ignores it, because
+of the `flixel.` prefix.
+
+- A profile can change any value in this README except `app.package`, because the game's code imports the generated
+  `Project` class from that package. For a separate Android app ID, use `applicationIdSuffix` in the Android module.
+- A profile can change defines the file already has (they keep their place) and add new ones (they come after the
+  file's own).
+- `Project.PROFILE` holds the selected profile's name, or an empty string, so the game can show it:
+
+  ```java
+  if (!Project.PROFILE.isEmpty()) {
+    add(new FlixelText(4, 4, 0, "[" + Project.PROFILE + "]"));
+  }
+  ```
+
+- Selecting a profile the file does not have fails the build and lists the ones it has. A mistake inside a profile
+  only fails the build when that profile is selected, and the message names the profile's line, such as
+  `profile.demo.window.width`.
+- One Gradle run uses one profile for every module, so building the demo and the full game takes two runs. Android's
+  own build types and flavors still work as usual alongside profiles.
 
 ## The build number
 
