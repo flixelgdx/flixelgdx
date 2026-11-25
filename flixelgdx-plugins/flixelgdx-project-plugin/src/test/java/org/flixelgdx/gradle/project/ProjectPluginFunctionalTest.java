@@ -302,6 +302,100 @@ class ProjectPluginFunctionalTest {
   }
 
   @Test
+  void doctorReportsAHealthyProject() throws IOException {
+    setUp(TOML + "build = 14\n\n[defines]\ndemo = false\n\n[profile.dev]\nwindow.fullscreen = false\n");
+    Files.createDirectories(dir.resolve("assets"));
+
+    String output = runner("doctor", "-Pflixel.profile=dev").build().getOutput();
+
+    assertTrue(output.contains("FlixelGDX project: My Game 0.1.0 (build 14)"), output);
+    assertTrue(output.contains("Profile:  dev"), output);
+    assertTrue(output.contains("Modules:  core, desktop"), output);
+    assertTrue(output.contains("[ok] Gradle "), output);
+    assertTrue(output.contains("[ok] assets folder found"), output);
+    assertTrue(output.contains("[ok] project.toml: 1 define, 1 profile (dev)"), output);
+    assertTrue(output.contains("Everything looks good."), output);
+  }
+
+  @Test
+  void doctorExplainsAMissingAndroidSdk() throws IOException {
+    setUp(TOML.replace("[\"desktop\"]", "[\"desktop\", \"android\"]"));
+    Files.createDirectories(dir.resolve("android"));
+
+    String output = runner("doctor").build().getOutput();
+
+    assertTrue(output.contains("[!!] Android SDK: not found"), output);
+    assertTrue(output.contains("ANDROID_HOME"), output);
+    assertTrue(output.contains("1 problem found."), output);
+  }
+
+  @Test
+  void doctorReportsABrokenFileInsteadOfFailing() throws IOException {
+    setUp(TOML.replace("My Game", "My/Game"));
+    write("project.toml", TOML.replace("My Game", "My/Game").replace("[\"desktop\"]", "[\"desktop\", \"html5\"]"));
+
+    runner("projects").buildAndFail();
+    String output = runner("doctor").build().getOutput();
+
+    assertTrue(output.contains("project.toml could not be read"), output);
+    assertTrue(output.contains("[!!] project.toml: Invalid app.title"), output);
+    assertTrue(output.contains("1 problem found."), output);
+  }
+
+  @Test
+  void doctorReportsMissingModuleFoldersAndBrokenProfiles() throws IOException {
+    setUp(TOML.replace("[\"desktop\"]", "[\"desktop\", \"html5\"]") + "\n[profile.bad]\nwindow.width = 0\n");
+
+    String output = runner("doctor").build().getOutput();
+
+    assertTrue(output.contains("[!!] The module 'html5' is needed"), output);
+    assertTrue(output.contains("[!!] Profile 'bad': Invalid profile.bad.window.width"), output);
+    assertTrue(output.contains("2 problems found."), output);
+  }
+
+  @Test
+  void doctorReportsAMissingJavaToolchain() throws IOException {
+    setUp(TOML);
+    write("core/build.gradle", """
+        plugins {
+          id 'java-library'
+        }
+        java {
+          toolchain {
+            languageVersion = JavaLanguageVersion.of(99)
+          }
+        }
+        """);
+
+    String output = runner("doctor", "-Porg.gradle.java.installations.auto-download=false").build().getOutput();
+
+    assertTrue(output.contains("[!!] Java 99 toolchain: not found"), output);
+  }
+
+  @Test
+  void doctorWorksWithTheConfigurationCache() throws IOException {
+    setUp(TOML);
+
+    String first = runner("doctor", "--configuration-cache").build().getOutput();
+    String second = runner("doctor", "--configuration-cache").build().getOutput();
+
+    assertTrue(first.contains("Everything looks good."), first);
+    assertTrue(second.contains("Everything looks good."), second);
+    assertTrue(second.contains("Reusing configuration cache"), second);
+  }
+
+  @Test
+  void aGamesOwnDoctorTaskWins() throws IOException {
+    setUp(TOML);
+    write("build.gradle", "tasks.register('doctor') {\n  doLast { println 'MINE' }\n}\n");
+
+    String output = runner("doctor").build().getOutput();
+
+    assertTrue(output.contains("MINE"), output);
+    assertFalse(output.contains("FlixelGDX project:"), output);
+  }
+
+  @Test
   void bumpBuildRaisesTheNumberInTheFile() throws IOException {
     setUp(TOML + "build = 14 # keep me\n");
 
