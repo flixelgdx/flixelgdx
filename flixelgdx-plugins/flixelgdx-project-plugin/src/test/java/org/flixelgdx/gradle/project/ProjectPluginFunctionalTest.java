@@ -411,6 +411,101 @@ class ProjectPluginFunctionalTest {
     assertFalse(output.contains("FlixelGDX project:"), output);
   }
 
+  /** A desktop module with stand-ins for the tasks profile tasks are made for. */
+  private static final String DESKTOP_TASKS = """
+      def profile = game.profile
+      tasks.register('run') {
+        doLast { println 'RUN [' + profile + ']' }
+      }
+      tasks.register('packageAll') {
+        doLast { println 'PACKAGE [' + profile + ']' }
+      }
+      """;
+
+  private static final String PROFILES = "\n[profile.dev]\nwindow.fullscreen = false\n\n[profile.demo]\n"
+      + "app.title = \"My Game Demo\"\n";
+
+  @Test
+  void aProfileTaskRunsItsTaskWithThatProfile() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    assertTrue(runner(":desktop:runDev").build().getOutput().contains("RUN [dev]"));
+    assertTrue(runner(":desktop:packageAllDemo").build().getOutput().contains("PACKAGE [demo]"));
+    assertTrue(runner(":desktop:run").build().getOutput().contains("RUN []"));
+  }
+
+  @Test
+  void profileTasksAreOnlyMadeForTasksThatExist() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    String output = runner(":desktop:tasks", "--group", "profiles").build().getOutput();
+
+    assertTrue(output.contains("runDev") && output.contains("runDemo") && output.contains("packageAllDev"), output);
+    assertFalse(output.contains("debugDev"), output);
+  }
+
+  @Test
+  void aShortenedProfileTaskNameFailsBeforeTheTaskRuns() throws IOException {
+    setUp(TOML + "\n[profile.dev]\nwindow.fullscreen = false\n");
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    BuildResult result = runner(":desktop:rD").buildAndFail();
+
+    assertTrue(result.getOutput().contains("needs the 'dev' profile"), result.getOutput());
+    assertTrue(result.getOutput().contains(":desktop:runDev"), result.getOutput());
+    assertFalse(result.getOutput().contains("RUN ["), result.getOutput());
+  }
+
+  @Test
+  void aProfileTaskAndADifferentProfilePropertyFail() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    String both = runner(":desktop:runDev", "-Pflixel.profile=demo").buildAndFail().getOutput();
+    assertTrue(both.contains("'dev'") && both.contains("'demo'"), both);
+
+    String two = runner(":desktop:runDev", ":desktop:runDemo").buildAndFail().getOutput();
+    assertTrue(two.contains("one Gradle run can only use one profile"), two);
+
+    assertTrue(runner(":desktop:runDev", "-Pflixel.profile=dev").build().getOutput().contains("RUN [dev]"));
+  }
+
+  @Test
+  void aProfileTaskOfALeftOutPlatformExplainsWhy() throws IOException {
+    setUp(TOML.replace("[\"desktop\"]", "[\"desktop\", \"android\"]")
+        + "\n[profile.demo]\nplatforms = [\"desktop\"]\n");
+    Files.createDirectories(dir.resolve("android"));
+    Path sdk = Files.createDirectories(dir.resolve("sdk"));
+    write("local.properties", "sdk.dir=" + sdk.toString().replace("\\", "\\\\") + "\n");
+
+    String output = runner(":android:installDemo").buildAndFail().getOutput();
+
+    assertTrue(output.contains("does not include it"), output);
+  }
+
+  @Test
+  void profileTasksWorkWithTheConfigurationCache() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    assertTrue(runner(":desktop:runDev", "--configuration-cache").build().getOutput().contains("RUN [dev]"));
+    String second = runner(":desktop:runDev", "--configuration-cache").build().getOutput();
+    assertTrue(second.contains("RUN [dev]") && second.contains("Reusing configuration cache"), second);
+  }
+
+  @Test
+  void aGamesOwnProfileTaskWins() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS + "tasks.register('runDev') {\n  doLast { println 'MINE' }\n}\n");
+
+    String output = runner(":desktop:runDev").build().getOutput();
+
+    assertTrue(output.contains("MINE"), output);
+    assertFalse(output.contains("RUN ["), output);
+  }
+
   @Test
   void bumpBuildRaisesTheNumberInTheFile() throws IOException {
     setUp(TOML + "build = 14 # keep me\n");
