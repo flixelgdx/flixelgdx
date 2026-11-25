@@ -208,7 +208,7 @@ class ProjectPluginFunctionalTest {
         """
             allprojects {
               tasks.register('show') {
-                def line = "${project.path} ${project.group} ${project.version} ${flixelProject.title} ${flixelProject.width}"
+                def line = "${project.path} ${project.group} ${project.version} ${game.title} ${flixelProject.width}"
                 doLast { println 'INFO ' + line }
               }
             }
@@ -220,6 +220,21 @@ class ProjectPluginFunctionalTest {
     assertTrue(output.contains("INFO : com.example.mygame 0.1.0 My Game 640"), output);
     assertTrue(output.contains("INFO :core com.example.mygame 0.1.0 My Game 640"), output);
     assertTrue(output.contains("INFO :desktop com.example.mygame 0.1.0 My Game 640"), output);
+  }
+
+  @Test
+  void gameExtensionWorksInKotlinScripts() throws IOException {
+    setUp(TOML);
+    write("desktop/build.gradle.kts",
+        """
+            println("INFO " + game.title + " " + game.packageName + " " + game.version + " " + game.isVsync)
+            println("OLD " + flixelProject.title)
+            """);
+
+    BuildResult result = runner("projects").build();
+
+    assertTrue(result.getOutput().contains("INFO My Game com.example.mygame 0.1.0 true"), result.getOutput());
+    assertTrue(result.getOutput().contains("OLD My Game"), result.getOutput());
   }
 
   @Test
