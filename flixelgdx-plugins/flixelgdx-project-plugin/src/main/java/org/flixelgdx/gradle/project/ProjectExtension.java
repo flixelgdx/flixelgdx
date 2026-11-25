@@ -94,6 +94,25 @@ public final class ProjectExtension {
   }
 
   /**
+   * The build number, a whole number that goes up with every release.
+   *
+   * <p>Android compares it to decide whether an install is newer, so it is meant for {@code versionCode}:
+   *
+   * <pre>{@code
+   * android {
+   *   defaultConfig {
+   *     versionCode = game.build
+   *   }
+   * }
+   * }</pre>
+   *
+   * @return The build number, {@code 1} when {@code app.build} is left out.
+   */
+  public int getBuild() {
+    return model.build();
+  }
+
+  /**
    * The language of the game's code, {@code java} or {@code kotlin}.
    *
    * @return The language.

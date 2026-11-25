@@ -53,6 +53,7 @@ class ProjectClassWriterTest {
           public static final String TITLE = "My Game";
           public static final String COMPANY = "My Studio";
           public static final String VERSION = "0.1.0";
+          public static final int BUILD = 1;
           public static final int WIDTH = 640;
           public static final int HEIGHT = 360;
           public static final int FRAMERATE = 60;
@@ -114,6 +115,12 @@ class ProjectClassWriterTest {
   void disabledResolutionCallsDisable() {
     String source = ProjectClassWriter.write(ProjectToml.parse(APP + "[render]\nresolution = false\n"));
     assertTrue(source.contains(".disableRenderResolution()"), source);
+  }
+
+  @Test
+  void writesTheBuildNumber() {
+    String source = ProjectClassWriter.write(ProjectToml.parse(APP + "build = 14\n"));
+    assertTrue(source.contains("public static final int BUILD = 14;"), source);
   }
 
   @Test
