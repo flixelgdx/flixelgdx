@@ -86,8 +86,8 @@ import java.util.Properties;
  *       {@link ProjectExtension} as {@code game}.</li>
  *   <li>Applies a profile's overrides when one is selected with {@value #PROFILE_PROPERTY}, see
  *       {@link ProjectToml}.</li>
- *   <li>Adds a task per profile to each platform module, named after the profile, such as {@code :desktop:demo},
- *       which starts the game with that profile, see {@link ProfileTasks}.</li>
+ *   <li>Adds tasks per profile to each platform module, such as {@code :desktop:demo} to start the game and
+ *       {@code :desktop:demoPackage} to package it with that profile, see {@link ProfileTasks}.</li>
  *   <li>Adds a {@code bumpBuild} task to the root project, see {@link BumpBuildTask}.</li>
  *   <li>Adds a {@code doctor} task to the root project, see {@link DoctorTask}. When it is the only task requested, a
  *       broken {@code project.toml} is shown in its report instead of failing the build first.</li>
@@ -275,7 +275,8 @@ public class ProjectPlugin implements Plugin<Settings> {
     ProjectModel model = info.getModel();
     if (!profiles.isEmpty()) {
       // Once every module is configured, so the tasks of other plugins (such as Android's installDebug) exist.
-      project.getGradle().projectsEvaluated(gradle -> ProfileTasks.register(project, profiles, model.profile()));
+      project.getGradle()
+          .projectsEvaluated(gradle -> ProfileTasks.register(project, profiles, model.profile(), model.mode()));
     }
     project.setGroup(model.packageName());
     project.setVersion(model.version());

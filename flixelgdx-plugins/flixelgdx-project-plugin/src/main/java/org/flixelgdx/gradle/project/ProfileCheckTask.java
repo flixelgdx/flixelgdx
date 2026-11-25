@@ -31,7 +31,8 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 
 /**
- * Fails the build when a profile task runs with a different profile than its own, see {@link ProfileTasks}.
+ * Fails the build when a profile task runs with a different profile than its own, see {@link ProfileTasks}, and warns
+ * when a profile's packaging task builds a game that does not start in release mode.
  *
  * <p>This happens when a profile task is started by a shortened name, such as {@code dem} for {@code demo}. The
  * settings plugin picks the profile from the exact task names, so it cannot see that one.
@@ -48,6 +49,12 @@ public abstract class ProfileCheckTask extends DefaultTask {
       throw new GradleException("This task needs the '" + profile + "' profile, but "
           + (active.isEmpty() ? "no profile" : "the '" + active + "' profile") + " is active. Run it by its full "
           + "name, such as ./gradlew " + getExample().get() + ", so the '" + profile + "' profile is selected.");
+    }
+    String mode = getMode().get();
+    if (getPackaging().get() && !mode.isEmpty() && !mode.equals("release")) {
+      // A package is meant for players, so starting it in another mode is worth a warning, even when it is on purpose.
+      getLogger().warn("The '{}' profile sets app.mode = \"{}\", so this package starts in {} mode. Make sure it is "
+          + "not meant for players.", profile, mode, mode);
     }
   }
 
@@ -66,6 +73,22 @@ public abstract class ProfileCheckTask extends DefaultTask {
    */
   @Input
   public abstract Property<String> getActive();
+
+  /**
+   * The runtime mode the active profile starts the game in.
+   *
+   * @return The mode property, holding an empty string when the profile sets none.
+   */
+  @Input
+  public abstract Property<String> getMode();
+
+  /**
+   * Whether the checked task packages the game, which warns when the mode is not release.
+   *
+   * @return The packaging property.
+   */
+  @Input
+  public abstract Property<Boolean> getPackaging();
 
   /**
    * A full task name to suggest in the error message.

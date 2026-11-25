@@ -37,10 +37,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Registers one task per profile in each platform module, named after the profile, such as {@code :desktop:demo}.
+ * Registers the tasks each profile gets in each platform module, such as {@code :desktop:demo} and
+ * {@code :desktop:demoPackage}.
  *
- * <p>The task starts the game the way the module normally does ({@code run} on desktop and the web,
- * {@code installDebug} on Android), with that profile applied. The runtime mode comes only from the profile's
+ * <p>The task named after the profile starts the game the way the module normally does ({@code run} on desktop and
+ * the web, {@code installDebug} on Android), with that profile applied. The packaging tasks add {@code Package} (and
+ * {@code Bundle} on Android) to the name and run the module's packaging task ({@code packageAll} on desktop,
+ * {@code package} on the web, {@code assembleRelease} and {@code bundleRelease} on Android), for builds such as a
+ * demo. The runtime mode comes only from the profile's
  * {@code app.mode}, never from the task, so {@code :desktop:playtest} starts in whatever mode the {@code playtest}
  * profile asks for.
  *
@@ -61,9 +65,18 @@ final class ProfileTasks {
 
   private static final Logger LOGGER = Logging.getLogger(ProfileTasks.class);
 
-  /** The task each platform module starts the game with. */
-  private static final Map<String, String> BASES = Map.of("desktop", "run", "html5", "run", "android",
-      "installDebug");
+  /**
+   * The tasks each platform module gets per profile: the one that starts the game (named after the profile) and the
+   * ones that package it (named after the profile plus {@code Package} or {@code Bundle}).
+   */
+  private static final Map<String, List<Kind>> BASES = Map.of(
+      "desktop", List.of(new Kind("run", "", false), new Kind("packageAll", "Package", true)),
+      "html5", List.of(new Kind("run", "", false), new Kind("package", "Package", true)),
+      "android", List.of(new Kind("installDebug", "", false), new Kind("assembleRelease", "Package", true),
+          new Kind("bundleRelease", "Bundle", true)));
+
+  /** The endings a packaging task adds to the profile name. */
+  private static final List<String> ENDINGS = List.of("Package", "Bundle");
 
   /**
    * Names a profile task cannot have, because Gradle, the framework's plugins or most builds already use them, and a
@@ -91,15 +104,15 @@ final class ProfileTasks {
     String found = null;
     String foundTask = null;
     for (String path : taskNames) {
-      String task = path.substring(path.lastIndexOf(':') + 1);
-      if (!names.contains(task)) {
+      String profile = profileOf(path.substring(path.lastIndexOf(':') + 1), names);
+      if (profile == null) {
         continue;
       }
-      if (found != null && !found.equals(task)) {
+      if (found != null && !found.equals(profile)) {
         throw new GradleException("The tasks " + foundTask + " and " + path + " need different profiles ('" + found
-            + "' and '" + task + "'), but one Gradle run can only use one profile. Run them one after the other.");
+            + "' and '" + profile + "'), but one Gradle run can only use one profile. Run them one after the other.");
       }
-      found = task;
+      found = profile;
       foundTask = path;
     }
     return found;
@@ -122,7 +135,7 @@ final class ProfileTasks {
     }
     for (String path : taskNames) {
       int colon = path.lastIndexOf(':');
-      if (colon <= 0 || !path.substring(colon + 1).equals(profile)) {
+      if (colon <= 0 || !profile.equals(profileOf(path.substring(colon + 1), List.of(profile)))) {
         continue;
       }
       String module = path.substring(path.startsWith(":") ? 1 : 0, colon);
@@ -140,35 +153,67 @@ final class ProfileTasks {
    * @param project The platform module, already configured.
    * @param profiles The profile names of the file.
    * @param active The profile selected for this run, or an empty string.
+   * @param mode The runtime mode the selected profile starts the game in, or an empty string.
    */
-  static void register(Project project, List<String> profiles, String active) {
-    String base = BASES.get(project.getName());
-    if (base == null || !project.getPath().equals(":" + project.getName())
-        || !project.getTasks().getNames().contains(base)) {
+  static void register(Project project, List<String> profiles, String active, String mode) {
+    List<Kind> kinds = BASES.get(project.getName());
+    if (kinds == null || !project.getPath().equals(":" + project.getName())) {
       return;
     }
     for (String profile : taskProfiles(profiles, false)) {
-      if (project.getTasks().getNames().contains(profile)) {
-        LOGGER.warn("The project {} already has a task named '{}', so the profile gets no task there. Select it "
-            + "with -P{}={} instead.", project.getPath(), profile, ProjectPlugin.PROFILE_PROPERTY, profile);
-        continue;
+      for (Kind kind : kinds) {
+        if (!project.getTasks().getNames().contains(kind.task())) {
+          continue;
+        }
+        String name = profile + kind.ending();
+        if (project.getTasks().getNames().contains(name)) {
+          LOGGER.warn("The project {} already has a task named '{}', so the '{}' profile gets no such task there. "
+              + "Run {} with -P{}={} instead.", project.getPath(), name, profile, kind.task(),
+              ProjectPlugin.PROFILE_PROPERTY, profile);
+          continue;
+        }
+        String example = project.getPath() + ":" + name;
+        TaskProvider<ProfileCheckTask> check = project.getTasks().register("flixelProfileCheck_" + name,
+            ProfileCheckTask.class, task -> {
+              task.setDescription("Checks that the '" + profile + "' profile is the one this run uses.");
+              task.getProfile().set(profile);
+              task.getActive().set(active);
+              task.getExample().set(example);
+              task.getMode().set(mode);
+              task.getPackaging().set(kind.packaging());
+            });
+        // The check runs first whenever both are part of a run, so the task never starts with the wrong profile.
+        project.getTasks().named(kind.task()).configure(task -> task.mustRunAfter(check));
+        project.getTasks().register(name, task -> {
+          task.setGroup(GROUP);
+          task.setDescription((kind.packaging() ? "Packages" : "Starts") + " the game (" + kind.task()
+              + ") with the '" + profile + "' profile from project.toml.");
+          task.dependsOn(check, kind.task());
+        });
       }
-      String example = project.getPath() + ":" + profile;
-      TaskProvider<ProfileCheckTask> check = project.getTasks().register("flixelProfileCheck_" + profile,
-          ProfileCheckTask.class, task -> {
-            task.setDescription("Checks that the '" + profile + "' profile is the one this run uses.");
-            task.getProfile().set(profile);
-            task.getActive().set(active);
-            task.getExample().set(example);
-          });
-      // The check runs first whenever both are part of a run, so the game never starts with the wrong profile.
-      project.getTasks().named(base).configure(task -> task.mustRunAfter(check));
-      project.getTasks().register(profile, task -> {
-        task.setGroup(GROUP);
-        task.setDescription("Starts the game (" + base + ") with the '" + profile + "' profile from project.toml.");
-        task.dependsOn(check, base);
-      });
     }
+  }
+
+  /**
+   * Finds the profile a task name belongs to: the profile itself (such as {@code demo}) or one of its packaging tasks
+   * (such as {@code demoPackage}).
+   *
+   * @param task The task name, without a module path.
+   * @param names The profiles that get tasks.
+   * @return The profile, or {@code null} when the name is not a profile task. A profile whose own name matches wins
+   *     over one whose packaging task does.
+   */
+  @Nullable
+  static String profileOf(String task, List<String> names) {
+    if (names.contains(task)) {
+      return task;
+    }
+    for (String ending : ENDINGS) {
+      if (task.endsWith(ending) && names.contains(task.substring(0, task.length() - ending.length()))) {
+        return task.substring(0, task.length() - ending.length());
+      }
+    }
+    return null;
   }
 
   /**
@@ -216,5 +261,15 @@ final class ProfileTasks {
       }
     }
     return true;
+  }
+
+  /**
+   * A task a platform module gets per profile.
+   *
+   * @param task The module's own task the profile task runs.
+   * @param ending What the profile task adds to the profile name, empty for the task that starts the game.
+   * @param packaging Whether the task packages the game, which warns when the profile is not in release mode.
+   */
+  private record Kind(String task, String ending, boolean packaging) {
   }
 }

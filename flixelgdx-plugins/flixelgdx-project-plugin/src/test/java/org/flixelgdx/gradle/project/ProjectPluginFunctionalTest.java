@@ -421,6 +421,9 @@ class ProjectPluginFunctionalTest {
       tasks.register('debug') {
         doLast { println 'DEBUG [' + profile + ']' }
       }
+      tasks.register('packageAll') {
+        doLast { println 'PACKAGE [' + profile + '] [' + mode + ']' }
+      }
       """;
 
   private static final String PROFILES = "\n[profile.playtest]\napp.mode = \"debug\"\nwindow.fullscreen = false\n"
@@ -445,7 +448,23 @@ class ProjectPluginFunctionalTest {
 
     assertTrue(output.contains("playtest - Starts the game (run)") && output.contains("demo - Starts the game"),
         output);
+    assertTrue(output.contains("demoPackage - Packages the game (packageAll)"), output);
+    assertTrue(output.contains("playtestPackage - Packages the game (packageAll)"), output);
     assertFalse(output.contains("runPlaytest") || output.contains("debugPlaytest"), output);
+  }
+
+  @Test
+  void aPackagingTaskPackagesWithThatProfile() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    String demo = runner(":desktop:demoPackage").build().getOutput();
+    assertTrue(demo.contains("PACKAGE [demo] []"), demo);
+    assertFalse(demo.contains("so this package starts in"), demo);
+
+    String playtest = runner(":desktop:playtestPackage").build().getOutput();
+    assertTrue(playtest.contains("PACKAGE [playtest] [debug]"), playtest);
+    assertTrue(playtest.contains("so this package starts in debug mode"), playtest);
   }
 
   @Test

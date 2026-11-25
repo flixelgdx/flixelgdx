@@ -54,9 +54,25 @@ class ProfileTasksTest {
   }
 
   @Test
+  void packagingTasksPickTheirProfile() {
+    assertEquals("demo", ProfileTasks.requested(List.of(":desktop:demoPackage"), PROFILES));
+    assertEquals("steam-demo", ProfileTasks.requested(List.of(":android:steam-demoBundle"), PROFILES));
+    assertEquals("demo", ProfileTasks.requested(List.of(":desktop:demo", ":html5:demoPackage"), PROFILES));
+  }
+
+  @Test
+  void aProfileNamedLikeAPackagingTaskWins() {
+    List<String> names = List.of("demo", "demoPackage");
+
+    assertEquals("demoPackage", ProfileTasks.profileOf("demoPackage", names));
+    assertEquals("demo", ProfileTasks.profileOf("demoBundle", names));
+    assertNull(ProfileTasks.profileOf("demoZip", names));
+  }
+
+  @Test
   void otherTasksPickNoProfile() {
     assertNull(ProfileTasks.requested(List.of(":desktop:run", "build", "--tests", "demo2"), PROFILES));
-    assertNull(ProfileTasks.requested(List.of("runDemo", "demoRun"), PROFILES));
+    assertNull(ProfileTasks.requested(List.of("runDemo", "demoRun", "packageDemo", "packageAll"), PROFILES));
     assertNull(ProfileTasks.requested(List.of(), PROFILES));
     assertNull(ProfileTasks.requested(List.of("build"), List.of("build")));
   }
@@ -76,6 +92,11 @@ class ProfileTasksTest {
 
     assertTrue(message.contains(":android:demo") && message.contains("'demo'"), message);
 
-    ProfileTasks.checkModules(List.of(":desktop:demo", ":android:installDebug"), "demo", List.of("desktop"));
+    String bundle = assertThrows(GradleException.class, () -> ProfileTasks.checkModules(
+        List.of(":android:demoBundle"), "demo", List.of("desktop"))).getMessage();
+    assertTrue(bundle.contains(":android:demoBundle"), bundle);
+
+    ProfileTasks.checkModules(List.of(":desktop:demo", ":desktop:demoPackage", ":android:installDebug"), "demo",
+        List.of("desktop"));
   }
 }
