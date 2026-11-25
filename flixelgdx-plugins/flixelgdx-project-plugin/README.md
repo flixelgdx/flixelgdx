@@ -256,6 +256,41 @@ Select one with the `flixel.profile` Gradle property:
 ./gradlew desktop:packagr                         # no profile: the file as written
 ```
 
+Every profile also gets its own version of the usual run and package tasks, so there is nothing to type besides the
+task name. They are listed under **profiles** in your IDE's Gradle tool window:
+
+| Module    | Task                 | Profile task (for `dev`) |
+|-----------|----------------------|--------------------------|
+| `desktop` | `run`                | `runDev`                 |
+| `desktop` | `debug`              | `debugDev`               |
+| `desktop` | `packageAll`         | `packageAllDev`          |
+| `html5`   | `run`                | `runDev`                 |
+| `html5`   | `debug`              | `debugDev`               |
+| `html5`   | `package`            | `packageDev`             |
+| `android` | `installDebug`       | `installDev`             |
+| `android` | `assembleRelease`    | `assembleDev`            |
+| `android` | `bundleRelease`      | `bundleDev`              |
+
+```
+./gradlew :desktop:runDev          # the same as ./gradlew :desktop:run -Pflixel.profile=dev
+./gradlew :android:assembleDemo
+```
+
+A profile name becomes the end of the task name in PascalCase (`steam-demo` becomes `SteamDemo`). How it works: a
+profile is chosen once for a whole Gradle run, so the plugin looks at the task names you asked for before anything
+else runs, selects that profile, and the profile task then runs its normal task.
+
+- A task is only added when the module has the normal task, and never when a build script already has a task with
+  that name (for example an Android flavor's).
+- One run can only use one profile, so `./gradlew runDev runDemo`, or `runDev` together with a different
+  `-Pflixel.profile`, fails with a message that says so.
+- Run a profile task by its full name. A shortened one, such as `rD` for `runDev`, fails before the task starts,
+  because the profile is picked from the exact name.
+- When a profile leaves a platform out of `platforms`, that module's profile tasks for it say so instead of failing
+  with "project not found".
+- Two profiles whose names turn into the same task ending (such as `steam-demo` and `steam_demo`) get no profile
+  tasks, with a warning. Select them with `-Pflixel.profile` instead.
+
 To use one by default on your own computer, put `flixel.profile=dev` in a `gradle.properties` that is not committed,
 such as the one in your Gradle user home (`~/.gradle/gradle.properties`). Every other Gradle build ignores it, because
 of the `flixel.` prefix.

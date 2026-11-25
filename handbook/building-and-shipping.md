@@ -294,9 +294,15 @@ platforms    = ["desktop", "html5"]
 ```
 
 ```bash
-./gradlew :desktop:run -Pflixel.profile=dev
-./gradlew :desktop:packageAll -Pflixel.profile=demo
+./gradlew :desktop:runDev
+./gradlew :desktop:packageAllDemo
 ```
+
+Every profile gets its own version of the usual tasks, named after it: `runDev`, `debugDev` and `packageAllDev` on
+desktop, `runDev`, `debugDev` and `packageDev` on the web, and `installDev`, `assembleDev` and `bundleDev` on Android.
+They are listed under **profiles** in your IDE's Gradle tool window. `./gradlew :desktop:runDev` is the same as
+`./gradlew :desktop:run -Pflixel.profile=dev`, and the property works for any other task. Run profile tasks by their
+full name, and one profile per Gradle run.
 
 Without the property the file is used as written. A profile can change everything except `app.package`, and
 `Project.PROFILE` holds the name of the selected one (an empty string when none is selected).
@@ -437,7 +443,7 @@ The one next to `settings.gradle` is shared with everyone who builds the game; t
 
 | Property                  | Values           | Does                                                                         |
 |---------------------------|------------------|------------------------------------------------------------------------------|
-| `flixel.profile`          | A profile name   | Applies that `[profile.<name>]` table of `project.toml`. See [Profiles](#profiles). |
+| `flixel.profile`          | A profile name   | Applies that `[profile.<name>]` table of `project.toml`. A profile task such as `runDev` selects its profile without it. See [Profiles](#profiles). |
 | `enableBasisuCompression` | `true`, `false`  | Compresses Android textures with Basis Universal. See [Compressed textures](#compressed-textures-with-basis-universal). |
 
 The project plugin also sets `flixel.project.title` and `flixel.project.version` on every Gradle project, so the
