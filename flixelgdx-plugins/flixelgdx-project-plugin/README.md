@@ -126,7 +126,7 @@ A value that breaks a rule fails the build with a message that names the field a
 3. **Sets defaults for the other plugins.** The `org.flixelgdx.html5` plugin uses the title as its page title, and the
    `org.flixelgdx.packagr` plugin uses the title as its application name and (through `version`) the version.
    Anything set in a build file still wins.
-4. **Adds a `bumpBuild` task** to the root project, see the build number below.
+4. **Adds `bumpBuild` and `doctor` tasks** to the root project, see the build number and checking your setup below.
 5. **Generates a `Project` class** for the `core` module when it has the `java` plugin, before the code compiles.
 
 ## The generated class
@@ -320,3 +320,37 @@ project.toml: app.build 14 -> 15
 Only the number changes, so comments and spacing stay as they were. When the file has no `app.build` yet, the task
 adds `build = 2` to the `[app]` table. If a build script already has its own task named `bumpBuild`, that one is kept
 and the plugin does not add its own.
+
+## Checking your setup: `doctor`
+
+Most "it does not build" problems come from the setup, not the game's code: a missing JDK, no Android SDK, a module
+folder that was never created, or a typo in `project.toml`. `./gradlew doctor` checks them all at once and says how to
+fix each problem it finds:
+
+```
+$ ./gradlew doctor
+
+FlixelGDX project: My Game 0.3.0 (build 14)
+Profile:  (none)
+Modules:  core, desktop, html5
+
+[ok] Gradle 9.2
+[ok] Gradle runs on Java 25.0.1 (Eclipse Adoptium)
+[!!] Java 25 toolchain: not found. Install JDK 25 (for example Eclipse Temurin), or let Gradle download one by
+     adding the org.gradle.toolchains.foojay-resolver-convention plugin to the settings file.
+[!!] Android SDK: not found, so the android module was skipped. Install Android Studio, then set sdk.dir in
+     local.properties next to the settings file, or set the ANDROID_HOME environment variable.
+[ok] assets folder found
+[ok] project.toml: 4 defines, 2 profiles (dev, demo)
+
+2 problems found.
+```
+
+- `[ok]` means a check passed, `[!!]` is a problem with how to fix it, and `[--]` is worth knowing but not a problem.
+- **A broken `project.toml` is reported, not fatal.** Normally a mistake in the file stops every build before any task
+  runs. When `doctor` is the only task requested, the plugin keeps going and the report shows the mistake instead.
+- **Every profile is checked**, even the ones that are not selected, because a mistake inside a profile otherwise only
+  shows up when someone selects it.
+- The Java toolchain line appears when the `core` module asks for one with `java { toolchain { ... } }`.
+- The report never fails the build, so it can always be pasted into a bug report. If a build script already has its
+  own task named `doctor`, that one is kept and the plugin does not add its own.
