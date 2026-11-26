@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.debug;
+package org.flixelgdx.debug.feeds;
 
 import com.sun.management.ThreadMXBean;
 
@@ -29,8 +29,8 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.FlixelSubState;
-import org.flixelgdx.debug.feeds.FlixelDebugInspector;
-import org.flixelgdx.debug.feeds.FlixelDebugScene;
+import org.flixelgdx.debug.DebugTestSupport;
+import org.flixelgdx.debug.FlixelDebugObjectIds;
 import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.group.FlixelSpriteGroup;
