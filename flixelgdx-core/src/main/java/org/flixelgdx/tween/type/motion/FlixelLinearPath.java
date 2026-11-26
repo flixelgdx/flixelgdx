@@ -128,8 +128,8 @@ public class FlixelLinearPath extends FlixelMotion {
     if (points.getSize() < 2) {
       return;
     }
-    float pathT = backward ? 1f - scale : scale;
-    pathT = FlixelMath.clamp(pathT, 0f, 1f);
+    // FlixelTween.update(...) already reverses the scale for backward runs, so it is used as it is.
+    float pathT = FlixelMath.clamp(scale, 0f, 1f);
     int seg = 0;
     while (seg < pointCount - 2 && pathT > cumulativeT[seg + 1]) {
       seg++;
