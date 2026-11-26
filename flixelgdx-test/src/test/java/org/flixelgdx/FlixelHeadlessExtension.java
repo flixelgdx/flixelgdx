@@ -23,27 +23,27 @@
  */
 package org.flixelgdx;
 
-import org.flixelgdx.backend.desktop.file.FlixelDesktopFiles;
+import org.flixelgdx.testing.FlixelMemoryFiles;
 
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
- * Installs the minimal framework state a unit test needs, without any GPU or windowing backend.
+ * Installs the minimal framework state a unit test needs, without any GPU, windowing, or platform backend.
  *
  * <p>The framework's systems are normally brought up by a platform launcher. Tests do not have one,
- * so this extension fills the one gap that pure logic tests still hit: file access. It installs the
- * real java.io {@link FlixelDesktopFiles} backend on {@code Flixel.files} so anything that reads or
- * writes files (for example {@code FlixelSave}) works against a real temp directory instead of the
- * silent no-op default. Everything else the framework exposes already defaults to a safe no-op, so
- * no rendering, audio, or input backend is required.
+ * so this extension fills the one gap that pure logic tests still hit: file access. It installs
+ * {@link FlixelMemoryFiles} on {@code Flixel.files}, so anything that reads or writes files works
+ * without a platform backend and without touching the disk. Bundled reads ({@code internal} and
+ * {@code classpath}) come from the test resources folder. Everything else the framework exposes
+ * already defaults to a safe no-op, so no rendering, audio, or input backend is required.
  */
 public final class FlixelHeadlessExtension implements BeforeAllCallback {
 
   @Override
   public synchronized void beforeAll(ExtensionContext context) {
-    if (!(Flixel.files instanceof FlixelDesktopFiles)) {
-      Flixel.files = new FlixelDesktopFiles();
+    if (!(Flixel.files instanceof FlixelMemoryFiles)) {
+      Flixel.files = new FlixelMemoryFiles();
     }
   }
 }
