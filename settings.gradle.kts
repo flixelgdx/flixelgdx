@@ -1,13 +1,5 @@
 import java.util.Properties
 
-/**
- * Root settings for the FlixelGDX multi-module build.
- *
- * <p>Declares the build-logic included build so convention plugins are available to all
- * subprojects, centralizes repository declarations, and conditionally includes the Android
- * modules when the Android SDK is present.
- */
-
 pluginManagement {
   includeBuild("build-logic")
   repositories {
@@ -24,8 +16,6 @@ plugins {
   id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-// Android modules are optional so the framework can be built without an Android SDK.
-// Enable via: -PincludeAndroid=true (CI / one-off) or includeAndroid=true in local.properties (gitignored).
 val includeAndroidFromCli = startParameter.projectProperties["includeAndroid"] == "true"
 val includeAndroidFromLocal = run {
   val f = File(settingsDir, "local.properties")
@@ -40,10 +30,6 @@ val includeAndroidFromLocal = run {
 val includeAndroid = includeAndroidFromCli || includeAndroidFromLocal
 gradle.extra["includeAndroid"] = includeAndroid
 
-// jwebgpu (the WebGPU bindings every renderer is written against) comes from Maven Central, at the version in
-// gradle/libs.versions.toml. To build against a local jwebgpu checkout instead (for example to test a change to it),
-// point at it with -Pjwebgpu.dir=..., jwebgpu.dir in gradle.properties or local.properties, or the JWEBGPU_DIR
-// environment variable. Gradle then substitutes the local projects for the published ones.
 val jwebgpuDir = run {
   val fromCli = startParameter.projectProperties["jwebgpu.dir"]
   val fromGradle = providers.gradleProperty("jwebgpu.dir").orNull

@@ -1,11 +1,3 @@
-/**
- * Root aggregator for the FlixelGDX multi-module build.
- *
- * The root project holds no source itself; it only applies IDE plugins and registers the
- * aggregate Javadoc task. All subproject setup lives in the convention plugins under
- * build-logic/src/main/kotlin/.
- */
-
 plugins {
   eclipse
   idea

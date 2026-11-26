@@ -6,8 +6,6 @@ dependencies {
   implementation(libs.jetbrains.annotations)
 }
 
-// FlixelVersion.VERSION carries the framework version (the git tag) so the remote debugger can report it. The class is
-// generated into the build directory instead of being checked in, so it can never disagree with the published jar.
 val versionDir = layout.buildDirectory.dir("generated/version")
 val generateVersion = tasks.register("generateVersion") {
   val version = provider { project.version.toString() }

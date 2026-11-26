@@ -8,10 +8,6 @@ plugins {
 kotlin {
   jvmToolchain(25)
 
-  // Build against an older Kotlin baseline than the compiler so the published artifact stays
-  // consumable by projects on older Kotlin toolchains. The compiler is 2.2.x (required by Gradle 9),
-  // but emitting 2.0 metadata and depending on the 2.0 standard library keeps the module readable by
-  // any consumer on Kotlin 2.0 or newer.
   coreLibrariesVersion = "2.0.21"
 
   compilerOptions {
@@ -20,9 +16,6 @@ kotlin {
   }
 }
 
-// JitPack rewrites Gradle module metadata and drops classifier compatibility data, causing
-// consumers to resolve wrong variants. POMs stay correct; omit .module files so metadata is
-// sourced from the POM alone. Mirrors flixelgdx.java-library.
 tasks.matching { it.name.startsWith("generateMetadataFileFor") }.configureEach {
   enabled = false
 }

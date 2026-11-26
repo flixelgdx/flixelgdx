@@ -19,7 +19,6 @@ afterEvaluate {
     group = "documentation"
     description = "Generates Javadoc for the Android release variant."
     source(android.sourceSets.getByName("main").java.srcDirs)
-    // Ask for the plain class jars so Android library (AAR) dependencies are readable by Javadoc.
     val classJars = configurations.getByName("releaseCompileClasspath").incoming.artifactView {
       attributes.attribute(Attribute.of("artifactType", String::class.java), "android-classes-jar")
     }.files
@@ -39,8 +38,6 @@ afterEvaluate {
   }
 }
 
-// Package the javadoc task output as the -javadoc jar that Maven Central requires. AGP's own javadoc jar is not
-// used because its bundled Dokka cannot read Java records from flixelgdx-core and fails the release build.
 val javadocJar = tasks.register("javadocJar", Jar::class.java) {
   group = "documentation"
   description = "Packages the Android release Javadoc into a jar for publishing."

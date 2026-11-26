@@ -31,9 +31,6 @@ tasks.withType<Javadoc>().configureEach {
   isFailOnError = true
 }
 
-// JitPack rewrites Gradle module metadata and drops classifier compatibility data, causing
-// consumers to resolve wrong libGDX variants. POMs stay correct; omit .module files so
-// metadata is sourced from the POM alone.
 tasks.matching { it.name.startsWith("generateMetadataFileFor") }.configureEach {
   enabled = false
 }

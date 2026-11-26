@@ -10,8 +10,6 @@ java {
   }
 }
 
-// JitPack rewrites Gradle module metadata and drops classifier compatibility data; omit .module
-// files so metadata is sourced from the POM alone.
 tasks.matching { it.name.startsWith("generateMetadataFileFor") }.configureEach {
   enabled = false
 }

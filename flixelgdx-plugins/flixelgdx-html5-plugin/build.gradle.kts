@@ -15,9 +15,6 @@ gradlePlugin {
 }
 
 dependencies {
-  // The TeaVM Gradle plugin types (TeaVMExtension, TeaVMJSConfiguration, etc.) are provided by
-  // the user's build when they apply 'org.teavm' before this plugin, so we only need them at
-  // compile time.
   compileOnly(libs.teavm.gradle.plugin)
 }
 

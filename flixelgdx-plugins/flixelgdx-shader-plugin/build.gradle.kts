@@ -14,15 +14,10 @@ gradlePlugin {
   }
 }
 
-// The shader contract (the preamble text and the bind group numbers) has exactly one home: FlixelWgsl.java in
-// flixelgdx-gpu. This task copies the PREAMBLE text block into a file and turns the other constants into a
-// properties file, so the plugin validates against the same contract the renderer compiles. Nothing is typed
-// twice, and a renamed or reshaped constant fails this task instead of silently drifting.
 val wgslDir = rootProject.layout.projectDirectory.dir("flixelgdx-gpu/src/main")
 val wgslJavaFile = wgslDir.file("java/org/flixelgdx/backend/gpu/wgsl/FlixelWgsl.java")
 val contractDir = layout.buildDirectory.dir("generated/resources/contract")
 
-// The jwebgpu version the framework is built with. The plugin runs its validator with the same version by default.
 val jwebgpuVersion = libs.versions.jwebgpu.get()
 
 val generateContract = tasks.register("generateShaderContract") {
@@ -36,9 +31,6 @@ val generateContract = tasks.register("generateShaderContract") {
   doLast {
     out.mkdirs()
     val text = javaSource.readText()
-    // Rebuild the string Java makes from the text block: each line minus the closing quotes' indentation, trailing
-    // spaces dropped, and a final line break because the closing quotes sit on their own line. That is exact as long
-    // as the block has no escapes and nothing is indented less than the closing quotes, which is checked below.
     val block = Regex("""public static final String PREAMBLE = ""\"\n(.*?)\n( *)""\";""", RegexOption.DOT_MATCHES_ALL)
       .find(text) ?: throw GradleException("FlixelWgsl.java no longer declares PREAMBLE as a text block.")
     val body = block.groupValues[1]
@@ -80,8 +72,6 @@ sourceSets.main {
 dependencies {
   implementation(libs.jetbrains.annotations)
 
-  // The validation worker is compiled against jwebgpu but never loads it in Gradle's own JVM: it runs in a
-  // forked Java process whose class path comes from the plugin's own configuration (see ShaderPlugin).
   compileOnly(libs.jwebgpu.api)
   compileOnly(libs.jwebgpu.ffm)
 
@@ -90,8 +80,6 @@ dependencies {
   testImplementation(libs.junit.jupiter)
 }
 
-// The functional tests run real Gradle builds that resolve jwebgpu from Maven Central, so they need to know which
-// Gradle user home holds the dependency cache and where the JDKs are.
 tasks.named<Test>("test") {
   useJUnitPlatform()
   systemProperty("flixel.test.gradleUserHome", gradle.gradleUserHomeDir.absolutePath)
