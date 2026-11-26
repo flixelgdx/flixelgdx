@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.gpu;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelShader;
@@ -128,6 +129,12 @@ class FlixelGpuSmokeTest {
 
   private static FlixelMatrix ortho() {
     return new FlixelMatrix().setToOrtho2DYDown(0, 0, 320, 240, true);
+  }
+
+  @Test
+  void forcingAnApiAfterTheGraphicsContextExistsIsIgnored() {
+    graphics.setForcedApi(FlixelGraphicsApi.VULKAN);
+    assertNull(graphics.getForcedApi());
   }
 
   @Test
