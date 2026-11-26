@@ -84,8 +84,6 @@ public interface FlixelGraphicsManager {
    * choose on its own. Once the context exists, it returns the API that is really running, which can
    * differ from the requested one (for example on the web, where the browser always chooses).
    *
-   * <p>In Kotlin, this pair reads as the {@code api} property: {@code Flixel.graphics.api}.
-   *
    * @return The active (or requested) graphics API; never {@code null}.
    */
   @NotNull
