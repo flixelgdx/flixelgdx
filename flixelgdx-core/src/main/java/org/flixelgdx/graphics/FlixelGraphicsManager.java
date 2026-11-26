@@ -132,13 +132,6 @@ public interface FlixelGraphicsManager {
    * }
    * }</pre>
    *
-   * <p>The same thing in Kotlin, where {@code getApi()} and {@code setApi(...)} form the {@code api}
-   * property:
-   *
-   * <pre>{@code
-   * Flixel.boot.beforeStart { Flixel.graphics.api = FlixelGraphicsApi.VULKAN }
-   * }</pre>
-   *
    * @param api The API to start with, or {@link FlixelGraphicsApi#WEBGPU} to let the backend choose.
    */
   default void setApi(@NotNull FlixelGraphicsApi api) {}
