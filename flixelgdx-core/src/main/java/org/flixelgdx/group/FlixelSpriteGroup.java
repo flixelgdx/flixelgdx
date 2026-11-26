@@ -663,14 +663,18 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       return null;
     }
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.getSize(); i < n; i++) {
-      FlixelSprite s = items[i];
-      if (s != null && predicate.test(s)) {
-        return s;
+    try {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
+        FlixelSprite s = items[i];
+        if (s != null && predicate.test(s)) {
+          return s;
+        }
       }
+      return null;
+    } finally {
+      // Always close the snapshot, even when returning early or when the predicate throws.
+      members.end();
     }
-    members.end();
-    return null;
   }
 
   /**
