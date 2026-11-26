@@ -21,17 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.util.save;
+package org.flixelgdx.save;
 
 import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.json.FlixelJson;
 import org.flixelgdx.json.FlixelJsonValue;
-import org.flixelgdx.save.FlixelNoopSaveHandler;
-import org.flixelgdx.save.FlixelSave;
-import org.flixelgdx.save.FlixelSaveHandler;
-import org.flixelgdx.save.FlixelSaveStatus;
 import org.flixelgdx.testing.FlixelMemorySaveHandler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

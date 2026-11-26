@@ -32,14 +32,14 @@ import org.flixelgdx.util.FlixelString;
 import java.util.function.Consumer;
 
 /** Helpers that turn a panel's {@code write} output or a hand-built action back into readers. */
-final class DebugTestSupport {
+public final class DebugTestSupport {
 
   private static final FlixelString TEXT = new FlixelString();
 
   private DebugTestSupport() {}
 
   /** Encodes the panel inside a PANEL_DATA message and returns a reader positioned after the panel index. */
-  static FlixelDebugMessageReader payload(FlixelDebugFeed panel) {
+  public static FlixelDebugMessageReader payload(FlixelDebugFeed panel) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter(64);
     w.beginMessage(FlixelDebugProtocol.MSG_FEED_DATA);
     w.writeU16(7);
@@ -51,7 +51,7 @@ final class DebugTestSupport {
   }
 
   /** Builds a PANEL_ACTION message and returns a reader positioned after the action code. */
-  static FlixelDebugMessageReader action(int action, Consumer<FlixelDebugMessageWriter> fields) {
+  public static FlixelDebugMessageReader action(int action, Consumer<FlixelDebugMessageWriter> fields) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter(64);
     w.beginMessage(FlixelDebugProtocol.MSG_FEED_ACTION);
     w.writeU16(7);
@@ -65,12 +65,12 @@ final class DebugTestSupport {
   }
 
   /** Sends an action to the panel the way the network agent would. */
-  static void send(FlixelDebugFeed panel, int action, Consumer<FlixelDebugMessageWriter> fields) {
+  public static void send(FlixelDebugFeed panel, int action, Consumer<FlixelDebugMessageWriter> fields) {
     panel.handleAction(action, action(action, fields));
   }
 
   /** Reads a string field. */
-  static String str(FlixelDebugMessageReader r) {
+  public static String str(FlixelDebugMessageReader r) {
     return r.readString(TEXT).toString();
   }
 }

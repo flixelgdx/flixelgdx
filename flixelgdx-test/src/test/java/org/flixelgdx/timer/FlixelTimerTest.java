@@ -21,11 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.util.timer;
+package org.flixelgdx.timer;
 
 import org.flixelgdx.FlixelHeadlessExtension;
-import org.flixelgdx.timer.FlixelTimer;
-import org.flixelgdx.timer.FlixelTimerManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

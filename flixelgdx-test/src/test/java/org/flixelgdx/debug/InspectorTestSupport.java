@@ -31,22 +31,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Decodes inspector and custom panel payloads into plain objects so tests can assert on them. */
-final class InspectorTestSupport {
+public final class InspectorTestSupport {
 
   private InspectorTestSupport() {}
 
   /** One decoded property row. */
-  record Row(String name, int kind, String value, boolean editable) {
+  public record Row(String name, int kind, String value, boolean editable) {
   }
 
   /** One decoded section. */
-  record Section(String typeName, String displayName, List<Row> rows) {
+  public record Section(String typeName, String displayName, List<Row> rows) {
   }
 
   /** One decoded inspector STATE payload. */
-  record State(int subtype, int selectedId, String path, List<Section> sections, boolean hasTexture) {
+  public record State(int subtype, int selectedId, String path, List<Section> sections, boolean hasTexture) {
 
-    List<String> typeNames() {
+    public List<String> typeNames() {
       List<String> names = new ArrayList<>();
       for (Section s : sections) {
         names.add(s.typeName());
@@ -54,16 +54,16 @@ final class InspectorTestSupport {
       return names;
     }
 
-    Row row(int section, int index) {
+    public Row row(int section, int index) {
       return sections.get(section).rows().get(index);
     }
   }
 
   /** One decoded custom panel payload. */
-  record Custom(List<Row> rows, List<String> buttons, List<Integer> buttonIndices) {
+  public record Custom(List<Row> rows, List<String> buttons, List<Integer> buttonIndices) {
   }
 
-  static State state(FlixelDebugFeed panel) {
+  public static State state(FlixelDebugFeed panel) {
     FlixelDebugMessageReader r = DebugTestSupport.payload(panel);
     int subtype = r.readU8();
     int id = r.readI32();
@@ -82,7 +82,7 @@ final class InspectorTestSupport {
     return new State(subtype, id, path, sections, hasTexture);
   }
 
-  static Custom custom(FlixelDebugFeed panel) {
+  public static Custom custom(FlixelDebugFeed panel) {
     FlixelDebugMessageReader r = DebugTestSupport.payload(panel);
     List<Row> rows = rows(r);
     int count = r.readCount();
