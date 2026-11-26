@@ -77,9 +77,16 @@ public interface FlixelGraphicsManager {
   float MAX_RENDER_SCALE = 2f;
 
   /**
-   * Returns which graphics backend is running this session, defaulting to {@link FlixelGraphicsApi#NOOP}.
+   * Returns which graphics API is running this session, defaulting to {@link FlixelGraphicsApi#NOOP}.
    *
-   * @return The active graphics API; never {@code null}.
+   * <p>Before the graphics context exists (during the boot callbacks), this returns the API requested
+   * with {@link #setApi(FlixelGraphicsApi)}, or {@link FlixelGraphicsApi#WEBGPU} when the backend will
+   * choose on its own. Once the context exists, it returns the API that is really running, which can
+   * differ from the requested one (for example on the web, where the browser always chooses).
+   *
+   * <p>In Kotlin, this pair reads as the {@code api} property: {@code Flixel.graphics.api}.
+   *
+   * @return The active (or requested) graphics API; never {@code null}.
    */
   @NotNull
   default FlixelGraphicsApi getApi() {
@@ -97,10 +104,11 @@ public interface FlixelGraphicsManager {
    *
    * <p><b>This must be called from a boot callback</b>
    * ({@link FlixelBootManager#beforeStart(Runnable) Flixel.boot.beforeStart(...)} or
-   * {@link FlixelBootManager#afterStart(Runnable) Flixel.boot.afterStart(...)}), registered before the game is launched. Both callbacks run
-   * before the platform opens the window and creates the graphics context. By the time your game's
-   * {@code create()} or any state runs, the graphics context already exists with the API that was
-   * chosen, so calling this later does nothing (the backend logs a warning instead).
+   * {@link FlixelBootManager#afterStart(Runnable) Flixel.boot.afterStart(...)}), registered before
+   * the game is launched. Both callbacks run before the platform opens the window and creates the
+   * graphics context. By the time your game's {@code create()} or any state runs, the graphics context
+   * already exists with the API that was chosen, so calling this later does nothing (the backend logs
+   * a warning instead).
    *
    * <p>Which APIs can be forced depends on the platform. Desktop accepts
    * {@link FlixelGraphicsApi#VULKAN}, {@link FlixelGraphicsApi#METAL},
@@ -109,8 +117,8 @@ public interface FlixelGraphicsManager {
    * {@link FlixelGraphicsApi#NOOP} (no drawing at all), as long as the machine actually has that API.
    * Android accepts {@link FlixelGraphicsApi#VULKAN} and {@link FlixelGraphicsApi#OPENGL_ES}. The
    * browser always decides on its own, so the web ignores this. An API the platform does not
-   * recognize is ignored with a warning, and the automatic choice is used. Passing {@code null} or
-   * {@link FlixelGraphicsApi#WEBGPU} also means the automatic choice.
+   * recognize is ignored with a warning, and the automatic choice is used. Passing
+   * {@link FlixelGraphicsApi#WEBGPU} goes back to the automatic choice.
    *
    * <p>On desktop, the {@code flixel.render.backend} system property wins over this when it is set,
    * so a player can still rescue a game whose forced API does not work on their machine.
@@ -122,24 +130,20 @@ public interface FlixelGraphicsManager {
    * <pre>{@code
    * public MyGame() {
    *   super(config, TitleState::new);
-   *   Flixel.boot.beforeStart(() -> Flixel.graphics.setForcedApi(FlixelGraphicsApi.VULKAN));
+   *   Flixel.boot.beforeStart(() -> Flixel.graphics.setApi(FlixelGraphicsApi.VULKAN));
    * }
    * }</pre>
    *
-   * @param api The API to start with, or {@code null} to let the backend choose.
-   */
-  default void setForcedApi(@Nullable FlixelGraphicsApi api) {}
-
-  /**
-   * Returns the API set with {@link #setForcedApi(FlixelGraphicsApi)}, or {@code null} when the backend
-   * chooses on its own (the default).
+   * <p>The same thing in Kotlin, where {@code getApi()} and {@code setApi(...)} form the {@code api}
+   * property:
    *
-   * @return The forced graphics API, or {@code null}.
+   * <pre>{@code
+   * Flixel.boot.beforeStart { Flixel.graphics.api = FlixelGraphicsApi.VULKAN }
+   * }</pre>
+   *
+   * @param api The API to start with, or {@link FlixelGraphicsApi#WEBGPU} to let the backend choose.
    */
-  @Nullable
-  default FlixelGraphicsApi getForcedApi() {
-    return null;
-  }
+  default void setApi(@NotNull FlixelGraphicsApi api) {}
 
   /**
    * Returns whether the active backend maps the NDC depth range to {@code [0, 1]} (Vulkan, Metal,

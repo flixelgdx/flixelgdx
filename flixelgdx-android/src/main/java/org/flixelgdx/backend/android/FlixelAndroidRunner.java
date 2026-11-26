@@ -533,7 +533,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
 
   /**
    * Resolves the native graphics API to request from WebGPU, from the one forced with
-   * {@link FlixelGraphicsManager#setForcedApi(FlixelGraphicsApi)}.
+   * {@link FlixelGraphicsManager#setApi(FlixelGraphicsApi)}.
    *
    * <p>Android phones only have Vulkan and OpenGL ES, so any other forced API is ignored with a warning and WebGPU
    * picks one itself, instead of the game failing to start.
@@ -545,7 +545,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
     return switch (type) {
       case UNDEFINED, VULKAN, OPENGLES, NULL -> type;
       default -> {
-        LOG.warn("The graphics API '{}' does not exist on Android; letting WebGPU pick one.", graphics.getForcedApi());
+        LOG.warn("The {} graphics backend does not exist on Android; letting WebGPU pick one.", type);
         yield GpuBackendType.UNDEFINED;
       }
     };

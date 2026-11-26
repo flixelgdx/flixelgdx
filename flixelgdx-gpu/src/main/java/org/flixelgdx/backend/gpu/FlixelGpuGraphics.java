@@ -92,6 +92,7 @@ import io.github.stringdotjar.jwebgpu.GpuTextureUsage;
 import io.github.stringdotjar.jwebgpu.GpuTextureView;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 /**
  * The one WebGPU renderer that every platform shares.
@@ -200,7 +201,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private final boolean[] cutEnabled = new boolean[MAX_LEVELS + 1];
 
   private FlixelGraphicsApi api = FlixelGraphicsApi.WEBGPU;
-  private FlixelGraphicsApi forcedApi;
+  private FlixelGraphicsApi requestedApi = FlixelGraphicsApi.WEBGPU;
   private GpuTextureFormat surfaceFormat = GpuTextureFormat.RGBA8_UNORM;
 
   private GpuAdapter adapter;
@@ -412,19 +413,20 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   }
 
   /**
-   * Returns the native backend type for the API forced with {@link #setForcedApi(FlixelGraphicsApi)}, which the
+   * Returns the native backend type for the API requested with {@link #setApi(FlixelGraphicsApi)}, which the
    * platform runner passes to {@link FlixelGpuBootstrap#setBackendType(GpuBackendType)}.
    *
-   * <p>A forced API WebGPU has no backend for is reported with a warning and gives {@code UNDEFINED}, so the
-   * automatic choice is used instead.
+   * <p>A requested API WebGPU has no backend for is reported with a warning and gives {@code UNDEFINED}, so the
+   * automatic choice is used instead. The request is kept after the graphics context exists, so a device that is
+   * rebuilt (such as after an Android device loss) asks for the same API again.
    *
    * @return The backend type to request, or {@code UNDEFINED} for the automatic choice.
    */
   @NotNull
   public GpuBackendType getForcedBackendType() {
-    GpuBackendType type = backendTypeOf(forcedApi);
-    if (type == GpuBackendType.UNDEFINED && forcedApi != null && forcedApi != FlixelGraphicsApi.WEBGPU) {
-      LOG.warn("The graphics API '{}' cannot be forced on this platform; letting WebGPU pick one.", forcedApi);
+    GpuBackendType type = backendTypeOf(requestedApi);
+    if (type == GpuBackendType.UNDEFINED && requestedApi != FlixelGraphicsApi.WEBGPU) {
+      LOG.warn("The graphics API '{}' cannot be forced on this platform; letting WebGPU pick one.", requestedApi);
     }
     return type;
   }
@@ -575,22 +577,22 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   /**
    * {@inheritDoc}
    *
-   * <p>The graphics context is created once, so this is ignored with a warning after {@link #initialize} has run.
+   * <p>Until {@link #initialize} runs, {@link #getApi()} reports the requested API. The graphics context is created
+   * once, so this is ignored with a warning after {@link #initialize} has run.
+   *
+   * @throws NullPointerException If {@code api} is {@code null}.
    */
   @Override
-  public void setForcedApi(@Nullable FlixelGraphicsApi api) {
+  public void setApi(@NotNull FlixelGraphicsApi api) {
+    Objects.requireNonNull(api, "The graphics API cannot be null; use FlixelGraphicsApi.WEBGPU for the automatic "
+        + "choice.");
     if (device != null) {
-      LOG.warn("Flixel.graphics.setForcedApi(...) was called after the graphics context was created, so it has no "
+      LOG.warn("Flixel.graphics.setApi(...) was called after the graphics context was created, so it has no "
           + "effect. Call it from a boot callback instead.");
       return;
     }
-    forcedApi = api;
-  }
-
-  @Nullable
-  @Override
-  public FlixelGraphicsApi getForcedApi() {
-    return forcedApi;
+    requestedApi = api;
+    this.api = api;
   }
 
   @Override

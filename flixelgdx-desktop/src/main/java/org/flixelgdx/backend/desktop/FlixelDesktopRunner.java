@@ -427,7 +427,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    * Resolves the native graphics API to request from WebGPU.
    *
    * <p>By default WebGPU picks the best API for the platform (Vulkan on Linux, Metal on macOS, Direct3D 12 on
-   * Windows). A game can force another one with {@link FlixelGraphicsManager#setForcedApi(FlixelGraphicsApi)}
+   * Windows). A game can force another one with {@link FlixelGraphicsManager#setApi(FlixelGraphicsApi)}
    * from a boot callback. Some systems also have a driver that is preferred but misbehaves; the
    * {@code flixel.render.backend} system property forces a specific API so those machines can fall back to a
    * working one without a code change, for example:

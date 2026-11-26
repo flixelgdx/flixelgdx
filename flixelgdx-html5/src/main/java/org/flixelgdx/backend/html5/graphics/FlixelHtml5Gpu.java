@@ -131,8 +131,8 @@ public final class FlixelHtml5Gpu {
     this.width = width;
     this.height = height;
     this.transparent = transparent;
-    FlixelGraphicsApi forced = graphics.getForcedApi();
-    if (forced != null && forced != FlixelGraphicsApi.WEBGPU) {
+    FlixelGraphicsApi forced = graphics.getApi();
+    if (forced != FlixelGraphicsApi.WEBGPU) {
       // The browser picks the native graphics API itself, so a forced one cannot be honored here.
       LOG.warn("The browser chooses its own graphics API, so the forced API '{}' is ignored.", forced);
     }
