@@ -73,8 +73,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run JVM unit tests
-        run: ./gradlew :flixelgdx-test:test :flixelgdx-desktop:test :flixelgdx-test:testCodeCoverageReport --no-daemon --warning-mode all
+      - name: Run every unit test
+        run: ./gradlew test :flixelgdx-test:testCodeCoverageReport --no-daemon --warning-mode all
         shell: bash
 
       # The coverage report only informs; it never fails the build. Download it from the run's summary page.
@@ -85,34 +85,6 @@ jobs:
           name: coverage-report
           path: flixelgdx-test/build/reports/jacoco/testCodeCoverageReport/html
           if-no-files-found: ignore
-
-  plugin-tests:
-    name: Plugin tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 25 (Temurin)
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 25
-          cache: 'gradle'
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      # Every Gradle plugin that has tests. Most are functional tests that run small real builds with TestKit.
-      - name: Run Gradle plugin tests
-        run: >-
-          ./gradlew
-          :flixelgdx-plugins:flixelgdx-assets-plugin:test
-          :flixelgdx-plugins:flixelgdx-html5-plugin:test
-          :flixelgdx-plugins:flixelgdx-project-plugin:test
-          :flixelgdx-plugins:flixelgdx-shader-plugin:test
-          --no-daemon --warning-mode all
-        shell: bash
 
   javadoc:
     name: Javadoc (doclint)

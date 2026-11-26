@@ -32,7 +32,7 @@ jobs:
         run: ./gradlew spotlessCheck --no-daemon --warning-mode all
 
       - name: Run unit tests
-        run: ./gradlew :flixelgdx-test:test --no-daemon --warning-mode all
+        run: ./gradlew test --no-daemon --warning-mode all
 
   publish:
     name: Publish artifacts
