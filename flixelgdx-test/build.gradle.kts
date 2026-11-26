@@ -12,13 +12,23 @@ java {
 dependencies {
   implementation(project(":flixelgdx-core"))
   implementation(project(":flixelgdx-gpu"))
-  // The desktop module supplies the real java.io file backend so save round-trip tests persist to disk.
-  implementation(project(":flixelgdx-desktop"))
+  // Shared JVM code, such as the WebSocket transport the remote debugger uses on desktop and Android.
+  implementation(project(":flixelgdx-jvm"))
   implementation(libs.jetbrains.annotations)
 
   testRuntimeOnly(libs.junit.platform.launcher)
   testImplementation(platform(libs.junit.bom))
   testImplementation(libs.junit.jupiter)
+
+  // The GPU tests run the real renderer on WebGPU's null backend, through the Java FFM bindings. The natives of
+  // every desktop platform are listed so the tests run on any machine a contributor uses.
+  testImplementation(libs.jwebgpu.ffm)
+  testRuntimeOnly(libs.jwebgpu.natives.linux.x64)
+  testRuntimeOnly(libs.jwebgpu.natives.linux.aarch64)
+  testRuntimeOnly(libs.jwebgpu.natives.windows.x64)
+  testRuntimeOnly(libs.jwebgpu.natives.windows.aarch64)
+  testRuntimeOnly(libs.jwebgpu.natives.macos.x64)
+  testRuntimeOnly(libs.jwebgpu.natives.macos.aarch64)
 
   // Runs the @JsonSerializable annotation processor over the test sources so the generated
   // serializers can be exercised by the round-trip test.
