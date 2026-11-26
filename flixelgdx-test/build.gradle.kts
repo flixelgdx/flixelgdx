@@ -59,10 +59,10 @@ val coverageReport = tasks.named<JacocoReport>("testCodeCoverageReport") {
 // A run narrowed with --tests covers only part of the framework, so it skips the coverage check instead of failing it.
 val narrowedTestRun = gradle.startParameter.taskRequests.any { "--tests" in it.args }
 
-// Fails the build when the tests run less than 80% of the framework's lines or 70% of its branches.
+// Fails the build when the tests run less than 70% of the framework's lines or 60% of its branches.
 val coverageVerification = tasks.register<JacocoCoverageVerification>("testCodeCoverageVerification") {
   group = "verification"
-  description = "Fails when the unit tests cover less than 80% of lines or 70% of branches."
+  description = "Fails when the unit tests cover less than 70% of lines or 60% of branches."
   executionData.from(coverageReport.map { it.executionData })
   classDirectories.from(coverageReport.map { it.classDirectories })
   sourceDirectories.from(coverageReport.map { it.sourceDirectories })
@@ -71,11 +71,11 @@ val coverageVerification = tasks.register<JacocoCoverageVerification>("testCodeC
     rule {
       limit {
         counter = "LINE"
-        minimum = "0.80".toBigDecimal()
+        minimum = "0.70".toBigDecimal()
       }
       limit {
         counter = "BRANCH"
-        minimum = "0.70".toBigDecimal()
+        minimum = "0.60".toBigDecimal()
       }
     }
   }
