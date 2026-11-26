@@ -35,27 +35,27 @@ import java.util.List;
 import java.util.Map;
 
 /** Decodes widget trees, patches, and values into plain Java objects so tests can read them easily. */
-final class UiTestSupport {
+public final class UiTestSupport {
 
   private UiTestSupport() {}
 
   /** One decoded widget. */
-  record Node(int type, int id, String name, Map<Integer, Object> props, List<Node> children) {
+  public record Node(int type, int id, String name, Map<Integer, Object> props, List<Node> children) {
 
-    Node child(int index) {
+    public Node child(int index) {
       return children.get(index);
     }
   }
 
   /** One decoded patch operation. */
-  record Op(int widget, int code, int key, Object value) {
+  public record Op(int widget, int code, int key, Object value) {
   }
 
   /** An error value. */
-  record Error(String message) {
+  public record Error(String message) {
   }
 
-  static Object readValue(FlixelDebugMessageReader r) {
+  public static Object readValue(FlixelDebugMessageReader r) {
     int kind = r.readU8();
     return switch (kind) {
       case FlixelDebugProtocol.VALUE_BOOL -> r.readBool();
@@ -83,7 +83,7 @@ final class UiTestSupport {
     };
   }
 
-  static Node readWidget(FlixelDebugMessageReader r) {
+  public static Node readWidget(FlixelDebugMessageReader r) {
     int type = r.readU8();
     int id = r.readI32();
     String name = r.readString(new FlixelString()).toString();
@@ -106,7 +106,7 @@ final class UiTestSupport {
     return new Node(type, id, name, props, children);
   }
 
-  static Node tree(FlixelDebugPanel panel) {
+  public static Node tree(FlixelDebugPanel panel) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter();
     w.beginMessage(FlixelDebugProtocol.MSG_PANEL_TREE).writeU16(0);
     panel.writeTree(w);
@@ -120,7 +120,7 @@ final class UiTestSupport {
     return root;
   }
 
-  static List<Op> patch(FlixelDebugPanel panel) {
+  public static List<Op> patch(FlixelDebugPanel panel) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter();
     w.beginMessage(FlixelDebugProtocol.MSG_PANEL_PATCH).writeU16(0);
     panel.writePatch(w);
@@ -139,7 +139,7 @@ final class UiTestSupport {
   }
 
   /** Sends an event as the app would. Arguments may be Boolean, Integer, Long, Float, Double, String, or null. */
-  static void event(FlixelDebugPanel panel, FlixelDebugWidget<?> widget, int event, Object... args) {
+  public static void event(FlixelDebugPanel panel, FlixelDebugWidget<?> widget, int event, Object... args) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter();
     w.beginMessage(FlixelDebugProtocol.MSG_PANEL_EVENT).writeU16(0).writeI32(widget.getId()).writeU8(event);
     w.beginArray();
@@ -169,7 +169,7 @@ final class UiTestSupport {
   }
 
   /** Opens a panel and consumes its first tree, so later changes show up as patches. */
-  static FlixelDebugPanel opened(FlixelDebugPanel panel) {
+  public static FlixelDebugPanel opened(FlixelDebugPanel panel) {
     panel.setOpen(true);
     tree(panel);
     return panel;

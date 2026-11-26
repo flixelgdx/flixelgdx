@@ -35,21 +35,21 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.ByteBuffer;
 
 /** Test doubles for the texture panel and the thumbnail queue. */
-final class ReadbackTestSupport {
+public final class ReadbackTestSupport {
 
   private ReadbackTestSupport() {}
 
   /** A graphics manager whose pixel readback is answered by the test, when it decides to. */
-  static final class ReadbackGraphics implements FlixelGraphicsManager {
+  public static final class ReadbackGraphics implements FlixelGraphicsManager {
 
-    FlixelTexture lastTexture;
-    FlixelPixelReadback lastCallback;
-    int lastX;
-    int lastY;
-    int lastWidth;
-    int lastHeight;
-    int requests;
-    boolean supported = true;
+    public FlixelTexture lastTexture;
+    public FlixelPixelReadback lastCallback;
+    public int lastX;
+    public int lastY;
+    public int lastWidth;
+    public int lastHeight;
+    public int requests;
+    public boolean supported = true;
 
     @Override
     public FlixelList<FlixelDisplayMode> getDisplayModes() {
@@ -74,7 +74,7 @@ final class ReadbackTestSupport {
     }
 
     /** Answers the open request with a picture of the size that was asked for, with padded rows. */
-    void answer(int rowPadding) {
+    public void answer(int rowPadding) {
       int rowBytes = lastWidth * 4 + rowPadding;
       ByteBuffer pixels = ByteBuffer.allocate(rowBytes * lastHeight);
       for (int y = 0; y < lastHeight; y++) {
@@ -89,13 +89,13 @@ final class ReadbackTestSupport {
       lastCallback.onPixels(pixels, lastWidth, lastHeight, rowBytes);
     }
 
-    void fail() {
+    public void fail() {
       lastCallback.onPixels(null, 0, 0, 0);
     }
   }
 
   /** A texture with a made-up size, memory use, and format. */
-  static final class FakeTexture implements FlixelTexture {
+  public static final class FakeTexture implements FlixelTexture {
 
     final int width;
     final int height;
@@ -104,11 +104,11 @@ final class ReadbackTestSupport {
 
     boolean smooth;
 
-    FakeTexture(int width, int height) {
+    public FakeTexture(int width, int height) {
       this(width, height, (long) width * height * 4L, "RGBA8");
     }
 
-    FakeTexture(int width, int height, long bytes, String format) {
+    public FakeTexture(int width, int height, long bytes, String format) {
       this.width = width;
       this.height = height;
       this.bytes = bytes;
