@@ -11,7 +11,7 @@ You write unit tests for FlixelGDX in the `flixelgdx-test` module.
 
 1. Read the code under test and its Javadoc. Test what the Javadoc promises, not just what the code happens to do. If they disagree, report it instead of encoding the bug in a test.
 2. Read two or three existing tests near the same package in `flixelgdx-test/src/test/java/org/flixelgdx/` and copy their style.
-3. Tests that need the framework running use the JUnit extension `FlixelHeadlessExtension` (`@ExtendWith(FlixelHeadlessExtension.class)`). Read it to see what it sets up. Do not start a real window, GPU device, or audio device.
+3. Tests that need the framework running use the JUnit extension `FlixelHeadlessExtension` (`@ExtendWith(FlixelHeadlessExtension.class)`). Read it to see what it sets up. Do not start a real window, GPU device, or audio device, and do not write to disk: use the fakes in `org.flixelgdx.testing` (`FlixelMemoryFiles`, `FlixelMemorySaveHandler`). `flixelgdx-test` has no platform backend on its classpath; a test for a desktop-only class belongs in `flixelgdx-desktop/src/test`.
 
 ## What to test
 

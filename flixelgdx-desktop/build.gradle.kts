@@ -42,4 +42,14 @@ dependencies {
   implementation(libs.jansi)
 
   compileOnly(libs.graalvm.nativeimage)
+
+  testRuntimeOnly(libs.junit.platform.launcher)
+  testImplementation(platform(libs.junit.bom))
+  testImplementation(libs.junit.jupiter)
+}
+
+// Tests for the desktop-only classes (logging sinks and save files). The rest of the framework is tested in
+// the flixelgdx-test module, which does not depend on any platform backend.
+tasks.named<Test>("test") {
+  useJUnitPlatform()
 }

@@ -74,7 +74,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run JVM unit tests
-        run: ./gradlew :flixelgdx-test:test --no-daemon --warning-mode all
+        run: ./gradlew :flixelgdx-test:test :flixelgdx-desktop:test --no-daemon --warning-mode all
         shell: bash
 
   javadoc:
