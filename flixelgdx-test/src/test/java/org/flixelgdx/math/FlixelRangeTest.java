@@ -23,18 +23,15 @@
  */
 package org.flixelgdx.math;
 
-import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelColorRange;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelRangeTest {
 
   @Test

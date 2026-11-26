@@ -23,11 +23,9 @@
  */
 package org.flixelgdx.tween;
 
-import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.type.FlixelNumTween;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelNumTweenManagerTest {
 
   @Test

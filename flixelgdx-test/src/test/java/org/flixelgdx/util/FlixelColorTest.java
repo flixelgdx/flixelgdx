@@ -23,13 +23,10 @@
  */
 package org.flixelgdx.util;
 
-import org.flixelgdx.FlixelHeadlessExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelColorTest {
 
   @Test
