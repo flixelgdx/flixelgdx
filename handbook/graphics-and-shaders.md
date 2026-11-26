@@ -338,14 +338,22 @@ if (Flixel.graphics.getApi() == FlixelGraphicsApi.NOOP) {
 ### Forcing a graphics API
 
 Some machines have a driver that is installed but broken, so a game may want to offer a "Graphics API" option in its
-launcher or settings. Force one with `Flixel.graphics.setForcedApi(...)`, **inside a boot callback**:
+launcher or settings. Force one with `Flixel.graphics.setApi(...)`, **inside a boot callback**:
 
 ```java
 public MyGame() {
   super(config, TitleState::new);
-  Flixel.boot.beforeStart(() -> Flixel.graphics.setForcedApi(FlixelGraphicsApi.VULKAN));
+  Flixel.boot.beforeStart(() -> Flixel.graphics.setApi(FlixelGraphicsApi.VULKAN));
 }
 ```
+
+In Kotlin, `getApi()` and `setApi(...)` form the `api` property:
+
+```kotlin
+Flixel.boot.beforeStart { Flixel.graphics.api = FlixelGraphicsApi.VULKAN }
+```
+
+`getApi()` reports the requested API until the graphics context exists, and the API that is really running after that.
 
 The boot callback matters. The platform creates the graphics context right after the boot callbacks run (see
 [The Boot Sequence](boot-sequence.md)), and the API cannot be changed once that context exists. Calling it later, such
@@ -358,8 +366,8 @@ launch, like in most commercial games.
 | Android  | `VULKAN`, `OPENGL_ES`                                                           |
 | Web      | None. The browser always chooses, so the forced API is ignored with a warning.  |
 
-The machine must actually have the API you force, or the game cannot start the GPU. Passing `null` or `WEBGPU` goes
-back to the automatic choice. On desktop, the `-Dflixel.render.backend=...` JVM flag (for example `vulkan`) wins over
+The machine must actually have the API you force, or the game cannot start the GPU. Passing `WEBGPU` goes back to the
+automatic choice. On desktop, the `-Dflixel.render.backend=...` JVM flag (for example `vulkan`) wins over
 the API forced in code, so a player can still rescue a game whose forced API does not work on their machine.
 
 ## Render statistics
