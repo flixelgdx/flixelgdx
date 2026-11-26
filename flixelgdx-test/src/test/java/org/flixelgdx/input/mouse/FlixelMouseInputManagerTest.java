@@ -25,19 +25,16 @@ package org.flixelgdx.input.mouse;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.graphics.FlixelViewport;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelNoopInputDevice;
 import org.flixelgdx.math.FlixelVector;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelMouseInputManagerTest {
 
   @Test

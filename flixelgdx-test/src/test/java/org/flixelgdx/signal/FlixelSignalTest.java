@@ -23,9 +23,7 @@
  */
 package org.flixelgdx.signal;
 
-import org.flixelgdx.FlixelHeadlessExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +31,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelSignalTest {
 
   @Test

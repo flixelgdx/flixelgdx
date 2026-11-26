@@ -23,11 +23,9 @@
  */
 package org.flixelgdx.locale;
 
-import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.util.FlixelString;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelLocalizationPluralTest {
 
   /** A Polish-style rule, registered by the test the same way a game would. */
