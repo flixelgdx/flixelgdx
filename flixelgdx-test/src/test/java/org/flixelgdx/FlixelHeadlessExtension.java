@@ -48,6 +48,7 @@ import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.save.FlixelSaveHandler;
 import org.flixelgdx.testing.FlixelMemoryFiles;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -55,32 +56,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.util.function.Supplier;
 
-/**
- * Gives every unit test a clean, headless copy of the framework's global state.
- *
- * <p>The framework keeps its systems in static fields such as {@link Flixel#graphics} and
- * {@link Flixel#cameras}. Tests often swap one for a fake, and if a test forgets to put the old one
- * back, a later test fails for no visible reason, depending on the order the tests ran in. Think of
- * it like borrowing a shared kitchen: this extension photographs the counter before each test and
- * puts every item back where it was afterwards, so no test has to clean up after itself.
- *
- * <p>It does two things:
- *
- * <ul>
- *   <li>Before the first test of a class, it installs {@link FlixelMemoryFiles} on
- *       {@link Flixel#files}, so anything that reads or writes files works without a platform
- *       backend and without touching the disk. Bundled reads ({@code internal} and
- *       {@code classpath}) come from the test resources folder.</li>
- *   <li>Around each test, it saves every assignable static field of {@link Flixel} (plus
- *       {@link FlixelSave#defaultHandler} and the {@link FlixelDebugManager} defaults) and restores
- *       them when the test ends, including the contents of {@link Flixel#cameras}.</li>
- * </ul>
- *
- * <p>It is registered for every test automatically through JUnit's extension auto-detection (see
- * {@code junit-platform.properties}), so tests do not need {@code @ExtendWith}. State set up in a
- * {@code @BeforeAll} method is kept, because the snapshot is taken after it ran.
- */
-public final class FlixelHeadlessExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
+public final class FlixelHeadlessExtension
+    implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
 
   private static final ExtensionContext.Namespace NAMESPACE =
       ExtensionContext.Namespace.create(FlixelHeadlessExtension.class);
@@ -90,6 +67,12 @@ public final class FlixelHeadlessExtension implements BeforeAllCallback, BeforeE
     if (!(Flixel.files instanceof FlixelMemoryFiles)) {
       Flixel.files = new FlixelMemoryFiles();
     }
+    context.getStore(NAMESPACE).put(Globals.class, Globals.capture());
+  }
+
+  @Override
+  public void afterAll(ExtensionContext context) {
+    restore(context);
   }
 
   @Override
@@ -99,13 +82,16 @@ public final class FlixelHeadlessExtension implements BeforeAllCallback, BeforeE
 
   @Override
   public void afterEach(ExtensionContext context) {
+    restore(context);
+  }
+
+  private static void restore(ExtensionContext context) {
     Globals globals = context.getStore(NAMESPACE).remove(Globals.class, Globals.class);
     if (globals != null) {
       globals.restore();
     }
   }
 
-  /** A copy of every global the framework keeps in a static field, taken before a test runs. */
   private static final class Globals {
 
     private float timeScale;
@@ -134,6 +120,7 @@ public final class FlixelHeadlessExtension implements BeforeAllCallback, BeforeE
     private FlixelFiles files;
     private FlixelRuntimeDevice runtime;
     private FlixelArray<FlixelCamera> cameras;
+    private FlixelCamera drawCamera;
     private FlixelSaveHandler saveHandler;
     private FlixelDebugTransport debugTransport;
     private FlixelDebugEndpoint debugEndpoint;
@@ -170,6 +157,7 @@ public final class FlixelHeadlessExtension implements BeforeAllCallback, BeforeE
       g.runtime = Flixel.runtime;
       g.cameras = new FlixelArray<>(FlixelCamera[]::new);
       g.cameras.addAll(Flixel.cameras);
+      g.drawCamera = Flixel.getDrawCamera();
       g.saveHandler = FlixelSave.defaultHandler;
       g.debugTransport = FlixelDebugManager.defaultTransport;
       g.debugEndpoint = FlixelDebugManager.defaultEndpoint;
@@ -206,6 +194,7 @@ public final class FlixelHeadlessExtension implements BeforeAllCallback, BeforeE
       Flixel.runtime = runtime;
       Flixel.cameras.clear();
       Flixel.cameras.addAll(cameras);
+      Flixel.setDrawCamera(drawCamera);
       FlixelSave.defaultHandler = saveHandler;
       FlixelDebugManager.defaultTransport = debugTransport;
       FlixelDebugManager.defaultEndpoint = debugEndpoint;
