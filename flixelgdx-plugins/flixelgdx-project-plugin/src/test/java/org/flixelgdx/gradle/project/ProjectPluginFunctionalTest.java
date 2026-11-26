@@ -229,7 +229,22 @@ class ProjectPluginFunctionalTest {
     BuildResult result = runner("bumpBuild").build();
 
     assertTrue(result.getOutput().contains("app.build 14 -> 15"), result.getOutput());
-    assertTrue(Files.readString(dir.resolve("project.toml")).contains("build = 15 # keep me"));
+    assertTrue(result.getOutput().contains("app.version 0.1.0 -> 0.1.1"), result.getOutput());
+    String toml = Files.readString(dir.resolve("project.toml"));
+    assertTrue(toml.contains("build = 15 # keep me"), toml);
+    assertTrue(toml.contains("version = \"0.1.1\""), toml);
+  }
+
+  @Test
+  void bumpBuildSetsAGivenVersion() throws IOException {
+    setUp(TOML + "build = 3\n");
+
+    BuildResult result = runner("bumpBuild", "--new-version=1.0.0").build();
+
+    assertTrue(result.getOutput().contains("app.version 0.1.0 -> 1.0.0"), result.getOutput());
+    String toml = Files.readString(dir.resolve("project.toml"));
+    assertTrue(toml.contains("build = 4"), toml);
+    assertTrue(toml.contains("version = \"1.0.0\""), toml);
   }
 
   @Test
