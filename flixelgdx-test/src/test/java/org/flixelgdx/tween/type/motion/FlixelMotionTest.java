@@ -302,4 +302,37 @@ class FlixelMotionTest {
     manager.addTween(p);
     manager.update(0.5f);
   }
+
+  @Test
+  void backwardPathsRunFromTheLastPointToTheFirst() {
+    FlixelLinearPath linear = new FlixelLinearPath(new FlixelTweenSettings(FlixelTweenType.BACKWARD))
+        .addPoint(0f, 0f).addPoint(10f, 0f);
+    linear.setMotion(1f, true);
+    linear.setMotionObject(body);
+    manager.addTween(linear);
+    manager.update(0.25f);
+    assertEquals(7.5f, body.getX(), EPS);
+
+    FlixelObject other = TweenTestSupport.body();
+    FlixelQuadPath quad = new FlixelQuadPath(new FlixelTweenSettings(FlixelTweenType.BACKWARD))
+        .addPoint(0f, 0f).addPoint(10f, 0f).addPoint(20f, 0f);
+    quad.setMotion(1f, true);
+    quad.setMotionObject(other);
+    manager.addTween(quad);
+    manager.update(0.25f);
+    assertEquals(15f, other.getX(), EPS);
+  }
+
+  @Test
+  void pingpongPathsComeBackOnTheSecondRun() {
+    FlixelLinearPath p = new FlixelLinearPath(new FlixelTweenSettings(FlixelTweenType.PINGPONG))
+        .addPoint(0f, 0f).addPoint(10f, 0f);
+    p.setMotion(1f, true);
+    p.setMotionObject(body);
+    manager.addTween(p);
+    manager.update(1f);
+    assertEquals(10f, body.getX(), EPS);
+    manager.update(0.25f);
+    assertEquals(7.5f, body.getX(), EPS, "the second run heads back toward the first point");
+  }
 }
