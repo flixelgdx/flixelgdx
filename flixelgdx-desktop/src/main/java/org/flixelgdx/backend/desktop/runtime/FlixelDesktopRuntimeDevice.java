@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.desktop.runtime;
 
 import org.flixelgdx.backend.FlixelCrashHandler;
+import org.flixelgdx.backend.FlixelMainThreadQueue;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
@@ -46,6 +47,8 @@ import java.util.jar.JarFile;
  * targets.
  */
 public class FlixelDesktopRuntimeDevice implements FlixelRuntimeDevice {
+
+  private final FlixelMainThreadQueue mainThreadQueue = new FlixelMainThreadQueue();
 
   private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
   private BufferPoolMXBean[] bufferPools;
@@ -226,6 +229,16 @@ public class FlixelDesktopRuntimeDevice implements FlixelRuntimeDevice {
   @Override
   public void setCrashHandler(@NotNull FlixelCrashHandler handler) {
     Thread.setDefaultUncaughtExceptionHandler(handler::onCrash);
+  }
+
+  @Override
+  public void queueMainThread(@NotNull Runnable action) {
+    mainThreadQueue.add(action);
+  }
+
+  @Override
+  public void runMainThreadTasks() {
+    mainThreadQueue.run();
   }
 
   /**

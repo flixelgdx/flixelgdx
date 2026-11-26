@@ -221,6 +221,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         float deltaSeconds = (now - lastNanos) / 1_000_000_000f;
         lastNanos = now;
 
+        Flixel.runtime.runMainThreadTasks();
         graphics.beginFrame();
         float elapsed = game.advanceTime(deltaSeconds);
         game.update(elapsed);

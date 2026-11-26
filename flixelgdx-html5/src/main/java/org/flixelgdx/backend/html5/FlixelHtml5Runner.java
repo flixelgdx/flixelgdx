@@ -302,6 +302,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     try {
       float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
       lastTimestamp = timestamp;
+      Flixel.runtime.runMainThreadTasks();
       graphics.beginFrame();
       float elapsed = game.advanceTime(deltaSeconds);
       game.update(elapsed);

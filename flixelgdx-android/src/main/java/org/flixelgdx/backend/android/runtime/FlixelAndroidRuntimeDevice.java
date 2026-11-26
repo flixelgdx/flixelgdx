@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.android.runtime;
 
 import org.flixelgdx.backend.FlixelCrashHandler;
+import org.flixelgdx.backend.FlixelMainThreadQueue;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
@@ -44,6 +45,8 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
 
   @NotNull
   private final File logsFolder;
+
+  private final FlixelMainThreadQueue mainThreadQueue = new FlixelMainThreadQueue();
 
   @NotNull
   private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
@@ -106,6 +109,16 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
   public void setCrashHandler(@NotNull FlixelCrashHandler handler) {
     this.crashHandler = handler;
     Thread.setDefaultUncaughtExceptionHandler(handler::onCrash);
+  }
+
+  @Override
+  public void queueMainThread(@NotNull Runnable action) {
+    mainThreadQueue.add(action);
+  }
+
+  @Override
+  public void runMainThreadTasks() {
+    mainThreadQueue.run();
   }
 
   /**

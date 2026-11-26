@@ -599,6 +599,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
         rawDelta = MAX_DELTA;
       }
       input.drain();
+      Flixel.runtime.runMainThreadTasks();
       graphics.beginFrame();
       float elapsed = g.advanceTime(rawDelta);
       g.update(elapsed);
