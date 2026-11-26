@@ -1,6 +1,9 @@
 plugins {
   id("flixelgdx.java-base")
   java
+  // Measures which lines of the framework the tests run. The aggregation plugin reports on every project this
+  // module depends on (core, gpu and jvm), not only on this module's own (empty) main code.
+  `jacoco-report-aggregation`
 }
 
 java {
@@ -34,6 +37,14 @@ dependencies {
   // serializers can be exercised by the round-trip test.
   testAnnotationProcessor(project(":flixelgdx-json-processor"))
 }
+
+jacoco {
+  // 0.8.14 is the first release that officially reads Java 25 class files.
+  toolVersion = libs.versions.jacoco.get()
+}
+
+// The aggregation plugin adds a testCodeCoverageReport task. Run ./gradlew :flixelgdx-test:testCodeCoverageReport,
+// then open build/reports/jacoco/testCodeCoverageReport/html/index.html in this module.
 
 tasks.named<Test>("test") {
   useJUnitPlatform()
