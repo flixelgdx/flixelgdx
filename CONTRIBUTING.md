@@ -53,7 +53,7 @@ Full installation steps for Windows, macOS, and Linux are in [COMPILING.md](COMP
 
 Framework unit tests live in the **`flixelgdx-test`** Gradle module. Put each test in the same package as the class it covers. They use JUnit 5 and depend on **`flixelgdx-core`**, `flixelgdx-gpu`, and `flixelgdx-jvm`, but on no platform backend, so they never need a window, a GPU, or a disk. Every test runs under `FlixelHeadlessExtension`, which is registered automatically. It installs an in-memory file system (`FlixelMemoryFiles`) and puts every global `Flixel` field back after each test, so a test can swap one for a fake without cleaning up after itself. Fakes such as `FlixelMemorySaveHandler` live in the `org.flixelgdx.testing` package of that module.
 
-Tests for classes that only exist in the desktop backend (such as its log sinks and save files) live in that module instead. Run every test, in every module, with `./gradlew test`.
+Run every test, in every module, with `./gradlew test`.
 
 ## Workflow
 

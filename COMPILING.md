@@ -310,7 +310,7 @@ Composite build lets the test project use your local FlixelGDX source so changes
 ## How to run unit tests
 
 Most unit tests live in a separate Gradle module, `flixelgdx-test`, which does not depend on any platform backend. The
-desktop backend and the Gradle plugins in `flixelgdx-plugins` have tests of their own. Run all of them, in every module,
+Gradle plugins in `flixelgdx-plugins` have tests of their own. Run all of them, in every module,
 with Gradle's own `test` task from the root folder:
 
 ```bash
