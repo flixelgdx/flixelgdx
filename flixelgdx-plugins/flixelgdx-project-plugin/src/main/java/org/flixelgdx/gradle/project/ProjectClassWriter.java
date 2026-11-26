@@ -56,6 +56,7 @@ public final class ProjectClassWriter {
     constant(out, "String", "TITLE", literal(model.title()));
     constant(out, "String", "COMPANY", literal(model.company()));
     constant(out, "String", "VERSION", literal(model.version()));
+    constant(out, "int", "BUILD", String.valueOf(model.build()));
     constant(out, "int", "WIDTH", String.valueOf(model.width()));
     constant(out, "int", "HEIGHT", String.valueOf(model.height()));
     constant(out, "int", "FRAMERATE", String.valueOf(model.framerate()));

@@ -223,6 +223,52 @@ class ProjectPluginFunctionalTest {
   }
 
   @Test
+  void bumpBuildRaisesTheNumberInTheFile() throws IOException {
+    setUp(TOML + "build = 14 # keep me\n");
+
+    BuildResult result = runner("bumpBuild").build();
+
+    assertTrue(result.getOutput().contains("app.build 14 -> 15"), result.getOutput());
+    assertTrue(result.getOutput().contains("app.version 0.1.0 -> 0.1.1"), result.getOutput());
+    String toml = Files.readString(dir.resolve("project.toml"));
+    assertTrue(toml.contains("build = 15 # keep me"), toml);
+    assertTrue(toml.contains("version = \"0.1.1\""), toml);
+  }
+
+  @Test
+  void bumpBuildSetsAGivenVersion() throws IOException {
+    setUp(TOML + "build = 3\n");
+
+    BuildResult result = runner("bumpBuild", "--new-version=1.0.0").build();
+
+    assertTrue(result.getOutput().contains("app.version 0.1.0 -> 1.0.0"), result.getOutput());
+    String toml = Files.readString(dir.resolve("project.toml"));
+    assertTrue(toml.contains("build = 4"), toml);
+    assertTrue(toml.contains("version = \"1.0.0\""), toml);
+  }
+
+  @Test
+  void aGamesOwnBumpBuildTaskWins() throws IOException {
+    setUp(TOML);
+    write("build.gradle", "tasks.register('bumpBuild') {\n  doLast { println 'MINE' }\n}\n");
+
+    BuildResult result = runner("bumpBuild").build();
+
+    assertTrue(result.getOutput().contains("MINE"), result.getOutput());
+    assertFalse(Files.readString(dir.resolve("project.toml")).contains("build ="));
+  }
+
+  @Test
+  void buildNumberReachesBuildScripts() throws IOException {
+    setUp(TOML + "build = 7\n");
+    write("desktop/build.gradle.kts", "println(\"INFO build \" + game.build)\n");
+
+    BuildResult result = runner("projects").build();
+
+    assertTrue(result.getOutput().contains("INFO build 7"), result.getOutput());
+  }
+
+  @Test
   void gameExtensionWorksInKotlinScripts() throws IOException {
     setUp(TOML);
     write("desktop/build.gradle.kts",

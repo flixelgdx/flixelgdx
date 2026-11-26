@@ -23,9 +23,11 @@
  */
 package org.flixelgdx.gradle.project;
 
+import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.file.Directory;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.logging.Logger;
@@ -78,6 +80,7 @@ import java.util.Properties;
  *       is found, otherwise a warning explains how to install or point to one.</li>
  *   <li>Sets {@code group} to the package and {@code version} to the version on every project, and adds the
  *       {@link ProjectExtension} as {@code game} (and as {@code flixelProject}, its earlier name).</li>
+ *   <li>Adds a {@code bumpBuild} task to the root project, see {@link BumpBuildTask}.</li>
  *   <li>Generates a {@code Project} class for the {@code core} module, see {@link GenerateProjectClassTask}. It is
  *       also written when an IDE reloads the Gradle project, so it resolves without a build first.</li>
  *   <li>Makes the defaults of the {@code org.flixelgdx.html5} (page title) and {@code org.flixelgdx.packagr}
@@ -181,6 +184,22 @@ public class ProjectPlugin implements Plugin<Settings> {
     if (project.getPath().equals(":core")) {
       project.getPlugins().withId("java", plugin -> registerCodegen(project, file));
     }
+    if (project == project.getRootProject()) {
+      // Registered after the build script ran, so a game that already has a task with this name keeps its own.
+      project.afterEvaluate(p -> registerIfFree(p, BumpBuildTask.NAME, BumpBuildTask.class, task -> {
+        task.setGroup("build");
+        task.setDescription("Adds one to app.build in project.toml and raises app.version to match.");
+        task.getProjectFile().set(file);
+      }));
+    }
+  }
+
+  private static <T extends Task> void registerIfFree(Project project, String name, Class<T> type, Action<T> setup) {
+    if (project.getTasks().getNames().contains(name)) {
+      LOGGER.info("The project already has a task named '{}', so the FlixelGDX one is not added.", name);
+      return;
+    }
+    project.getTasks().register(name, type, setup);
   }
 
   private static void registerCodegen(Project project, File file) {

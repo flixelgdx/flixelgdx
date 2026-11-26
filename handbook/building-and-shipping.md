@@ -237,7 +237,23 @@ FlixelConfig config = Project.config().build();
 ```
 
 An invalid title, company or version fails the build with a message naming the field and the character that is wrong.
-In an Android module's `build.gradle`, use `versionName = version.toString()` to share the version. See the
+Build scripts read the same values through the `game` extension. In the Android module, that keeps the app ID and
+version in step with the file:
+
+```kotlin
+// android/build.gradle.kts
+android {
+  defaultConfig {
+    applicationId = game.packageName
+    versionCode = game.build
+    versionName = game.version
+  }
+}
+```
+
+`versionCode` comes from `app.build`, a whole number that has to go up with every release, or Google Play rejects the
+upload. Run `./gradlew bumpBuild` before each release to raise it by one. It also raises the last number of
+`app.version` (`0.3.0` becomes `0.3.1`), or sets an exact version with `./gradlew bumpBuild --new-version=1.0.0`. See the
 [plugin README](../flixelgdx-plugins/flixelgdx-project-plugin/README.md) for every key and the naming rules.
 
 ## Android: building and compressing textures
