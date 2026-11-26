@@ -16,8 +16,9 @@ and bundled shaders, and compressed Android textures. It also covers versioning 
 8. [Android: building and compressing textures](#android-building-and-compressing-textures)
 9. [Keeping files out of a build](#keeping-files-out-of-a-build)
 10. [Versioning your game](#versioning-your-game)
-11. [Release checklist](#release-checklist)
-12. [Check your understanding](#check-your-understanding)
+11. [Settings and properties](#settings-and-properties)
+12. [Release checklist](#release-checklist)
+13. [Check your understanding](#check-your-understanding)
 
 ## The plugins at a glance
 
@@ -27,7 +28,7 @@ and bundled shaders, and compressed Android textures. It also covers versioning 
 | `org.flixelgdx.html5`    | Web module     | Copies assets, generates the page, runs a dev server, and zips a deployable web app. |
 | `org.flixelgdx.shaders`  | Core module    | Checks WGSL shaders at build time and bundles them into resources.           |
 | `org.flixelgdx.assets`   | Core module    | Generates a type-safe `Assets` class with a path constant for every asset.   |
-| `org.flixelgdx.project`  | Settings file  | Reads `project.toml` for the modules, title, version and window settings.    |
+| `org.flixelgdx.project`  | Settings file  | Reads `project.toml` for the modules, title, version, window settings, constants and profiles, and adds the `bumpBuild` and `doctor` tasks. |
 | `org.flixelgdx.basisu`   | Android module | Compresses PNGs into KTX2/Basis Universal textures at build time.            |
 
 Projects created with the IntelliJ IDEA plugin come with the right plugins already applied.
@@ -251,10 +252,69 @@ android {
 }
 ```
 
-`versionCode` comes from `app.build`, a whole number that has to go up with every release, or Google Play rejects the
-upload. Run `./gradlew bumpBuild` before each release to raise it by one. It also raises the last number of
-`app.version` (`0.3.0` becomes `0.3.1`), or sets an exact version with `./gradlew bumpBuild --new-version=1.0.0`. See the
-[plugin README](../flixelgdx-plugins/flixelgdx-project-plugin/README.md) for every key and the naming rules.
+`versionCode` comes from `app.build`, the build number (see [Versioning your game](#versioning-your-game)).
+
+### Your own constants
+
+A `[defines]` table holds values of your own, such as a demo flag or the number of save slots. Each one becomes a
+constant in `Project.Defines`:
+
+```toml
+[defines]
+demo          = false
+enable_cheats = false
+max_saves     = 3
+```
+
+```java
+if (Project.Defines.ENABLE_CHEATS && Flixel.keys.justPressed(FlixelKey.F1)) {
+  player.health = 999;
+}
+```
+
+They are compile-time constants, so code behind a flag that is `false` is removed by the compiler and never ships.
+Build scripts read them too, as `game.defines["demo"]`. They end up in the game as plain text, so do not put passwords
+or secret keys in them.
+
+### Profiles
+
+A profile changes a few values for one build, like a sticky note on a recipe. Write it as a `[profile.<name>]` table
+and pick it with the `flixel.profile` property:
+
+```toml
+[profile.dev]
+window.fullscreen     = false
+defines.enable_cheats = true
+
+[profile.demo]
+app.title    = "My Game Demo"
+defines.demo = true
+platforms    = ["desktop", "html5"]
+```
+
+```bash
+./gradlew :desktop:run -Pflixel.profile=dev
+./gradlew :desktop:packageAll -Pflixel.profile=demo
+```
+
+Without the property the file is used as written. A profile can change everything except `app.package`, and
+`Project.PROFILE` holds the name of the selected one (an empty string when none is selected).
+
+### Checking your setup
+
+When something does not build and the reason is unclear, run:
+
+```bash
+./gradlew doctor
+```
+
+It checks Gradle, your JDK and Java toolchain, the Android SDK, the module folders, `project.toml` and every profile,
+and says how to fix each problem. It even reports a broken `project.toml`, which otherwise stops every build before
+it starts. The report ends with a link to the FlixelGDX
+[bug report form](https://github.com/flixelgdx/flixelgdx/issues/new?template=bug_report.yml): if the problem turns out
+to be a bug, paste the whole report into its "Logs or Screenshots" field.
+
+See the [plugin README](../flixelgdx-plugins/flixelgdx-project-plugin/README.md) for every key and the naming rules.
 
 ## Android: building and compressing textures
 
@@ -315,17 +375,95 @@ Source art, debug data, and platform-specific files do not belong in every build
 
 ## Versioning your game
 
-Set the version in your config, so it is available at runtime (for a title screen, crash reports, or save migration):
+A game has two version values in `project.toml`, and they answer different questions:
+
+- **`version`** (such as `1.2.0`) is the name players see. Change it when the update deserves a new name.
+- **`build`** (such as `14`) is a plain whole number that only ever goes up. Android and Google Play compare it to
+  tell a newer build from an older one: Google Play rejects an upload whose number is not higher than the last one,
+  and a phone refuses to install a build over one with a higher number.
+
+Raise `build` for **every build you give to players**, not only for big releases:
+
+| What you ship                                              | `version` | `build` |
+|------------------------------------------------------------|-----------|---------|
+| A major update (1.0.0 to 2.0.0)                            | changes   | +1      |
+| A small fix (1.2.0 to 1.2.1)                               | changes   | +1      |
+| The same version again, for example to fix a bad package   | same      | +1      |
+| A test or beta upload to a store                           | either    | +1      |
+| Builds you only run on your own computer                   | same      | no need |
+
+Run `./gradlew bumpBuild` right before you build something that leaves your computer. It raises the number by one,
+raises the last number of `version` too (`0.3.0` becomes `0.3.1`), and keeps the rest of the file as it was. For a
+bigger step, give the new version yourself with `./gradlew bumpBuild --new-version=1.0.0`. Desktop and web do not check the number, but using one number for every
+platform keeps save files and bug reports consistent.
+
+Both values reach the game through the generated `Project` class, and `Project.config()` puts the version into the
+config, so it is available at runtime (for a title screen, crash reports, or save migration):
 
 ```java
-new FlixelConfig.Builder("My Game").company("My Studio").version("1.2.0").build();
-
-Flixel.info("Starting {} {}", Flixel.config.getTitle(), Flixel.config.getVersion());
+Flixel.info("Starting {} {} (build {})", Flixel.config.getTitle(), Flixel.config.getVersion(), Project.BUILD);
 ```
 
-Store a version number in save files too, so a future update can recognize and convert old saves. Note that the
-company and title also decide where saves are stored, so do not change them after release, or players' saves will
-seem to disappear.
+Store the build number in save files too, so a future update can recognize and convert old saves:
+
+```java
+int savedBuild = Flixel.save.getInt("build", Project.BUILD);
+if (savedBuild < 10) {
+  // Build 10 renamed "coins" to "gold", so older saves are fixed up once.
+  Flixel.save.data.put("gold", Flixel.save.getInt("coins", 0));
+  Flixel.save.data.remove("coins");
+}
+Flixel.save.data.put("build", Project.BUILD);
+```
+
+Note that the company and title also decide where saves are stored, so do not change them after release, or players'
+saves will seem to disappear.
+
+## Settings and properties
+
+FlixelGDX reads a few named settings, all starting with `flixel.`, so they never clash with other tools. Some are read
+by the Gradle plugins while the game is built, and some by the game itself while it runs.
+
+### Build settings (Gradle properties)
+
+Pass these to Gradle with `-P` (`./gradlew build -Pflixel.profile=dev`), or put them in a `gradle.properties` file.
+The one next to `settings.gradle` is shared with everyone who builds the game; the one in your Gradle user home
+(`~/.gradle/gradle.properties`) is only yours.
+
+| Property                  | Values           | Does                                                                         |
+|---------------------------|------------------|------------------------------------------------------------------------------|
+| `flixel.profile`          | A profile name   | Applies that `[profile.<name>]` table of `project.toml`. See [Profiles](#profiles). |
+| `enableBasisuCompression` | `true`, `false`  | Compresses Android textures with Basis Universal. See [Compressed textures](#compressed-textures-with-basis-universal). |
+
+The project plugin also sets `flixel.project.title` and `flixel.project.version` on every Gradle project, so the
+HTML5 and packagr plugins can default to the game's title and version without depending on it. Read them if a
+build script of your own needs them, but set the values in `project.toml`, not here.
+
+### Runtime settings
+
+The game reads these when it starts. How to pass one depends on the platform:
+
+| Setting                 | Platforms                | Values                                                               | Does |
+|-------------------------|--------------------------|----------------------------------------------------------------------|------|
+| `flixel.mode`           | Desktop, web, Android    | `release` (default), `debug`, `test`                                 | Picks the runtime mode. See [Debugging](debugging.md). |
+| `flixel.debugHost`      | Desktop, web, Android    | `host` or `host:port` (default `127.0.0.1:6510`)                     | Where the game looks for the remote debugger app in debug mode. |
+| `flixel.render.backend` | Desktop                  | `auto` (default), `vulkan`, `metal`, `direct3d11`, `direct3d12`, `opengl`, `opengles`, `noop` | Forces the graphics API WebGPU uses. Useful when a machine's preferred driver misbehaves. An unknown value logs a warning and uses `auto`. |
+| `flixel.render.stats`   | Desktop                  | `log` (or `true`)                                                    | Logs renderer statistics (frame times, memory, pipelines, textures) once a second. |
+| `flixel.log.color`      | Desktop                  | `false`                                                              | Turns off colored console logs. Setting the `NO_COLOR` environment variable does the same. |
+
+Ways to pass them:
+
+| Where                          | How                                                                           |
+|--------------------------------|-------------------------------------------------------------------------------|
+| A packaged or plain desktop jar | `java -Dflixel.render.backend=opengl -jar mygame.jar`                        |
+| Every packagr package          | `packagr { jvmArg("-Dflixel.render.backend=opengl") }` in the desktop build file |
+| The `:desktop:run` task        | `tasks.named<JavaExec>("run") { systemProperty("flixel.render.stats", "log") }` in `desktop/build.gradle.kts` |
+| The web                        | Add it to the page address: `?flixel.mode=debug&flixel.debugHost=192.168.1.20:6510` |
+| Android                        | An intent extra: `adb shell am start -n <package>/<activity> -e flixel.mode debug` |
+
+Note that `./gradlew :desktop:run -Dflixel.mode=debug` does **not** reach the game: `-D` on the Gradle command line
+sets the property for Gradle itself, not for the game it starts. Use the `:desktop:debug` task or `systemProperty`
+instead.
 
 ## Release checklist
 
@@ -335,7 +473,10 @@ seem to disappear.
 - [ ] Asset names are lowercase, with forward slashes.
 - [ ] Progress is saved when it changes and on `gameSuspended`, not only on quit.
 - [ ] Source art and debug files are excluded from builds.
-- [ ] The config has the final title, company, and version.
+- [ ] `project.toml` has the final title, company, and version.
+- [ ] `./gradlew bumpBuild` raised the build number for this release.
+- [ ] `./gradlew doctor` reports no problems on the machine that builds the release.
+- [ ] The release is built without a development profile (no `flixel.profile=dev` left in `gradle.properties`).
 - [ ] Desktop packages were built for every target, and each one was started at least once.
 - [ ] Android release builds are signed; textures are compressed if memory matters.
 
@@ -344,8 +485,10 @@ seem to disappear.
 1. Why do players not need Java installed to run a packagr package?
 2. A shader typo breaks the game only on players' machines. Which plugin would have caught it, and when?
 3. After an update, every player's save seems gone. What might you have changed?
+4. You fixed one typo and want to upload the fix to Google Play. Do you need to raise `build`?
 
 (Answers: each package bundles a trimmed Java runtime and a native launcher; the shader plugin, during the build; the
-company or title in `FlixelConfig`, which decide where saves are stored.)
+company or title in `FlixelConfig`, which decide where saves are stored; yes, every build given to players needs a
+higher build number, however small the change.)
 
 **Next:** [Architecture](architecture.md)

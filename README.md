@@ -229,7 +229,9 @@ Not a problem at all. FlixelGDX is perfect for people of all experience levels.
 ### Plugins and Extensions
 
 The framework contains many first-party plugins and extensions to automate all the tedious grunt work — allowing you to 
-focus on what's important: making a game.
+focus on what's important: making a game. For example, one `project.toml` file names your game, sets its build number,
+holds your own constants and build profiles, and `./gradlew doctor` checks your whole setup in one go. See
+[Building and Shipping](handbook/building-and-shipping.md) for every plugin and setting.
 
 ---
 
