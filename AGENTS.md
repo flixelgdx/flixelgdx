@@ -231,7 +231,7 @@ Before finishing a coding task finished, run:
 2. Spotless: `./gradlew spotlessApply`
 3. Checkstyle: `./gradlew checkstyleMain`
 4. Javadocs: `./gradlew javadocAll`
-5. Unit tests: `./gradlew :flixelgdx-test:test`
+5. Unit tests: `./gradlew :flixelgdx-test:test :flixelgdx-desktop:test`
 
 Additionally, if you are currently on a branch for a pull request, always update the description of the PR to ensure accuracy
 after completing a task.

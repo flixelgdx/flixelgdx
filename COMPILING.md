@@ -309,10 +309,10 @@ Composite build lets the test project use your local FlixelGDX source so changes
 
 ## How to run unit tests
 
-All unit tests for the core API live in a separate Gradle module, inside of `flixelgdx-test`. You can run the framework's unit tests with the following command:
+Most unit tests live in a separate Gradle module, `flixelgdx-test`, which does not depend on any platform backend. The desktop backend has a few tests of its own for its desktop-only classes. You can run all of them with the following command:
 
 ```bash
-./gradlew :flixelgdx-test:test
+./gradlew :flixelgdx-test:test :flixelgdx-desktop:test
 ```
 
 ---

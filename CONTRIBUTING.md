@@ -51,7 +51,9 @@ Full installation steps for Windows, macOS, and Linux are in [COMPILING.md](COMP
 
 ## Automated tests
 
-Framework unit tests live in the **`flixelgdx-test`** Gradle module (`:flixelgdx-test:test`). Add new tests next to the area they cover (packages under `org.flixelgdx`). They depend on **`flixelgdx-core`** and use JUnit 5; tests that need libGDX statics use the headless backend (see `GdxHeadlessExtension` in that module).
+Framework unit tests live in the **`flixelgdx-test`** Gradle module (`:flixelgdx-test:test`). Put each test in the same package as the class it covers. They use JUnit 5 and depend on **`flixelgdx-core`**, `flixelgdx-gpu`, and `flixelgdx-jvm`, but on no platform backend, so they never need a window, a GPU, or a disk. Tests that need framework state use `FlixelHeadlessExtension`, which installs an in-memory file system (`FlixelMemoryFiles`). Fakes such as `FlixelMemorySaveHandler` live in the `org.flixelgdx.testing` package of that module.
+
+Tests for classes that only exist in the desktop backend (such as its log sinks and save files) live in that module instead and run with `./gradlew :flixelgdx-desktop:test`.
 
 ## Workflow
 
@@ -248,7 +250,7 @@ A good PR is easy to review and merge.
 
 - **Title**: Descriptive and brief (e.g. "FlixelTween no longer throws a NullPointerException when the settings are null"). Your PR title will be used in the changelogs when a new release is made!
 - **Description**: Explain *what* was changed and *why*. If the PR relates to an issue, reference it (e.g. "Fixes #123"). For features, describe the intended use and any breaking changes.
-- **Self-review**: Before submitting, run `./gradlew classes` and `./gradlew :flixelgdx-test:test` (and any other relevant tasks) and fix build failures. Ensure formatting and style match the rest of the project; see [Editor setup (use EditorConfig in your editor)](#editor-setup-use-editorconfig-in-your-editor) above to enable EditorConfig in your editor.
+- **Self-review**: Before submitting, run `./gradlew classes` and `./gradlew :flixelgdx-test:test :flixelgdx-desktop:test` (and any other relevant tasks) and fix build failures. Ensure formatting and style match the rest of the project; see [Editor setup (use EditorConfig in your editor)](#editor-setup-use-editorconfig-in-your-editor) above to enable EditorConfig in your editor.
 - **Tests**: If you add a new feature, include tests or clear steps to verify the behavior. For bug fixes, describe how to reproduce the bug and confirm the fix.
 - **Review feedback**: Address review comments in new commits or by amending. Keep the discussion focused and update the PR description if the scope changes.
 - **Size**: Please keep pull requests small and concise. If a pull request has thousands of changes, ***we will close it***.
