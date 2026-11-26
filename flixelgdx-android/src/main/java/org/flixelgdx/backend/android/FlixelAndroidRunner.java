@@ -31,10 +31,13 @@ import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.android.graphics.FlixelAndroidGraphics;
 import org.flixelgdx.backend.android.graphics.FlixelAndroidImageDecoder;
 import org.flixelgdx.backend.gpu.FlixelGpuBootstrap;
+import org.flixelgdx.graphics.FlixelGraphicsApi;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import io.github.stringdotjar.jwebgpu.GpuBackendType;
 import io.github.stringdotjar.jwebgpu.GpuDevice;
 import io.github.stringdotjar.jwebgpu.GpuDeviceLostReason;
 import io.github.stringdotjar.jwebgpu.GpuInstance;
@@ -507,6 +510,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
       return false;
     }
     FlixelGpuBootstrap bootstrap = new FlixelGpuBootstrap(gpu, t.getSurface());
+    bootstrap.setBackendType(resolveBackendType());
     bootstrap.setDeviceLostCallback(this::onDeviceLost);
     bootstrap.start();
     long deadline = System.nanoTime() + BOOT_TIMEOUT_NANOS;
@@ -525,6 +529,26 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
         new FlixelAndroidImageDecoder());
     deviceReady = true;
     return true;
+  }
+
+  /**
+   * Resolves the native graphics API to request from WebGPU, from the one forced with
+   * {@link FlixelGraphicsManager#setForcedApi(FlixelGraphicsApi)}.
+   *
+   * <p>Android phones only have Vulkan and OpenGL ES, so any other forced API is ignored with a warning and WebGPU
+   * picks one itself, instead of the game failing to start.
+   *
+   * @return The backend type to request, or {@code UNDEFINED} for the automatic choice.
+   */
+  private GpuBackendType resolveBackendType() {
+    GpuBackendType type = graphics.getForcedBackendType();
+    return switch (type) {
+      case UNDEFINED, VULKAN, OPENGLES, NULL -> type;
+      default -> {
+        LOG.warn("The graphics API '{}' does not exist on Android; letting WebGPU pick one.", graphics.getForcedApi());
+        yield GpuBackendType.UNDEFINED;
+      }
+    };
   }
 
   private void onDeviceLost(@Nullable GpuDevice device,

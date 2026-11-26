@@ -36,6 +36,8 @@ import org.flixelgdx.backend.gpu.FlixelGpuBootstrap;
 import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelDisplayMode;
+import org.flixelgdx.graphics.FlixelGraphicsApi;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
@@ -425,24 +427,26 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    * Resolves the native graphics API to request from WebGPU.
    *
    * <p>By default WebGPU picks the best API for the platform (Vulkan on Linux, Metal on macOS, Direct3D 12 on
-   * Windows). Some systems have a driver that is preferred but misbehaves; the {@code flixel.render.backend}
-   * system property forces a specific API so those machines can fall back to a working one without a code
-   * change, for example:
+   * Windows). A game can force another one with {@link FlixelGraphicsManager#setForcedApi(FlixelGraphicsApi)}
+   * from a boot callback. Some systems also have a driver that is preferred but misbehaves; the
+   * {@code flixel.render.backend} system property forces a specific API so those machines can fall back to a
+   * working one without a code change, for example:
    *
    * <pre>{@code
    * java -Dflixel.render.backend=opengl -jar mygame.jar
    * }</pre>
    *
-   * <p>Recognized values are {@code auto} (the default), {@code vulkan}, {@code metal}, {@code direct3d11},
-   * {@code direct3d12}, {@code opengl}, {@code opengles} and {@code noop}. An unrecognized value is ignored with
-   * a warning and the automatic choice is used.
+   * <p>The system property wins over the API forced in code, so a player can still rescue a game whose forced
+   * API does not work on their machine. Recognized values are {@code auto} (the default, which defers to the
+   * code), {@code vulkan}, {@code metal}, {@code direct3d11}, {@code direct3d12}, {@code opengl},
+   * {@code opengles} and {@code noop}. An unrecognized value is ignored with a warning.
    *
    * @return The backend type to request, or {@code UNDEFINED} for the automatic choice.
    */
-  private static GpuBackendType resolveBackendType() {
+  private GpuBackendType resolveBackendType() {
     String backend = System.getProperty("flixel.render.backend", "auto").trim().toLowerCase();
     return switch (backend) {
-      case "", "auto" -> GpuBackendType.UNDEFINED;
+      case "", "auto" -> graphics.getForcedBackendType();
       case "vulkan" -> GpuBackendType.VULKAN;
       case "metal" -> GpuBackendType.METAL;
       case "direct3d11" -> GpuBackendType.D3D11;
@@ -451,8 +455,8 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       case "opengles" -> GpuBackendType.OPENGLES;
       case "noop" -> GpuBackendType.NULL;
       default -> {
-        LOG.warn("Unknown flixel.render.backend '{}'; letting WebGPU pick the graphics API.", backend);
-        yield GpuBackendType.UNDEFINED;
+        LOG.warn("Unknown flixel.render.backend '{}'; ignoring it.", backend);
+        yield graphics.getForcedBackendType();
       }
     };
   }
