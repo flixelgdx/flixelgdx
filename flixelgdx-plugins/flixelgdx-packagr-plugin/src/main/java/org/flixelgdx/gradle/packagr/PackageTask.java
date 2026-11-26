@@ -142,18 +142,19 @@ public abstract class PackageTask extends DefaultTask {
     Path cache = getJdkCacheDir().get().getAsFile().toPath();
     int version = getJdkVersion().get();
 
-    // The target JDK supplies both the modules to trim (its jmods) and, when it is for this same
-    // machine, the jlink that assembles them. jlink is version-strict: its version must match the
-    // modules', so a target-version jlink is always used rather than the build's own JDK.
-    Path targetJdk = JdkResolver.resolve(cache, version, os, arch, getLogger());
-    Path linkerJdk = resolveLinkerJdk(cache, version, os, arch, targetJdk);
+    // A JDK for this machine supplies the jlink that assembles the runtime, and the target platform
+    // supplies the modules it trims. jlink is version-strict: the modules must come from exactly the
+    // same JDK release as the jlink, so a cached JDK of the target version is used rather than the
+    // build's own JDK, and the modules are matched to its release.
+    Path linkerJdk = resolveLinkerJdk(cache, version, os, arch);
     File jlinkExe = new File(linkerJdk.toFile(), "bin/jlink" + HostPlatform.os().exeSuffix());
     if (!jlinkExe.isFile()) {
       throw new GradleException("The resolved JDK has no jlink at " + jlinkExe + "; it may be a JRE "
           + "rather than a full JDK.");
     }
+    Path jmods = resolveJmods(cache, version, os, arch, linkerJdk);
     Path jre = out.resolve("jre");
-    Jlink.run(jlinkExe, version, targetJdk.resolve("jmods"), getModules().get(), jre, getLogger());
+    Jlink.run(jlinkExe, version, jmods, getModules().get(), jre, getLogger());
 
     File gameJar = getGameJar().get().getAsFile();
     Files.copy(gameJar.toPath(), out.resolve(gameJar.getName()), StandardCopyOption.REPLACE_EXISTING);
@@ -190,19 +191,43 @@ public abstract class PackageTask extends DefaultTask {
    * purely to provide a {@code jlink} that runs here, while the target JDK's modules are still what
    * gets linked.
    */
-  private Path resolveLinkerJdk(Path cache, int version, OperatingSystem targetOs,
-      Architecture targetArch, Path targetJdk) throws IOException {
+  private Path resolveLinkerJdk(Path cache, int version, OperatingSystem targetOs, Architecture targetArch)
+      throws IOException {
     OperatingSystem hostOs = HostPlatform.os();
     Architecture hostArch = HostPlatform.arch();
-    if (targetOs == hostOs && targetArch == hostArch) {
-      return targetJdk;
-    }
     if (hostArch == null) {
       throw new GradleException("Cannot build a runtime for " + targetOs.token() + "-"
           + targetArch.token() + " because this machine's architecture was not recognized (os.arch="
           + System.getProperty("os.arch") + "). Package on a 64-bit x86 or ARM machine.");
     }
     return JdkResolver.resolve(cache, version, hostOs, hostArch, getLogger());
+  }
+
+  /**
+   * Finds the target platform's {@code .jmod} files for the release of {@code linkerJdk}.
+   *
+   * <p>JDKs before 24 ship them in a {@code jmods} folder inside the JDK. From JDK 24, Temurin ships
+   * them as a separate download instead, which is used for every platform, including this one, so the
+   * modules always match the jlink exactly.
+   */
+  private Path resolveJmods(Path cache, int version, OperatingSystem os, Architecture arch, Path linkerJdk)
+      throws IOException {
+    boolean sameMachine = os == HostPlatform.os() && arch == HostPlatform.arch();
+    if (sameMachine && Files.isDirectory(linkerJdk.resolve("jmods"))) {
+      return linkerJdk.resolve("jmods");
+    }
+    Path jmods = JdkResolver.resolveJmods(cache, linkerJdk, os, arch, getLogger());
+    if (jmods != null) {
+      return jmods;
+    }
+    // No separate download exists for older JDKs, which keep their modules inside the JDK itself.
+    Path targetJdk = sameMachine ? linkerJdk : JdkResolver.resolve(cache, version, os, arch, getLogger());
+    if (Files.isDirectory(targetJdk.resolve("jmods"))) {
+      return targetJdk.resolve("jmods");
+    }
+    throw new GradleException("Could not find the Java modules for " + os.token() + "-" + arch.token()
+        + ": the Temurin " + version + " JDK has no jmods folder, and Adoptium publishes no separate jmods "
+        + "download for it. Try another jdkVersion in the packagr block.");
   }
 
   private void extractLauncher(Path out, OperatingSystem os, Architecture arch) throws IOException {

@@ -95,6 +95,7 @@ it (`core` for game code, or a platform name such as `desktop`):
 
 ```toml
 [libraries]
+flixelgdx-core = { module = "org.flixelgdx:flixelgdx", version = "0.7.2" }
 flixelgdx-ui = { module = "org.flixelgdx:flixelgdx-ui", version = "0.7.2" }
 
 [bundles]

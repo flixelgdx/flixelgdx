@@ -261,7 +261,7 @@ public class ProjectPlugin implements Plugin<Settings> {
       // Registered after the build script ran, so a game that already has a task with this name keeps its own.
       project.afterEvaluate(p -> registerIfFree(p, BumpBuildTask.NAME, BumpBuildTask.class, task -> {
         task.setGroup("build");
-        task.setDescription("Adds one to app.build in project.toml.");
+        task.setDescription("Adds one to app.build in project.toml and raises app.version to match.");
         task.getProjectFile().set(file);
       }));
     }
