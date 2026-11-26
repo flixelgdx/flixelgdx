@@ -31,7 +31,7 @@ Every plugin that generates files during a build writes them into its own folder
 - **`flixelgdx-miniaudio`**: Holds the Java API and C source code for interacting with miniaudio. It doesn't hold any natives; other backends provide their own.
 - **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSerializable`.
 - **`flixelgdx-jvm`**: JVM-only code that desktop and Android share, kept out of core because core is also compiled for the browser. It only uses Java APIs that Android supports.
-- **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core`, `flixelgdx-gpu`, and `flixelgdx-jvm`. It depends on no platform backend, so tests run without a window, a GPU, or a disk. It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI. Desktop-only classes are tested in `flixelgdx-desktop` itself (`./gradlew :flixelgdx-desktop:test`).
+- **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core`, `flixelgdx-gpu`, and `flixelgdx-jvm`. It depends on no platform backend, so tests run without a window, a GPU, or a disk. It is not published to Maven. Desktop-only classes are tested in `flixelgdx-desktop` itself. Run every test with `./gradlew test`, locally and in CI.
 
 ## Rendering and shaders
 

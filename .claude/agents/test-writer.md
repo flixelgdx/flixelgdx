@@ -28,4 +28,4 @@ You write unit tests for FlixelGDX in the `flixelgdx-test` module.
 
 ## Finishing
 
-Run `./gradlew :flixelgdx-test:test --tests '<your test classes>'` first, then the full `./gradlew :flixelgdx-test:test`. Only one build at a time, since this machine is slow. Report the tests added, what each covers, and the results.
+Run `./gradlew :flixelgdx-test:test --tests '<your test classes>'` first while iterating, then the full `./gradlew test` from the root, which runs every module's tests. Only one build at a time, since this machine is slow. Report the tests added, what each covers, and the results.
