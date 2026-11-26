@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AssetsPluginFunctionalTest {
 
   private static final String GENERATED =
-      "core/build/generated/sources/flixelgdx/assets/java/main/com/mygame/Assets.java";
+      "core/build/generated/flixelgdx/assets/com/mygame/Assets.java";
 
   @TempDir
   Path dir;
@@ -152,7 +152,7 @@ class AssetsPluginFunctionalTest {
 
     runner(":core:generateAssetsClass").build();
 
-    Path file = dir.resolve("core/build/generated/sources/flixelgdx/assets/java/main/org/example/Res.java");
+    Path file = dir.resolve("core/build/generated/flixelgdx/assets/org/example/Res.java");
     assertTrue(Files.readString(file).contains("public final class Res {"));
   }
 

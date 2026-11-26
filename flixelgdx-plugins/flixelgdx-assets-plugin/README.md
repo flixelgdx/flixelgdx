@@ -74,7 +74,7 @@ Rename the file, or leave it out with `excludes`.
 ## When the class is generated
 
 - **Before the code compiles.** The `generateAssetsClass` task writes the class into
-  `build/generated/sources/flixelgdx/assets/java/main`, which is a source folder of the `main` source set, so
+  `build/generated/flixelgdx/assets`, which is a source folder of the `main` source set, so
   `compileJava` always runs it first. Run it alone with `./gradlew generateAssetsClass`.
 - **When your IDE reloads the Gradle project.** The class is written while the project loads (IntelliJ IDEA, Android
   Studio, Eclipse and VS Code), so code completion knows about new files right after a reload. A naming problem only

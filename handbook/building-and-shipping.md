@@ -392,8 +392,9 @@ Raise `build` for **every build you give to players**, not only for big releases
 | A test or beta upload to a store                           | either    | +1      |
 | Builds you only run on your own computer                   | same      | no need |
 
-Run `./gradlew bumpBuild` right before you build something that leaves your computer. It raises the number by one and
-keeps the rest of the file as it was. Desktop and web do not check the number, but using one number for every
+Run `./gradlew bumpBuild` right before you build something that leaves your computer. It raises the number by one,
+raises the last number of `version` too (`0.3.0` becomes `0.3.1`), and keeps the rest of the file as it was. For a
+bigger step, give the new version yourself with `./gradlew bumpBuild --new-version=1.0.0`. Desktop and web do not check the number, but using one number for every
 platform keeps save files and bug reports consistent.
 
 Both values reach the game through the generated `Project` class, and `Project.config()` puts the version into the
