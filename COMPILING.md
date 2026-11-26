@@ -315,6 +315,14 @@ Most unit tests live in a separate Gradle module, `flixelgdx-test`, which does n
 ./gradlew :flixelgdx-test:test :flixelgdx-desktop:test
 ```
 
+The Gradle plugins in `flixelgdx-plugins` have tests of their own. Run them when you change a plugin:
+
+```bash
+./gradlew :flixelgdx-plugins:flixelgdx-project-plugin:test
+```
+
+Replace `flixelgdx-project-plugin` with the plugin you changed. CI runs the tests of every plugin on each pull request.
+
 ---
 
 ## HTML5 setup and configuration
