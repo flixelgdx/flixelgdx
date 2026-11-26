@@ -246,9 +246,6 @@ new Thread(() -> {
 }).start();
 ```
 
-The queue lives on the runtime, not on `Flixel.graphics`, because it is about which thread runs your code, not about
-drawing. On Android the main thread is FlixelGDX's render thread (`flixel-render`), not the Android UI thread.
-
 Screen density is on the host: `Flixel.host.getDensity()` and `Flixel.host.getPpi()`, useful for sizing touch controls
 on phones.
 
