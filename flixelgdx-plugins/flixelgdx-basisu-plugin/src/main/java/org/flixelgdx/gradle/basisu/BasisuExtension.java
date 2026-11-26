@@ -44,7 +44,7 @@ import org.gradle.api.provider.Property;
  *   // Directory scanned for .png files to compress (default: rootProject/assets/).
  *   assetsDir = file('../assets')
  *
- *   // Where compressed .ktx2 files are written (default: build/generated/basisuAssets).
+ *   // Where compressed .ktx2 files are written (default: build/generated/flixelgdx/basisu).
  *   outputDir = file('build/compressedAssets')
  *
  *   // Generate mipmaps for each compressed texture (default: false).
@@ -101,7 +101,7 @@ public interface BasisuExtension {
    * Directory that compressed {@code .ktx2} files are written into, mirroring the relative path
    * of each source image under {@link #getAssetsDir()}.
    *
-   * <p>Defaults to {@code build/generated/basisuAssets}. {@link BasisuPlugin} adds this
+   * <p>Defaults to {@code build/generated/flixelgdx/basisu}. {@link BasisuPlugin} adds this
    * directory as an extra Android assets source set directory when applied to an Android module.
    *
    * @return The compressed output directory property.

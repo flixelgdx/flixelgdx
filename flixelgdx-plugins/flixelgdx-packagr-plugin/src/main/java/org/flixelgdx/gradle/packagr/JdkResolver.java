@@ -29,6 +29,7 @@ import org.gradle.api.logging.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -42,6 +43,7 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -59,11 +61,20 @@ import java.util.stream.Stream;
  * SHA-256 is checked against the checksum Adoptium publishes before it is trusted, and the same hash
  * is written into the completion marker so a partially written cache entry is never mistaken for a
  * finished one.
+ *
+ * <p>Since JDK 24, Temurin's JDK downloads no longer contain a {@code jmods} folder (see JEP 493: their
+ * {@code jlink} links from the JDK's own runtime image instead). That only works for the platform the
+ * JDK runs on, so a package for another platform needs that platform's {@code .jmod} files, which
+ * Adoptium publishes as a separate {@code jmods} download. {@link #resolveJmods} fetches it for the
+ * exact JDK release the {@code jlink} comes from, because {@code jlink} refuses modules of any other
+ * version.
  */
 public final class JdkResolver {
 
   private static final String BINARY_ENDPOINT =
       "https://api.adoptium.net/v3/binary/latest/%d/ga/%s/%s/jdk/hotspot/normal/eclipse";
+  private static final String JMODS_ENDPOINT =
+      "https://api.adoptium.net/v3/binary/version/%s/%s/%s/jmods/hotspot/normal/eclipse";
   private static final Pattern CHECKSUM_PATTERN = Pattern.compile("[0-9a-fA-F]{64}");
   private static final String MARKER_NAME = ".packagr-complete";
 
@@ -73,67 +84,129 @@ public final class JdkResolver {
    * Resolves a JDK home directory for the given platform, downloading and caching it if needed.
    *
    * <p>The runtime is always built from Eclipse Temurin, the JDK the framework recommends. A full
-   * JDK (not a JRE) is downloaded because {@code jlink} needs its modules to assemble the trimmed
-   * runtime that ships with the game.
+   * JDK (not a JRE) is downloaded because its {@code jlink} assembles the trimmed runtime that ships
+   * with the game. JDKs before 24 also hold the platform's {@code jmods} folder.
    *
    * @param cacheDir The shared directory cached JDKs live in.
    * @param version The JDK feature version, for example {@code 25}.
    * @param os The operating system the JDK targets.
    * @param arch The architecture the JDK targets.
    * @param logger The Gradle logger used to report progress.
-   * @return The path to the JDK home (the directory containing {@code jmods}).
+   * @return The path to the JDK home.
    * @throws IOException When the JDK cannot be downloaded, verified, or unpacked.
    */
   public static Path resolve(Path cacheDir, int version, OperatingSystem os, Architecture arch,
       Logger logger) throws IOException {
     String slug = "temurin-" + version + "-" + os.token() + "-" + arch.token();
-    Path base = cacheDir.resolve(slug);
+    String url = String.format(Locale.ROOT, BINARY_ENDPOINT, version, os.adoptiumName(), arch.adoptiumName());
+    Path home = fetch(cacheDir.resolve(slug), url, os.usesZipArchive(), "Temurin " + version, os, arch,
+        JdkResolver::isJdkHome, logger);
+    if (home == null) {
+      throw new GradleException("Eclipse Temurin " + version + " has no build for " + os.token() + "-"
+          + arch.token() + ". Pick another jdkVersion in the packagr block, or remove this target.");
+    }
+    return home;
+  }
+
+  /**
+   * Resolves the {@code .jmod} files of a platform for the exact JDK release of {@code linkerHome},
+   * downloading and caching Adoptium's separate {@code jmods} archive if needed.
+   *
+   * @param cacheDir The shared directory cached downloads live in.
+   * @param linkerHome The JDK whose {@code jlink} links the runtime. Its release decides the version.
+   * @param os The operating system the modules are for.
+   * @param arch The architecture the modules are for.
+   * @param logger The Gradle logger used to report progress.
+   * @return The folder holding the {@code .jmod} files, or {@code null} when Adoptium publishes no
+   *     separate {@code jmods} archive for that release and platform (JDKs before 24 keep their
+   *     {@code jmods} folder inside the JDK instead).
+   * @throws IOException When the archive cannot be downloaded, verified, or unpacked.
+   */
+  public static Path resolveJmods(Path cacheDir, Path linkerHome, OperatingSystem os, Architecture arch,
+      Logger logger) throws IOException {
+    String runtime = runtimeVersion(linkerHome);
+    // The release name of "25.0.5.1+2-LTS" is "jdk-25.0.5.1+2".
+    String release = "jdk-" + runtime.split("-", 2)[0];
+    String slug = "temurin-jmods-" + release.substring(4).replace('+', '_') + "-" + os.token() + "-"
+        + arch.token();
+    String url = String.format(Locale.ROOT, JMODS_ENDPOINT, URLEncoder.encode(release, StandardCharsets.UTF_8),
+        os.adoptiumName(), arch.adoptiumName());
+    return fetch(cacheDir.resolve(slug), url, os.usesZipArchive(), "the " + release + " modules", os, arch,
+        dir -> Files.isRegularFile(dir.resolve("java.base.jmod")), logger);
+  }
+
+  /**
+   * Downloads, verifies, unpacks and caches one archive, or returns the cached copy.
+   *
+   * @return The folder inside the archive that {@code wanted} accepts, or {@code null} when the
+   *     archive does not exist (HTTP 404).
+   */
+  private static Path fetch(Path base, String url, boolean zip, String what, OperatingSystem os,
+      Architecture arch, Predicate<Path> wanted, Logger logger) throws IOException {
+    String slug = base.getFileName().toString();
     Path extracted = base.resolve("extracted");
     Path marker = base.resolve(MARKER_NAME);
 
-    Path cachedHome = readMarker(base, marker);
-    if (cachedHome != null) {
-      logger.info("[packagr] Reusing cached JDK for {} at {}.", slug, cachedHome);
-      return cachedHome;
+    Path cached = readMarker(base, marker, wanted);
+    if (cached != null) {
+      logger.info("[packagr] Reusing cached {} at {}.", slug, cached);
+      return cached;
     }
 
     Files.createDirectories(base);
-    String archUrl = arch.adoptiumName();
-    String osUrl = os.adoptiumName();
-    String downloadUrl = String.format(Locale.ROOT, BINARY_ENDPOINT, version, osUrl, archUrl);
-
-    Path archive = base.resolve(os.usesZipArchive() ? "jdk.zip" : "jdk.tar.gz");
-    logger.lifecycle("[packagr] Downloading Temurin {} for {}-{} (first time only)...", version,
-        os.token(), arch.token());
+    Path archive = base.resolve(zip ? "download.zip" : "download.tar.gz");
+    logger.lifecycle("[packagr] Downloading {} for {}-{} (first time only)...", what, os.token(), arch.token());
 
     // HttpClient is not AutoCloseable on Java 17 (only from Java 21), so it is not managed with
     // try-with-resources here; it needs no explicit cleanup on this toolchain.
     HttpClient client = newClient();
     try {
-      URI archiveUri = download(client, downloadUrl, archive);
+      URI archiveUri = download(client, url, archive);
+      if (archiveUri == null) {
+        return null;
+      }
       String actual = sha256(archive);
       String expected = fetchExpectedChecksum(client, archiveUri, logger);
       if (expected != null && !expected.equalsIgnoreCase(actual)) {
-        throw new GradleException("Downloaded JDK failed its checksum check for " + slug
+        throw new GradleException("The download of " + what + " failed its checksum check for " + slug
             + " (expected " + expected + ", got " + actual + "). The download may be corrupt; "
             + "delete " + base + " and try again.");
       }
 
       deleteRecursively(extracted);
-      Archives.extract(archive, extracted, os.usesZipArchive());
+      Archives.extract(archive, extracted, zip);
       Files.deleteIfExists(archive);
 
-      Path home = findJdkHome(extracted);
-      writeMarker(base, marker, actual, home);
-      logger.lifecycle("[packagr] Cached JDK for {} at {}.", slug, home);
-      return home;
+      Path found = find(extracted, wanted, what);
+      writeMarker(base, marker, actual, found);
+      logger.lifecycle("[packagr] Cached {} for {}-{} at {}.", what, os.token(), arch.token(), found);
+      return found;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new IOException("Interrupted while downloading the JDK for " + slug + ".", e);
+      throw new IOException("Interrupted while downloading " + what + " for " + slug + ".", e);
     }
   }
 
-  private static Path readMarker(Path base, Path marker) throws IOException {
+  /**
+   * Reads the full runtime version of a JDK, such as {@code 25.0.5.1+2-LTS}, from its {@code release}
+   * file.
+   */
+  private static String runtimeVersion(Path home) throws IOException {
+    for (String line : Files.readAllLines(home.resolve("release"), StandardCharsets.UTF_8)) {
+      if (line.startsWith("JAVA_RUNTIME_VERSION=")) {
+        return line.substring(line.indexOf('=') + 1).replace("\"", "").strip();
+      }
+    }
+    throw new IOException("The JDK at " + home + " has no JAVA_RUNTIME_VERSION in its release file.");
+  }
+
+  /** Whether a folder is a JDK home: it has a {@code release} file and a {@code jlink}. */
+  private static boolean isJdkHome(Path dir) {
+    return Files.isRegularFile(dir.resolve("release"))
+        && (Files.isRegularFile(dir.resolve("bin/jlink")) || Files.isRegularFile(dir.resolve("bin/jlink.exe")));
+  }
+
+  private static Path readMarker(Path base, Path marker, Predicate<Path> wanted) throws IOException {
     if (!Files.isRegularFile(marker)) {
       return null;
     }
@@ -141,11 +214,8 @@ public final class JdkResolver {
     if (lines.size() < 2) {
       return null;
     }
-    Path home = base.resolve(lines.get(1));
-    if (Files.isDirectory(home.resolve("jmods"))) {
-      return home;
-    }
-    return null;
+    Path found = base.resolve(lines.get(1));
+    return wanted.test(found) ? found : null;
   }
 
   private static void writeMarker(Path base, Path marker, String sha256, Path home) throws IOException {
@@ -160,6 +230,7 @@ public final class JdkResolver {
         .build();
   }
 
+  /** Downloads a file, returning the final URI after redirects, or {@code null} on HTTP 404. */
   private static URI download(HttpClient client, String url, Path dest)
       throws IOException, InterruptedException {
     HttpRequest request = HttpRequest.newBuilder(URI.create(url))
@@ -167,8 +238,12 @@ public final class JdkResolver {
         .GET()
         .build();
     HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+    if (response.statusCode() == 404) {
+      response.body().close();
+      return null;
+    }
     if (response.statusCode() != 200) {
-      throw new IOException("JDK download failed with HTTP " + response.statusCode() + " from " + url);
+      throw new IOException("Download failed with HTTP " + response.statusCode() + " from " + url);
     }
     try (InputStream in = response.body()) {
       Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
@@ -235,14 +310,14 @@ public final class JdkResolver {
     }
   }
 
-  private static Path findJdkHome(Path root) throws IOException {
+  private static Path find(Path root, Predicate<Path> wanted, String what) throws IOException {
     try (Stream<Path> stream = Files.walk(root, 6)) {
       return stream
-          .filter(p -> Files.isDirectory(p.resolve("jmods")))
+          .filter(p -> Files.isDirectory(p) && wanted.test(p))
           .findFirst()
-          .orElseThrow(() -> new IOException(
-              "The downloaded JDK archive did not contain a 'jmods' directory; it may be a JRE "
-                  + "rather than a full JDK. Extracted under: " + root));
+          .orElseThrow(() -> new IOException("The download of " + what + " did not have the expected "
+              + "layout (for a JDK, a release file and bin/jlink; for modules, java.base.jmod). Extracted "
+              + "under: " + root));
     }
   }
 

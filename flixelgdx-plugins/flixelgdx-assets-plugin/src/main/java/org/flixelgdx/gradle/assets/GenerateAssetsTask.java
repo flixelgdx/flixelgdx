@@ -62,7 +62,7 @@ import java.util.stream.Stream;
 public abstract class GenerateAssetsTask extends DefaultTask {
 
   /** The default output directory, relative to the build directory. */
-  public static final String OUTPUT_DIR = "generated/sources/flixelgdx/assets/java/main";
+  public static final String OUTPUT_DIR = "generated/flixelgdx/assets";
 
   /** Writes the assets class. */
   @TaskAction
