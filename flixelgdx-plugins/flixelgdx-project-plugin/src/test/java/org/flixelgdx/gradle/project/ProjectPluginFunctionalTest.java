@@ -223,6 +223,49 @@ class ProjectPluginFunctionalTest {
   }
 
   @Test
+  void gameCodeCompilesAgainstTheDefines() throws IOException {
+    // The string holds every kind of character the writer escapes, so a mistake there would break compiling.
+    setUp(TOML + "\n[defines]\ndemo = false\nmax_saves = 3\nbig = 5_000_000_000\ngravity = 9.8\n"
+        + "text = \"a\\nb\\tc \\\\ \\\"d\\\" caf\\u00e9 \\u0007 \\U0001F600\"\n");
+    write("core/src/main/java/org/flixelgdx/FlixelConfig.java", CONFIG_STUB);
+    write("core/src/main/java/com/example/mygame/Game.java", """
+        package com.example.mygame;
+
+        public class Game {
+          public static final int SLOTS = Project.Defines.MAX_SAVES * 2;
+          public static final long BIG = Project.Defines.BIG;
+          public static final float GRAVITY = Project.Defines.GRAVITY;
+          public static final int TEXT_LENGTH = Project.Defines.TEXT.length();
+
+          public static boolean demo() {
+            if (Project.Defines.DEMO) {
+              return true;
+            }
+            return false;
+          }
+        }
+        """);
+
+    BuildResult result = runner(":core:compileJava").build();
+
+    assertEquals(TaskOutcome.SUCCESS, result.task(":core:compileJava").getOutcome());
+  }
+
+  @Test
+  void definesReachBuildScripts() throws IOException {
+    setUp(TOML + "\n[defines]\ndemo = true\nmax_saves = 3\n");
+    write("desktop/build.gradle.kts", """
+        if (game.defines["demo"] == true) {
+          println("INFO demo " + game.defines["max_saves"])
+        }
+        """);
+
+    BuildResult result = runner("projects").build();
+
+    assertTrue(result.getOutput().contains("INFO demo 3"), result.getOutput());
+  }
+
+  @Test
   void bumpBuildRaisesTheNumberInTheFile() throws IOException {
     setUp(TOML + "build = 14 # keep me\n");
 

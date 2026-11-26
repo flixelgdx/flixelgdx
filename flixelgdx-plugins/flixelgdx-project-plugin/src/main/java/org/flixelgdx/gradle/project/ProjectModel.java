@@ -46,6 +46,7 @@ import java.util.List;
  * @param packageName The Java package of the game, also used as the Gradle group.
  * @param language Either {@code java} or {@code kotlin}.
  * @param platforms The platform modules to include besides {@code core}, in the order they were listed.
+ * @param defines The entries of the {@code [defines]} table, in the order they were written.
  * @param vsync Whether VSync is requested at startup.
  * @param fullscreen Whether the game starts in fullscreen.
  * @param hasRender Whether the file has a {@code [render]} table at all.
@@ -67,6 +68,7 @@ public record ProjectModel(
     String packageName,
     String language,
     List<String> platforms,
+    List<ProjectDefine> defines,
     boolean vsync,
     boolean fullscreen,
     boolean hasRender,
@@ -75,7 +77,7 @@ public record ProjectModel(
     boolean transparent) {
 
   /**
-   * Creates a model with the build number left at its default of {@code 1}.
+   * Creates a model with the build number left at its default of {@code 1} and no defines.
    *
    * <p>This is the constructor earlier versions had, kept so code that builds a model by hand still compiles.
    *
@@ -103,7 +105,8 @@ public record ProjectModel(
       boolean vsync, boolean fullscreen, boolean hasRender, boolean renderResolution, boolean renderSmooth,
       boolean transparent) {
     this(width, height, framerate, ProjectToml.DEFAULT_BUILD, renderWidth, renderHeight, renderScale, title, company,
-        version, packageName, language, platforms, vsync, fullscreen, hasRender, renderResolution, renderSmooth,
+        version, packageName, language, platforms, List.of(), vsync, fullscreen, hasRender, renderResolution,
+        renderSmooth,
         transparent);
   }
 }

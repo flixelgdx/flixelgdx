@@ -43,6 +43,10 @@ resolution  = [0, 0]         # 0 means use the window size
 scale       = 1.0
 smooth      = true
 transparent = false
+
+[defines]                    # optional, your own constants
+demo      = false
+max_saves = 3
 ```
 
 `platforms` is a top-level key, so it has to come before the first `[table]`. Tables and keys the plugin does not
@@ -102,7 +106,7 @@ A value that breaks a rule fails the build with a message that names the field a
    ```
 
    | Property           | Value                                                                  |
-   |--------------------|------------------------------------------------------------------------|
+   |-----------------------------------------------|--------------------------------------------------------------------------|
    | `game.title`       | `app.title`                                                            |
    | `game.packageName` | `app.package`                                                          |
    | `game.company`     | `app.company`                                                          |
@@ -112,6 +116,7 @@ A value that breaks a rule fails the build with a message that names the field a
    | `game.width`, `game.height`, `game.framerate` | The `[window]` numbers.                        |
    | `game.isVsync`, `game.isFullscreen` | The `[window]` switches (`game.vsync` and `game.fullscreen` in Groovy). |
    | `game.platforms`   | `platforms`                                                            |
+   | `game.defines`     | The `[defines]` table, looked up by key, such as `game.defines["demo"]`. |
    | `game.model`       | Every value, including the `[render]` ones.                            |
 
    The extension is also available as `flixelProject`, the name earlier versions used, so older build scripts keep
@@ -152,6 +157,66 @@ The task is called `generateProjectClass`. It is cacheable and reruns only when 
 folder, `build/generated/flixelgdx/project`, is a Java source folder of the `main` source set, so
 compiling (Java or Kotlin) always runs it first. The class is also written whenever an IDE reloads the Gradle
 project, so `Project` resolves right after a sync without a build.
+
+## Your own constants: `[defines]`
+
+Most games have a few values that change between builds or that belong in one obvious place: a demo flag, a cheats
+switch, a server address, the number of save slots. Put them in a `[defines]` table:
+
+```toml
+[defines]
+demo          = false
+enable_cheats = false
+max_saves     = 3
+gravity       = 980.0
+leaderboard   = "https://scores.example.com/my-game"
+```
+
+and they become constants in a nested `Defines` class of `Project`:
+
+```java
+public static final class Defines {
+  public static final boolean DEMO = false;
+  public static final boolean ENABLE_CHEATS = false;
+  public static final int MAX_SAVES = 3;
+  public static final float GRAVITY = 980.0f;
+  public static final String LEADERBOARD = "https://scores.example.com/my-game";
+}
+```
+
+```java
+import com.example.mygame.Project.Defines;
+
+if (Defines.ENABLE_CHEATS && Flixel.keys.justPressed(FlixelKey.F1)) {
+  player.health = 999;
+}
+```
+
+Because they are compile-time constants, the compiler removes code behind a flag that is `false`. In the example, the
+cheat code is not in the built game at all, so flags like these cost nothing at runtime.
+
+| TOML value             | Java type                                      |
+|------------------------|------------------------------------------------|
+| `true` or `false`      | `boolean`                                      |
+| A whole number         | `int`, or `long` when it does not fit an `int` |
+| A decimal number       | `float`                                        |
+| A string in quotes     | `String`                                       |
+
+Arrays, nested tables and dates are not supported and fail the build with the key that is wrong. Keys turn into
+UPPER_SNAKE_CASE with the same rules as the assets plugin: `max_saves`, `max-saves` and `maxSaves` all become
+`MAX_SAVES`, and a key that starts with a digit gets a leading `_`. Two keys that turn into the same name fail the build.
+The constants live in their own `Defines` class, so they can never clash with `Project`'s own constants.
+
+Build scripts can read the same values, so a flag can change the build too:
+
+```kotlin
+// desktop/build.gradle.kts
+if (game.defines["demo"] == true) {
+  packagr { appName = "My Game Demo" }
+}
+```
+
+Defines end up in the built game as plain text, so they are not a place for passwords or secret keys.
 
 ## The build number
 

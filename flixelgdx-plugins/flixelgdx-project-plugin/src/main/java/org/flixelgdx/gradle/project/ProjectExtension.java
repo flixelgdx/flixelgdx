@@ -23,7 +23,10 @@
  */
 package org.flixelgdx.gradle.project;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Read-only view of a game's {@code project.toml}, available on every project as {@code game}.
@@ -173,6 +176,28 @@ public final class ProjectExtension {
    */
   public List<String> getPlatforms() {
     return model.platforms();
+  }
+
+  /**
+   * The values of the {@code [defines]} table, looked up by the key written in the file.
+   *
+   * <p>Build scripts can branch on the same flags the game's code uses:
+   *
+   * <pre>{@code
+   * if (game.defines["demo"] == true) {
+   *   packagr { appName = "My Game Demo" }
+   * }
+   * }</pre>
+   *
+   * @return A read-only map from each key to its value (a {@link Boolean}, {@link Integer}, {@link Long},
+   *     {@link Float} or {@link String}), in the order the keys were written. Empty when there is no table.
+   */
+  public Map<String, Object> getDefines() {
+    Map<String, Object> defines = new LinkedHashMap<>();
+    for (ProjectDefine define : model.defines()) {
+      defines.put(define.key(), define.value());
+    }
+    return Collections.unmodifiableMap(defines);
   }
 
   /**

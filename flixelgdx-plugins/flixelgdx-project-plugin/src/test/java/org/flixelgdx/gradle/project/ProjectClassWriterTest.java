@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProjectClassWriterTest {
@@ -121,6 +122,51 @@ class ProjectClassWriterTest {
   void writesTheBuildNumber() {
     String source = ProjectClassWriter.write(ProjectToml.parse(APP + "build = 14\n"));
     assertTrue(source.contains("public static final int BUILD = 14;"), source);
+  }
+
+  @Test
+  void writesDefinesIntoANestedClass() {
+    String source = ProjectClassWriter.write(ProjectToml.parse(APP + """
+        [defines]
+        demo = true
+        max_saves = 3
+        big = 5_000_000_000
+        gravity = 980.0
+        api_url = "https://example.com"
+        """));
+
+    String expected = """
+                .fullscreen(FULLSCREEN);
+          }
+
+          /** Values from the [defines] table of project.toml. */
+          public static final class Defines {
+            public static final boolean DEMO = true;
+            public static final int MAX_SAVES = 3;
+            public static final long BIG = 5000000000L;
+            public static final float GRAVITY = 980.0f;
+            public static final String API_URL = "https://example.com";
+
+            private Defines() {}
+          }
+        }
+        """;
+    assertTrue(source.endsWith(expected), source);
+  }
+
+  @Test
+  void noDefinesTableMeansNoDefinesClass() {
+    assertFalse(ProjectClassWriter.write(ProjectToml.parse(APP)).contains("Defines"));
+  }
+
+  @Test
+  void defineStringsAreEscapedForJava() {
+    // A plain literal instead of a text block, so the TOML escapes reach the parser as written.
+    String toml = "[defines]\ntext = \"line one\\nline two\\ttab \\\\ \\\"quoted\\\" caf\\u00e9 bell\\u0007\"\n";
+    String source = ProjectClassWriter.write(ProjectToml.parse(APP + toml));
+
+    assertTrue(source.contains(
+        "TEXT = \"line one\\nline two\\ttab \\\\ \\\"quoted\\\" caf\\u00E9 bell\\007\";"), source);
   }
 
   @Test

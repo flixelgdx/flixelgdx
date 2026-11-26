@@ -114,7 +114,8 @@ public final class ProjectToml {
     boolean transparent = bool(toml, "render.transparent", false);
 
     return new ProjectModel(width, height, framerate, build, renderWidth, renderHeight, renderScale, title, company,
-        version, packageName, language, platforms(toml), vsync, fullscreen, hasRender, renderResolution,
+        version, packageName, language, platforms(toml), ProjectDefines.parse(toml), vsync, fullscreen, hasRender,
+        renderResolution,
         renderSmooth, transparent);
   }
 
