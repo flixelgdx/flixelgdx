@@ -188,9 +188,10 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * When {@code true}, each draw adds the current {@link Flixel#getDrawCamera()} scroll to the bar
-   * position so the bar stays fixed on the monitor while the camera moves. When {@code false}, the bar
-   * uses normal sprite coordinates (moves with the world).
+   * When {@code true}, the bar ignores the scroll of {@link Flixel#getDrawCamera()}, so it and its
+   * text stay fixed on the screen while the camera moves, like a health bar in a corner of the HUD.
+   * When {@code false}, the bar uses normal sprite coordinates and moves with the world, following
+   * its scroll factor.
    *
    * @param screenSpace {@code true} to pin to the viewport in screen space; {@code false} for world space.
    * @return {@code this} for chaining.
@@ -593,16 +594,14 @@ public class FlixelBar extends FlixelSprite {
     ensureWhitePixel();
 
     FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.cameras.first();
+    // A screen-space bar ignores the camera scroll, which is the same as a scroll factor of zero.
+    float scrollFactorX = screenSpace ? 0f : getScrollX();
+    float scrollFactorY = screenSpace ? 0f : getScrollY();
     float px = getX();
     float py = getY();
-    if (screenSpace) {
-      if (cam != null) {
-        px += cam.scrollX * getScrollX();
-        py += cam.scrollY * getScrollY();
-      }
-    } else if (cam != null) {
-      px = cam.worldToViewX(px, getScrollX());
-      py = cam.worldToViewY(py, getScrollY());
+    if (cam != null) {
+      px = cam.worldToViewX(px, scrollFactorX);
+      py = cam.worldToViewY(py, scrollFactorY);
     }
 
     float w = getWidth();
@@ -629,6 +628,7 @@ public class FlixelBar extends FlixelSprite {
 
       // Logical center so FlixelText applies the same scrollFactor as other sprites (matches bar quads above).
       text.setPosition(tcx - text.getWidth() / 2f, tcy - text.getHeight() / 2f);
+      text.setScrollFactor(scrollFactorX, scrollFactorY);
       text.cameras = cameras;
       text.draw(batch);
       text.setPosition(oldX, oldY);

@@ -262,7 +262,21 @@ class FlixelBarTest {
     camera.scrollX = 50f;
     bar.draw(batch);
     assertEquals(-40f, batch.calls.get(0).x(), EPS);
-    bar.setScreenSpace(true).draw(batch);
+  }
+
+  @Test
+  void screenSpaceBarsStayPutWhenTheCameraScrolls() {
+    camera.scrollX = 50f;
+    camera.scrollY = 30f;
+    bar.setScreenSpace(true).setText("HP");
+    bar.draw(batch);
+    assertEquals(10f, batch.calls.get(0).x(), EPS);
+    assertEquals(20f, batch.calls.get(0).y(), EPS);
+    assertEquals(0f, bar.text.getScrollX(), EPS, "the label is pinned with the bar");
+
+    bar.setScreenSpace(false);
+    bar.draw(batch);
+    assertEquals(1f, bar.text.getScrollX(), EPS);
   }
 
   @Test
