@@ -50,7 +50,7 @@ know (such as an `[installed]` table that tools write) are ignored.
 ## The values
 
 | Key                      | Required | Default                | Notes                                                                 |
-|--------------------------|----------|------------------------|-----------------------------------------------------------------------|
+|--------------------------|----------|------------------------|-------------------------------------------------------------------------------------------|
 | `app.title`              | yes      |                        | Printable ASCII, see the naming rules below.                          |
 | `app.company`            | yes      |                        | Same rules as the title.                                              |
 | `app.version`            | yes      |                        | Letters, digits, `.`, `+` and `-`, and it starts with a digit.        |
@@ -87,16 +87,32 @@ A value that breaks a rule fails the build with a message that names the field a
    (`sdk.dir` in `local.properties`, or the `ANDROID_HOME` or `ANDROID_SDK_ROOT` environment variable pointing to a
    folder). Otherwise it is skipped with a warning that explains how to point to one.
 2. **Sets the project info.** Every project gets `group` set to the package and `version` set to the version, and a
-   read-only `flixelProject` extension with the values:
+   read-only `game` extension with the values:
 
-   ```groovy
-   // android/build.gradle
+   ```kotlin
+   // android/build.gradle.kts
    android {
      defaultConfig {
-       versionName = version.toString()
+       applicationId = game.packageName
+       versionName = game.version
      }
    }
    ```
+
+   | Property           | Value                                                                  |
+   |-----------------------------------------------|-------------------------------------------------------------------------|
+   | `game.title`                                 | `app.title`                                                            |
+   | `game.packageName`                         | `app.package`                                                          |
+   | `game.company`                             | `app.company`                                                          |
+   | `game.version`                             | `app.version`                                                          |
+   | `game.language`                            | `app.language`                                                         |
+   | `game.width`, `game.height`, `game.framerate` | The `[window]` numbers.                        |
+   | `game.isVsync`, `game.isFullscreen` | The `[window]` switches (`game.vsync` and `game.fullscreen` in Groovy). |
+   | `game.platforms`   | `platforms`                                                            |
+   | `game.model`       | Every value, including the `[render]` ones.                            |
+
+   The extension is also available as `flixelProject`, the name earlier versions used, so older build scripts keep
+   working. New scripts should use `game`.
 
 3. **Sets defaults for the other plugins.** The `org.flixelgdx.html5` plugin uses the title as its page title, and the
    `org.flixelgdx.packagr` plugin uses the title as its application name and (through `version`) the version.
