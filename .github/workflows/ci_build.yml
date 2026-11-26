@@ -77,7 +77,7 @@ jobs:
         run: ./gradlew test :flixelgdx-test:testCodeCoverageReport --no-daemon --warning-mode all
         shell: bash
 
-      # The coverage report only informs; it never fails the build. Download it from the run's summary page.
+      # The coverage report can be downloaded from the run's summary page, even when the tests fail.
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4

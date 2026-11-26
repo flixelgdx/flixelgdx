@@ -43,11 +43,49 @@ jacoco {
   toolVersion = libs.versions.jacoco.get()
 }
 
-// The aggregation plugin adds a testCodeCoverageReport task. Run ./gradlew :flixelgdx-test:testCodeCoverageReport,
-// then open build/reports/jacoco/testCodeCoverageReport/html/index.html in this module.
+// Code that only forwards to a platform backend is left out of the coverage numbers: the audio package (real playback
+// lives in each backend) and the backend interfaces with their no-op defaults in org.flixelgdx.backend itself. Its
+// sub-packages, such as backend.gpu and backend.jvm, hold real logic and stay included.
+val coverageExcludes = listOf(
+  "org/flixelgdx/audio/**",
+  "org/flixelgdx/backend/*.class"
+)
+
+val coverageReport = tasks.named<JacocoReport>("testCodeCoverageReport") {
+  val classes = classDirectories.from.toList()
+  classDirectories.setFrom(files(classes).asFileTree.matching { exclude(coverageExcludes) })
+}
+
+// A run narrowed with --tests covers only part of the framework, so it skips the coverage check instead of failing it.
+val narrowedTestRun = gradle.startParameter.taskRequests.any { "--tests" in it.args }
+
+// Fails the build when the tests run less than 70% of the framework's lines or 60% of its branches.
+val coverageVerification = tasks.register<JacocoCoverageVerification>("testCodeCoverageVerification") {
+  group = "verification"
+  description = "Fails when the unit tests cover less than 70% of lines or 60% of branches."
+  executionData.from(coverageReport.map { it.executionData })
+  classDirectories.from(coverageReport.map { it.classDirectories })
+  sourceDirectories.from(coverageReport.map { it.sourceDirectories })
+  onlyIf("the whole test suite ran") { !narrowedTestRun }
+  violationRules {
+    rule {
+      limit {
+        counter = "LINE"
+        minimum = "0.70".toBigDecimal()
+      }
+      limit {
+        counter = "BRANCH"
+        minimum = "0.60".toBigDecimal()
+      }
+    }
+  }
+}
 
 tasks.named<Test>("test") {
   useJUnitPlatform()
+
+  // ./gradlew test always builds the coverage report and checks the minimum.
+  finalizedBy(coverageReport, coverageVerification)
 
   // The GPU smoke test calls the WebGPU library through Java's foreign function API.
   jvmArgs("--enable-native-access=ALL-UNNAMED")

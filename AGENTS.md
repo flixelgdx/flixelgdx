@@ -233,6 +233,11 @@ Before finishing a coding task finished, run:
 4. Javadocs: `./gradlew javadocAll`
 5. Unit tests: `./gradlew test` (always the root task, so every module's tests run, never a single module's)
 
+A task is not complete until `./gradlew test` passes, including its coverage check: the tests must cover at least
+**70% of the lines** and **60% of the branches** of the framework. Any new or changed logic needs tests that check what
+its Javadoc promises (normal cases, edge cases, and documented exceptions), not tests that only run lines to raise the
+number. If code behaves differently from its Javadoc, report it instead of writing a test that locks in the bug.
+
 Additionally, if you are currently on a branch for a pull request, always update the description of the PR to ensure accuracy
 after completing a task.
 
