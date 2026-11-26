@@ -57,7 +57,7 @@ import java.util.stream.Stream;
 public abstract class GenerateProjectClassTask extends DefaultTask {
 
   /** The default output directory, relative to the build directory. */
-  public static final String OUTPUT_DIR = "generated/sources/flixelProject/java/main";
+  public static final String OUTPUT_DIR = "generated/flixelgdx/project";
 
   /** Writes the project class. */
   @TaskAction

@@ -27,6 +27,7 @@ import org.gradle.api.GradleException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -104,5 +105,51 @@ class BumpBuildTaskTest {
   @Test
   void refusesNumbersItCannotEditSafely() {
     assertThrows(GradleException.class, () -> BumpBuildTask.bump(APP + "\"build\" = 5\n"));
+  }
+
+  @Test
+  void raisesTheLastNumberOfTheVersion() {
+    assertEquals("0.3.1", BumpBuildTask.nextVersion("0.3.0"));
+    assertEquals("1.10", BumpBuildTask.nextVersion("1.9"));
+    assertEquals("8", BumpBuildTask.nextVersion("7"));
+    assertEquals("1.0.99999999999999999999", BumpBuildTask.nextVersion("1.0.99999999999999999998"));
+  }
+
+  @Test
+  void leavesVersionsThatDoNotEndInANumber() {
+    assertNull(BumpBuildTask.nextVersion("1.0-beta"));
+    assertNull(BumpBuildTask.nextVersion("1.0.0+5"));
+  }
+
+  @Test
+  void setsTheVersionAndKeepsTheRestOfTheLine() {
+    String text = APP.replace("version = \"0.1.0\"", "version = \"0.1.0\" # shown on the title screen");
+
+    String expected = APP.replace("version = \"0.1.0\"", "version = \"0.1.1\" # shown on the title screen");
+    assertEquals(expected, BumpBuildTask.setVersion(text, "0.1.1"));
+  }
+
+  @Test
+  void setsLiteralStringsDottedKeysAndWindowsLines() {
+    String literal = APP.replace("\"0.1.0\"", "'0.1.0'");
+    assertEquals(literal.replace("'0.1.0'", "'2.0.0'"), BumpBuildTask.setVersion(literal, "2.0.0"));
+
+    String dotted = "app.title = \"G\"\napp.package = \"a.b\"\napp.company = \"C\"\napp.version = \"1\"\n";
+    assertEquals(dotted.replace("\"1\"", "\"2\""), BumpBuildTask.setVersion(dotted, "2"));
+
+    String crlf = APP.replace("\n", "\r\n");
+    assertEquals(crlf.replace("0.1.0", "0.2.0"), BumpBuildTask.setVersion(crlf, "0.2.0"));
+  }
+
+  @Test
+  void ignoresVersionKeysInOtherTables() {
+    String text = "[[installed]]\nversion = \"9\"\n\n" + APP;
+    assertEquals(text.replace("0.1.0", "0.1.1"), BumpBuildTask.setVersion(text, "0.1.1"));
+  }
+
+  @Test
+  void refusesVersionsItCannotEditSafely() {
+    String multiLine = APP.replace("\"0.1.0\"", "\"\"\"0.1.0\"\"\"");
+    assertThrows(GradleException.class, () -> BumpBuildTask.setVersion(multiLine, "0.1.1"));
   }
 }
