@@ -323,6 +323,21 @@ The Gradle plugins in `flixelgdx-plugins` have tests of their own. Run them when
 
 Replace `flixelgdx-project-plugin` with the plugin you changed. CI runs the tests of every plugin on each pull request.
 
+### Test coverage
+
+To see which lines of the framework the tests actually run, build the coverage report with
+[JaCoCo](https://www.jacoco.org/jacoco/):
+
+```bash
+./gradlew :flixelgdx-test:testCodeCoverageReport
+```
+
+Then open `flixelgdx-test/build/reports/jacoco/testCodeCoverageReport/html/index.html` in a browser. Green lines ran
+during the tests, red lines never ran, and yellow lines are branches where only some of the paths ran (for example an
+`if` that was only ever `true`). Red and yellow lines are the best places to add tests. The report covers
+`flixelgdx-core`, `flixelgdx-gpu` and `flixelgdx-jvm`. CI builds it on every pull request and attaches it to the run
+as the `coverage-report` artifact.
+
 ---
 
 ## HTML5 setup and configuration

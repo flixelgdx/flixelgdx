@@ -74,8 +74,17 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run JVM unit tests
-        run: ./gradlew :flixelgdx-test:test :flixelgdx-desktop:test --no-daemon --warning-mode all
+        run: ./gradlew :flixelgdx-test:test :flixelgdx-desktop:test :flixelgdx-test:testCodeCoverageReport --no-daemon --warning-mode all
         shell: bash
+
+      # The coverage report only informs; it never fails the build. Download it from the run's summary page.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: flixelgdx-test/build/reports/jacoco/testCodeCoverageReport/html
+          if-no-files-found: ignore
 
   plugin-tests:
     name: Plugin tests
