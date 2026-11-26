@@ -189,7 +189,7 @@ Listeners on global signals stay registered across state switches until you remo
    than crashing.
 2. **Use them from the main thread.** Unless a method's documentation says otherwise, call framework APIs from your
    game code (your state's methods), not from your own background threads. If you must hand work back to the game
-   thread, queue it with `Flixel.graphics.queueMainThread(() -> ...)`.
+   thread, queue it with `Flixel.runtime.queueMainThread(() -> ...)`.
 3. **Do not cache what can change.** `Flixel.state` changes on every switch, and `Flixel.cameras.first()` is a new
    camera after every switch. Read them when you need them instead of storing them in a long-lived field.
 
@@ -211,6 +211,6 @@ See [Extending the Framework](extending-the-framework.md) and [Architecture](arc
 3. A network thread receives a chat message. How do you show it in the game safely?
 
 (Answers: the platform installs the input managers after the constructor runs, during startup; visible width;
-queue the update with `Flixel.graphics.queueMainThread(...)` and change the text inside that callback.)
+queue the update with `Flixel.runtime.queueMainThread(...)` and change the text inside that callback.)
 
 **Next:** [Groups and Recycling](groups-and-recycling.md)

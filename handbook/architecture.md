@@ -92,7 +92,7 @@ like the standard socket in a wall. These are the main seams:
 | `FlixelHostIntegration`                 | `Flixel.host`                               | Clipboard, notifications, file dialogs, monitors.    |
 | `FlixelHaptics`                         | `Flixel.haptics`                            | Device vibration.                                    |
 | `FlixelAlerter`                         | `Flixel.alert`                              | Native message boxes.                                |
-| `FlixelRuntimeDevice`                   | `Flixel.runtime`                            | Memory, runtime mode, crash handler, environment.    |
+| `FlixelRuntimeDevice`                   | `Flixel.runtime`                            | Memory, runtime mode, crash handler, environment, main-thread task queue. |
 | `FlixelProfiler`                        | `Flixel.profiler`                           | Trace sections for platform profilers.               |
 | `FlixelFontRasterizer`                  | `FlixelFontRegistry.setRasterizer(...)`     | Turning `.ttf`/`.otf` files into glyph images.       |
 | `FlixelLogSink`, `FlixelLogSiteResolver`, `FlixelLogFileSink` | `Flixel.log`          | Where logs go and how call sites are found.          |
@@ -158,7 +158,7 @@ A few systems use helper threads internally, and always hand results back to the
 - The debugger's network connection runs on its own thread and passes messages through queues.
 
 If your own code uses threads (networking, heavy generation), hand results back with
-`Flixel.graphics.queueMainThread(...)`.
+`Flixel.runtime.queueMainThread(...)`.
 
 ## Inside core: the package map
 

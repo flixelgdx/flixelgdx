@@ -234,6 +234,21 @@ boolean inIde = Flixel.runtime.isRunningInIDE();
 FlixelRunEnvironment env = Flixel.runtime.getEnvironment();
 ```
 
+It also owns the game's **main-thread queue**. Work that finishes on another thread (a network reply, a background
+loader, a clipboard paste) must not touch sprites, text, or the GPU directly, because the game may be using them at
+that moment. Hand it to `Flixel.runtime.queueMainThread(...)` instead, and the framework runs it on the main thread at
+the start of the next frame:
+
+```java
+new Thread(() -> {
+  String scores = downloadHighScores(); // Slow, so it runs on its own thread.
+  Flixel.runtime.queueMainThread(() -> scoresText.setText(scores));
+}).start();
+```
+
+The queue lives on the runtime, not on `Flixel.graphics`, because it is about which thread runs your code, not about
+drawing. On Android the main thread is FlixelGDX's render thread (`flixel-render`), not the Android UI thread.
+
 Screen density is on the host: `Flixel.host.getDensity()` and `Flixel.host.getPpi()`, useful for sizing touch controls
 on phones.
 
