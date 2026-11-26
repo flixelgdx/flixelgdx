@@ -29,10 +29,10 @@ import org.junit.jupiter.api.Test;
 import io.github.stringdotjar.jwebgpu.GpuBackendType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class FlixelGpuForcedApiTest {
+class FlixelGpuApiTest {
 
   @Test
   void everyForceableApiMapsToItsNativeBackend() {
@@ -57,23 +57,30 @@ class FlixelGpuForcedApiTest {
     assertEquals(GpuBackendType.UNDEFINED, FlixelGpuGraphics.backendTypeOf(custom));
 
     FlixelGpuGraphics graphics = new FlixelGpuGraphics();
-    graphics.setForcedApi(custom);
-    assertSame(custom, graphics.getForcedApi());
+    graphics.setApi(custom);
+    assertSame(custom, graphics.getApi());
     assertEquals(GpuBackendType.UNDEFINED, graphics.getForcedBackendType());
   }
 
   @Test
-  void theForcedApiIsKeptBeforeTheGraphicsContextExists() {
+  void getApiReportsTheRequestedApiBeforeTheGraphicsContextExists() {
     FlixelGpuGraphics graphics = new FlixelGpuGraphics();
-    assertNull(graphics.getForcedApi());
+    assertSame(FlixelGraphicsApi.WEBGPU, graphics.getApi());
     assertEquals(GpuBackendType.UNDEFINED, graphics.getForcedBackendType());
 
-    graphics.setForcedApi(FlixelGraphicsApi.VULKAN);
-    assertSame(FlixelGraphicsApi.VULKAN, graphics.getForcedApi());
+    graphics.setApi(FlixelGraphicsApi.VULKAN);
+    assertSame(FlixelGraphicsApi.VULKAN, graphics.getApi());
     assertEquals(GpuBackendType.VULKAN, graphics.getForcedBackendType());
 
-    graphics.setForcedApi(null);
-    assertNull(graphics.getForcedApi());
+    graphics.setApi(FlixelGraphicsApi.WEBGPU);
+    assertSame(FlixelGraphicsApi.WEBGPU, graphics.getApi());
     assertEquals(GpuBackendType.UNDEFINED, graphics.getForcedBackendType());
+  }
+
+  @Test
+  void settingANullApiThrows() {
+    FlixelGpuGraphics graphics = new FlixelGpuGraphics();
+    assertThrows(NullPointerException.class, () -> graphics.setApi(null));
+    assertSame(FlixelGraphicsApi.WEBGPU, graphics.getApi());
   }
 }

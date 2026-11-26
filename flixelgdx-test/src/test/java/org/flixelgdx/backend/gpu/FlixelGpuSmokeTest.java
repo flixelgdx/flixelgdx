@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -132,9 +133,11 @@ class FlixelGpuSmokeTest {
   }
 
   @Test
-  void forcingAnApiAfterTheGraphicsContextExistsIsIgnored() {
-    graphics.setForcedApi(FlixelGraphicsApi.VULKAN);
-    assertNull(graphics.getForcedApi());
+  void settingTheApiAfterTheGraphicsContextExistsIsIgnored() {
+    FlixelGraphicsApi running = graphics.getApi();
+    graphics.setApi(FlixelGraphicsApi.VULKAN);
+    assertSame(running, graphics.getApi());
+    assertEquals(GpuBackendType.UNDEFINED, graphics.getForcedBackendType());
   }
 
   @Test

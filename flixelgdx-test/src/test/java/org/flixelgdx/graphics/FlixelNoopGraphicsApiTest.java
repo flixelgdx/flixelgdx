@@ -25,17 +25,15 @@ package org.flixelgdx.graphics;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-class FlixelNoopGraphicsForcedApiTest {
+class FlixelNoopGraphicsApiTest {
 
   @Test
-  void theDefaultManagerHasNoForcedApiAndIgnoresOne() {
+  void theDefaultManagerReportsNoopAndIgnoresSetApi() {
     FlixelGraphicsManager graphics = FlixelNoopGraphicsManager.INSTANCE;
-    assertNull(graphics.getForcedApi());
-    graphics.setForcedApi(FlixelGraphicsApi.VULKAN);
-    assertNull(graphics.getForcedApi());
+    assertSame(FlixelGraphicsApi.NOOP, graphics.getApi());
+    graphics.setApi(FlixelGraphicsApi.VULKAN);
     assertSame(FlixelGraphicsApi.NOOP, graphics.getApi());
   }
 }
