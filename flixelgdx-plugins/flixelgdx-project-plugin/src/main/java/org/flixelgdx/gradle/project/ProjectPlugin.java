@@ -36,6 +36,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.jetbrains.annotations.Nullable;
+import org.tomlj.Toml;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,6 +86,8 @@ import java.util.Properties;
  *       {@link ProjectExtension} as {@code game}.</li>
  *   <li>Applies a profile's overrides when one is selected with {@value #PROFILE_PROPERTY}, see
  *       {@link ProjectToml}.</li>
+ *   <li>Adds tasks per profile to each platform module, such as {@code :desktop:demo} to start the game and
+ *       {@code :desktop:demoPackage} to package it with that profile, see {@link ProfileTasks}.</li>
  *   <li>Adds a {@code bumpBuild} task to the root project, see {@link BumpBuildTask}.</li>
  *   <li>Adds a {@code doctor} task to the root project, see {@link DoctorTask}. When it is the only task requested, a
  *       broken {@code project.toml} is shown in its report instead of failing the build first.</li>
@@ -130,15 +133,17 @@ public class ProjectPlugin implements Plugin<Settings> {
     String text = settings.getProviders().fileContents(settings.getLayout().getSettingsDirectory().file(FILE_NAME))
         .getAsText().getOrNull();
     // Also read through the providers, so switching profiles drops a configuration cache entry too.
-    String profile = settings.getProviders().gradleProperty(PROFILE_PROPERTY).getOrElse("").strip();
+    String property = settings.getProviders().gradleProperty(PROFILE_PROPERTY).getOrElse("").strip();
     ProjectModel model = null;
     String problem = null;
+    List<String> profiles = List.of();
     try {
       if (text == null) {
         throw new GradleException("Could not find " + FILE_NAME + ". It is expected next to the settings file, at "
             + file.getAbsolutePath() + ".");
       }
-      model = ProjectToml.parse(text, profile);
+      profiles = ProjectToml.profileNames(Toml.parse(text));
+      model = ProjectToml.parse(text, selectProfile(settings, profiles, property));
     } catch (GradleException e) {
       if (!lenient) {
         throw e;
@@ -151,12 +156,33 @@ public class ProjectPlugin implements Plugin<Settings> {
     List<String> notes = new ArrayList<>();
     if (model != null) {
       includeModules(settings, model, dir, sdk, lenient, modules, notes);
+      if (!lenient) {
+        ProfileTasks.checkModules(settings.getGradle().getStartParameter().getTaskNames(), model.profile(),
+            model.platforms());
+      }
     }
 
     ProjectExtension info = model == null ? null : new ProjectExtension(model);
     ProjectDoctor.Facts facts = new ProjectDoctor.Facts(dir, text, model, problem, List.copyOf(modules),
         List.copyOf(notes), sdk);
-    settings.getGradle().beforeProject(project -> configure(project, info, file, facts));
+    List<String> profileNames = profiles;
+    settings.getGradle().beforeProject(project -> configure(project, info, file, facts, profileNames));
+  }
+
+  /**
+   * Picks the profile for this run: the one a profile task such as {@code demo} asks for, else the
+   * {@value #PROFILE_PROPERTY} property.
+   */
+  private static String selectProfile(Settings settings, List<String> profiles, String property) {
+    String requested = ProfileTasks.requested(settings.getGradle().getStartParameter().getTaskNames(), profiles);
+    if (requested == null) {
+      return property;
+    }
+    if (!property.isEmpty() && !property.equals(requested)) {
+      throw new GradleException("The requested tasks need the '" + requested + "' profile, but -P" + PROFILE_PROPERTY
+          + " selects '" + property + "'. One Gradle run can only use one profile, so drop one of them.");
+    }
+    return requested;
   }
 
   private static boolean isDoctorOnly(Settings settings) {
@@ -232,7 +258,7 @@ public class ProjectPlugin implements Plugin<Settings> {
   }
 
   private static void configure(Project project, @Nullable ProjectExtension info, File file,
-      ProjectDoctor.Facts facts) {
+      ProjectDoctor.Facts facts, List<String> profiles) {
     if (project == project.getRootProject()) {
       // Registered after the build script ran, so a game that already has a task with this name keeps its own.
       // The report itself is built when the task runs, once every module (and its Java toolchain) is configured.
@@ -247,6 +273,11 @@ public class ProjectPlugin implements Plugin<Settings> {
       return;
     }
     ProjectModel model = info.getModel();
+    if (!profiles.isEmpty()) {
+      // Once every module is configured, so the tasks of other plugins (such as Android's installDebug) exist.
+      project.getGradle()
+          .projectsEvaluated(gradle -> ProfileTasks.register(project, profiles, model.profile(), model.mode()));
+    }
     project.setGroup(model.packageName());
     project.setVersion(model.version());
     project.getExtensions().add(ProjectExtension.class, ProjectExtension.NAME, info);

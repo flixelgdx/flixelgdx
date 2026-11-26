@@ -411,6 +411,133 @@ class ProjectPluginFunctionalTest {
     assertFalse(output.contains("FlixelGDX project:"), output);
   }
 
+  /** A desktop module with stand-ins for its run task and another task profile tasks must not copy. */
+  private static final String DESKTOP_TASKS = """
+      def profile = game.profile
+      def mode = game.mode
+      tasks.register('run') {
+        doLast { println 'RUN [' + profile + '] [' + mode + ']' }
+      }
+      tasks.register('debug') {
+        doLast { println 'DEBUG [' + profile + ']' }
+      }
+      tasks.register('packageAll') {
+        doLast { println 'PACKAGE [' + profile + '] [' + mode + ']' }
+      }
+      """;
+
+  private static final String PROFILES = "\n[profile.playtest]\napp.mode = \"debug\"\nwindow.fullscreen = false\n"
+      + "\n[profile.demo]\napp.title = \"My Game Demo\"\n";
+
+  @Test
+  void aProfileTaskStartsTheGameWithThatProfileAndItsMode() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    assertTrue(runner(":desktop:playtest").build().getOutput().contains("RUN [playtest] [debug]"));
+    assertTrue(runner(":desktop:demo").build().getOutput().contains("RUN [demo] []"));
+    assertTrue(runner(":desktop:run").build().getOutput().contains("RUN [] []"));
+  }
+
+  @Test
+  void eachProfileGetsOneTaskNamedAfterIt() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    String output = runner(":desktop:tasks", "--group", "profiles").build().getOutput();
+
+    assertTrue(output.contains("playtest - Starts the game (run)") && output.contains("demo - Starts the game"),
+        output);
+    assertTrue(output.contains("demoPackage - Packages the game (packageAll)"), output);
+    assertTrue(output.contains("playtestPackage - Packages the game (packageAll)"), output);
+    assertFalse(output.contains("runPlaytest") || output.contains("debugPlaytest"), output);
+  }
+
+  @Test
+  void aPackagingTaskPackagesWithThatProfile() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    String demo = runner(":desktop:demoPackage").build().getOutput();
+    assertTrue(demo.contains("PACKAGE [demo] []"), demo);
+    assertFalse(demo.contains("so this package starts in"), demo);
+
+    String playtest = runner(":desktop:playtestPackage").build().getOutput();
+    assertTrue(playtest.contains("PACKAGE [playtest] [debug]"), playtest);
+    assertTrue(playtest.contains("so this package starts in debug mode"), playtest);
+  }
+
+  @Test
+  void aShortenedProfileTaskNameFailsBeforeTheGameStarts() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    BuildResult result = runner(":desktop:playt").buildAndFail();
+
+    assertTrue(result.getOutput().contains("needs the 'playtest' profile"), result.getOutput());
+    assertTrue(result.getOutput().contains(":desktop:playtest"), result.getOutput());
+    assertFalse(result.getOutput().contains("RUN ["), result.getOutput());
+  }
+
+  @Test
+  void aProfileTaskAndADifferentProfilePropertyFail() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    String both = runner(":desktop:playtest", "-Pflixel.profile=demo").buildAndFail().getOutput();
+    assertTrue(both.contains("'playtest'") && both.contains("'demo'"), both);
+
+    String two = runner(":desktop:playtest", ":desktop:demo").buildAndFail().getOutput();
+    assertTrue(two.contains("one Gradle run can only use one profile"), two);
+
+    String same = runner(":desktop:playtest", "-Pflixel.profile=playtest").build().getOutput();
+    assertTrue(same.contains("RUN [playtest]"), same);
+  }
+
+  @Test
+  void aProfileTaskOfALeftOutPlatformExplainsWhy() throws IOException {
+    setUp(TOML.replace("[\"desktop\"]", "[\"desktop\", \"android\"]")
+        + "\n[profile.demo]\nplatforms = [\"desktop\"]\n");
+    Files.createDirectories(dir.resolve("android"));
+    Path sdk = Files.createDirectories(dir.resolve("sdk"));
+    write("local.properties", "sdk.dir=" + sdk.toString().replace("\\", "\\\\") + "\n");
+
+    String output = runner(":android:demo").buildAndFail().getOutput();
+
+    assertTrue(output.contains("does not include it"), output);
+  }
+
+  @Test
+  void profilesNamedLikeCommonTasksGetNoTask() throws IOException {
+    setUp(TOML + "\n[profile.build]\nwindow.fullscreen = false\n");
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    String output = runner(":desktop:run").build().getOutput();
+
+    assertTrue(output.contains("gets no task") && output.contains("RUN [] []"), output);
+  }
+
+  @Test
+  void profileTasksWorkWithTheConfigurationCache() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS);
+
+    assertTrue(runner(":desktop:demo", "--configuration-cache").build().getOutput().contains("RUN [demo]"));
+    String second = runner(":desktop:demo", "--configuration-cache").build().getOutput();
+    assertTrue(second.contains("RUN [demo]") && second.contains("Reusing configuration cache"), second);
+  }
+
+  @Test
+  void aGamesOwnTaskWithAProfileNameWins() throws IOException {
+    setUp(TOML + PROFILES);
+    write("desktop/build.gradle", DESKTOP_TASKS + "tasks.register('demo') {\n  doLast { println 'MINE' }\n}\n");
+
+    String output = runner(":desktop:demo").build().getOutput();
+
+    assertTrue(output.contains("MINE") && output.contains("already has a task named 'demo'"), output);
+    assertFalse(output.contains("RUN ["), output);
+  }
+
   @Test
   void bumpBuildRaisesTheNumberInTheFile() throws IOException {
     setUp(TOML + "build = 14 # keep me\n");

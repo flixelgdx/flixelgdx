@@ -257,6 +257,42 @@ Select one with the `flixel.profile` Gradle property:
 ./gradlew desktop:packagr                         # no profile: the file as written
 ```
 
+Every profile also gets tasks in each platform module: one named after the profile that starts the game, and ones
+that package it, for builds such as a demo. They are listed under **profiles** in your IDE's Gradle tool window,
+each profile's tasks next to each other:
+
+| Module    | Starts the game (`demo` profile) | Packages the game (`demo` profile)                                   |
+|-----------|----------------------------------|----------------------------------------------------------------------|
+| `desktop` | `:desktop:demo` (`run`)          | `:desktop:demoPackage` (`packageAll`)                                |
+| `html5`   | `:html5:demo` (`run`)            | `:html5:demoPackage` (`package`)                                     |
+| `android` | `:android:demo` (`installDebug`) | `:android:demoPackage` (`assembleRelease`), `:android:demoBundle` (`bundleRelease`) |
+
+```
+./gradlew :desktop:playtest        # the same as ./gradlew :desktop:run -Pflixel.profile=playtest
+./gradlew :desktop:demoPackage     # the same as ./gradlew :desktop:packageAll -Pflixel.profile=demo
+```
+
+The game starts in the mode the profile's `app.mode` asks for, never one the task picks, so a profile task always
+means "this profile, as written". A packaging task warns when that mode is not `release`, since a package is usually
+meant for players. For any other task, add `-Pflixel.profile=<name>`. The packaging tasks put the profile first
+(`demoPackage`, not `packageDemo`), so they can never clash with packagr's own `package<Target>` tasks. How it works:
+a profile is chosen once for a whole Gradle run, so the plugin looks at the task names you asked for before anything
+else runs, selects that profile, and the profile task then runs the module's normal task.
+
+- Use the module path (`:desktop:playtest`). A bare `./gradlew playtest` runs the task in every platform module.
+- One run can only use one profile, so `./gradlew :desktop:demo :desktop:playtest`, or a profile task together with
+  a different `-Pflixel.profile`, fails with a message that says so.
+- Run a profile task by its full name. A shortened one, such as `playt` for `playtest`, fails before the game
+  starts, because the profile is picked from the exact name.
+- A task is only added when the module has the task it runs (for example, no `demoPackage` on desktop without the
+  packagr plugin).
+- When a profile leaves a platform out of `platforms`, that module's task for it says so instead of failing with
+  "project not found".
+- A profile gets no task, with a warning, when its name is not a plain task name (letters, digits, `_` and `-`), when
+  it is the name of a common task (such as `build`, `run`, `test` or `clean`). When the module already has a task
+  with one of the names (for example a profile named `demo` and another named `demoPackage`), that one is kept. Use
+  `-Pflixel.profile` for the other.
+
 To use one by default on your own computer, put `flixel.profile=dev` in a `gradle.properties` that is not committed,
 such as the one in your Gradle user home (`~/.gradle/gradle.properties`). Every other Gradle build ignores it, because
 of the `flixel.` prefix.

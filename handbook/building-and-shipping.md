@@ -294,9 +294,20 @@ platforms    = ["desktop", "html5"]
 ```
 
 ```bash
-./gradlew :desktop:run -Pflixel.profile=dev
-./gradlew :desktop:packageAll -Pflixel.profile=demo
+./gradlew :desktop:playtest
+./gradlew :desktop:demoPackage
 ```
+
+Every profile gets tasks in each platform module, listed under **profiles** in your IDE's Gradle tool window:
+
+- `:desktop:playtest`, `:html5:playtest` and `:android:playtest` start the game with that profile, the same as
+  `./gradlew :desktop:run -Pflixel.profile=playtest`.
+- `:desktop:demoPackage`, `:html5:demoPackage`, `:android:demoPackage` (an `.apk`) and `:android:demoBundle` (an
+  `.aab` for Google Play) package the game with it, which is how you build a demo next to the full game.
+
+The game always starts in the mode the profile's `app.mode` asks for, and a packaging task warns when that is not
+`release`. For any other task, add `-Pflixel.profile`. Run profile tasks by their full name, and one profile per
+Gradle run.
 
 Without the property the file is used as written. A profile can change everything except `app.package`, and
 `Project.PROFILE` holds the name of the selected one (an empty string when none is selected).
@@ -438,7 +449,7 @@ The one next to `settings.gradle` is shared with everyone who builds the game; t
 
 | Property                  | Values           | Does                                                                         |
 |---------------------------|------------------|------------------------------------------------------------------------------|
-| `flixel.profile`          | A profile name   | Applies that `[profile.<name>]` table of `project.toml`. See [Profiles](#profiles). |
+| `flixel.profile`          | A profile name   | Applies that `[profile.<name>]` table of `project.toml`. A profile task such as `:desktop:playtest` selects its profile without it. See [Profiles](#profiles). |
 | `enableBasisuCompression` | `true`, `false`  | Compresses Android textures with Basis Universal. See [Compressed textures](#compressed-textures-with-basis-universal). |
 
 The project plugin also sets `flixel.project.title` and `flixel.project.version` on every Gradle project, so the
