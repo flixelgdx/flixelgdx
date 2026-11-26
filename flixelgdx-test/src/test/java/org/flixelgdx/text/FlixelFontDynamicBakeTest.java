@@ -34,12 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Tests for glyphs that {@link FlixelFont} bakes on demand, outside the up-front Latin-1 range.
- */
 class FlixelFontDynamicBakeTest {
 
-  /** A codepoint the fake font pretends it cannot produce. */
   private static final int UNPRODUCIBLE = 0x2603;
 
   @Test
@@ -48,7 +44,7 @@ class FlixelFontDynamicBakeTest {
     FlixelFont font = FlixelFont.bake(raster, false);
     int before = raster.calls;
     assertNotNull(font.getGlyph('A'));
-    assertNotNull(font.getGlyph(0xF1)); // ñ
+    assertNotNull(font.getGlyph(0xF1));
     assertEquals(before, raster.calls);
   }
 
@@ -58,7 +54,7 @@ class FlixelFontDynamicBakeTest {
     FlixelFont font = FlixelFont.bake(raster, false);
     int before = raster.calls;
 
-    FlixelGlyph sun = font.getGlyph(0x65E5); // 日
+    FlixelGlyph sun = font.getGlyph(0x65E5);
     assertNotNull(sun);
     assertEquals(before + 1, raster.calls);
     assertEquals(10, sun.width);
@@ -97,7 +93,6 @@ class FlixelFontDynamicBakeTest {
       seen.put(cp, glyph);
       maxPage = Math.max(maxPage, glyph.page);
     }
-    // A 512 page holds 5 by 5 glyphs of 100 pixels (plus padding), so 60 glyphs need three dynamic pages.
     assertTrue(maxPage >= 3, "Expected new pages once one fills up, got last page " + maxPage);
 
     for (int a = 0x4E00; a < 0x4E00 + 60; a++) {
@@ -151,7 +146,6 @@ class FlixelFontDynamicBakeTest {
     assertSame(font.getGlyph('?'), font.getGlyph(0x65E5));
   }
 
-  /** A pretend font where every character is a solid rectangle of the current size. */
   private static final class FakeRaster implements FlixelRasterizedFont {
 
     int width;

@@ -35,8 +35,6 @@ import org.flixelgdx.graphics.FlixelNoopGraphicsManager;
 import org.flixelgdx.graphics.FlixelPixelReadback;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,27 +53,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugCaptureTest {
 
-  private FlixelLogger originalLog;
-  private FlixelGraphicsManager originalGraphics;
   private CaptureGraphics graphics;
   private FlixelDebugCapture panel;
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
-    originalGraphics = Flixel.graphics;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
     graphics = new CaptureGraphics();
     Flixel.graphics = graphics;
     panel = new FlixelDebugCapture();
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
-    Flixel.graphics = originalGraphics;
   }
 
   @Test
@@ -208,7 +196,6 @@ class FlixelDebugCaptureTest {
     return r;
   }
 
-  /** A graphics manager whose frame capture is answered by the test, when it decides to. */
   private static final class CaptureGraphics implements FlixelGraphicsManager {
 
     final List<FlixelPixelReadback> callbacks = new ArrayList<>();
@@ -231,7 +218,6 @@ class FlixelDebugCaptureTest {
       callbacks.add(callback);
     }
 
-    /** Answers the latest request with transparent pixels of the given size. */
     void answer(int width, int height, int padding) {
       int rowBytes = width * 4 + padding;
       FlixelPixelReadback callback = callbacks.get(callbacks.size() - 1);

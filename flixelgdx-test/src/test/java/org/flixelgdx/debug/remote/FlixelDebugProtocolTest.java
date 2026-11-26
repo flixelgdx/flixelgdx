@@ -45,12 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Checks the debug protocol codec against the committed fixture files.
- *
- * <p>Set the environment variable {@code FLIXEL_REGEN_FIXTURES=1} to rewrite the {@code .bin} files from the
- * descriptions in {@link DebugProtocolFixtures}; otherwise the committed files are the reference.
- */
 class FlixelDebugProtocolTest {
 
   static Stream<String> fixtureNames() {
@@ -59,7 +53,6 @@ class FlixelDebugProtocolTest {
 
   static byte[] encode(Op[] ops) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter(8);
-    // Value-only fixtures carry no message type, so they start a message with a throwaway type byte.
     w.beginMessage(0);
     ByteBuffer buf;
     for (Op op : ops) {
@@ -103,7 +96,6 @@ class FlixelDebugProtocolTest {
       }
     }
     buf = w.finish();
-    // Drop the throwaway leading byte.
     byte[] out = new byte[buf.limit() - 1];
     buf.position(1);
     buf.get(out);
@@ -347,7 +339,6 @@ class FlixelDebugProtocolTest {
 
   @Test
   void stringTruncatesOnACharacterBoundary() {
-    // Three bytes per character: 21845 characters fill 65535 bytes exactly, so one more must be cut.
     String three = DebugProtocolFixtures.CJK.repeat(21846);
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter();
     FlixelDebugMessageReader r = new FlixelDebugMessageReader(w.beginMessage(1).writeString(three).finish());
@@ -356,14 +347,12 @@ class FlixelDebugProtocolTest {
     assertEquals(21845, out.length());
     assertEquals(DebugProtocolFixtures.CJK.repeat(21845), out.toString());
 
-    // Four bytes per character: 16383 characters is 65532 bytes, and the next one would need 65536.
     String four = DebugProtocolFixtures.EMOJI.repeat(16384);
     r = new FlixelDebugMessageReader(w.beginMessage(1).writeString(four).finish());
     r.readU8();
     out = r.readString(new FlixelString());
     assertEquals(16383 * 2, out.length());
 
-    // A pair must never be split: ASCII filler then a pair that straddles the limit.
     String straddle = "a".repeat(65534) + DebugProtocolFixtures.EMOJI;
     r = new FlixelDebugMessageReader(w.beginMessage(1).writeString(straddle).finish());
     r.readU8();

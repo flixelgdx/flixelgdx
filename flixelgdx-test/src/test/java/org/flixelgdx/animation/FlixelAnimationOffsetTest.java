@@ -30,12 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Covers the registration and opt-in semantics of the per-animation offset API. Playback that
- * actually applies an offset needs real frames (a GPU texture), so these tests focus on the
- * texture-free bookkeeping: registration, removal, and the rule that the feature never touches a
- * sprite's offset until it is opted into.
- */
 class FlixelAnimationOffsetTest {
 
   @Test
@@ -69,8 +63,6 @@ class FlixelAnimationOffsetTest {
 
   @Test
   void registeringOffsetForAnInactiveClipDoesNotMoveTheSprite() {
-    // Until a clip actually plays, registering its offset must leave the sprite's current offset
-    // alone. This is what keeps the opt-in feature from disturbing sprites that never use it.
     FlixelSprite sprite = new FlixelSprite();
     sprite.setOffset(3f, 5f);
     FlixelAnimationController anim = sprite.ensureAnimation();
@@ -83,7 +75,6 @@ class FlixelAnimationOffsetTest {
 
   @Test
   void centerOffsetsDoesNothingWithoutAFrame() {
-    // centerOffsets() reads the sprite's current frame, which a sprite with no graphic never has.
     FlixelSprite sprite = new FlixelSprite();
     sprite.setOffset(3f, 5f);
 
@@ -95,8 +86,6 @@ class FlixelAnimationOffsetTest {
 
   @Test
   void centeredOffsetMath() {
-    // A source box bigger than the hitbox should push the offset positive (matching
-    // FlixelSprite.setOffset(...)'s "positive moves the graphic left/up" convention).
     assertEquals(5f, FlixelAnimationController.centeredOffset(20f, 10f), 0f);
     assertEquals(0f, FlixelAnimationController.centeredOffset(10f, 10f), 0f);
     assertEquals(-5f, FlixelAnimationController.centeredOffset(10f, 20f), 0f);

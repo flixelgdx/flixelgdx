@@ -81,7 +81,6 @@ class FlixelPoolTest {
     Item reused = pool.obtain();
 
     assertSame(obtained, reused);
-    // Only one object should ever have been created.
     assertEquals(1, counter.created);
   }
 
@@ -114,7 +113,6 @@ class FlixelPoolTest {
           }
         };
 
-    // Free three objects into a pool capped at two.
     pool.free(new Item());
     pool.free(new Item());
     pool.free(new Item());
@@ -147,7 +145,6 @@ class FlixelPoolTest {
 
     pool.obtain();
     pool.obtain();
-    // Peak stays at the high-water mark even after objects are handed back out.
     assertEquals(3, pool.peak);
   }
 
@@ -174,7 +171,6 @@ class FlixelPoolTest {
           }
         };
 
-    // Free more than the initial capacity of 2 to force a backing-array grow.
     for (int i = 0; i < 10; i++) {
       pool.free(new Item());
     }

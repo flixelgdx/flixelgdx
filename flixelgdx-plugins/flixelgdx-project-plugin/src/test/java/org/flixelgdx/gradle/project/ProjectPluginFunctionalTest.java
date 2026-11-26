@@ -40,10 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Runs real Gradle builds with the plugin applied to the settings file, to check module inclusion, project info and
- * that game code compiles against the generated class.
- */
 class ProjectPluginFunctionalTest {
 
   private static final String TOML = """
@@ -56,7 +52,6 @@ class ProjectPluginFunctionalTest {
       version = "0.1.0"
       """;
 
-  /** The smallest stand-in for the real config class, so the test does not need the whole framework. */
   private static final String CONFIG_STUB = """
       package org.flixelgdx;
 
@@ -225,7 +220,6 @@ class ProjectPluginFunctionalTest {
 
   @Test
   void gameCodeCompilesAgainstTheDefines() throws IOException {
-    // The string holds every kind of character the writer escapes, so a mistake there would break compiling.
     setUp(TOML + "\n[defines]\ndemo = false\nmax_saves = 3\nbig = 5_000_000_000\ngravity = 9.8\n"
         + "text = \"a\\nb\\tc \\\\ \\\"d\\\" caf\\u00e9 \\u0007 \\U0001F600\"\n");
     write("core/src/main/java/org/flixelgdx/FlixelConfig.java", CONFIG_STUB);
@@ -411,7 +405,6 @@ class ProjectPluginFunctionalTest {
     assertFalse(output.contains("FlixelGDX project:"), output);
   }
 
-  /** A desktop module with stand-ins for its run task and another task profile tasks must not copy. */
   private static final String DESKTOP_TASKS = """
       def profile = game.profile
       def mode = game.mode
@@ -633,7 +626,6 @@ class ProjectPluginFunctionalTest {
   }
 
   private GradleRunner runner(String... arguments) {
-    // The test must not depend on the machine it runs on, so every Android variable is dropped.
     Map<String, String> environment = new HashMap<>(System.getenv());
     environment.remove("ANDROID_HOME");
     environment.remove("ANDROID_SDK_ROOT");

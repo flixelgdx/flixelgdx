@@ -69,7 +69,6 @@ class FlixelRandomTest {
   @Test
   void zeroSeedStillGenerates() {
     FlixelRandom rng = new FlixelRandom(0L);
-    // A naive xorshift stuck at zero would return only zeros; ensure it does not.
     boolean sawNonZero = false;
     for (int i = 0; i < 10; i++) {
       if (rng.nextLong() != 0L) {

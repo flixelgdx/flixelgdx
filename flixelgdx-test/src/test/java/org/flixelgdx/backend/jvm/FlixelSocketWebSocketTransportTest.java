@@ -26,7 +26,6 @@ package org.flixelgdx.backend.jvm;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,13 +47,11 @@ class FlixelSocketWebSocketTransportTest {
 
   private static final long WAIT = 5000L;
 
-  private FlixelLogger originalLog;
   private TestWebSocketServer server;
   private FlixelSocketWebSocketTransport transport;
 
   @BeforeEach
   void setUp() throws IOException {
-    originalLog = Flixel.log;
     FlixelDefaultLogger quiet = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     quiet.setConsoleSink(null);
     Flixel.log = quiet;
@@ -67,7 +64,6 @@ class FlixelSocketWebSocketTransportTest {
   void tearDown() throws IOException {
     transport.close();
     server.close();
-    Flixel.log = originalLog;
   }
 
   private static boolean await(BooleanSupplier condition) throws InterruptedException {

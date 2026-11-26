@@ -33,7 +33,6 @@ import org.flixelgdx.debug.DebugTestSupport;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.input.FlixelBaseInputDevice;
-import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -42,7 +41,6 @@ import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,14 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugInputTest {
 
-  private FlixelLogger originalLog;
-  private FlixelInputDevice originalInput;
-  private FlixelKeyInputManager originalKeys;
-  private FlixelMouseInputManager originalMouse;
-  private FlixelTouchManager originalTouches;
-  private FlixelGame originalGame;
-  private FlixelSoundManager originalSound;
-  private FlixelDebugManager originalDebug;
   private FlixelDebugManager debug;
   private FlixelDebugInput input;
   private FlixelKeyInputManager keys;
@@ -73,14 +63,6 @@ class FlixelDebugInputTest {
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
-    originalInput = Flixel.input;
-    originalKeys = Flixel.keys;
-    originalMouse = Flixel.mouse;
-    originalTouches = Flixel.touches;
-    originalGame = Flixel.game;
-    originalSound = Flixel.sound;
-    originalDebug = Flixel.debug;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
@@ -121,19 +103,8 @@ class FlixelDebugInputTest {
     game.setGamePaused(false);
     debug.controls.reset();
     input.reset();
-    Flixel.log = originalLog;
-    Flixel.input = originalInput;
-    Flixel.keys = originalKeys;
-    Flixel.mouse = originalMouse;
-    Flixel.touches = originalTouches;
-    Flixel.game = originalGame;
-    Flixel.sound = originalSound;
-    Flixel.debug = originalDebug;
-    Flixel.state = null;
-    Flixel.cameras.clear();
   }
 
-  /** Runs the input half of one game frame the way FlixelGame does, then ends the frame. */
   private void frame() {
     input.applyQueued();
     keys.update();

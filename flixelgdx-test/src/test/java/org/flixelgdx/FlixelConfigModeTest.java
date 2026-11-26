@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-/** Checks the default runtime mode a {@link FlixelConfig} can carry for the launchers. */
 class FlixelConfigModeTest {
 
   @Test

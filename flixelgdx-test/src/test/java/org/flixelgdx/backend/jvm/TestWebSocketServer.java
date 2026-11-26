@@ -40,10 +40,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-/**
- * A small WebSocket server for tests. It accepts one client at a time, does the handshake, and records what the
- * client sends. Its send methods write server frames (never masked).
- */
 final class TestWebSocketServer implements AutoCloseable {
 
   final BlockingQueue<byte[]> binary = new LinkedBlockingQueue<>();
@@ -122,12 +118,10 @@ final class TestWebSocketServer implements AutoCloseable {
       connections++;
       readFrames(socket, in, output);
     } catch (Exception e) {
-      // The client went away; the test notices through its own checks.
     } finally {
       try {
         socket.close();
       } catch (IOException ignored) {
-        // Nothing to do.
       }
     }
   }
@@ -235,7 +229,6 @@ final class TestWebSocketServer implements AutoCloseable {
     sendFrame(0x88, new byte[] { (byte) (code >> 8), (byte) code });
   }
 
-  /** Writes only the header of a binary frame that claims the given length. */
   void sendHugeHeader(long length) throws IOException {
     ByteArrayOutputStream frame = new ByteArrayOutputStream();
     frame.write(0x82);
@@ -253,7 +246,6 @@ final class TestWebSocketServer implements AutoCloseable {
     return binary.poll(millis, TimeUnit.MILLISECONDS);
   }
 
-  /** Drops the current client without a close frame. */
   void dropClient() throws IOException {
     Socket socket = client;
     if (socket != null) {

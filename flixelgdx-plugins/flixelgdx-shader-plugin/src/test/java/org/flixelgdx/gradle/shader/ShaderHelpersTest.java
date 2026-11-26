@@ -38,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Checks the helpers that need no GPU: text mapping, the report file and the host target. */
 class ShaderHelpersTest {
 
   @TempDir
@@ -57,7 +56,6 @@ class ShaderHelpersTest {
   @Test
   void byteColumnsBecomeCharacterColumns() {
     assertEquals(4, SourceText.charColumn("abcdef", 4));
-    // The e with an accent is two bytes, so byte column 5 is the fourth character.
     assertEquals(4, SourceText.charColumn("ébcd", 5));
   }
 

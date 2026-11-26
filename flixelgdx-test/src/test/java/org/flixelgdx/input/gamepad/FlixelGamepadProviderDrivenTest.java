@@ -38,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Drives the gamepad manager through a fake provider, the same seam a platform backend uses. */
 class FlixelGamepadProviderDrivenTest {
 
   private Pads provider;

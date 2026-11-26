@@ -43,12 +43,10 @@ import org.flixelgdx.tween.type.motion.FlixelQuadPath;
 import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
 
-/** Shared setup and small fake targets for the tween tests. */
 public final class TweenTestSupport {
 
   private TweenTestSupport() {}
 
-  /** Clears the global tween manager and registers every built-in tween type, as {@code Flixel.start(...)} does. */
   public static void resetGlobalTweens() {
     FlixelTween.resetRegistry();
     FlixelTween.registerTweenType(FlixelGoalTween.class, () -> new FlixelGoalTween(null))
@@ -65,7 +63,6 @@ public final class TweenTestSupport {
         .registerTweenType(FlixelQuadPath.class, () -> new FlixelQuadPath(null));
   }
 
-  /** Creates a tween manager with every built-in tween type registered. */
   public static FlixelTweenManager newManager() {
     FlixelTweenManager m = new FlixelTweenManager();
     m.registerTweenType(FlixelGoalTween.class, () -> new FlixelGoalTween(null));
@@ -83,12 +80,10 @@ public final class TweenTestSupport {
     return m;
   }
 
-  /** Creates an object to move, with no size so its position is easy to check. */
   public static FlixelObject body() {
     return new FlixelObject(0f, 0f, 0f, 0f);
   }
 
-  /** A target with an angle, color, visibility and shake channel, and nothing else. */
   public static final class Target implements FlixelAngleable, FlixelColorable, FlixelVisible, FlixelShakeable {
 
     public final FlixelColor color = new FlixelColor(FlixelColor.WHITE);

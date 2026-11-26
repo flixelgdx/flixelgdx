@@ -84,7 +84,6 @@ class FlixelArrayTest {
     array.add("b");
     array.add("c");
     array.add("d");
-    // Removing index 1 in an unordered list fills the gap with the last element.
     assertEquals("b", array.removeIndex(1));
     assertEquals(3, array.getSize());
     assertEquals("d", array.get(1));
@@ -97,7 +96,6 @@ class FlixelArrayTest {
     assertFalse(array.contains("b", false));
 
     String needle = new String("a");
-    // Identity comparison should not match a distinct but equal instance.
     assertFalse(array.removeValue(needle, true));
     assertTrue(array.removeValue("a", false));
   }
@@ -132,7 +130,6 @@ class FlixelArrayTest {
     array.clear();
     assertEquals(0, array.getSize());
     assertTrue(array.isEmpty());
-    // The backing slots must be nulled so elements can be collected.
     assertNull(array.getItems()[0]);
     assertNull(array.getItems()[1]);
   }
@@ -191,7 +188,6 @@ class FlixelArrayTest {
     String[] snap = array.begin();
     int snapSize = array.getSize();
 
-    // Mutate the list mid-iteration: the snapshot must not shift under us.
     array.add("w");
     array.removeValue("y", false);
 
@@ -202,7 +198,6 @@ class FlixelArrayTest {
     assertEquals("xyz", seen.toString());
     array.end();
 
-    // After the snapshot ends, the live list reflects the changes.
     assertEquals(3, array.getSize());
     assertEquals("x", array.get(0));
     assertEquals("z", array.get(1));

@@ -132,8 +132,6 @@ class FlixelMapTest {
 
   @Test
   void behavesLikeHashMapUnderRandomOps() {
-    // Differential test: mirror a stream of operations against java.util.HashMap
-    // and assert the two agree throughout. This validates probing and resizing.
     FlixelMap<Integer, Integer> ours = new FlixelMap<>(4);
     Map<Integer, Integer> ref = new HashMap<>();
     Random random = new Random(42);

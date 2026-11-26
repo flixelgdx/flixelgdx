@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.json;
 
-/** A sample data class with a nested {@code @JsonSerializable} field for the round-trip test. */
 @JsonSerializable
 public class Profile {
 

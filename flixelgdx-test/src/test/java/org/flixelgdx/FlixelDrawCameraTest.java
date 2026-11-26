@@ -23,25 +23,12 @@
  */
 package org.flixelgdx;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Exercises {@link Flixel#isOnDrawCamera(FlixelCamera[])}, in particular how it falls back to
- * {@link FlixelCamera#defaultDrawTarget} when an object does not list any cameras of its own.
- *
- * <p>{@link Flixel#setDrawCamera(FlixelCamera)} is package-private, so this test lives in
- * {@code org.flixelgdx} to reach it directly instead of driving a full camera draw pass.
- */
 class FlixelDrawCameraTest {
-
-  @AfterEach
-  void tearDown() {
-    Flixel.setDrawCamera(null);
-  }
 
   @Test
   void nullListDrawsOnDefaultDrawTargetCamera() {

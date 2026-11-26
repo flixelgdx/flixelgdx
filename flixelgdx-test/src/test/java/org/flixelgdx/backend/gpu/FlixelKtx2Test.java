@@ -164,7 +164,6 @@ class FlixelKtx2Test {
     assertEquals(37, image.getHeight());
     assertEquals(52, image.getGpuWidth());
     assertEquals(40, image.getGpuHeight());
-    // 52x40 halves to 26x20 (7x5 blocks, like 25x18), but then to 13x10 (4x3 blocks, unlike 12x9 with 3x3).
     assertEquals(2, image.getLevels());
     assertEquals(13 * 10 * 16, image.getSize(0));
     assertEquals(7 * 5 * 16, image.getSize(1));
@@ -220,7 +219,6 @@ class FlixelKtx2Test {
     assertEquals(3, FlixelKtx2.usableLevels(FlixelGpuBlockFormat.RGBA8, 4, 4, 16), "never more than the size allows");
   }
 
-  /** Pretends to transcode the 50x37 fixtures, filling each level with its number plus one. */
   private static final class FakeTranscoder implements FlixelBasisTranscoder {
 
     private final boolean uastc;

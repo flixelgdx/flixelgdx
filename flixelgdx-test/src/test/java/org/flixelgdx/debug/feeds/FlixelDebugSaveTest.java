@@ -31,12 +31,10 @@ import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.save.FlixelSaveHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,16 +52,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugSaveTest {
 
-  private FlixelLogger originalLog;
-  private FlixelSave originalSave;
   private MemoryHandler storage;
   private FlixelSave save;
   private FlixelDebugSave panel;
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
-    originalSave = Flixel.save;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
@@ -72,12 +66,6 @@ class FlixelDebugSaveTest {
     save.bind("Game", "slot1");
     Flixel.save = save;
     panel = new FlixelDebugSave();
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
-    Flixel.save = originalSave;
   }
 
   @Test
@@ -656,7 +644,6 @@ class FlixelDebugSaveTest {
     return other;
   }
 
-  /** Refreshes the panel the way its one second timer would, then decodes what it would send. */
   private Payload payload() {
     panel.refresh();
     return decode();
@@ -725,7 +712,6 @@ class FlixelDebugSaveTest {
     }
   }
 
-  /** Keeps saves in memory so tests can read what was written. */
   private static final class MemoryHandler implements FlixelSaveHandler {
 
     final Map<String, String> files = new HashMap<>();

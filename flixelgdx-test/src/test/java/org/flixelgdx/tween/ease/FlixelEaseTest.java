@@ -82,7 +82,6 @@ class FlixelEaseTest {
 
   @Test
   void expoEndpointsApproximate() {
-    // Math.pow(2, 10*(0-1)) is ~0.001, not exactly 0, so a loose tolerance is required.
     assertEquals(0f, FlixelEase.expoIn(0f), APPROX);
     assertEquals(1f, FlixelEase.expoIn(1f), TIGHT);
     assertEquals(0f, FlixelEase.expoOut(0f), TIGHT);
@@ -93,7 +92,6 @@ class FlixelEaseTest {
 
   @Test
   void elasticEndpointsApproximate() {
-    // Elastic functions use sin/pow combinations that do not reach exactly 0 or 1 at both edges.
     assertEquals(0f, FlixelEase.elasticIn(0f), APPROX);
     assertEquals(1f, FlixelEase.elasticIn(1f), TIGHT);
     assertEquals(0f, FlixelEase.elasticOut(0f), TIGHT);
@@ -128,7 +126,6 @@ class FlixelEaseTest {
   }
 
   static Stream<Arguments> monotonicityCases() {
-    // Elastic is excluded, as it oscillates and does not satisfy this property in all sub-ranges.
     return Stream.of(
         Arguments.of("linear", FlixelEase.linear(0.25f), FlixelEase.linear(0.75f)),
         Arguments.of("quadIn", FlixelEase.quadIn(0.25f), FlixelEase.quadIn(0.75f)),

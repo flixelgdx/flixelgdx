@@ -30,20 +30,16 @@ import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Decodes inspector and custom panel payloads into plain objects so tests can assert on them. */
 public final class InspectorTestSupport {
 
   private InspectorTestSupport() {}
 
-  /** One decoded property row. */
   public record Row(String name, int kind, String value, boolean editable) {
   }
 
-  /** One decoded section. */
   public record Section(String typeName, String displayName, List<Row> rows) {
   }
 
-  /** One decoded inspector STATE payload. */
   public record State(int subtype, int selectedId, String path, List<Section> sections, boolean hasTexture) {
 
     public List<String> typeNames() {
@@ -59,7 +55,6 @@ public final class InspectorTestSupport {
     }
   }
 
-  /** One decoded custom panel payload. */
   public record Custom(List<Row> rows, List<String> buttons, List<Integer> buttonIndices) {
   }
 

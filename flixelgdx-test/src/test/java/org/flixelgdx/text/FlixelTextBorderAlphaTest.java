@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-/** Verifies that {@link FlixelText} borders fade together with the text's alpha. */
 class FlixelTextBorderAlphaTest {
 
   private static final float EPSILON = 0.0001f;

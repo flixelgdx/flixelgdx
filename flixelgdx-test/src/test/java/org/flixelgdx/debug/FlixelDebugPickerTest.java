@@ -37,7 +37,6 @@ import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.group.FlixelGroup;
 import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.math.FlixelVector;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Picking works in a camera's view space, so these tests give points in view space directly. */
 class FlixelDebugPickerTest {
 
   private FlixelDebugPicker picker;
@@ -64,12 +62,6 @@ class FlixelDebugPickerTest {
     cam.scrollX = 0f;
     cam.scrollY = 0f;
     Flixel.cameras.add(cam);
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.state = null;
-    Flixel.cameras.clear();
   }
 
   @Test
@@ -193,7 +185,6 @@ class FlixelDebugPickerTest {
     cam.scrollX = 100f;
     cam.scrollY = 0f;
 
-    // The camera moved 100, the object only 50, so it sits at 150 in view space.
     assertSame(far, picker.pickInCamera(cam, 160f, 110f));
     assertNull(picker.pickInCamera(cam, 110f, 110f));
 
@@ -206,7 +197,6 @@ class FlixelDebugPickerTest {
   @Test
   void zoomShrinksTheVisibleAreaAndShiftsTheViewMargin() {
     cam.setZoom(2f);
-    // At zoom 2 the camera shows 200 x 150 world units, so the view margin is 100 and 75.
     FlixelObject object = box(110, 80, 20, 20);
     state.add(object);
 
@@ -224,8 +214,6 @@ class FlixelDebugPickerTest {
     sprite.setScale(2f);
     state.add(sprite);
 
-    // The unscaled graphic starts at (10 - 5, 10 - 3), since offset is subtracted. Scaling by 2 around
-    // its centered origin (16, 8) grows it to 64 x 32 starting at (5 + 16 - 32, 7 + 8 - 16).
     assertSame(sprite, picker.pickInCamera(cam, 50f, 30f));
     assertSame(sprite, picker.pickInCamera(cam, 52f, 0f));
     assertNull(picker.pickInCamera(cam, 54f, 8f), "right of the scaled graphic");
@@ -246,7 +234,6 @@ class FlixelDebugPickerTest {
     assertTrue(picker.computeBounds(sprite, cam));
     assertEquals(20f, picker.getBoundsWidth(), 1e-3f);
     assertEquals(40f, picker.getBoundsHeight(), 1e-3f);
-    // Rotating around the center keeps the center at (120, 110).
     assertEquals(110f, picker.getBoundsLeft(), 1e-3f);
     assertEquals(90f, picker.getBoundsTop(), 1e-3f);
   }
@@ -412,7 +399,6 @@ class FlixelDebugPickerTest {
   private static final class TestSubState extends FlixelSubState {
   }
 
-  /** A custom group, the way a game would make its own. */
   private static final class TestGroup extends FlixelBasicGroup<IFlixelBasic> {
     TestGroup() {
       super(IFlixelBasic[]::new);

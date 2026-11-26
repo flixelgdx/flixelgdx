@@ -39,12 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Checks that {@link FlixelHeadlessExtension} is registered for every test and puts global state back.
- *
- * <p>The first test changes several globals and does not clean up. The second test runs after it
- * and checks that everything is back to how it was, which only holds when the extension ran.
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FlixelHeadlessExtensionTest {
 

@@ -36,18 +36,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelActionSystemTest {
 
-  private FlixelKeyInputManager savedKeys;
-
   @BeforeEach
   void saveKeys() {
-    savedKeys = Flixel.keys;
     Flixel.keys = new FlixelKeyInputManager();
     FlixelActionSets.clearRegistryForTests();
   }
 
   @AfterEach
   void restoreKeys() {
-    Flixel.keys = savedKeys;
     FlixelActionSets.clearRegistryForTests();
   }
 
@@ -181,23 +177,19 @@ class FlixelActionSystemTest {
     navigate.addBinding("down", FlixelAnalogBinding.posYKey(FlixelKey.DOWN));
     set.add(navigate);
 
-    // First press: flicked() fires on the first frame.
     Flixel.keys.keyDown(FlixelKey.DOWN);
     set.update(0f);
     assertTrue(navigate.flicked());
 
-    // Held: flicked() must not fire again while the stick stays past the threshold.
     set.endFrame();
     set.update(0f);
     assertFalse(navigate.flicked());
 
-    // Released: magnitude drops below threshold, flicked() stays false.
     Flixel.keys.keyUp(FlixelKey.DOWN);
     set.endFrame();
     set.update(0f);
     assertFalse(navigate.flicked());
 
-    // Second press in the opposite direction: flicked() fires again.
     Flixel.keys.keyDown(FlixelKey.UP);
     set.endFrame();
     set.update(0f);
@@ -214,32 +206,26 @@ class FlixelActionSystemTest {
     scroll.setHoldInterval(0.1f);
     set.add(scroll);
 
-    // Initial press: repeated() fires immediately.
     Flixel.keys.keyDown(FlixelKey.DOWN);
     set.update(0f);
     assertTrue(scroll.held());
 
-    // Still held but before holdDelay: repeated() does not fire again.
     set.endFrame();
     set.update(0.3f);
     assertFalse(scroll.held());
 
-    // Still held, holdDelay elapsed: first hold-repeat fires.
     set.endFrame();
     set.update(0.25f);
     assertTrue(scroll.held());
 
-    // Still held, holdInterval not yet elapsed: no repeat.
     set.endFrame();
     set.update(0.04f);
     assertFalse(scroll.held());
 
-    // holdInterval elapsed: repeat fires again.
     set.endFrame();
     set.update(0.06f);
     assertTrue(scroll.held());
 
-    // Released: no repeat.
     Flixel.keys.keyUp(FlixelKey.DOWN);
     set.endFrame();
     set.update(0f);
@@ -256,22 +242,18 @@ class FlixelActionSystemTest {
     navigate.setHoldInterval(0.1f);
     set.add(navigate);
 
-    // Initial flick: flickedRepeating() fires on the first frame.
     Flixel.keys.keyDown(FlixelKey.DOWN);
     set.update(0f);
     assertTrue(navigate.flickedRepeating());
 
-    // Held but before holdDelay: no repeat.
     set.endFrame();
     set.update(0.3f);
     assertFalse(navigate.flickedRepeating());
 
-    // holdDelay elapsed: first hold-repeat fires.
     set.endFrame();
     set.update(0.25f);
     assertTrue(navigate.flickedRepeating());
 
-    // Released (magnitude drops below threshold): no repeat.
     Flixel.keys.keyUp(FlixelKey.DOWN);
     set.endFrame();
     set.update(0f);
@@ -287,12 +269,10 @@ class FlixelActionSystemTest {
     jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.G));
     set.add(jump);
 
-    // Old key (F) must no longer fire.
     Flixel.keys.keyDown(FlixelKey.F);
     set.update(0f);
     assertFalse(jump.pressed());
 
-    // New key (G) must fire.
     Flixel.keys.keyDown(FlixelKey.G);
     set.update(0f);
     assertTrue(jump.pressed());
@@ -361,12 +341,10 @@ class FlixelActionSystemTest {
     move.addBinding("left", FlixelAnalogBinding.negXKey(FlixelKey.A));
     set.add(move);
 
-    // Old key (LEFT) must no longer contribute.
     Flixel.keys.keyDown(FlixelKey.LEFT);
     set.update(0f);
     assertEquals(0f, move.getX(), 1e-5f);
 
-    // New key (A) must contribute.
     Flixel.keys.keyDown(FlixelKey.A);
     set.update(0f);
     assertEquals(-1f, move.getX(), 1e-5f);

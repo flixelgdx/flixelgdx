@@ -24,22 +24,11 @@
 package org.flixelgdx;
 
 import org.flixelgdx.util.FlixelColor;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Exercises {@link FlixelSubState}'s own background overlay color, making sure it never reaches
- * into {@link Flixel#cameras} the way {@link FlixelState#setBgColor(FlixelColor)} does.
- *
- * <p>No {@link FlixelGame} is running in this test, so the inherited
- * {@link FlixelState#setBgColor(FlixelColor)} would already be a no-op here (it bails out when
- * {@link Flixel#game} is {@code null}). To still prove a substate never touches a camera even
- * when a game IS running, this populates {@link Flixel#cameras} directly and asserts its
- * contents stay untouched by every substate operation exercised below.
- */
 class FlixelSubStateTest {
 
   private FlixelCamera camera;
@@ -49,11 +38,6 @@ class FlixelSubStateTest {
     camera = new FlixelCamera(200, 150);
     camera.bgColor.set(FlixelColor.BLUE);
     Flixel.cameras.add(camera);
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.cameras.removeValue(camera, true);
   }
 
   @Test

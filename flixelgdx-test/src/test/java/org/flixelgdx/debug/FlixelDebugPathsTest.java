@@ -31,7 +31,6 @@ import org.flixelgdx.debug.feeds.FlixelDebugInspector;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.util.FlixelString;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,11 +52,6 @@ class FlixelDebugPathsTest {
     path = new FlixelString();
     state = new TestState();
     Flixel.state = state;
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.state = null;
   }
 
   @Test

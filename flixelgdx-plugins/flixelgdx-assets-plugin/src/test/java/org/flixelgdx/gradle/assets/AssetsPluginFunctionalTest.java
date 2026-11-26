@@ -38,10 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Runs real Gradle builds with the plugin applied, to check that game code can use the generated class and that it
- * is written at the right moments.
- */
 class AssetsPluginFunctionalTest {
 
   private static final String GENERATED =
@@ -186,7 +182,6 @@ class AssetsPluginFunctionalTest {
     return Files.readString(dir.resolve(GENERATED));
   }
 
-  /** Sets up a game with the plugin applied to a core module, the way generated projects are laid out. */
   private void setUp(String extra) throws IOException {
     write("settings.gradle", "rootProject.name = 'game'\ninclude 'core'\n");
     write("core/build.gradle", """

@@ -163,7 +163,6 @@ class ProjectProfilesTest {
     String message = assertThrows(GradleException.class, () -> ProjectToml.parse(table)).getMessage();
     assertTrue(message.contains("app.mode") && message.contains("profile"), message);
 
-    // Selecting a profile does not make a mode in the base file allowed.
     assertThrows(GradleException.class, () -> ProjectToml.parse(table, "dev"));
   }
 

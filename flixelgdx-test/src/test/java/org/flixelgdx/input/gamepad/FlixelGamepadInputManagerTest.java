@@ -33,20 +33,8 @@ import java.lang.reflect.Field;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Unit tests for {@link FlixelGamepadInputManager#firstPressed(int)},
- * {@link FlixelGamepadInputManager#firstJustPressed(int)}, and
- * {@link FlixelGamepadInputManager#firstJustReleased(int)}.
- *
- * <p>Internal state (slotGamepads, slotMappings, currentButtons, previousButtons, pressedOrder) is
- * injected via reflection so tests remain isolated from any real controller hardware.
- */
 class FlixelGamepadInputManagerTest {
 
-  /**
-   * Predictable, fixed button and axis indices for tests, with L2/R2 left unmapped to exercise
-   * the synthetic trigger path.
-   */
   private static final class TestMapping {
 
     static final int NATIVE_A = 0;
@@ -87,12 +75,10 @@ class FlixelGamepadInputManagerTest {
       m.registerButton(FlixelGamepadButton.DPAD_DOWN, NATIVE_DPAD_DOWN);
       m.registerButton(FlixelGamepadButton.DPAD_LEFT, NATIVE_DPAD_LEFT);
       m.registerButton(FlixelGamepadButton.DPAD_RIGHT, NATIVE_DPAD_RIGHT);
-      // L2 and R2 are intentionally not registered to drive the synthetic trigger path.
       return m;
     }
   }
 
-  /** Minimal {@link FlixelGamepad} stub backed by a configurable boolean button array. */
   private static final class StubGamepad implements FlixelGamepad {
 
     private final boolean[] buttons = new boolean[TestMapping.MAX_BUTTON + 1];
@@ -174,7 +160,6 @@ class FlixelGamepadInputManagerTest {
 
   @Test
   void firstPressedReturnsChronologicallyFirstButton() throws Exception {
-    // B was pressed first, then A.
     addToPressedOrder(TestMapping.NATIVE_B);
     addToPressedOrder(TestMapping.NATIVE_A);
     setCurrent(TestMapping.NATIVE_A);
@@ -208,14 +193,12 @@ class FlixelGamepadInputManagerTest {
   @Test
   void firstJustPressedReturnsButtonThatTransitionedToPressed() throws Exception {
     setCurrent(TestMapping.NATIVE_A);
-    // Previous is false by default.
 
     assertEquals(FlixelGamepadButton.A, manager.firstJustPressed(0));
   }
 
   @Test
   void firstJustPressedSkipsButtonAlreadyHeldLastFrame() throws Exception {
-    // B was held last frame; X is newly pressed.
     setCurrent(TestMapping.NATIVE_B);
     setPrevious(TestMapping.NATIVE_B);
     setCurrent(TestMapping.NATIVE_X);
@@ -225,7 +208,6 @@ class FlixelGamepadInputManagerTest {
 
   @Test
   void firstJustPressedReturnsSyntheticL2WhenTriggerCrossesThreshold() throws Exception {
-    // L2 is not registered in TestMapping, so the synthetic trigger slot is used.
     int syntheticL = syntheticTriggerL();
     setCurrent(syntheticL);
 
@@ -256,7 +238,6 @@ class FlixelGamepadInputManagerTest {
 
   @Test
   void firstJustReleasedReturnsButtonThatTransitionedToReleased() throws Exception {
-    // previous = pressed, current = released.
     setPrevious(TestMapping.NATIVE_B);
 
     assertEquals(FlixelGamepadButton.B, manager.firstJustReleased(0));
@@ -264,7 +245,6 @@ class FlixelGamepadInputManagerTest {
 
   @Test
   void firstJustReleasedSkipsButtonStillHeld() throws Exception {
-    // A is held both frames; B was released.
     setCurrent(TestMapping.NATIVE_A);
     setPrevious(TestMapping.NATIVE_A);
     setPrevious(TestMapping.NATIVE_B);
@@ -290,8 +270,6 @@ class FlixelGamepadInputManagerTest {
 
   @Test
   void customButtonIsPollableEndToEnd() throws Exception {
-    // The point of unifying on FlixelGamepadButton: a button the framework never heard of can be
-    // minted, registered in a mapping, and then polled through the exact same calls as A/B/X/Y.
     FlixelGamepadButton turbo = FlixelGamepadButton.of("Turbo");
     FlixelGamepadMapping custom = new FlixelGamepadMapping();
     custom.registerButton(turbo, TestMapping.NATIVE_A);

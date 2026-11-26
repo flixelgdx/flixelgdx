@@ -200,13 +200,12 @@ class FlixelTimerTest {
   @Test
   void restartBeforeCompletionResetsCountdown() {
     List<Integer> calls = new ArrayList<>();
-    // Use 1s and 0.5s steps: 0.5 is exactly representable in IEEE754, so sums are exact.
     FlixelTimer timer = manager.start(1f, t -> calls.add(1), 1);
 
     manager.update(0.5f);
     assertTrue(calls.isEmpty(), "should not fire at halfway point");
 
-    timer.restart(-1f);  // Reset to 1s again.
+    timer.restart(-1f);
 
     manager.update(0.5f);
     assertTrue(calls.isEmpty(), "should not fire halfway through restarted timer");

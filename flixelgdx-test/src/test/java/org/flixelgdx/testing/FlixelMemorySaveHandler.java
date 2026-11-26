@@ -28,14 +28,6 @@ import org.flixelgdx.save.FlixelSaveHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * A save handler for unit tests that keeps every save in memory instead of on disk.
- *
- * <p>{@code FlixelSave} only talks to its handler through {@link #read(String)},
- * {@link #write(String, String)} and {@link #delete(String)}, so this is enough to test a full
- * save, flush and reload cycle without a platform backend. Each instance starts empty, so two saves
- * sharing one handler see each other's data, just like two saves on the same disk.
- */
 public final class FlixelMemorySaveHandler implements FlixelSaveHandler {
 
   private final FlixelMap<String, String> entries = new FlixelMap<>();
@@ -54,7 +46,6 @@ public final class FlixelMemorySaveHandler implements FlixelSaveHandler {
 
   @Override
   public boolean delete(@NotNull String name) {
-    // The contract counts "nothing was stored" as a successful delete, so this never fails.
     entries.remove(name);
     return true;
   }

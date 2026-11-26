@@ -115,7 +115,6 @@ class AssetsClassWriterTest {
 
   @Test
   void fileAndFolderWithTheSameNameAreFine() {
-    // Fields and nested classes live in separate namespaces in Java.
     assertTrue(AssetsClassWriter.write("", "Assets", List.of("a", "a/b.png")).contains("String A = \"a\""));
   }
 
@@ -180,7 +179,6 @@ class AssetsClassWriterTest {
     Files.writeString(file, source, StandardCharsets.UTF_8);
     JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
     ByteArrayOutputStream err = new ByteArrayOutputStream();
-    // Doclint checks public and protected members, like the javadoc tool does by default.
     int code = javac.run(null, null, err, "-Xdoclint:all/protected", "-Werror", "-d", dir.resolve("classes").toString(),
         file.toString());
     assertEquals(0, code, err.toString(StandardCharsets.UTF_8) + "\n" + source);

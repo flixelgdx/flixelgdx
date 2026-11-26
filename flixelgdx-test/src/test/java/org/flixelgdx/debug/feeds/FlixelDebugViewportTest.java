@@ -41,7 +41,6 @@ import org.flixelgdx.graphics.FlixelNoopTexture;
 import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +58,6 @@ class FlixelDebugViewportTest {
 
   private static final float EPS = 1e-3f;
 
-  private FlixelLogger originalLog;
   private FlixelDebugManager debug;
   private FlixelDebugViewport viewport;
   private FlixelCamera cam;
@@ -67,7 +65,6 @@ class FlixelDebugViewportTest {
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
@@ -83,9 +80,6 @@ class FlixelDebugViewportTest {
   @AfterEach
   void tearDown() {
     debug.controls.reset();
-    Flixel.log = originalLog;
-    Flixel.state = null;
-    Flixel.cameras.clear();
   }
 
   @Test
@@ -93,7 +87,6 @@ class FlixelDebugViewportTest {
     cam.setZoom(2f);
     cam.scrollX = 50f;
     cam.scrollY = 20f;
-    // At zoom 2 the camera shows 200 x 150 world units with a view margin of 100 and 75.
     FlixelObject world = new FlixelObject(200f, 120f, 20f, 10f);
     FlixelObject far = new FlixelObject(150f, 100f, 8f, 8f);
     far.setScrollFactor(0f, 0f);
@@ -142,7 +135,6 @@ class FlixelDebugViewportTest {
     FlixelSprite member = new FlixelSprite(10f, 10f);
     member.setSize(40f, 40f);
     group.add(member);
-    // The sprite group has no size of its own, so its box is the area around its members.
     state.add(hidden);
     state.add(gone);
     state.add(asleep);
@@ -236,7 +228,6 @@ class FlixelDebugViewportTest {
     assertEquals(10f, box.w, EPS);
     assertEquals(14f, box.h, EPS);
 
-    // Inside the scaled graphic but outside the hitbox.
     DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(130f).writeF32(130f));
     assertNull(debug.inspector.getSelected());
     DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(105f).writeF32(110f));
@@ -264,7 +255,6 @@ class FlixelDebugViewportTest {
     assertEquals(graphic.getBoundsHeight(), box.h, EPS);
     assertEquals(64f, box.w, EPS, "the selected box is the scaled graphic, not the 10 by 14 hitbox");
 
-    // Picking still tests the hitbox, so a tap inside the graphic but outside the hitbox misses.
     DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(140f).writeF32(140f));
     assertNull(debug.inspector.getSelected());
   }
@@ -317,7 +307,6 @@ class FlixelDebugViewportTest {
 
     assertEquals(2f, cam.getZoom(), EPS);
     viewport.sample();
-    // The anchor stays at the same spot of the screen, which is half as far into the half as wide view.
     assertEquals(x / 2f, viewport.getBoxX(0), EPS);
     assertEquals(y / 2f, viewport.getBoxY(0), EPS);
 
@@ -397,7 +386,6 @@ class FlixelDebugViewportTest {
     assertEquals(0, Snapshot.read(viewport).actionCount);
     long revision = viewport.getRevision();
 
-    // A pick on empty space with nothing selected changes nothing on the map.
     DebugTestSupport.send(viewport, FlixelDebugProtocol.VIEWPORT_PICK, w -> w.writeF32(390f).writeF32(290f));
     viewport.update(0f);
     assertTrue(viewport.getRevision() > revision, "the state is sent again so a tool sees its action was handled");
@@ -423,7 +411,6 @@ class FlixelDebugViewportTest {
   private record Box(int id, float x, float y, float w, float h, int type, int flags) {
   }
 
-  /** The decoded state message. */
   private static final class Snapshot {
 
     final List<String> types = new ArrayList<>();

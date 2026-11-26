@@ -32,8 +32,6 @@ import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,21 +41,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugControlsTest {
 
-  private FlixelLogger originalLog;
   private FlixelDebugControls controls;
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
     controls = new FlixelDebugManager().controls;
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
   }
 
   @Test

@@ -31,13 +31,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Exercises {@link FlixelCamera} follow and scroll-clamp math.
- *
- * <p>No graphics backend is installed, so the camera's viewport applies through the no-op graphics
- * manager. That is fine here: every assertion is about {@code scrollX}/{@code scrollY}, which the
- * follow and clamp math derives from the camera's own width and zoom, not from any GPU state.
- */
 class FlixelCameraTest {
 
   private static final float DELTA = 1f / 60f;
@@ -91,7 +84,6 @@ class FlixelCameraTest {
   @Test
   void screenByScreenSnapsBackWhenTargetCrossesLeftEdge() {
     camera.scrollX = 400;
-    // viewLeft = 400; target center at 399 < 400 -> snap back one screen.
     camera.follow(stub(399, 150, 0, 0), FollowStyle.SCREEN_BY_SCREEN);
     camera.update(DELTA);
     assertEquals(0f, camera.scrollX, EPS);
@@ -187,7 +179,6 @@ class FlixelCameraTest {
 
   @Test
   void zoomedFollowTracksTargetNearTheStartOfTheLevel() {
-    // At zoom 3 the old clamp kept the camera pinned until the target was far into the level.
     camera.setZoom(3f);
     camera.setScrollBoundsRect(0, 0, 2000, 1000);
     camera.follow(stub(150, 120, 0, 0), FollowStyle.LOCKON);
@@ -203,7 +194,6 @@ class FlixelCameraTest {
     camera.focusOn(500f, 500f);
     float startX = camera.scrollX;
     float startY = camera.scrollY;
-    // The view is 150 units wide and centered on 500, so 510 is well inside the TOPDOWN zone.
     camera.follow(stub(510, 490, 0, 0), FollowStyle.TOPDOWN);
     camera.update(DELTA);
     assertEquals(startX, camera.scrollX, EPS, "camera must not scroll when target is inside the deadzone");
@@ -215,7 +205,6 @@ class FlixelCameraTest {
     camera = new FlixelCamera(300, 300);
     camera.setZoom(2f);
     camera.focusOn(500f, 500f);
-    // The TOPDOWN zone is the middle third of the 150 unit view: 475 to 525 in world X.
     camera.follow(stub(400, 500, 0, 0), FollowStyle.TOPDOWN);
     camera.update(DELTA);
     assertEquals(400f, visibleLeft(camera) + camera.deadzone.x, EPS);
@@ -248,11 +237,9 @@ class FlixelCameraTest {
     FlixelVector world = camera.unproject(new FlixelVector(100f, 40f));
     FlixelVector view = camera.unprojectToView(new FlixelVector(100f, 40f));
 
-    // At zoom 2 the camera shows 200 by 150 world units, so the view starts 100 by 75 units in.
     assertEquals(50f, view.x, 1e-3f);
     assertEquals(40f + 100f + 50f, world.x, 1e-3f);
     assertEquals(view.y + 10f + 75f, world.y, 1e-3f);
-    // The world point under the pixel is drawn exactly at that pixel's view position.
     assertEquals(view.x, camera.worldToViewX(world.x, 1f), 1e-3f);
     assertEquals(view.y, camera.worldToViewY(world.y, 1f), 1e-3f);
   }

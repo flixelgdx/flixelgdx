@@ -33,7 +33,6 @@ class FlixelMathTest {
 
   private static final float DELTA = 1e-5f;
 
-  // A looser tolerance for the lookup-table trig, which trades accuracy for speed.
   private static final float TRIG_DELTA = 1e-3f;
 
   @Test
@@ -53,7 +52,6 @@ class FlixelMathTest {
 
   @Test
   void roundNegativeValue() {
-    // -1.6 * 10 = -16.0, Math.round(-16.0f) = -16, so result is -1.6 exactly.
     assertEquals(-1.6f, FlixelMath.round(-1.6f, 1), DELTA);
   }
 
@@ -117,7 +115,6 @@ class FlixelMathTest {
 
   @Test
   void lerpAngleTakesShortestPath() {
-    // 350 -> 10 should sweep +20 forward (to 370, equivalent to 10), not backward.
     assertEquals(370f, FlixelMath.lerpAngle(350f, 10f, 1f), DELTA);
     assertEquals(355f, FlixelMath.lerpAngle(350f, 10f, 0.25f), DELTA);
   }

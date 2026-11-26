@@ -40,13 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Runs real Gradle builds with the plugin applied, to check the whole path from a {@code .wgsl} file to the
- * resources folder.
- *
- * <p>The builds validate with Dawn, using the jwebgpu jars from Maven Central at the version the plugin bundles. On a
- * machine jwebgpu has no Dawn library for, the tests are skipped instead of failed.
- */
 class ShaderPluginFunctionalTest {
 
   private static final String TINT = """
@@ -68,7 +61,6 @@ class ShaderPluginFunctionalTest {
 
   @BeforeAll
   static void checkHost() {
-    // The validator needs a Dawn library for this machine; jwebgpu ships one for each supported desktop target.
     Assumptions.assumeTrue(isSupportedHost(), "jwebgpu has no Dawn library for this machine");
   }
 
@@ -118,7 +110,6 @@ class ShaderPluginFunctionalTest {
 
     String output = result.getOutput();
     Path file = dir.resolve("src/main/shaders/broken.wgsl").toRealPath();
-    // The missing semicolon is reported where the statement ends (line 4) or where the next token starts (line 5).
     assertTrue(output.contains(file + ":4:") || output.contains(file + ":5:"), output);
     assertTrue(output.contains("error:"), output);
     assertFalse(Files.exists(dir.resolve("build/generated/flixelgdx/shaders/shaders/broken.wgsl")), output);

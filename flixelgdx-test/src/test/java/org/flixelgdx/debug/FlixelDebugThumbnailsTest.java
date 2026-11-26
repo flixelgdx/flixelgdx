@@ -32,11 +32,8 @@ import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.graphics.FlixelFrame;
-import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,27 +49,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugThumbnailsTest {
 
-  private FlixelLogger originalLog;
-  private FlixelGraphicsManager originalGraphics;
   private ReadbackGraphics graphics;
   private FlixelDebugThumbnails thumbnails;
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
-    originalGraphics = Flixel.graphics;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
     graphics = new ReadbackGraphics();
     Flixel.graphics = graphics;
     thumbnails = new FlixelDebugThumbnails();
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
-    Flixel.graphics = originalGraphics;
   }
 
   @Test

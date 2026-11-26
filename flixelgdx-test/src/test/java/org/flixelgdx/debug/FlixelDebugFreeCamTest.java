@@ -38,7 +38,6 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
 import org.junit.jupiter.api.AfterEach;
@@ -55,10 +54,6 @@ class FlixelDebugFreeCamTest {
 
   private static final float EPS = 1e-3f;
 
-  private FlixelLogger originalLog;
-  private FlixelInputDevice originalInput;
-  private FlixelKeyInputManager originalKeys;
-  private FlixelMouseInputManager originalMouse;
   private FlixelDebugManager debug;
   private FlixelDebugControls controls;
   private FlixelKeyInputManager keys;
@@ -69,10 +64,6 @@ class FlixelDebugFreeCamTest {
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
-    originalInput = Flixel.input;
-    originalKeys = Flixel.keys;
-    originalMouse = Flixel.mouse;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
@@ -94,12 +85,6 @@ class FlixelDebugFreeCamTest {
   @AfterEach
   void tearDown() {
     controls.reset();
-    Flixel.log = originalLog;
-    Flixel.input = originalInput;
-    Flixel.keys = originalKeys;
-    Flixel.mouse = originalMouse;
-    Flixel.state = null;
-    Flixel.cameras.clear();
   }
 
   @Test
@@ -283,7 +268,6 @@ class FlixelDebugFreeCamTest {
     assertTrue(controls.zoomFreeCam(2f, anchorX, anchorY));
 
     assertEquals(2f, cam.getZoom(), EPS);
-    // The anchor was a fraction of the old view; that same fraction of the new, smaller view shows the same point.
     float newAnchorX = anchorX / 2f;
     float newAnchorY = anchorY / 2f;
     assertEquals(worldX, newAnchorX + cam.scrollX + cam.getViewMarginX(), EPS);
@@ -584,7 +568,6 @@ class FlixelDebugFreeCamTest {
     assertNull(object.getDebugBoundingBoxColorOverride());
   }
 
-  /** Presses and releases a key over two frames, running the controls' per-frame update on the press frame. */
   private void tap(int key) {
     keys.keyDown(key);
     controls.update(0.016f);
@@ -593,7 +576,6 @@ class FlixelDebugFreeCamTest {
     keys.endFrame();
   }
 
-  /** A camera whose viewport maps one window pixel to one world unit at zoom 1, like a real window of that size. */
   private static FlixelCamera newCamera() {
     FlixelCamera camera = new FlixelCamera(400, 300);
     camera.getViewport().setScreenBounds(0, 0, 400, 300);
@@ -617,7 +599,6 @@ class FlixelDebugFreeCamTest {
     throw new AssertionError("Command not listed: " + name);
   }
 
-  /** Moves the fake pointer to the screen position that shows the given view-space point. */
   private void placeMouseOverWorld(float viewX, float viewY) {
     cam.getViewport().setScreenBounds(0, 0, 400, 300);
     cam.getViewport().setCameraPosition(200f, 150f);

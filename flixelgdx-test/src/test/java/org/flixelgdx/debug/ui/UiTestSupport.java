@@ -34,12 +34,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Decodes widget trees, patches, and values into plain Java objects so tests can read them easily. */
 public final class UiTestSupport {
 
   private UiTestSupport() {}
 
-  /** One decoded widget. */
   public record Node(int type, int id, String name, Map<Integer, Object> props, List<Node> children) {
 
     public Node child(int index) {
@@ -47,11 +45,9 @@ public final class UiTestSupport {
     }
   }
 
-  /** One decoded patch operation. */
   public record Op(int widget, int code, int key, Object value) {
   }
 
-  /** An error value. */
   public record Error(String message) {
   }
 
@@ -138,7 +134,6 @@ public final class UiTestSupport {
     return ops;
   }
 
-  /** Sends an event as the app would. Arguments may be Boolean, Integer, Long, Float, Double, String, or null. */
   public static void event(FlixelDebugPanel panel, FlixelDebugWidget<?> widget, int event, Object... args) {
     FlixelDebugMessageWriter w = new FlixelDebugMessageWriter();
     w.beginMessage(FlixelDebugProtocol.MSG_PANEL_EVENT).writeU16(0).writeI32(widget.getId()).writeU8(event);
@@ -168,7 +163,6 @@ public final class UiTestSupport {
     panel.handleEvent(r);
   }
 
-  /** Opens a panel and consumes its first tree, so later changes show up as patches. */
   public static FlixelDebugPanel opened(FlixelDebugPanel panel) {
     panel.setOpen(true);
     tree(panel);

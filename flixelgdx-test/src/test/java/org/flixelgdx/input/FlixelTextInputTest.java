@@ -29,13 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Verifies the shared text-input request counter in {@link FlixelBaseInputDevice}: the
- * {@code onTextInputStarted()} and {@code onTextInputStopped()} hooks fire only on the 0 to 1 and
- * 1 to 0 transitions, several owners can nest {@code startTextInput()}/{@code stopTextInput()}
- * calls safely, an extra {@code stopTextInput()} is ignored instead of going negative, and
- * {@code setTextInputArea(int, int, int, int)} forwards through {@code onTextInputAreaChanged(...)}.
- */
 class FlixelTextInputTest {
 
   @Test
@@ -69,13 +62,11 @@ class FlixelTextInputTest {
   void nestedOwnersShareOneTextInputSession() {
     RecordingInputDevice device = new RecordingInputDevice();
 
-    // A debug console starts a permanent request, then a focused text box layers its own on top.
     device.startTextInput();
     device.startTextInput();
     assertEquals(1, device.startedCount);
     assertTrue(device.isTextInputActive());
 
-    // The text box loses focus and releases its own request; the console's request keeps input active.
     device.stopTextInput();
     assertEquals(0, device.stoppedCount);
     assertTrue(device.isTextInputActive());
@@ -91,7 +82,6 @@ class FlixelTextInputTest {
     assertEquals(0, device.stoppedCount);
     assertFalse(device.isTextInputActive());
 
-    // A later balanced start/stop pair must still behave normally afterward.
     device.startTextInput();
     assertEquals(1, device.startedCount);
     device.stopTextInput();
@@ -111,7 +101,6 @@ class FlixelTextInputTest {
     assertEquals(40, device.lastAreaHeight);
   }
 
-  /** Minimal concrete {@link FlixelBaseInputDevice} that counts hook calls for assertion. */
   private static final class RecordingInputDevice extends FlixelBaseInputDevice {
 
     private int startedCount;

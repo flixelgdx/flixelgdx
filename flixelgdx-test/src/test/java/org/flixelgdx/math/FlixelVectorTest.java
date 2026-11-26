@@ -47,7 +47,6 @@ class FlixelVectorTest {
     assertEquals(1f, v.length(), DELTA);
     assertEquals(0f, v.x, DELTA);
     assertEquals(1f, v.y, DELTA);
-    // Normalizing a zero vector leaves it unchanged.
     assertTrue(new FlixelVector().normalize().isZero());
   }
 
@@ -147,7 +146,6 @@ class FlixelVectorTest {
     borrowed.put();
     FlixelVector next = FlixelVector.get();
     assertSame(borrowed, next);
-    // A pooled point is reset to the origin before being handed out again.
     assertEquals(0f, next.x, DELTA);
     assertEquals(0f, next.y, DELTA);
     next.put();
@@ -168,7 +166,6 @@ class FlixelVectorTest {
   void putWeakLeavesNormalPointsAlone() {
     FlixelVector normal = FlixelVector.get(3f, 3f);
     assertFalse(normal.isWeak());
-    // putWeak on a non-weak point should not recycle it.
     normal.putWeak();
     FlixelVector other = FlixelVector.get();
     assertFalse(other == normal && other.x == 3f);

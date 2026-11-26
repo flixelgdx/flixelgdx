@@ -56,96 +56,76 @@ class FlixelMouseInputManagerTest {
 
   @Test
   void setPositionIsNoOpWhenPlatformCannotWarp() {
-    FlixelInputDevice previous = Flixel.input;
     Flixel.input = FlixelNoopInputDevice.INSTANCE;
-    try {
-      FlixelMouseInputManager m = new FlixelMouseInputManager();
-      m.update();
-      assertFalse(m.supportsSetPosition());
-      m.setScreenPosition(120f, 80f);
-      m.setScreenX(5);
-      m.setScreenY(6);
-      m.setWorldPosition(10f, 10f, null);
-      assertEquals(0, m.getScreenX());
-      assertEquals(0, m.getScreenY());
-    } finally {
-      Flixel.input = previous;
-    }
+    FlixelMouseInputManager m = new FlixelMouseInputManager();
+    m.update();
+    assertFalse(m.supportsSetPosition());
+    m.setScreenPosition(120f, 80f);
+    m.setScreenX(5);
+    m.setScreenY(6);
+    m.setWorldPosition(10f, 10f, null);
+    assertEquals(0, m.getScreenX());
+    assertEquals(0, m.getScreenY());
   }
 
   @Test
   void setScreenPositionMovesPointerAndKeepsOtherAxis() {
-    FlixelInputDevice previous = Flixel.input;
     WarpableDevice device = new WarpableDevice();
     Flixel.input = device;
-    try {
-      FlixelMouseInputManager m = new FlixelMouseInputManager();
-      m.setWorldCamera(null);
-      assertTrue(m.supportsSetPosition());
-      m.setScreenPosition(100.4f, 50.6f);
-      assertEquals(100, m.getScreenX());
-      assertEquals(51, m.getScreenY());
-      m.setScreenX(7);
-      assertEquals(7, m.getScreenX());
-      assertEquals(51, m.getScreenY());
-      m.setScreenY(9);
-      assertEquals(7, m.getScreenX());
-      assertEquals(9, m.getScreenY());
-      assertEquals(3, device.warps);
-    } finally {
-      Flixel.input = previous;
-    }
+    FlixelMouseInputManager m = new FlixelMouseInputManager();
+    m.setWorldCamera(null);
+    assertTrue(m.supportsSetPosition());
+    m.setScreenPosition(100.4f, 50.6f);
+    assertEquals(100, m.getScreenX());
+    assertEquals(51, m.getScreenY());
+    m.setScreenX(7);
+    assertEquals(7, m.getScreenX());
+    assertEquals(51, m.getScreenY());
+    m.setScreenY(9);
+    assertEquals(7, m.getScreenX());
+    assertEquals(9, m.getScreenY());
+    assertEquals(3, device.warps);
   }
 
   @Test
   void worldPositionIncludesTheCameraScroll() {
-    FlixelInputDevice previous = Flixel.input;
     Flixel.input = new WarpableDevice();
-    try {
-      FlixelCamera cam = new FlixelCamera(400, 300);
-      cam.getViewport().setScreenBounds(0, 0, 400, 300);
-      cam.setZoom(2f);
-      cam.scrollX = 500f;
-      cam.scrollY = 200f;
-      cam.applyCameraTransform();
-      FlixelMouseInputManager m = new FlixelMouseInputManager();
-      m.setWorldCamera(cam);
+    FlixelCamera cam = new FlixelCamera(400, 300);
+    cam.getViewport().setScreenBounds(0, 0, 400, 300);
+    cam.setZoom(2f);
+    cam.scrollX = 500f;
+    cam.scrollY = 200f;
+    cam.applyCameraTransform();
+    FlixelMouseInputManager m = new FlixelMouseInputManager();
+    m.setWorldCamera(cam);
 
-      m.setScreenPosition(120f, 60f);
+    m.setScreenPosition(120f, 60f);
 
-      FlixelVector view = cam.unprojectToView(new FlixelVector(120f, 60f));
-      assertEquals(view.x + cam.scrollX + cam.getViewMarginX(), m.getWorldX(), 1e-3f);
-      assertEquals(view.y + cam.scrollY + cam.getViewMarginY(), m.getWorldY(), 1e-3f);
-      assertEquals(500f + 100f + 60f, m.getWorldX(), 1e-3f);
-      assertEquals(m.getWorldX(), m.getWorldX(cam), 1e-6f);
-    } finally {
-      Flixel.input = previous;
-    }
+    FlixelVector view = cam.unprojectToView(new FlixelVector(120f, 60f));
+    assertEquals(view.x + cam.scrollX + cam.getViewMarginX(), m.getWorldX(), 1e-3f);
+    assertEquals(view.y + cam.scrollY + cam.getViewMarginY(), m.getWorldY(), 1e-3f);
+    assertEquals(500f + 100f + 60f, m.getWorldX(), 1e-3f);
+    assertEquals(m.getWorldX(), m.getWorldX(cam), 1e-6f);
   }
 
   @Test
   void setWorldPositionPutsThePointerOverThatWorldPoint() {
-    FlixelInputDevice previous = Flixel.input;
     Flixel.input = new WarpableDevice();
-    try {
-      FlixelCamera cam = new FlixelCamera(400, 300);
-      cam.getViewport().setScreenBounds(0, 0, 400, 300);
-      cam.scrollX = 1000f;
-      cam.scrollY = 50f;
-      cam.applyCameraTransform();
-      FlixelMouseInputManager m = new FlixelMouseInputManager();
-      m.setWorldCamera(cam);
+    FlixelCamera cam = new FlixelCamera(400, 300);
+    cam.getViewport().setScreenBounds(0, 0, 400, 300);
+    cam.scrollX = 1000f;
+    cam.scrollY = 50f;
+    cam.applyCameraTransform();
+    FlixelMouseInputManager m = new FlixelMouseInputManager();
+    m.setWorldCamera(cam);
 
-      m.setWorldPosition(1123f, 0f, cam);
-      assertEquals(123, m.getScreenX());
-      assertEquals(1123f, m.getWorldX(), 1e-3f);
+    m.setWorldPosition(1123f, 0f, cam);
+    assertEquals(123, m.getScreenX());
+    assertEquals(1123f, m.getWorldX(), 1e-3f);
 
-      m.setWorldX(1300f);
-      assertEquals(300, m.getScreenX());
-      assertEquals(1300f, m.getWorldX(), 1e-3f);
-    } finally {
-      Flixel.input = previous;
-    }
+    m.setWorldX(1300f);
+    assertEquals(300, m.getScreenX());
+    assertEquals(1300f, m.getWorldX(), 1e-3f);
   }
 
   @Test

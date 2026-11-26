@@ -30,7 +30,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
-/** An in-memory {@link FlixelDebugTransport} that tests drive by hand. */
 final class FakeDebugTransport implements FlixelDebugTransport {
 
   final List<byte[]> sent = new ArrayList<>();
@@ -46,24 +45,20 @@ final class FakeDebugTransport implements FlixelDebugTransport {
   boolean accept = true;
   boolean keepSent = true;
 
-  /** Pretends the app connected. */
   void connect() {
     connected = true;
     event = true;
   }
 
-  /** Pretends the connection dropped. */
   void disconnect() {
     connected = false;
     inbound.clear();
   }
 
-  /** Queues a message from the app. */
   void receive(byte[] message) {
     inbound.add(message);
   }
 
-  /** Returns the sent messages and forgets them. */
   List<byte[]> drain() {
     List<byte[]> copy = new ArrayList<>(sent);
     sent.clear();

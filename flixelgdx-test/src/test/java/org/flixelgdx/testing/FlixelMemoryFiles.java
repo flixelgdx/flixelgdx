@@ -35,29 +35,6 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
-/**
- * A file system for unit tests that keeps every written file in memory instead of on disk.
- *
- * <p>Tests should not depend on a platform backend or leave files behind, so this fake stands in
- * for the real one on {@code Flixel.files}. It splits the roots the same way a real backend does:
- *
- * <ul>
- *   <li>{@link #internal(String)} and {@link #classpath(String)} are read-only and read from the
- *       test classpath, so a test can load a fixture placed under {@code src/test/resources}.</li>
- *   <li>{@link #external(String)}, {@link #local(String)} and {@link #absolute(String)} are writable
- *       and live only in memory. Each root has its own namespace, so {@code external("a.txt")} and
- *       {@code local("a.txt")} are different files.</li>
- * </ul>
- *
- * <p>Example:
- *
- * <pre>{@code
- * FlixelMemoryFiles files = new FlixelMemoryFiles();
- * files.external("saves/slot1.json").writeString("{}");
- * assertTrue(files.external("saves/slot1.json").exists());
- * assertEquals(1, files.external("saves").list().length);
- * }</pre>
- */
 public final class FlixelMemoryFiles implements FlixelFiles {
 
   private final FlixelMap<String, byte[]> entries = new FlixelMap<>();
@@ -92,7 +69,6 @@ public final class FlixelMemoryFiles implements FlixelFiles {
     return new MemoryFile("absolute", path);
   }
 
-  /** Removes every file written so far, so the next test starts with an empty file system. */
   public void clear() {
     entries.clear();
   }
@@ -120,7 +96,6 @@ public final class FlixelMemoryFiles implements FlixelFiles {
     }
   }
 
-  /** A writable file whose contents live in {@link #entries}. */
   private final class MemoryFile implements FlixelFile {
 
     private final String root;
@@ -176,7 +151,6 @@ public final class FlixelMemoryFiles implements FlixelFiles {
         if (!k.startsWith(prefix)) {
           continue;
         }
-        // Only direct children count, so a nested file adds its first folder instead of itself.
         String rest = k.substring(prefix.length());
         int slash = rest.indexOf('/');
         String child = slash < 0 ? rest : rest.substring(0, slash);
@@ -232,7 +206,6 @@ public final class FlixelMemoryFiles implements FlixelFiles {
     }
   }
 
-  /** A read-only file loaded from the test classpath. */
   private static final class ResourceFile implements FlixelFile {
 
     private final String path;

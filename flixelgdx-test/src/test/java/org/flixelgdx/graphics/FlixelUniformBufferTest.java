@@ -102,7 +102,6 @@ class FlixelUniformBufferTest {
     FlixelUniformBuffer b = create();
     b.setColor("axis", new FlixelColor(0.5f, 0.25f, 0.125f, 1f));
     assertEquals(0.125f, floatAt(b, 40));
-    // The float after axis (flags, which starts at 48) must be untouched by the alpha.
     assertEquals(0, intAt(b, 44));
   }
 

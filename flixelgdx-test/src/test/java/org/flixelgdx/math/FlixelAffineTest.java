@@ -27,20 +27,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Validates {@link FlixelAffine} against a plain reference implementation of the standard 2D affine
- * operations.
- *
- * <p>The reference ({@link RefAffine}) applies the textbook translate, scale, rotate, and compose
- * formulas with exact trigonometry, so the test pins {@link FlixelAffine} to known-correct math
- * rather than to any one graphics library. Because {@code FlixelAffine} rotates through a lookup
- * table, the rotation case is compared with a looser tolerance.
- */
 class FlixelAffineTest {
 
   private static final float DELTA = 1e-5f;
 
-  // Rotation goes through a lookup table, so allow a slightly looser tolerance.
   private static final float ROT_DELTA = 1e-2f;
 
   private static void assertMatches(RefAffine ref, FlixelAffine ours, float delta) {
@@ -101,15 +91,10 @@ class FlixelAffineTest {
   void applyToTransformsPoint() {
     FlixelAffine a = new FlixelAffine().idt().translate(10f, 20f).scale(2f, 2f);
     FlixelVector out = a.applyTo(3f, 4f, new FlixelVector());
-    // (3,4) scaled by 2 -> (6,8), then translated by (10,20) -> (16,28).
     assertEquals(16f, out.x, DELTA);
     assertEquals(28f, out.y, DELTA);
   }
 
-  /**
-   * A minimal reference 2D affine (2x3, row-major) implementing the same operations as
-   * {@link FlixelAffine} with exact trigonometry, used only to check {@code FlixelAffine}.
-   */
   private static final class RefAffine {
 
     float m00 = 1f;

@@ -35,7 +35,6 @@ import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,11 +56,6 @@ class FlixelSpriteOffsetTest {
     batch = new RecordingBatch();
   }
 
-  @AfterEach
-  void tearDown() {
-    Flixel.setDrawCamera(null);
-  }
-
   @Test
   void zeroOffsetDrawsTheGraphicAtThePosition() {
     FlixelSprite sprite = sprite(100f, 50f);
@@ -81,7 +75,6 @@ class FlixelSpriteOffsetTest {
 
   @Test
   void centeringOffsetPutsTheHitboxInTheMiddleOfTheGraphic() {
-    // A 16x16 graphic with a 10x10 hitbox is centered with an offset of (16 - 10) / 2 = 3.
     FlixelSprite sprite = sprite(100f, 50f);
     sprite.updateHitbox(10f, 10f);
     sprite.setOffset(3f, 3f);
@@ -94,7 +87,6 @@ class FlixelSpriteOffsetTest {
 
   @Test
   void scalingGrowsTheGraphicAroundItsCenter() {
-    // A 16x16 graphic at (100, 50) scaled by 4 should stay centered on (108, 58).
     FlixelSprite sprite = sprite(100f, 50f);
     sprite.setScale(4f);
     sprite.draw(batch);
@@ -140,12 +132,10 @@ class FlixelSpriteOffsetTest {
     assertEquals(32f, bounds.height, EPS);
   }
 
-  /** Left edge of the scaled quad the batch was asked to draw. */
   private float drawnLeft() {
     return batch.x + batch.originX - batch.originX * batch.scaleX;
   }
 
-  /** Top edge of the scaled quad the batch was asked to draw. */
   private float drawnTop() {
     return batch.y + batch.originY - batch.originY * batch.scaleY;
   }
@@ -156,7 +146,6 @@ class FlixelSpriteOffsetTest {
     return sprite;
   }
 
-  /** Remembers where the last frame was drawn and ignores everything else. */
   private static final class RecordingBatch implements FlixelBatch {
 
     private final FlixelColor color = new FlixelColor();

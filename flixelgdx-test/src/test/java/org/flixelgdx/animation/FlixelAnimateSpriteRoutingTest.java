@@ -28,12 +28,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Covers the pure decision that routes a clip to the rig draw path versus the standard Sparrow /
- * atlas frame path on a {@link FlixelAnimateSprite}. The full render path needs a GPU texture, so
- * this focuses on the texture-free rule: the rig is used only when one is installed and it actually
- * holds the clip being played.
- */
 class FlixelAnimateSpriteRoutingTest {
 
   @Test

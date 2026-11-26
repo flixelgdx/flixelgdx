@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Tests for {@link FlixelJsonWriter}, covering both compact and pretty-print output. */
 class FlixelJsonWriterTest {
 
   @Test

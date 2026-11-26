@@ -31,15 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Exercises {@link FlixelAnimationStateMachine} transition logic, legality rules, lifecycle hooks,
- * and auto-advance.
- *
- * <p>No clips are registered on the controller, so {@code playAnimation} is a no-op here; that is
- * fine because every behavior under test is driven by the machine's own state, signals, and the
- * controller's {@code onAnimationFinished} signal (which the tests dispatch manually to simulate a
- * clip ending). That keeps the suite free of any GPU texture.
- */
 class FlixelAnimationStateMachineTest {
 
   @Test
@@ -54,7 +45,6 @@ class FlixelAnimationStateMachineTest {
     assertTrue(fsm.setState("idle"));
     assertEquals("idle", fsm.getState());
 
-    // Re-entering the active state is a no-op: no change, no extra signal.
     assertTrue(fsm.setState("idle"));
     assertTrue(fsm.setState("run"));
 
@@ -72,14 +62,12 @@ class FlixelAnimationStateMachineTest {
     fsm.addState("hurt", "hurt");
     fsm.setState("idle");
 
-    // "idle" only allows "run", so jumping straight to "hurt" must be refused.
     assertFalse(fsm.setState("hurt"));
     assertEquals("idle", fsm.getState());
 
     assertTrue(fsm.setState("run"));
     assertEquals("run", fsm.getState());
 
-    // "run" declared no restrictions, so any target is allowed from it.
     assertTrue(fsm.setState("hurt"));
     assertEquals("hurt", fsm.getState());
   }
@@ -107,7 +95,7 @@ class FlixelAnimationStateMachineTest {
     fsm.addState("attack", "attack").onEnter(() -> enters[0]++).onExit(() -> exits[0]++);
 
     fsm.setState("attack");
-    fsm.setState("attack", true); // forced re-entry
+    fsm.setState("attack", true);
 
     assertEquals(2, enters[0], "A forced re-entry should run onEnter again.");
     assertEquals(0, exits[0], "A forced re-entry never leaves the state, so onExit must not run.");
@@ -123,7 +111,6 @@ class FlixelAnimationStateMachineTest {
     fsm.setState("attack");
     assertEquals("attack", fsm.getState());
 
-    // Simulate the controller reporting that the "attack" clip finished.
     sprite.ensureAnimation().onAnimationFinished
         .dispatch(new FlixelAnimationFrameSignalData("attack", 0, null));
 
@@ -138,7 +125,6 @@ class FlixelAnimationStateMachineTest {
     fsm.addState("attack", "attack").autoAdvanceTo("idle");
     fsm.setState("attack");
 
-    // A different clip ending must not bounce the machine forward.
     sprite.ensureAnimation().onAnimationFinished
         .dispatch(new FlixelAnimationFrameSignalData("somethingElse", 0, null));
 
@@ -155,8 +141,6 @@ class FlixelAnimationStateMachineTest {
 
     fsm.destroy();
 
-    // After destroy the machine is detached, so a finished clip must not advance it. destroy() also
-    // resets the state to empty, so the tell-tale of a leak would be the state becoming "idle".
     sprite.ensureAnimation().onAnimationFinished
         .dispatch(new FlixelAnimationFrameSignalData("attack", 0, null));
 
@@ -172,7 +156,6 @@ class FlixelAnimationStateMachineTest {
     fsm.addState("attack", "attack").autoAdvanceTo("idle").delay(0.5f);
     fsm.setState("attack");
 
-    // The clip finishes, but the delay means the machine should hold "attack" for now.
     sprite.ensureAnimation().onAnimationFinished
         .dispatch(new FlixelAnimationFrameSignalData("attack", 0, null));
     assertEquals("attack", fsm.getState());
@@ -180,7 +163,7 @@ class FlixelAnimationStateMachineTest {
     fsm.update(0.3f);
     assertEquals("attack", fsm.getState(), "Still inside the delay window.");
 
-    fsm.update(0.3f); // 0.6s total, past the 0.5s delay
+    fsm.update(0.3f);
     assertEquals("idle", fsm.getState(), "Delay elapsed, so it should auto-advance.");
   }
 
@@ -195,7 +178,6 @@ class FlixelAnimationStateMachineTest {
     sprite.ensureAnimation().onAnimationFinished
         .dispatch(new FlixelAnimationFrameSignalData("attack", 0, null));
 
-    // The player interrupts before the delay elapses; the queued auto-advance must be dropped.
     fsm.setState("run");
     fsm.update(1.0f);
 

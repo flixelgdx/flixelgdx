@@ -28,7 +28,6 @@ import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,22 +35,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Checks the ways a tool can hide keys, buttons, and the wheel from the game while still reading them itself. */
 class FlixelInputBlockingTest {
 
-  private FlixelInputDevice previous;
   private ButtonDevice device;
 
   @BeforeEach
   void setUp() {
-    previous = Flixel.input;
     device = new ButtonDevice();
     Flixel.input = device;
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.input = previous;
   }
 
   @Test

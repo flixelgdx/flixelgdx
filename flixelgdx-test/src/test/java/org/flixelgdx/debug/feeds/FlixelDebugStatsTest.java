@@ -34,7 +34,6 @@ import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelNoopGraphicsManager;
 import org.flixelgdx.graphics.FlixelRenderStats;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,24 +43,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugStatsTest {
 
-  private FlixelGraphicsManager originalGraphics;
   private FlixelDebugManager manager;
   private FlixelDebugStats stats;
-  private FlixelCamera camera;
 
   @BeforeEach
   void setUp() {
-    originalGraphics = Flixel.graphics;
     manager = new FlixelDebugManager();
     stats = manager.stats;
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.graphics = originalGraphics;
-    if (camera != null) {
-      Flixel.cameras.removeValue(camera, true);
-    }
   }
 
   @Test
@@ -80,7 +68,7 @@ class FlixelDebugStatsTest {
     render.uniformBytes = 1024;
     Flixel.graphics = new StatsGraphics(render, 59);
 
-    camera = new FlixelCamera(200, 150);
+    FlixelCamera camera = new FlixelCamera(200, 150);
     camera.scrollX = 12f;
     camera.scrollY = -3f;
     camera.setZoom(2f);
@@ -142,7 +130,6 @@ class FlixelDebugStatsTest {
   void historyRingsHold120SamplesAndKeepTheNewestInOrder() {
     Flixel.graphics = new StatsGraphics(null, 0);
     manager.controls.setRate(30);
-    // Each frame is longer than the 1/30 s interval, so every update takes exactly one sample.
     for (int i = 0; i < 130; i++) {
       stats.update(0.04f + 0.001f * i);
     }
@@ -150,7 +137,6 @@ class FlixelDebugStatsTest {
     int start = stats.getHistoryStart();
     assertEquals(stats.getHistoryHead(), start);
     float[] ms = stats.getFrameMsHistory();
-    // The oldest kept sample is number 11 (index 10), the newest is number 130 (index 129).
     assertEquals(50f, ms[start], 1e-2f);
     assertEquals(169f, ms[(start + FlixelDebugStats.HISTORY_SIZE - 1) % FlixelDebugStats.HISTORY_SIZE],
         1e-2f);

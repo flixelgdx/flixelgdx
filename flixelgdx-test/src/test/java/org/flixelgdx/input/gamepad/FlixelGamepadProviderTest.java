@@ -30,14 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Verifies that {@link FlixelGamepadInputManager} discovers and polls gamepads end to end through
- * a {@link FlixelGamepadProvider} and a {@link FlixelGamepadMappingResolver}, without any real
- * controller hardware.
- */
 class FlixelGamepadProviderTest {
 
-  /** A fake gamepad whose button state the test drives directly. */
   private static final class FakeGamepad implements FlixelGamepad {
 
     final boolean[] buttons = new boolean[16];
@@ -84,7 +78,6 @@ class FlixelGamepadProviderTest {
     public void cancelVibration() {}
   }
 
-  /** A provider that exposes a single, swappable fake gamepad. */
   private static final class FakeProvider implements FlixelGamepadProvider {
     FlixelGamepad gamepad;
 
@@ -123,7 +116,7 @@ class FlixelGamepadProviderTest {
     assertEquals(1, manager.numActiveGamepads, "The provider's gamepad should occupy one slot.");
     assertFalse(manager.pressed(0, FlixelGamepadButton.A));
 
-    pad.buttons[0] = true; // FlixelGamepadButton.A mapped to native index 0
+    pad.buttons[0] = true;
     manager.update();
     assertTrue(manager.pressed(0, FlixelGamepadButton.A));
     assertTrue(manager.justPressed(0, FlixelGamepadButton.A));

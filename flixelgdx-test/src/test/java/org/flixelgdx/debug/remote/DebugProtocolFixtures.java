@@ -28,10 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Describes every protocol fixture once, as a list of typed fields, so the same description drives
- * encoding, decoding, and the committed {@code .bin} files.
- */
 final class DebugProtocolFixtures {
 
   static final String RESOURCE_DIR = "/org/flixelgdx/debug/remote/fixtures/";
@@ -56,7 +52,6 @@ final class DebugProtocolFixtures {
   static final int P_CAPTURE = 11;
   static final int P_INPUT = 12;
 
-  /** The panel index used by every panel message fixture. */
   static final int PANEL = 3;
 
   static final byte[] PNG_BYTES = { (byte) 0x89, 'P', 'N', 'G' };
@@ -234,7 +229,6 @@ final class DebugProtocolFixtures {
         end(4));
     add("panel_open", u8(FlixelDebugProtocol.MSG_PANEL_OPEN), u16(PANEL), bool(true));
     add("panel_tree", u8(FlixelDebugProtocol.MSG_PANEL_TREE), u16(PANEL),
-        // The root: a column with a spacing of 4 and three children.
         u8(FlixelDebugProtocol.WIDGET_STACK), i32(1), str(""),
         begin(), prop(FlixelDebugProtocol.PROP_SPACING, val(4f)), end(1),
         begin(),
@@ -396,7 +390,6 @@ final class DebugProtocolFixtures {
 
   private DebugProtocolFixtures() {}
 
-  /** One typed field. */
   record Op(char type, Object value) {
   }
 }

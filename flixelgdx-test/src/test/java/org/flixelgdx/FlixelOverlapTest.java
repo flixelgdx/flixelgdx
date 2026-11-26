@@ -47,7 +47,6 @@ class FlixelOverlapTest {
     Random random = new Random(1234L);
     ObjectGroup group1 = randomGroup(random, 300);
     ObjectGroup group2 = randomGroup(random, 300);
-    // One long floor that covers far more cells than the grid allows per object.
     group2.add(new FlixelObject(0f, 500f, 2000f, 16f));
 
     int expected = 0;
@@ -105,7 +104,6 @@ class FlixelOverlapTest {
     coins.add(new FlixelObject(1f, 1f, 4f, 4f));
     coins.add(new FlixelObject(2f, 2f, 4f, 4f));
 
-    // The first hit kills the player, so the second coin must not be reported.
     Flixel.overlap(player, coins, (p, c) -> {
       pairs++;
       p.kill();
@@ -153,7 +151,6 @@ class FlixelOverlapTest {
       wall.setImmovable(true);
       walls.add(wall);
 
-      // Each crate fell 4 pixels this frame and now sinks 2 pixels into the wall below it.
       FlixelObject crate = new FlixelObject(i * 40f, 70f, 32f, 32f);
       crate.lastX = crate.getX();
       crate.lastY = crate.getY() - 4f;
@@ -183,7 +180,6 @@ class FlixelOverlapTest {
         && a.getY() + a.getHeight() > b.getY();
   }
 
-  /** A plain group of objects, the way a game would make its own. */
   private static final class ObjectGroup extends FlixelBasicGroup<FlixelObject> {
     ObjectGroup() {
       super(FlixelObject[]::new);

@@ -30,17 +30,10 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/** Builds KTX2 files in memory and reads the encoded fixtures, for the KTX2 tests. */
 final class FlixelKtx2Files {
 
   private FlixelKtx2Files() {}
 
-  /**
-   * Reads a fixture made by the Basis Universal encoder (a 50x37 image with 6 mip levels).
-   *
-   * @param name The file name in this package's test resources.
-   * @return The file, in a direct buffer.
-   */
   static ByteBuffer fixture(String name) {
     try (InputStream in = FlixelKtx2Files.class.getResourceAsStream(name)) {
       if (in == null) {
@@ -55,17 +48,6 @@ final class FlixelKtx2Files {
     }
   }
 
-  /**
-   * Builds a KTX2 file whose levels hold the right number of bytes for the format, each filled with its level
-   * number plus one.
-   *
-   * @param format The format of the payload.
-   * @param width The base width.
-   * @param height The base height.
-   * @param levels The number of levels.
-   * @param supercompression The supercompression scheme to write in the header.
-   * @return The file.
-   */
   static ByteBuffer raw(@NotNull FlixelGpuBlockFormat format, int width, int height, int levels,
       int supercompression) {
     int[] sizes = new int[levels];
@@ -75,11 +57,6 @@ final class FlixelKtx2Files {
     return build(vkFormat(format), width, height, levels, supercompression, sizes);
   }
 
-  /**
-   * Builds a KTX2 file with explicit level sizes.
-   *
-   * @return The file, with no data format descriptor.
-   */
   static ByteBuffer build(int vkFormat, int width, int height, int levels, int supercompression, int[] sizes) {
     int header = 80 + levels * 24;
     int total = header;
@@ -104,7 +81,6 @@ final class FlixelKtx2Files {
     return b.flip();
   }
 
-  /** Returns the Vulkan UNORM format number of a block format. */
   static int vkFormat(@NotNull FlixelGpuBlockFormat format) {
     return switch (format) {
       case ASTC_4X4 -> 157;

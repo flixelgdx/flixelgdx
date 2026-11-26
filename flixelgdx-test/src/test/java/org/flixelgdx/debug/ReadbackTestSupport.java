@@ -34,12 +34,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-/** Test doubles for the texture panel and the thumbnail queue. */
 public final class ReadbackTestSupport {
 
   private ReadbackTestSupport() {}
 
-  /** A graphics manager whose pixel readback is answered by the test, when it decides to. */
   public static final class ReadbackGraphics implements FlixelGraphicsManager {
 
     public FlixelTexture lastTexture;
@@ -73,7 +71,6 @@ public final class ReadbackTestSupport {
       lastCallback = callback;
     }
 
-    /** Answers the open request with a picture of the size that was asked for, with padded rows. */
     public void answer(int rowPadding) {
       int rowBytes = lastWidth * 4 + rowPadding;
       ByteBuffer pixels = ByteBuffer.allocate(rowBytes * lastHeight);
@@ -94,7 +91,6 @@ public final class ReadbackTestSupport {
     }
   }
 
-  /** A texture with a made-up size, memory use, and format. */
   public static final class FakeTexture implements FlixelTexture {
 
     final int width;

@@ -24,7 +24,6 @@
 package org.flixelgdx.backend.gpu;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelShader;
@@ -53,13 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-/**
- * Runs the real renderer against WebGPU's null backend, which accepts every command and executes none.
- *
- * <p>That is enough to prove that the code builds valid pipelines, bind groups and passes (the validation layer
- * still runs) without needing a GPU, a window, or a way to read pixels back. The tests skip themselves when the
- * native library cannot be loaded, for example on a platform without a natives module.
- */
 class FlixelGpuSmokeTest {
 
   private static final String TINT = """
@@ -78,7 +70,6 @@ class FlixelGpuSmokeTest {
 
   private static GpuInstance instance;
   private static FlixelGpuGraphics graphics;
-  private static FlixelGraphicsManager previousGraphics;
 
   @BeforeAll
   static void setUp() {
@@ -99,15 +90,11 @@ class FlixelGpuSmokeTest {
     graphics = new FlixelGpuGraphics();
     graphics.setEventPump(instance::processEvents);
     graphics.initialize(boot.getAdapter(), boot.getDevice(), null, 320, 240, false, null);
-    previousGraphics = Flixel.graphics;
     Flixel.graphics = graphics;
   }
 
   @AfterAll
   static void tearDown() {
-    if (previousGraphics != null) {
-      Flixel.graphics = previousGraphics;
-    }
     if (graphics != null) {
       graphics.dispose();
     }
@@ -122,7 +109,6 @@ class FlixelGpuSmokeTest {
     return graphics.createTexture(image);
   }
 
-  /** Pops the validation error scope and returns the error it caught, or {@code null} for none. */
   private static String popValidationError() {
     String[] error = new String[1];
     boolean[] done = new boolean[1];
@@ -366,7 +352,6 @@ class FlixelGpuSmokeTest {
     FlixelGpuBatch batch = (FlixelGpuBatch) graphics.getBatch();
     batch.setProjection(ortho());
     batch.begin();
-    // Alternating textures forces one flush (and one uniform slot) per quad: far more than the ring holds.
     int quads = 6000;
     for (int i = 0; i < quads; i++) {
       batch.draw(i % 2 == 0 ? a : b, i % 300, 5, 4, 4);
@@ -408,7 +393,6 @@ class FlixelGpuSmokeTest {
       if (!graphics.isBlockFormatSupported(format)) {
         continue;
       }
-      // 50x37 is not a whole number of blocks, and 6 levels is more than a padded compressed chain can keep.
       ByteBuffer file = FlixelKtx2Files.raw(format, 50, 37, 6, 0);
       graphics.getDevice().pushErrorScope(GpuErrorFilter.VALIDATION);
       FlixelTexture texture = graphics.createCompressedTexture(file);

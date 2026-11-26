@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelLocalizationPluralTest {
 
-  /** A Polish-style rule, registered by the test the same way a game would. */
   private static final FlixelPluralRule SLAVIC = n -> {
     long ones = n % 10;
     long tens = n % 100;
@@ -92,7 +91,7 @@ class FlixelLocalizationPluralTest {
   @Test
   void ruleRegisteredLaterStillApplies() {
     l10n.setLocale("pl");
-    assertEquals("5 monety", l10n.plural(out, "hud.coins", 5).toString()); // Default rule gives OTHER.
+    assertEquals("5 monety", l10n.plural(out, "hud.coins", 5).toString());
     l10n.setPluralRule("pl", SLAVIC);
     assertEquals("5 monet", l10n.plural(out, "hud.coins", 5).toString());
   }
@@ -101,7 +100,6 @@ class FlixelLocalizationPluralTest {
   void fallbackTextUsesItsOwnLanguagesRule() {
     l10n.setPluralRule("pl", SLAVIC);
     l10n.setLocale("pl");
-    // "hud.found" only exists in English, so the English (default) rule picks the form.
     assertEquals("3 keys in Cave", l10n.plural(out, "hud.found", 3, "Cave").toString());
   }
 

@@ -37,10 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-/**
- * Covers the index-based clip builders on {@link FlixelAnimationController}: {@code add(...)} for
- * grid and atlas frame numbers, and {@code addByIndices(...)} for numbered atlas frame names.
- */
 class FlixelAnimationIndicesTest {
 
   @Test
@@ -107,7 +103,7 @@ class FlixelAnimationIndicesTest {
   @Test
   void addCountsGridFramesLeftToRightThenTopToBottom() {
     FlixelSprite sprite = new FlixelSprite();
-    sprite.loadGraphic(graphic(new FlixelNoopTexture(64, 32)), 16, 16); // 4 columns, 2 rows.
+    sprite.loadGraphic(graphic(new FlixelNoopTexture(64, 32)), 16, 16);
     FlixelFrame[][] grid = sprite.getFrames();
     FlixelAnimationController anim = sprite.ensureAnimation();
 

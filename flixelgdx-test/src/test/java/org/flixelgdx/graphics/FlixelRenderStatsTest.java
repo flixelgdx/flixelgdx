@@ -39,7 +39,6 @@ class FlixelRenderStatsTest {
     stats.addSubmit();
     stats.endFrame();
 
-    // The game and the debugger read the stats between beginFrame() and endFrame().
     stats.beginFrame();
     stats.addDraw(2, 4);
     assertEquals(2, stats.draws, "draws");

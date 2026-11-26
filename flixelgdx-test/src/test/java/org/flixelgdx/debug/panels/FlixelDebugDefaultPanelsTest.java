@@ -34,8 +34,6 @@ import org.flixelgdx.debug.ui.UiTestSupport.Node;
 import org.flixelgdx.debug.ui.UiTestSupport.Op;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,23 +51,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugDefaultPanelsTest {
 
-  private FlixelLogger originalLog;
   private FlixelDebugManager manager;
   private FlixelDefaultLogger root;
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
     root = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     root.setConsoleSink(null);
     Flixel.log = root;
     manager = new FlixelDebugManager();
     root.addSink(manager.logs.getSink());
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
   }
 
   private FlixelDebugPanel panel(String id) {

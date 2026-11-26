@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Decodes the encoder's output with the JDK's own PNG reader, which only the tests may use. */
 class FlixelPngEncoderTest {
 
   private static final byte[] SIGNATURE = { (byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
@@ -107,7 +106,6 @@ class FlixelPngEncoderTest {
     FlixelPngEncoder png = new FlixelPngEncoder();
     png.encode(rgba, w, h, w * 4, 256);
 
-    // The rows add up to 80100 bytes, which is more than the 65535 a stored block holds.
     assertTrue(w * 4 * h > 65535);
     BufferedImage image = decode(png);
     assertEquals(argb(rgba, ((h - 1) * w + (w - 1)) * 4), image.getRGB(w - 1, h - 1));
@@ -148,7 +146,6 @@ class FlixelPngEncoderTest {
     for (int y = 0; y < h; y++) {
       for (int x = 0; x < w; x++) {
         int i = (y * w + x) * 4;
-        // Left half red, right half blue, so a bad sampling shows up as a wrong color.
         rgba.put(i, (byte) (x < w / 2 ? 255 : 0));
         rgba.put(i + 2, (byte) (x < w / 2 ? 0 : 255));
         rgba.put(i + 3, (byte) 255);
@@ -164,7 +161,6 @@ class FlixelPngEncoderTest {
     assertEquals(128, image.getHeight());
     assertEquals(0xFFFF0000, image.getRGB(10, 10));
     assertEquals(0xFF0000FF, image.getRGB(250, 100));
-    // Every sampled color is one of the two source colors, never a blend.
     for (int x = 0; x < 256; x++) {
       int rgb = image.getRGB(x, 64);
       assertTrue(rgb == 0xFFFF0000 || rgb == 0xFF0000FF, "blended color at " + x);

@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.json;
 
-/** A sample scalar-field data class for the {@code @JsonSerializable} round-trip test. */
 @JsonSerializable
 public class SaveData {
 

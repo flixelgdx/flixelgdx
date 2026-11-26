@@ -37,7 +37,6 @@ class FlixelIdentityMapTest {
     FlixelIdentityMap<String, Integer> map = new FlixelIdentityMap<>();
     String a = new String("key");
     String b = new String("key");
-    // a.equals(b) is true, but they are different objects.
     map.put(a, 1);
     map.put(b, 2);
     assertEquals(2, map.getSize());

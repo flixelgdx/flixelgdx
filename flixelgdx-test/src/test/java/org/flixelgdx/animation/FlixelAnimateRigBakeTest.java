@@ -28,31 +28,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Covers the pure geometry of {@link FlixelAnimateRigLoader#bakePartAffine} for both the standard
- * (non-rotated) and the 90-degree-CW-rotated atlas packing cases.
- *
- * <p>Coordinate space primer: the baked affine maps from <strong>atlas local space</strong>
- * (Y-down, top-left at the origin) to <strong>rig local space</strong> (also Y-down, top-left of
- * the anchor box at the origin). For a non-rotated part the atlas quad is {@code (0..origW) x (0..origH)}.
- * For a 90-degree-CW packed part the atlas region has its width and height swapped, so the quad is
- * {@code (0..origH) x (0..origW)} - that is, atlas width = origH, atlas height = origW.
- *
- * <p>No GPU texture is required; all arithmetic is pure matrix math.
- */
 class FlixelAnimateRigBakeTest {
 
   private static final float DELTA = 1e-4f;
 
-  /** Applies the affine to the given local point and returns (x', y'). */
   private static float[] apply(FlixelAffine a, float x, float y) {
     return new float[] { a.m00 * x + a.m01 * y + a.m02, a.m10 * x + a.m11 * y + a.m12 };
   }
 
-  /**
-   * Non-rotated part at the anchor origin. With an identity Flash matrix and a zero-offset anchor,
-   * the baked affine must be identity so every local atlas coordinate maps 1:1 to rig space.
-   */
   @Test
   void nonRotatedIdentityFlashMatrix() {
     float origW = 100f;
@@ -71,18 +54,6 @@ class FlixelAnimateRigBakeTest {
     assertEquals(origH, br[1], DELTA, "bottom-right y");
   }
 
-  /**
-   * Rotated (90 degrees CW) part at the anchor origin. The atlas quad has width = origH and
-   * height = origW, so local space is {@code (0..origH) x (0..origW)}. Un-rotating the packing in
-   * Y-down space is a reflection across the main diagonal, so the baked affine maps each atlas corner
-   * to the rig corner that holds the same pixel:
-   * <ul>
-   *   <li>Atlas top-left (0, 0) must land at rig top-left (0, 0).</li>
-   *   <li>Atlas top-right (origH, 0) must land at rig bottom-left (0, origH).</li>
-   *   <li>Atlas bottom-right (origH, origW) must land at rig bottom-right (origW, origH).</li>
-   *   <li>Atlas bottom-left (0, origW) must land at rig top-right (origW, 0).</li>
-   * </ul>
-   */
   @Test
   void rotatedIdentityFlashMatrix() {
     float origW = 100f;
@@ -109,11 +80,6 @@ class FlixelAnimateRigBakeTest {
     assertEquals(0f, bl[1], DELTA, "atlas bottom-left y -> rig top-right y");
   }
 
-  /**
-   * Non-zero anchor offsets are applied identically to both rotated and non-rotated parts. With a
-   * Flash translate that positions the sprite at the anchor's top-left corner, both cases must
-   * produce a translation that cancels the Flash translation symmetrically.
-   */
   @Test
   void anchorOffsetAppliedToBothCases() {
     float origW = 80f;
@@ -121,8 +87,6 @@ class FlixelAnimateRigBakeTest {
     float anchorMinX = 10f;
     float anchorMinY = 5f;
 
-    // Placing the sprite at the anchor position so the anchor shift cancels out and the baked
-    // affine should reduce to identity for the non-rotated case.
     FlixelAffine flashAtAnchor = new FlixelAffine();
     flashAtAnchor.m02 = anchorMinX;
     flashAtAnchor.m12 = anchorMinY;
@@ -130,7 +94,6 @@ class FlixelAnimateRigBakeTest {
     FlixelAffine outNormal = new FlixelAffine();
     FlixelAnimateRigLoader.bakePartAffine(outNormal, flashAtAnchor, false, anchorMinX, anchorMinY);
 
-    // With the sprite exactly at the anchor, the non-rotated baked affine must be identity.
     float[] tlNormal = apply(outNormal, 0f, 0f);
     assertEquals(0f, tlNormal[0], DELTA, "non-rotated: top-left x at anchor");
     assertEquals(0f, tlNormal[1], DELTA, "non-rotated: top-left y at anchor");
@@ -139,30 +102,18 @@ class FlixelAnimateRigBakeTest {
     assertEquals(origW, brNormal[0], DELTA, "non-rotated: bottom-right x at anchor");
     assertEquals(origH, brNormal[1], DELTA, "non-rotated: bottom-right y at anchor");
 
-    // The rotated case with the same Flash translate and anchor should also cancel the anchor shift.
-    // Atlas quad is (0..origH) x (0..origW).
     FlixelAffine outRotated = new FlixelAffine();
     FlixelAnimateRigLoader.bakePartAffine(outRotated, flashAtAnchor, true, anchorMinX, anchorMinY);
 
-    // Atlas top-left (0, 0) -> rig top-left (0, 0).
     float[] tlRotated = apply(outRotated, 0f, 0f);
     assertEquals(0f, tlRotated[0], DELTA, "rotated: top-left x at anchor");
     assertEquals(0f, tlRotated[1], DELTA, "rotated: top-left y at anchor");
 
-    // Atlas bottom-right (origH, origW) -> rig bottom-right (origW, origH).
     float[] brRotated = apply(outRotated, origH, origW);
     assertEquals(origW, brRotated[0], DELTA, "rotated: bottom-right x at anchor");
     assertEquals(origH, brRotated[1], DELTA, "rotated: bottom-right y at anchor");
   }
 
-  /**
-   * The bounding box of the rig-space corners must be identical for a non-rotated and a
-   * rotated part with the same Flash world matrix and anchor, because atlas rotation is purely
-   * a packing detail - it must not change where the pixels land on screen. The rotated atlas
-   * quad has corners {@code (0..origH) x (0..origW)} while the non-rotated quad is
-   * {@code (0..origW) x (0..origH)}, so the test evaluates different corner coordinates through
-   * two different baked affines and verifies their screen-space bounding boxes agree.
-   */
   @Test
   void rotatedAndNonRotatedHaveSameWorldBoundingBox() {
     float origW = 120f;
@@ -177,14 +128,12 @@ class FlixelAnimateRigBakeTest {
     FlixelAffine outRotated = new FlixelAffine();
     FlixelAnimateRigLoader.bakePartAffine(outRotated, flashTranslate, true, 0f, 0f);
 
-    // 4 corners of the non-rotated quad: (0..origW) x (0..origH)
     float[][] normalCorners = {
         apply(outNormal, 0f, 0f),
         apply(outNormal, origW, 0f),
         apply(outNormal, origW, origH),
         apply(outNormal, 0f, origH)
     };
-    // 4 corners of the rotated quad: atlas width = origH, atlas height = origW
     float[][] rotatedCorners = {
         apply(outRotated, 0f, 0f),
         apply(outRotated, origH, 0f),

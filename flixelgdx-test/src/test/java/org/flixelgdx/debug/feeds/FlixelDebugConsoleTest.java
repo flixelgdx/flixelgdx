@@ -34,9 +34,7 @@ import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugConsoleTest {
 
-  private FlixelLogger originalLog;
   private FlixelDebugManager manager;
   private FlixelDebugConsole console;
   private List<String> lines;
@@ -63,7 +60,6 @@ class FlixelDebugConsoleTest {
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     lines = new ArrayList<>();
@@ -76,11 +72,6 @@ class FlixelDebugConsoleTest {
     manager = new FlixelDebugManager();
     console = manager.console;
     console.register("echo", args -> lastArgs = args.getRawArgs());
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
   }
 
   @Test
@@ -419,7 +410,6 @@ class FlixelDebugConsoleTest {
     return n;
   }
 
-  /** Makes {@link FlixelDebugConsole#writeResult} usable through the generic test helper. */
   private static final class ResultView extends FlixelDebugFeedBase {
 
     private final FlixelDebugConsole console;

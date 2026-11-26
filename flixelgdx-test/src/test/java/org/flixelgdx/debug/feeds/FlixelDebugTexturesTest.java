@@ -37,14 +37,11 @@ import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -58,9 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugTexturesTest {
 
-  private FlixelLogger originalLog;
-  private FlixelAssetManager originalAssets;
-  private FlixelGraphicsManager originalGraphics;
   private FlixelBaseAssetManager assets;
   private ReadbackGraphics graphics;
   private FlixelDebugObjectIds ids;
@@ -68,9 +62,6 @@ class FlixelDebugTexturesTest {
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
-    originalAssets = Flixel.assets;
-    originalGraphics = Flixel.graphics;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
@@ -80,14 +71,6 @@ class FlixelDebugTexturesTest {
     Flixel.graphics = graphics;
     ids = new FlixelDebugObjectIds();
     panel = new FlixelDebugTextures(ids);
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
-    Flixel.assets = originalAssets;
-    Flixel.graphics = originalGraphics;
-    Flixel.state = null;
   }
 
   @Test
@@ -336,7 +319,6 @@ class FlixelDebugTexturesTest {
     throw new AssertionError("No entry with width " + width);
   }
 
-  /** Decodes the list payload into the entries and returns a reader positioned at the totals. */
   private FlixelDebugMessageReader list(List<Entry> out) {
     FlixelDebugMessageReader r = DebugTestSupport.payload(panel);
     assertEquals(FlixelDebugProtocol.TEXTURES_LIST, r.readU8());
@@ -368,7 +350,6 @@ class FlixelDebugTexturesTest {
     boolean duplicate;
   }
 
-  /** A graphic that pretends to be loaded from a file, so the panel's duplicate check can be tested. */
   private static final class PathGraphic extends FlixelGraphic {
 
     private final String resolved;

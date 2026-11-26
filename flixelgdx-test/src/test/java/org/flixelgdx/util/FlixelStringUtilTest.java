@@ -65,7 +65,6 @@ class FlixelStringUtilTest {
 
   @Test
   void contentEqualsBothNullReturnsTrue() {
-    // Both are the same reference (null == null), so the same-reference check fires first.
     assertTrue(FlixelStringUtil.contentEquals(null, null));
   }
 
@@ -114,7 +113,6 @@ class FlixelStringUtilTest {
 
   @Test
   void appendFloatRoundedTwoDecimalsLeadingZeroInFraction() {
-    // 3.05 rounded to 2 places must produce "3.05", not "3.5".
     FlixelCharArray out = new FlixelCharArray();
     FlixelStringUtil.appendFloatRounded(out, 3.05f, 2);
     assertEquals("3.05", new String(out.getItems(), 0, out.getSize()));
@@ -177,7 +175,6 @@ class FlixelStringUtilTest {
 
   @Test
   void appendFloatRoundedOneDecimalNegativeValue() {
-    // -2.6 * 10 = -26.0, Math.round(-26.0) = -26, so the result is "-2.6".
     FlixelCharArray out = new FlixelCharArray();
     FlixelStringUtil.appendFloatRoundedOneDecimal(out, -2.6f);
     assertEquals("-2.6", new String(out.getItems(), 0, out.getSize()));

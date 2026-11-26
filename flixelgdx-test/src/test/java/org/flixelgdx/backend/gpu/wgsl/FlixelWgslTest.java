@@ -56,7 +56,6 @@ class FlixelWgslTest {
     String full = FlixelWgsl.assemble(user);
     assertTrue(full.startsWith(FlixelWgsl.getPreamble()));
     String body = full.substring(FlixelWgsl.getPreamble().length() + 1);
-    // The attributes are blanked in place, so every character after them keeps its column.
     assertTrue(
         body.startsWith("          fn fs_main(in: FlixelVertexOutput) ->              vec4f { return in.color; }"),
         body);

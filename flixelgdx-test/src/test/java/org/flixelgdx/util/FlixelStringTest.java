@@ -196,7 +196,6 @@ class FlixelStringTest {
 
   @Test
   void setFloatRoundedTwoDecimalsLeadingZeroInFraction() {
-    // 3.05 rounded to 2 places must produce "3.05", not "3.5".
     FlixelString fs = new FlixelString();
     fs.setFloatRounded(3.05f, 2);
     assertEquals("3.05", fs.toString());
@@ -260,7 +259,6 @@ class FlixelStringTest {
 
   @Test
   void setFloatRoundedOneDecimalNegativeValue() {
-    // -1.6 * 10 = -16.0, Math.round(-16.0) = -16, result "-1.6".
     FlixelString fs = new FlixelString();
     fs.setFloatRoundedOneDecimal(-1.6f);
     assertEquals("-1.6", fs.toString());

@@ -191,14 +191,9 @@ class FlixelSaveTest {
 
   @Test
   void newSavesUseDefaultHandler() {
-    FlixelSaveHandler previous = FlixelSave.defaultHandler;
-    try {
-      FlixelSaveHandler handler = new FlixelMemorySaveHandler();
-      FlixelSave.defaultHandler = handler;
-      assertSame(handler, new FlixelSave().getHandler());
-    } finally {
-      FlixelSave.defaultHandler = previous;
-    }
+    FlixelSaveHandler handler = new FlixelMemorySaveHandler();
+    FlixelSave.defaultHandler = handler;
+    assertSame(handler, new FlixelSave().getHandler());
   }
 
   @Test

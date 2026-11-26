@@ -35,12 +35,6 @@ import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * A batch for unit tests that records every draw call instead of drawing it.
- *
- * <p>Each call is stored as a {@link Call} with the rectangle, texture coordinates and the color
- * that was set when it was made, so a test can check what was drawn and where without a GPU.
- */
 public final class RecordingBatch implements FlixelBatch {
 
   public final FlixelArray<Call> calls = new FlixelArray<>(Call[]::new);
@@ -105,7 +99,6 @@ public final class RecordingBatch implements FlixelBatch {
     record(texture, null, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 0f);
   }
 
-  /** Returns the last call made, or {@code null} when nothing was drawn. */
   @Nullable
   public Call last() {
     return calls.isEmpty() ? null : calls.peek();
@@ -179,7 +172,6 @@ public final class RecordingBatch implements FlixelBatch {
     transform.set(t);
   }
 
-  /** One recorded draw call. */
   public record Call(@Nullable FlixelTexture texture, @Nullable FlixelFrame frame, float x, float y, float w, float h,
       float u, float v, float u2, float v2, float rotation, FlixelColor color) {
   }

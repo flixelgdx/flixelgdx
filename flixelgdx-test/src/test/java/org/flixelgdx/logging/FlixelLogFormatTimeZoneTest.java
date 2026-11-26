@@ -37,26 +37,18 @@ import java.time.format.DateTimeFormatter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Checks that log timestamps use the offset reported by the runtime device, not the Java default
- * time zone. The formatter caches the current hour, so each test clears that cache first.
- */
 class FlixelLogFormatTimeZoneTest {
 
   private static final int MINUTE_MS = 60_000;
   private static final int HOUR_MS = 3_600_000;
 
-  private FlixelRuntimeDevice original;
-
   @BeforeEach
   void saveDevice() {
-    original = Flixel.runtime;
     FlixelLogFormat.resetCache();
   }
 
   @AfterEach
   void restoreDevice() {
-    Flixel.runtime = original;
     FlixelLogFormat.resetCache();
   }
 
@@ -115,7 +107,6 @@ class FlixelLogFormatTimeZoneTest {
   @Test
   void offsetIsLookedUpAgainWhenTheHourChanges() {
     long jump = Instant.parse("2024-03-10T07:00:00Z").toEpochMilli();
-    // Mimics a daylight saving jump: UTC-5 before 07:00 UTC, UTC-4 from then on.
     Flixel.runtime = new FlixelRuntimeDevice() {
       @Override
       public int getUtcOffsetMillis(long epochMillis) {

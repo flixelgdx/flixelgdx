@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Checks that the {@link FlixelMemoryFiles} fake behaves like a real file backend, so tests can trust it. */
 class FlixelMemoryFilesTest {
 
   @Test

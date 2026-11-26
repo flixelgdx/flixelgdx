@@ -41,9 +41,7 @@ import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.text.FlixelText;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,14 +59,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugInspectorTest {
 
-  private FlixelLogger originalLog;
   private List<FlixelLogLevel> levels;
   private FlixelDebugObjectIds ids;
   private FlixelDebugInspector inspector;
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     levels = new ArrayList<>();
@@ -76,12 +72,6 @@ class FlixelDebugInspectorTest {
     Flixel.log = log;
     ids = new FlixelDebugObjectIds();
     inspector = new FlixelDebugInspector(ids);
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
-    Flixel.state = null;
   }
 
   @Test
@@ -577,21 +567,17 @@ class FlixelDebugInspectorTest {
   void goToCentersTheMainCameraOnTheSelection() {
     FlixelCamera camera = new FlixelCamera(400, 300);
     Flixel.cameras.add(camera);
-    try {
-      FlixelSprite sprite = new FlixelSprite(1000f, 500f);
-      sprite.setSize(20f, 40f);
-      FlixelCamera expected = new FlixelCamera(400, 300);
-      expected.focusOn(sprite.getMidpointX(), sprite.getMidpointY());
+    FlixelSprite sprite = new FlixelSprite(1000f, 500f);
+    sprite.setSize(20f, 40f);
+    FlixelCamera expected = new FlixelCamera(400, 300);
+    expected.focusOn(sprite.getMidpointX(), sprite.getMidpointY());
 
-      inspector.select(sprite);
+    inspector.select(sprite);
 
-      assertTrue(inspector.goTo());
-      assertEquals(expected.scrollX, camera.scrollX, 0.001f);
-      assertEquals(expected.scrollY, camera.scrollY, 0.001f);
-      assertNotEquals(0f, camera.scrollX);
-    } finally {
-      Flixel.cameras.removeValue(camera, true);
-    }
+    assertTrue(inspector.goTo());
+    assertEquals(expected.scrollX, camera.scrollX, 0.001f);
+    assertEquals(expected.scrollY, camera.scrollY, 0.001f);
+    assertNotEquals(0f, camera.scrollX);
   }
 
   @Test

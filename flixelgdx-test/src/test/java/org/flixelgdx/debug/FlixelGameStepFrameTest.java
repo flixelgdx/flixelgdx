@@ -44,25 +44,9 @@ class FlixelGameStepFrameTest {
   private FlixelGame game;
   private CountingState state;
   private FlixelDebugManager debug;
-  private FlixelGame originalGame;
-  private FlixelState originalState;
-  private FlixelKeyInputManager originalKeys;
-  private FlixelMouseInputManager originalMouse;
-  private FlixelTouchManager originalTouches;
-  private FlixelGamepadInputManager originalGamepads;
-  private FlixelSoundManager originalSound;
-  private FlixelDebugManager originalDebug;
 
   @BeforeEach
   void setUp() {
-    originalGame = Flixel.game;
-    originalState = Flixel.state;
-    originalKeys = Flixel.keys;
-    originalMouse = Flixel.mouse;
-    originalTouches = Flixel.touches;
-    originalGamepads = Flixel.gamepads;
-    originalSound = Flixel.sound;
-    originalDebug = Flixel.debug;
     state = new CountingState();
     game = new FlixelGame("Step test", () -> state) {
     };
@@ -80,14 +64,6 @@ class FlixelGameStepFrameTest {
   @AfterEach
   void tearDown() {
     game.setGamePaused(false);
-    Flixel.game = originalGame;
-    Flixel.state = originalState;
-    Flixel.keys = originalKeys;
-    Flixel.mouse = originalMouse;
-    Flixel.touches = originalTouches;
-    Flixel.gamepads = originalGamepads;
-    Flixel.sound = originalSound;
-    Flixel.debug = originalDebug;
   }
 
   @Test

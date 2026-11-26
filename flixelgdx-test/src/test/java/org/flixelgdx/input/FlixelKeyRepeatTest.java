@@ -32,11 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Verifies that {@link FlixelBaseInputDevice#dispatchKeyRepeated(int)} reaches
- * {@link FlixelKeyboardListener#keyRepeated(int)} only, never {@link FlixelKeyboardListener#keyDown(int)},
- * and that repeats leave {@code justPressed}-style state untouched.
- */
 class FlixelKeyRepeatTest {
 
   @Test
@@ -82,7 +77,6 @@ class FlixelKeyRepeatTest {
     keys.endFrame();
     assertFalse(keys.justPressed(FlixelKey.BACKSPACE));
 
-    // Repeats must not re-arm justPressed while the key is still held.
     device.triggerKeyRepeated(FlixelKey.BACKSPACE);
     assertFalse(keys.justPressed(FlixelKey.BACKSPACE));
     assertTrue(keys.pressed(FlixelKey.BACKSPACE));
@@ -91,7 +85,6 @@ class FlixelKeyRepeatTest {
     assertFalse(keys.pressed(FlixelKey.BACKSPACE));
   }
 
-  /** Minimal concrete {@link FlixelBaseInputDevice} that exposes the protected dispatch calls. */
   private static final class RecordingInputDevice extends FlixelBaseInputDevice {
 
     void triggerKeyDown(int keycode) {
@@ -107,7 +100,6 @@ class FlixelKeyRepeatTest {
     }
   }
 
-  /** Records every callback it receives, in order, for assertion. */
   private static final class RecordingListener implements FlixelKeyboardListener {
 
     private final FlixelIntArray downEvents = new FlixelIntArray();

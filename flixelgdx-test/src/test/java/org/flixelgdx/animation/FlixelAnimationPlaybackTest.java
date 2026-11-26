@@ -37,29 +37,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Covers the two pure playback decisions in {@link FlixelAnimationController} that back the
- * non-looping-frame and replay fixes. They are split into static helpers precisely so they can be
- * checked here without registering real clips (which would need a GPU texture).
- */
 class FlixelAnimationPlaybackTest {
-
-  // A 3-frame clip at 0.1s per frame: total duration 0.3s.
 
   @Test
   void finishedNonLoopingClipHoldsItsLastFrame() {
-    // Past the end, a non-looping clip must stay on the last index, not snap back to the first.
     assertEquals(2, FlixelAnimationController.keyframeIndex(0.35f, 0.1f, 3, false));
     assertEquals(2, FlixelAnimationController.keyframeIndex(100f, 0.1f, 3, false));
-    // Mid-clip indices are unaffected.
     assertEquals(0, FlixelAnimationController.keyframeIndex(0.05f, 0.1f, 3, false));
     assertEquals(1, FlixelAnimationController.keyframeIndex(0.15f, 0.1f, 3, false));
   }
 
   @Test
   void loopingClipWrapsBackIntoRange() {
-    assertEquals(0, FlixelAnimationController.keyframeIndex(0.35f, 0.1f, 3, true)); // index 3 -> 0
-    assertEquals(1, FlixelAnimationController.keyframeIndex(0.45f, 0.1f, 3, true)); // index 4 -> 1
+    assertEquals(0, FlixelAnimationController.keyframeIndex(0.35f, 0.1f, 3, true));
+    assertEquals(1, FlixelAnimationController.keyframeIndex(0.45f, 0.1f, 3, true));
   }
 
   @Test
@@ -70,19 +61,14 @@ class FlixelAnimationPlaybackTest {
 
   @Test
   void replayRulesAllowReplayingAFinishedClip() {
-    // A forced call always restarts.
     assertTrue(FlixelAnimationController.shouldRestart(true, true, false));
-    // Switching to a different clip restarts.
     assertTrue(FlixelAnimationController.shouldRestart(false, false, false));
-    // Same clip, but it already finished: restart (this is the "can't play again" fix).
     assertTrue(FlixelAnimationController.shouldRestart(false, true, true));
-    // Same clip still mid-play and not forced: leave it running.
     assertFalse(FlixelAnimationController.shouldRestart(false, true, false));
   }
 
   @Test
   void playingAndUpdatingAClipDoesNotThrow() {
-    // Build a clip from frames backed by a stub texture, so playback and updates run with no GPU.
     FlixelSprite sprite = new FlixelSprite();
     FlixelAnimationController controller = sprite.ensureAnimation();
 
@@ -96,12 +82,11 @@ class FlixelAnimationPlaybackTest {
     assertDoesNotThrow(() -> {
       controller.play("test", false);
       controller.update(0.05f);
-      controller.update(0.5f); // advance past the end of the clip
+      controller.update(0.5f);
     });
     assertNotNull(sprite.getCurrentFrame());
   }
 
-  /** A GPU-free {@link FlixelTexture} stub so frames can exist without a graphics backend. */
   private static final class StubTexture implements FlixelTexture {
 
     private boolean smooth;

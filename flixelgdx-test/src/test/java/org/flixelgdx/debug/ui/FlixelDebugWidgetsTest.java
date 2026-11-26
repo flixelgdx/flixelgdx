@@ -32,9 +32,7 @@ import org.flixelgdx.debug.ui.UiTestSupport.Node;
 import org.flixelgdx.debug.ui.UiTestSupport.Op;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelString;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,19 +55,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugWidgetsTest {
 
-  private FlixelLogger originalLog;
-
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
     FlixelDefaultLogger quiet = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     quiet.setConsoleSink(null);
     Flixel.log = quiet;
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
   }
 
   @Test

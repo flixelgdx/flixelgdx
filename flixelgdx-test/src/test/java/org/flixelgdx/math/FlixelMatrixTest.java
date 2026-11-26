@@ -27,13 +27,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-/**
- * Validates {@link FlixelMatrix} against the standard column-major projection math it must produce.
- *
- * <p>The expected values are built here from the textbook orthographic and multiply formulas, so
- * the test pins the matrix to a known-correct reference rather than to any one graphics library.
- * The layout is column-major: {@code val[column * 4 + row]}.
- */
 class FlixelMatrixTest {
 
   private static final float DELTA = 1e-5f;
@@ -69,13 +62,11 @@ class FlixelMatrixTest {
 
   @Test
   void bridgeRoundTripsThroughFloatArray() {
-    // The float[] bridge is how the matrix crosses to and from a GPU library.
     float[] ref = ortho2D(5f, 6f, 300f, 200f);
     FlixelMatrix ours = new FlixelMatrix().set(ref);
     assertArrayEquals(ref, ours.val, DELTA);
   }
 
-  /** The 4x4 identity in column-major order. */
   private static float[] identity() {
     float[] m = new float[16];
     m[0] = 1f;
@@ -85,7 +76,6 @@ class FlixelMatrixTest {
     return m;
   }
 
-  /** The standard 2D orthographic projection (near 0, far 1) in column-major order. */
   private static float[] ortho2D(float x, float y, float width, float height) {
     float left = x;
     float right = x + width;
@@ -102,7 +92,6 @@ class FlixelMatrixTest {
     return m;
   }
 
-  /** Standard column-major matrix product {@code a * b}. */
   private static float[] mul(float[] a, float[] b) {
     float[] r = new float[16];
     for (int col = 0; col < 4; col++) {

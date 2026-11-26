@@ -40,7 +40,6 @@ import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,14 +60,12 @@ class FlixelDebugAgentTest {
 
   private static final float FRAME = 1f / 60f;
 
-  private FlixelLogger originalLog;
   private FlixelDebugManager manager;
   private FakeDebugTransport transport;
   private FlixelDebugAgent agent;
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
     FlixelDefaultLogger quiet = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     quiet.setConsoleSink(null);
     Flixel.log = quiet;
@@ -76,13 +73,6 @@ class FlixelDebugAgentTest {
     transport = new FakeDebugTransport();
     agent = new FlixelDebugAgent(manager, transport);
     agent.start("127.0.0.1", FlixelDebugProtocol.DEFAULT_PORT);
-  }
-
-  @AfterEach
-  void tearDown() {
-    Flixel.log = originalLog;
-    FlixelDebugManager.defaultTransport = FlixelNoopDebugTransport.INSTANCE;
-    FlixelDebugManager.defaultEndpoint = FlixelDebugEndpoint.DEFAULT;
   }
 
   private static byte[] bytes(FlixelDebugMessageWriter w) {
@@ -826,7 +816,6 @@ class FlixelDebugAgentTest {
     assertTrue(other.closed);
   }
 
-  /** A tracker whose values are fixed, or whose getter throws when it has no name. */
   private static final class Entry extends FlixelDebugTrackerEntry {
 
     private final FlixelMap<String, String> values = new FlixelMap<>();

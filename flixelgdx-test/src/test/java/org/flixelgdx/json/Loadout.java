@@ -23,11 +23,6 @@
  */
 package org.flixelgdx.json;
 
-/**
- * A sample data class exercising the array and enum support of the {@code @JsonSerializable}
- * annotation processor: a primitive array, a String array, an enum, an enum array, and an array of
- * nested {@code @JsonSerializable} types.
- */
 @JsonSerializable
 public class Loadout {
 
@@ -37,7 +32,6 @@ public class Loadout {
   public Rarity[] unlocked;
   public SaveData[] saves;
 
-  /** Item rarity tiers, mapped by name through the generated serializer. */
   public enum Rarity {
     COMMON,
     RARE,

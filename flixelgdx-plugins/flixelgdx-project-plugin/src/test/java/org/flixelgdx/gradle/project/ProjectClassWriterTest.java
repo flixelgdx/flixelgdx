@@ -162,7 +162,6 @@ class ProjectClassWriterTest {
 
   @Test
   void defineStringsAreEscapedForJava() {
-    // A plain literal instead of a text block, so the TOML escapes reach the parser as written.
     String toml = "[defines]\ntext = \"line one\\nline two\\ttab \\\\ \\\"quoted\\\" caf\\u00e9 bell\\u0007\"\n";
     String source = ProjectClassWriter.write(ProjectToml.parse(APP + toml));
 

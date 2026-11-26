@@ -32,7 +32,6 @@ import org.flixelgdx.debug.remote.FlixelDebugMessageReader;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
-import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelString;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,14 +48,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelDebugNodeTest {
 
-  private FlixelLogger originalLog;
   private FlixelDebugManager debug;
   private FlixelCamera cam;
   private FlixelState state;
 
   @BeforeEach
   void setUp() {
-    originalLog = Flixel.log;
     FlixelDefaultLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     log.setConsoleSink(null);
     Flixel.log = log;
@@ -72,9 +69,6 @@ class FlixelDebugNodeTest {
   @AfterEach
   void tearDown() {
     debug.controls.reset();
-    Flixel.log = originalLog;
-    Flixel.state = null;
-    Flixel.cameras.clear();
   }
 
   @Test
