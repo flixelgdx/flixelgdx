@@ -322,18 +322,19 @@ another module is caught. CI runs the same command on every pull request.
 
 ### Test coverage
 
-To see which lines of the framework the tests actually run, build the coverage report with
-[JaCoCo](https://www.jacoco.org/jacoco/):
+`./gradlew test` also measures which lines of the framework the tests actually run, using
+[JaCoCo](https://www.jacoco.org/jacoco/), and fails when the tests cover less than **70% of the lines** or **60% of the
+branches**. A run narrowed with `--tests` skips that check, since it only runs part of the suite. Code that only
+forwards to a platform backend (the `audio` package and the interfaces in `org.flixelgdx.backend`) is left out of the
+numbers.
 
-```bash
-./gradlew :flixelgdx-test:testCodeCoverageReport
-```
-
-Then open `flixelgdx-test/build/reports/jacoco/testCodeCoverageReport/html/index.html` in a browser. Green lines ran
+To see what is covered, open `flixelgdx-test/build/reports/jacoco/testCodeCoverageReport/html/index.html` in a browser. Green lines ran
 during the tests, red lines never ran, and yellow lines are branches where only some of the paths ran (for example an
 `if` that was only ever `true`). Red and yellow lines are the best places to add tests. The report covers
-`flixelgdx-core`, `flixelgdx-gpu` and `flixelgdx-jvm`. CI builds it on every pull request and attaches it to the run
-as the `coverage-report` artifact.
+`flixelgdx-core`, `flixelgdx-gpu` and `flixelgdx-jvm`. CI attaches it to every run as the `coverage-report` artifact.
+
+The minimum is a floor, not a goal. A test should check what the code promises (its Javadoc), not just run lines so
+they turn green.
 
 ---
 
