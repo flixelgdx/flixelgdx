@@ -378,4 +378,14 @@ class FlixelSpriteGroupTest {
     assertEquals(100f, group.getRotationRadius());
     assertTrue(group.isVisible());
   }
+
+  @Test
+  void findingAMemberDoesNotLeaveTheMemberListInSnapshotMode() {
+    FlixelSprite a = group.addAndReturn(sprite(0f, 0f));
+    FlixelSprite b = group.addAndReturn(sprite(1f, 0f));
+    assertSame(a, group.getFirstMatching(s -> true));
+    FlixelSprite[] before = group.getMembers().getItems();
+    group.remove(b);
+    assertSame(before, group.getMembers().getItems(), "a remove outside a loop must not copy the backing array");
+  }
 }
