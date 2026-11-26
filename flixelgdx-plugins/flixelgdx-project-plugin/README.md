@@ -50,7 +50,7 @@ know (such as an `[installed]` table that tools write) are ignored.
 ## The values
 
 | Key                      | Required | Default                | Notes                                                                 |
-|--------------------------|----------|------------------------|-----------------------------------------------------------------------|
+|--------------------------|----------|------------------------|-------------------------------------------------------------------------------------------|
 | `app.title`              | yes      |                        | Printable ASCII, see the naming rules below.                          |
 | `app.company`            | yes      |                        | Same rules as the title.                                              |
 | `app.version`            | yes      |                        | Letters, digits, `.`, `+` and `-`, and it starts with a digit.        |
@@ -100,12 +100,12 @@ A value that breaks a rule fails the build with a message that names the field a
    ```
 
    | Property           | Value                                                                  |
-   |--------------------|------------------------------------------------------------------------|
-   | `game.title`       | `app.title`                                                            |
-   | `game.packageName` | `app.package`                                                          |
-   | `game.company`     | `app.company`                                                          |
-   | `game.version`     | `app.version`                                                          |
-   | `game.language`    | `app.language`                                                         |
+   |-----------------------------------------------|-------------------------------------------------------------------------|
+   | `game.title`                                 | `app.title`                                                            |
+   | `game.packageName`                         | `app.package`                                                          |
+   | `game.company`                             | `app.company`                                                          |
+   | `game.version`                             | `app.version`                                                          |
+   | `game.language`                            | `app.language`                                                         |
    | `game.width`, `game.height`, `game.framerate` | The `[window]` numbers.                        |
    | `game.isVsync`, `game.isFullscreen` | The `[window]` switches (`game.vsync` and `game.fullscreen` in Groovy). |
    | `game.platforms`   | `platforms`                                                            |
