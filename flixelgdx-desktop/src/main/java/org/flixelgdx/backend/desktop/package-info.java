@@ -41,7 +41,9 @@
  *       API: textures, batched sprite drawing, render targets, and custom WGSL shaders. WebGPU
  *       selects the best available graphics API (Vulkan, Metal, Direct3D 12) at startup. You
  *       can override the graphics API by passing the JVM argument {@code -Dflixel.render.backend}
- *       with your preferred choice. Review the switch statement in {@code resolveBackendType}
+ *       with your preferred choice, or from game code with
+ *       {@link org.flixelgdx.graphics.FlixelGraphicsManager#setForcedApi Flixel.graphics.setForcedApi(...)} in a
+ *       boot callback. Review the switch statement in {@code resolveBackendType}
  *       inside of {@link org.flixelgdx.backend.desktop.FlixelDesktopRunner} for the different options.
  *       The launcher installs the WebGPU backend (jwebgpu's FFM backend) itself, so games never do. The
  *       JVM must be started with {@code --enable-native-access=ALL-UNNAMED}, which Gradle run tasks

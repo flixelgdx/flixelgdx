@@ -198,7 +198,7 @@ On Android, your `Activity` calls `FlixelAndroidLauncher.launch(this, new MyGame
 
 | Callback          | Runs                                                        | Good for                                      |
 |-------------------|-------------------------------------------------------------|-----------------------------------------------|
-| `beforeStart(...)` | Before the core managers exist.                            | Replacing a platform service (`Flixel.files`, `FlixelSave.defaultHandler`) before anything uses it. |
+| `beforeStart(...)` | Before the core managers exist.                            | Replacing a platform service (`Flixel.files`, `FlixelSave.defaultHandler`) before anything uses it, or forcing a graphics API with `Flixel.graphics.setForcedApi(...)`. |
 | `afterStart(...)`  | After the core managers exist, before the window opens.    | Configuring managers, registering debugger commands, adding log sinks, registering asset loaders. |
 
 Register them **before** the game starts. Since your game's constructor runs before the launcher, it is a convenient
