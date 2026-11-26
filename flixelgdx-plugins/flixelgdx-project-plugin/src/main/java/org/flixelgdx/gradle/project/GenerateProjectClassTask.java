@@ -27,7 +27,9 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
@@ -49,7 +51,7 @@ import java.util.stream.Stream;
  * <p>The class is written to {@code <outputDir>/<package folders>/Project.java}. {@link #getOutputDir()} is added to
  * the {@code main} Java sources, so compiling the game always runs this task first.
  *
- * <p>The task is cacheable and only reruns when the contents of {@code project.toml} change.
+ * <p>The task is cacheable and only reruns when the contents of {@code project.toml} or the selected profile change.
  */
 @CacheableTask
 public abstract class GenerateProjectClassTask extends DefaultTask {
@@ -60,7 +62,7 @@ public abstract class GenerateProjectClassTask extends DefaultTask {
   /** Writes the project class. */
   @TaskAction
   public void generate() {
-    generate(getProjectFile().get().getAsFile(), getOutputDir().get().getAsFile());
+    generate(getProjectFile().get().getAsFile(), getOutputDir().get().getAsFile(), getProfile().get());
   }
 
   /**
@@ -71,12 +73,13 @@ public abstract class GenerateProjectClassTask extends DefaultTask {
    *
    * @param projectFile The {@code project.toml} to read.
    * @param outputDir The source folder to write the class into.
+   * @param profile The profile whose overrides are applied, or an empty string for none.
    * @throws GradleException if the file cannot be read or is invalid, or the class cannot be written.
    */
-  static void generate(File projectFile, File outputDir) {
+  static void generate(File projectFile, File outputDir, String profile) {
     ProjectModel model;
     try {
-      model = ProjectToml.parse(Files.readString(projectFile.toPath(), StandardCharsets.UTF_8));
+      model = ProjectToml.parse(Files.readString(projectFile.toPath(), StandardCharsets.UTF_8), profile);
     } catch (IOException e) {
       throw new GradleException("Could not read " + projectFile + ".", e);
     }
@@ -120,6 +123,14 @@ public abstract class GenerateProjectClassTask extends DefaultTask {
   @InputFile
   @PathSensitive(PathSensitivity.NONE)
   public abstract RegularFileProperty getProjectFile();
+
+  /**
+   * The selected profile, so switching profiles writes the class again instead of reusing the cached one.
+   *
+   * @return The profile property, holding an empty string when no profile is selected.
+   */
+  @Input
+  public abstract Property<String> getProfile();
 
   /**
    * The source folder the class is written into.

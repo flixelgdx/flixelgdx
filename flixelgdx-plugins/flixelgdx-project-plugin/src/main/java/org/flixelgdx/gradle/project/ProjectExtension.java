@@ -116,6 +116,15 @@ public final class ProjectExtension {
   }
 
   /**
+   * The name of the profile selected with {@code -Pflixel.profile}, whose values were applied on top of the file.
+   *
+   * @return The profile name, or an empty string when none is selected.
+   */
+  public String getProfile() {
+    return model.profile();
+  }
+
+  /**
    * The language of the game's code, {@code java} or {@code kotlin}.
    *
    * @return The language.

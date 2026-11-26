@@ -116,6 +116,7 @@ A value that breaks a rule fails the build with a message that names the field a
    | `game.width`, `game.height`, `game.framerate` | The `[window]` numbers.                        |
    | `game.isVsync`, `game.isFullscreen` | The `[window]` switches (`game.vsync` and `game.fullscreen` in Groovy). |
    | `game.platforms`   | `platforms`                                                            |
+   | `game.profile`     | The selected profile, or an empty string, see profiles below.          |
    | `game.defines`     | The `[defines]` table, looked up by key, such as `game.defines["demo"]`. |
    | `game.model`       | Every value, including the `[render]` ones.                            |
 
@@ -125,8 +126,8 @@ A value that breaks a rule fails the build with a message that names the field a
 3. **Sets defaults for the other plugins.** The `org.flixelgdx.html5` plugin uses the title as its page title, and the
    `org.flixelgdx.packagr` plugin uses the title as its application name and (through `version`) the version.
    Anything set in a build file still wins.
-4. **Adds a `bumpBuild` task** to the root project, which raises the build number and the version, see the build
-   number below.
+4. **Adds `bumpBuild` and `doctor` tasks** to the root project. `bumpBuild` raises the build number and the version,
+   see the build number and checking your setup below.
 5. **Generates a `Project` class** for the `core` module when it has the `java` plugin, before the code compiles.
 
 ## The generated class
@@ -139,6 +140,7 @@ public final class Project {
   public static final String COMPANY = "My Studio";
   public static final String VERSION = "0.1.0";
   public static final int BUILD = 1;
+  public static final String PROFILE = "";   // the selected profile, see below
   public static final int WIDTH = 640;
   // HEIGHT, FRAMERATE, VSYNC and FULLSCREEN, plus RENDER_* values when there is a [render] table
 
@@ -218,6 +220,65 @@ if (game.defines["demo"] == true) {
 
 Defines end up in the built game as plain text, so they are not a place for passwords or secret keys.
 
+## Profiles
+
+Often you want the same game with a few lines changed: windowed with cheats while you develop, or a demo with its own
+title. A profile is a named set of overrides, written as a `[profile.<name>]` table. Think of the rest of the file as
+a recipe and each profile as a sticky note that changes only the lines it mentions:
+
+```toml
+[app]
+title = "My Game"
+
+[window]
+fullscreen = true
+
+[defines]
+demo          = false
+enable_cheats = false
+
+# Local development: windowed, cheats on.
+[profile.dev]
+window.fullscreen     = false
+defines.enable_cheats = true
+
+# The free demo: its own title, the demo flag on, and no Android build.
+[profile.demo]
+app.title    = "My Game Demo"
+defines.demo = true
+platforms    = ["desktop", "html5"]
+```
+
+Select one with the `flixel.profile` Gradle property:
+
+```
+./gradlew desktop:run -Pflixel.profile=dev
+./gradlew desktop:packagr -Pflixel.profile=demo
+./gradlew desktop:packagr                         # no profile: the file as written
+```
+
+To use one by default on your own computer, put `flixel.profile=dev` in a `gradle.properties` that is not committed,
+such as the one in your Gradle user home (`~/.gradle/gradle.properties`). Every other Gradle build ignores it, because
+of the `flixel.` prefix.
+
+- A profile can change any value in this README except `app.package`, because the game's code imports the generated
+  `Project` class from that package. For a separate Android app ID, use `applicationIdSuffix` in the Android module.
+- A profile can change defines the file already has (they keep their place) and add new ones (they come after the
+  file's own).
+- `Project.PROFILE` holds the selected profile's name, or an empty string, so the game can show it:
+
+  ```java
+  if (!Project.PROFILE.isEmpty()) {
+    add(new FlixelText(4, 4, 0, "[" + Project.PROFILE + "]"));
+  }
+  ```
+
+- Selecting a profile the file does not have fails the build and lists the ones it has. A mistake inside a profile
+  only fails the build when that profile is selected, and the message names the profile's line, such as
+  `profile.demo.window.width`.
+- One Gradle run uses one profile for every module, so building the demo and the full game takes two runs. Android's
+  own build types and flavors still work as usual alongside profiles.
+
 ## The build number
 
 `app.version` is a label for people, such as `0.3.0`. Nothing compares it. `app.build` is a plain whole number that
@@ -272,3 +333,42 @@ Only those two values change, so comments and spacing stay as they were. When th
 task adds `build = 2` to the `[app]` table. A version that does not end in a number, such as `1.0-beta`, has no
 obvious next value, so it is left alone unless `--new-version` is given. If a build script already has its own task named `bumpBuild`, that one is kept
 and the plugin does not add its own.
+
+## Checking your setup: `doctor`
+
+Most "it does not build" problems come from the setup, not the game's code: a missing JDK, no Android SDK, a module
+folder that was never created, or a typo in `project.toml`. `./gradlew doctor` checks them all at once and says how to
+fix each problem it finds:
+
+```
+$ ./gradlew doctor
+
+FlixelGDX project: My Game 0.3.0 (build 14)
+Profile:  (none)
+Modules:  core, desktop, html5
+
+[ok] Gradle 9.2
+[ok] Gradle runs on Java 25.0.1 (Eclipse Adoptium)
+[!!] Java 25 toolchain: not found. Install JDK 25 (for example Eclipse Temurin), or let Gradle download one by
+     adding the org.gradle.toolchains.foojay-resolver-convention plugin to the settings file.
+[!!] Android SDK: not found, so the android module was skipped. Install Android Studio, then set sdk.dir in
+     local.properties next to the settings file, or set the ANDROID_HOME environment variable.
+[ok] assets folder found
+[ok] project.toml: 4 defines, 2 profiles (dev, demo)
+
+2 problems found.
+
+Found a bug in FlixelGDX? Open a bug report and paste this whole report into its "Logs or Screenshots"
+field: https://github.com/flixelgdx/flixelgdx/issues/new?template=bug_report.yml
+```
+
+- `[ok]` means a check passed, `[!!]` is a problem with how to fix it, and `[--]` is worth knowing but not a problem.
+- **A broken `project.toml` is reported, not fatal.** Normally a mistake in the file stops every build before any task
+  runs. When `doctor` is the only task requested, the plugin keeps going and the report shows the mistake instead.
+- **Every profile is checked**, even the ones that are not selected, because a mistake inside a profile otherwise only
+  shows up when someone selects it.
+- The Java toolchain line appears when the `core` module asks for one with `java { toolchain { ... } }`.
+- The report never fails the build, so it can always be pasted into a bug report. Its last lines link to the
+  [bug report form](https://github.com/flixelgdx/flixelgdx/issues/new?template=bug_report.yml), whose "Logs or
+  Screenshots" field is the place for it. If a build script already has its
+  own task named `doctor`, that one is kept and the plugin does not add its own.

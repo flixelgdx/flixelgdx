@@ -24,6 +24,7 @@
 package org.flixelgdx.gradle.project;
 
 import org.gradle.api.GradleException;
+import org.jetbrains.annotations.Nullable;
 import org.tomlj.TomlTable;
 
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ final class ProjectDefines {
   private ProjectDefines() {}
 
   /**
-   * Reads the defines of a parsed file.
+   * Reads the defines of a parsed file without a profile.
    *
    * @param toml The parsed file.
    * @return The defines in the order they are written, or an empty list when there is no {@code [defines]} table.
@@ -59,18 +60,47 @@ final class ProjectDefines {
    *     or digit, or two keys turn into the same constant name.
    */
   static List<ProjectDefine> parse(TomlTable toml) {
-    Object table = toml.get(TABLE);
-    if (table == null) {
+    return parse(toml, null, "");
+  }
+
+  /**
+   * Reads the defines of a parsed file with a profile's defines applied on top.
+   *
+   * <p>A profile can change the value of a define the file already has, which keeps its place in the order, and add
+   * new ones, which come after the file's own.
+   *
+   * @param toml The parsed file.
+   * @param profile The selected profile's table, or {@code null} for none.
+   * @param profileName The selected profile's name, used in error messages.
+   * @return The defines, or an empty list when neither the file nor the profile has any.
+   * @throws GradleException if {@code defines} is not a table, a value has an unsupported type, a key has no letter
+   *     or digit, or two keys turn into the same constant name.
+   */
+  static List<ProjectDefine> parse(TomlTable toml, @Nullable TomlTable profile, String profileName) {
+    TomlTable base = table(toml.get(TABLE), TABLE);
+    String prefix = ProjectToml.PROFILES + "." + profileName + ".";
+    TomlTable overrides = profile == null ? null : table(profile.get(TABLE), prefix + TABLE);
+    if (base == null && overrides == null) {
       return List.of();
     }
-    if (!(table instanceof TomlTable defines)) {
-      throw new GradleException("Invalid defines in project.toml: it must be a table, such as [defines].");
+    List<String> keys = new ArrayList<>();
+    if (base != null) {
+      keys.addAll(base.keySet());
     }
+    if (overrides != null) {
+      for (String key : overrides.keySet()) {
+        if (!keys.contains(key)) {
+          keys.add(key);
+        }
+      }
+    }
+
     List<ProjectDefine> out = new ArrayList<>();
     Map<String, String> keysByName = new HashMap<>();
     // keySet() keeps the order of the file, so the constants come out in the order they were written.
-    for (String key : defines.keySet()) {
-      String field = TABLE + "." + key;
+    for (String key : keys) {
+      boolean overridden = overrides != null && overrides.get(List.of(key)) != null;
+      String field = (overridden ? prefix : "") + TABLE + "." + key;
       String name = toConstantName(key);
       if (name == null) {
         throw new GradleException("Invalid " + field + " in project.toml: the key needs at least one ASCII letter or "
@@ -81,9 +111,21 @@ final class ProjectDefines {
         throw new GradleException("Invalid " + field + " in project.toml: it becomes the constant " + name
             + ", the same as defines." + other + ". Rename one of them.");
       }
-      out.add(new ProjectDefine(key, name, value(field, defines.get(List.of(key)))));
+      Object value = overridden ? overrides.get(List.of(key)) : base.get(List.of(key));
+      out.add(new ProjectDefine(key, name, value(field, value)));
     }
     return List.copyOf(out);
+  }
+
+  @Nullable
+  private static TomlTable table(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof TomlTable table)) {
+      throw new GradleException("Invalid " + field + " in project.toml: it must be a table, such as [defines].");
+    }
+    return table;
   }
 
   private static Object value(String field, Object value) {
