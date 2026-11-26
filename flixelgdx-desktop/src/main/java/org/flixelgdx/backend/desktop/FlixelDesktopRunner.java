@@ -137,9 +137,9 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    * @param width Initial window width in pixels.
    * @param height Initial window height in pixels.
    * @param iconPaths Resource paths for the window icons, ordered from smallest to largest.
-   *                  Each path is resolved from the Java resources root (for example
-   *                  {@code "icons/icon16.png"} loads {@code /icons/icon16.png} from the
-   *                  classpath). May be {@code null} to set no icon.
+   *     Each path is resolved from the Java resources root (for example
+   *     {@code "icons/icon16.png"} loads {@code /icons/icon16.png} from the
+   *     classpath). May be {@code null} to set no icon.
    */
   public FlixelDesktopRunner(@NotNull FlixelSdlWindow window, @NotNull FlixelDesktopInputDevice input,
       @NotNull FlixelGpuGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads,
