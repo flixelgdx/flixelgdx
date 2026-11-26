@@ -29,7 +29,6 @@ import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFilePickListener;
 import org.flixelgdx.file.FlixelFilePickerHelpers;
 import org.flixelgdx.file.FlixelFileSaveListener;
-import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,8 +50,8 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>Paste operations are asynchronous. Register a handler on {@link #onTextPasted()} before
  * calling {@link #pasteFromClipboard()}. The signal fires once the platform has retrieved the
- * data. Handlers may not be called on the GL thread; because of this, wrap any calls
- * with {@link FlixelGraphicsManager#queueMainThread(Runnable)}.
+ * data. Handlers may not be called on the game's main thread; because of this, wrap any calls
+ * with {@link FlixelRuntimeDevice#queueMainThread(Runnable) Flixel.runtime.queueMainThread(...)}.
  *
  * <h2>File picker</h2>
  *
@@ -79,7 +78,7 @@ import java.nio.charset.StandardCharsets;
  * // Clipboard (paste).
  * Flixel.host.onTextPasted().add(text -> {
  *   if (text != null) {
- *     Flixel.graphics.queueMainThread(() -> saveCodeField.setText(text));
+ *     Flixel.runtime.queueMainThread(() -> saveCodeField.setText(text));
  *   }
  * });
  * Flixel.host.pasteFromClipboard();
@@ -449,7 +448,7 @@ public interface FlixelHostIntegration {
    *
    * <p>The dispatched value is the pasted text. Handlers may be called off the game thread.
    * Synchronize access or post to the main thread via
-   * {@link FlixelGraphicsManager#queueMainThread(Runnable) Flixel.graphics.queueMainThread(() -> {...})}
+   * {@link FlixelRuntimeDevice#queueMainThread(Runnable) Flixel.runtime.queueMainThread(() -> {...})}
    * before modifying shared game state.
    *
    * @return The signal; never {@code null}.

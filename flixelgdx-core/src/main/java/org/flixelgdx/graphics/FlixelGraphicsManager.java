@@ -117,18 +117,6 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * Runs a task on the main render thread at a safe point.
-   *
-   * <p>Some work (loading callbacks, input events, network results) can arrive on a background
-   * thread, but GPU calls must happen on the render thread. Pass such work here and the framework
-   * runs it on the render thread before the next frame is drawn. On backends with a single thread,
-   * it may run immediately.
-   *
-   * @param action The task to run on the render thread; ignored when {@code null}.
-   */
-  default void queueMainThread(@NotNull Runnable action) {}
-
-  /**
    * Begins a new frame of rendering. Called once per frame by the framework before any draw work.
    */
   default void beginFrame() {}

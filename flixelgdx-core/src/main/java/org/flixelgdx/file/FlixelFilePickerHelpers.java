@@ -147,7 +147,7 @@ public final class FlixelFilePickerHelpers {
    */
   public static void deliver(@NotNull FlixelFilePickListener listener, @Nullable FlixelFile[] files) {
     final FlixelFile[] result = files != null ? files : NO_FILES;
-    Flixel.graphics.queueMainThread(() -> listener.onPick(result));
+    Flixel.runtime.queueMainThread(() -> listener.onPick(result));
   }
 
   /**
@@ -157,6 +157,6 @@ public final class FlixelFilePickerHelpers {
    * @param saved Whether the data was written.
    */
   public static void deliver(@NotNull FlixelFileSaveListener listener, boolean saved) {
-    Flixel.graphics.queueMainThread(() -> listener.onSave(saved));
+    Flixel.runtime.queueMainThread(() -> listener.onSave(saved));
   }
 }

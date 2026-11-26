@@ -159,7 +159,7 @@
  *
  * <ul>
  *   <li>Call every debugger method from the game's main thread. From another thread, queue the call with
- *       {@link org.flixelgdx.graphics.FlixelGraphicsManager#queueMainThread Flixel.graphics.queueMainThread(...)}.
+ *       {@link org.flixelgdx.backend.FlixelRuntimeDevice#queueMainThread Flixel.runtime.queueMainThread(...)}.
  *       </li>
  *   <li>The debugger runs every frame in debug mode, so its frame work never allocates. Getters you give it
  *       (watches, inspector rows, labels) are read every frame or every few frames, so keep them cheap and
