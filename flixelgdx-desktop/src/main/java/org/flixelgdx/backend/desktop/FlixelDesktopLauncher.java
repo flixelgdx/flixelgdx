@@ -95,10 +95,12 @@ public final class FlixelDesktopLauncher {
    * <p>This is the call almost every game uses. The mode is resolved as follows:
    *
    * <ul>
-   *   <li>{@code -Dflixel.mode=debug} (or {@code -Dflixel.debug=true}) starts in
-   *       {@link FlixelRuntimeMode#DEBUG DEBUG}, which enables the remote debugger panels and diagnostics.</li>
+   *   <li>{@code -Dflixel.mode=debug} starts in {@link FlixelRuntimeMode#DEBUG DEBUG}, which enables the remote
+   *       debugger panels and diagnostics.</li>
    *   <li>{@code -Dflixel.mode=test} starts in {@link FlixelRuntimeMode#TEST TEST}.</li>
-   *   <li>No property (the default, and how packaged/published builds run) starts in
+   *   <li>Without the property, the config's default mode is used (see {@link FlixelConfig#getMode()}), which a
+   *       {@code project.toml} profile sets with {@code app.mode}.</li>
+   *   <li>Without either (the default, and how packaged/published builds run), the game starts in
    *       {@link FlixelRuntimeMode#RELEASE RELEASE}.</li>
    * </ul>
    *
@@ -266,12 +268,14 @@ public final class FlixelDesktopLauncher {
   }
 
   /**
-   * Resolves the runtime mode from the {@code flixel.mode} (or legacy {@code flixel.debug}) system
-   * property, defaulting to {@link FlixelRuntimeMode#RELEASE RELEASE}.
+   * Resolves the runtime mode from the {@code flixel.mode} system property, then the config's default mode (see
+   * {@link FlixelConfig#getMode()}), then {@link FlixelRuntimeMode#RELEASE RELEASE}.
    *
-   * @return The runtime mode requested on the command line, or {@code RELEASE} when none was.
+   * @return The runtime mode requested on the command line, else the config's default, else {@code RELEASE}.
    */
   private static FlixelRuntimeMode resolveRuntimeMode() {
-    return FlixelRuntimeMode.parse(System.getProperty("flixel.mode"), FlixelRuntimeMode.RELEASE);
+    FlixelRuntimeMode configured = Flixel.config == null ? null : Flixel.config.getMode();
+    FlixelRuntimeMode fallback = configured != null ? configured : FlixelRuntimeMode.RELEASE;
+    return FlixelRuntimeMode.parse(System.getProperty("flixel.mode"), fallback);
   }
 }

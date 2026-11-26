@@ -49,9 +49,13 @@ import java.util.List;
  * fullscreen = true
  *
  * [profile.dev]
+ * app.mode = "debug"
  * window.fullscreen = false
  * defines.enable_cheats = true
  * }</pre>
+ *
+ * <p>{@code app.mode} is the one key that only a profile may set, so a build without a profile always starts in
+ * release mode.
  *
  * @see ProjectValidator
  */
@@ -103,6 +107,17 @@ public final class ProjectToml {
     String name = profile == null ? "" : profile.strip();
     Lookup values = new Lookup(toml, name.isEmpty() ? null : profileTable(toml, name), name);
 
+    // The mode can only come from a profile, so a build without one always starts in release mode and a debug build
+    // cannot be shipped by accident.
+    if (toml.get("app.mode") != null) {
+      throw new GradleException("Invalid app.mode in project.toml: the mode can only be set inside a profile, such "
+          + "as app.mode = \"debug\" under [profile.dev], so a build without a profile always starts in release mode.");
+    }
+    String mode = string(values, "app.mode", "");
+    if (!mode.isEmpty()) {
+      ProjectValidator.checkMode(values.where("app.mode"), mode);
+    }
+
     String title = requiredString(values, "app.title");
     String company = requiredString(values, "app.company");
     String version = requiredString(values, "app.version");
@@ -148,7 +163,7 @@ public final class ProjectToml {
 
     List<ProjectDefine> defines = ProjectDefines.parse(toml, values.profile(), name);
     return new ProjectModel(width, height, framerate, build, renderWidth, renderHeight, renderScale, title, company,
-        version, packageName, language, platforms(values), defines, name, vsync, fullscreen, hasRender,
+        version, packageName, language, platforms(values), defines, name, mode, vsync, fullscreen, hasRender,
         renderResolution, renderSmooth, transparent);
   }
 

@@ -149,6 +149,33 @@ class ProjectProfilesTest {
   }
 
   @Test
+  void aProfileCanSetTheMode() {
+    String file = FILE.replace("[profile.dev]\n", "[profile.dev]\napp.mode = \"debug\"\n");
+
+    assertEquals("debug", ProjectToml.parse(file, "dev").mode());
+    assertEquals("", ProjectToml.parse(file, "demo").mode());
+    assertEquals("", ProjectToml.parse(file).mode());
+  }
+
+  @Test
+  void theModeCannotBeSetOutsideAProfile() {
+    String table = FILE.replace("version = \"0.3.0\"\n", "version = \"0.3.0\"\nmode = \"debug\"\n");
+    String message = assertThrows(GradleException.class, () -> ProjectToml.parse(table)).getMessage();
+    assertTrue(message.contains("app.mode") && message.contains("profile"), message);
+
+    // Selecting a profile does not make a mode in the base file allowed.
+    assertThrows(GradleException.class, () -> ProjectToml.parse(table, "dev"));
+  }
+
+  @Test
+  void anUnknownModeNamesTheProfileLine() {
+    String file = FILE.replace("[profile.dev]\n", "[profile.dev]\napp.mode = \"turbo\"\n");
+
+    String message = assertThrows(GradleException.class, () -> ProjectToml.parse(file, "dev")).getMessage();
+    assertTrue(message.contains("profile.dev.app.mode") && message.contains("\"turbo\""), message);
+  }
+
+  @Test
   void profileNamesAreListedInOrder() {
     assertEquals(List.of("dev", "demo"), ProjectToml.profileNames(Toml.parse(FILE)));
     assertEquals(List.of(), ProjectToml.profileNames(Toml.parse("[app]\n")));

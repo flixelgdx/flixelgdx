@@ -23,10 +23,12 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.save.FlixelSave;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -77,6 +79,8 @@ public final class FlixelConfig {
   private final String company;
   @NotNull
   private final String version;
+  @Nullable
+  private final FlixelRuntimeMode mode;
 
   private final int width;
   private final int height;
@@ -95,6 +99,7 @@ public final class FlixelConfig {
     this.title = builder.title;
     this.company = builder.company;
     this.version = builder.version;
+    this.mode = builder.mode;
     this.width = builder.width;
     this.height = builder.height;
     this.framerate = builder.framerate;
@@ -121,6 +126,22 @@ public final class FlixelConfig {
   @NotNull
   public String getVersion() {
     return version;
+  }
+
+  /**
+   * Returns the runtime mode the game starts in when nothing at launch asks for another one.
+   *
+   * <p>This is only a default. A per-launch setting always wins over it: {@code -Dflixel.mode} on desktop,
+   * {@code ?flixel.mode=} in the page address on the web, and the {@code flixel.mode} intent extra on Android. Read
+   * {@code Flixel.runtime} for the mode the game actually runs in.
+   *
+   * @return The default mode, or {@code null} to let the platform decide (release, or debug for a debuggable Android
+   *     build).
+   * @see Builder#mode(FlixelRuntimeMode)
+   */
+  @Nullable
+  public FlixelRuntimeMode getMode() {
+    return mode;
   }
 
   public int getWidth() {
@@ -239,6 +260,8 @@ public final class FlixelConfig {
     private String company = "";
     @NotNull
     private String version = "";
+    @Nullable
+    private FlixelRuntimeMode mode;
 
     private int width = 640;
     private int height = 360;
@@ -446,6 +469,28 @@ public final class FlixelConfig {
     @NotNull
     public Builder transparentFramebuffer(boolean transparentFramebuffer) {
       this.transparentFramebuffer = transparentFramebuffer;
+      return this;
+    }
+
+    /**
+     * Sets the runtime mode the game starts in when nothing at launch asks for another one.
+     *
+     * <p>Think of it as a thermostat's default temperature: the game starts there, but anyone can still turn the
+     * dial for one launch with {@code -Dflixel.mode}, {@code ?flixel.mode=} or the {@code flixel.mode} intent extra.
+     * In a project with a {@code project.toml}, set it per profile with {@code app.mode} instead of calling this:
+     *
+     * <pre>{@code
+     * [profile.dev]
+     * app.mode = "debug"
+     * }</pre>
+     *
+     * @param mode The default mode, or {@code null} (the default) to let the platform decide: release, or debug for
+     *     a debuggable Android build.
+     * @return This builder, for chaining.
+     */
+    @NotNull
+    public Builder mode(@Nullable FlixelRuntimeMode mode) {
+      this.mode = mode;
       return this;
     }
 

@@ -64,7 +64,8 @@ final class ProjectDoctor {
       lines.add("FlixelGDX project: " + ProjectPlugin.FILE_NAME + " could not be read");
     } else {
       lines.add("FlixelGDX project: " + model.title() + " " + model.version() + " (build " + model.build() + ")");
-      lines.add("Profile:  " + (model.profile().isEmpty() ? "(none)" : model.profile()));
+      lines.add("Profile:  " + (model.profile().isEmpty() ? "(none)" : model.profile())
+          + (model.mode().isEmpty() ? "" : ", starts in " + model.mode() + " mode"));
       lines.add("Modules:  " + String.join(", ", facts.modules()));
     }
     lines.add("");
