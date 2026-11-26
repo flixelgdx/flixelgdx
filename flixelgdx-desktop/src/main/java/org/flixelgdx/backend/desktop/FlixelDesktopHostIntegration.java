@@ -261,7 +261,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
           }
         }
         FlixelFilePickerHelpers.deliver(listener, result);
-        Flixel.graphics.queueMainThread(() -> {
+        Flixel.runtime.queueMainThread(() -> {
           callback[0].free();
           if (filters != null) {
             filters.free();
@@ -302,7 +302,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
           }
         }
         FlixelFilePickerHelpers.deliver(listener, saved);
-        Flixel.graphics.queueMainThread(() -> {
+        Flixel.runtime.queueMainThread(() -> {
           callback[0].free();
           if (filters != null) {
             filters.free();

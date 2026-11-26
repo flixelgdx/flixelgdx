@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.backend.FlixelCrashHandler;
+import org.flixelgdx.backend.FlixelMainThreadQueue;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
@@ -53,6 +54,8 @@ import java.util.Objects;
  * {@link FlixelHtml5Runner}, which routes them through the stored {@link FlixelCrashHandler}.
  */
 public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
+
+  private final FlixelMainThreadQueue mainThreadQueue = new FlixelMainThreadQueue();
 
   private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
   private FlixelCrashHandler crashHandler;
@@ -132,6 +135,16 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
       handler.onCrash(thread, throwable);
     };
     installJsErrorHandlers();
+  }
+
+  @Override
+  public void queueMainThread(@NotNull Runnable action) {
+    mainThreadQueue.add(action);
+  }
+
+  @Override
+  public void runMainThreadTasks() {
+    mainThreadQueue.run();
   }
 
   /**

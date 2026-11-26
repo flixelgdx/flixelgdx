@@ -198,4 +198,54 @@ public interface FlixelRuntimeDevice {
    * @param handler The crash handler to install.
    */
   default void setCrashHandler(@NotNull FlixelCrashHandler handler) {}
+
+  /**
+   * Runs a task on the game's main thread at a safe point, before the next frame is updated and drawn.
+   *
+   * <p>The main thread is the one that runs your states' {@code update()} and {@code draw()}. Some work
+   * finishes on a different thread: a file picker answering, a network reply arriving, or a loader
+   * finishing in the background. Touching the game from there (changing a sprite, a text field, or
+   * the GPU) is unsafe, because the main thread may be using the same objects at that very moment.
+   * Hand the work to this method instead, and the framework runs it on the main thread at the start
+   * of the next frame. It is like leaving a note for a coworker instead of grabbing the pen out of
+   * their hand while they are writing.
+   *
+   * <p>This is safe to call from any thread, including the main thread itself (the task then runs at
+   * the start of the next frame). Tasks run in the order they were queued. A task that queues another
+   * task makes that one wait for the following frame.
+   *
+   * <p>On Android, the main thread is FlixelGDX's render thread ({@code flixel-render}), not the
+   * Android UI thread.
+   *
+   * <p>The default implementation runs the task right away, because a device without a game loop
+   * (such as {@link FlixelNoopRuntimeDevice} during headless tests) has no later frame to run it in.
+   * Every platform backend overrides this, usually with a {@link FlixelMainThreadQueue}.
+   *
+   * <p>Example (showing pasted text, whose signal may fire on another thread):
+   *
+   * <pre>{@code
+   * Flixel.host.onTextPasted().add(text -> {
+   *   if (text != null) {
+   *     Flixel.runtime.queueMainThread(() -> saveCodeField.setText(text));
+   *   }
+   * });
+   * Flixel.host.pasteFromClipboard();
+   * }</pre>
+   *
+   * @param action The task to run on the main thread; ignored when {@code null}.
+   */
+  default void queueMainThread(@NotNull Runnable action) {
+    if (action != null) {
+      action.run();
+    }
+  }
+
+  /**
+   * Runs every task queued with {@link #queueMainThread(Runnable)} since the last call.
+   *
+   * <p>The platform's game loop calls this once per frame on the main thread, right before the frame
+   * starts. Game code never needs to call it. The default does nothing, matching the default
+   * {@link #queueMainThread(Runnable)}, which runs tasks right away.
+   */
+  default void runMainThreadTasks() {}
 }

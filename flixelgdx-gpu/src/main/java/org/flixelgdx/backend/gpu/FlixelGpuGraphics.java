@@ -158,7 +158,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private final FlixelStatsLog statsLog = new FlixelStatsLog();
   private final FlixelGpuBatch batch = new FlixelGpuBatch(this);
   private final FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
-  private final FlixelArray<Runnable> mainThreadQueue = new FlixelArray<>();
   private final FlixelGlobalShaderPipeline pipeline = new FlixelGlobalShaderPipeline();
   private final FlixelLongMap<FlixelGpuTexture> textures = new FlixelLongMap<>();
   private final FlixelRenderStats stats = new FlixelRenderStats();
@@ -531,24 +530,11 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   }
 
   @Override
-  public void queueMainThread(@NotNull Runnable action) {
-    synchronized (mainThreadQueue) {
-      mainThreadQueue.add(action);
-    }
-  }
-
-  @Override
   public void beginFrame() {
     Runnable pump = eventPump;
     if (pendingReadbacks > 0 && pump != null) {
       // Let finished texture readbacks call back. The pump is the GPU instance's event processing.
       pump.run();
-    }
-    synchronized (mainThreadQueue) {
-      for (int i = 0; i < mainThreadQueue.getSize(); i++) {
-        mainThreadQueue.get(i).run();
-      }
-      mainThreadQueue.clear();
     }
     long now = System.nanoTime();
     long delta = now - lastFrameNanos;

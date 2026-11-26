@@ -203,11 +203,12 @@ A backend is a launcher plus implementations of the seams. The shape is always t
 1. Install logging first (`Flixel.log.setConsoleSink(...)`, a site resolver, and optionally a file sink).
 2. Create and assign the platform services: `Flixel.window`, `Flixel.graphics`, `Flixel.input`, `Flixel.files`,
    `Flixel.assets`, `Flixel.host`, `Flixel.alert`, `Flixel.runtime`, `FlixelSave.defaultHandler`,
-   `FlixelSoundManager.defaultFactory`, and the font rasterizer. Anything you skip stays a safe no-op.
+   `FlixelSoundManager.defaultFactory`, and the font rasterizer. Anything you skip stays a safe no-op. Your runtime
+   device should keep a `FlixelMainThreadQueue` for `queueMainThread(...)` and `runMainThreadTasks()`.
 3. Register an `afterStart` callback for pieces that attach to core managers (gamepad provider, cursor manager).
 4. Set the runtime mode, and install a `FlixelDebugTransport` if the platform can reach the debugger app.
 5. Write a `FlixelGameRunner` that creates the window, calls `game.create()` once the surface is ready, then each frame
-   `advanceTime(...)`, `update(...)`, `draw(...)`, and `endFrame()`, plus `resize(...)` and the focus and suspend
+   `Flixel.runtime.runMainThreadTasks()`, `advanceTime(...)`, `update(...)`, `draw(...)`, and `endFrame()`, plus `resize(...)` and the focus and suspend
    hooks. Call `game.destroy()` on exit.
 6. Call `Flixel.start(game, runner)`.
 

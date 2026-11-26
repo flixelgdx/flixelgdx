@@ -25,6 +25,7 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.feeds.FlixelDebugCapture;
 import org.flixelgdx.debug.feeds.FlixelDebugConsole;
@@ -47,7 +48,6 @@ import org.flixelgdx.debug.remote.FlixelDebugTransport;
 import org.flixelgdx.debug.remote.FlixelNoopDebugTransport;
 import org.flixelgdx.debug.ui.FlixelDebugPanels;
 import org.flixelgdx.graphics.FlixelBatch;
-import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -132,7 +132,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Thread safety</h2>
  *
  * <p>All public methods are intended to be called from the game's main thread. If you must run one from
- * another thread, you can use {@link FlixelGraphicsManager#queueMainThread Flixel.graphics.queueMainThread(...)}
+ * another thread, you can use {@link FlixelRuntimeDevice#queueMainThread Flixel.runtime.queueMainThread(...)}
  * and run the debug method there instead.
  */
 public class FlixelDebugManager {
