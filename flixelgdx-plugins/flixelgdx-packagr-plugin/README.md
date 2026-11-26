@@ -133,7 +133,21 @@ only vendor, matching the framework's recommendation. The first build for a give
 platform downloads and verifies it, then caches it under `~/.flixelgdx/jdks`; every later build
 reuses the cache with no download.
 
-`jlink` is version-strict (its version must match the runtime it builds), so a runtime of the target
-version is always used to assemble the image rather than the JDK running the build. Packaging one
-operating system from another (for example a Windows package from Linux) works: a host-platform JDK
-of the target version supplies a `jlink` that runs locally, and it links the target JDK's modules.
+`jlink` is version-strict: the modules it links must come from exactly the same JDK release as the
+`jlink` itself. So a Temurin JDK for the machine you build on, of the target version, always supplies
+the `jlink` (never the JDK running Gradle), and the target platform's modules are matched to its
+exact release. That is also what makes packaging one operating system from another work, for example
+a Windows package from Linux.
+
+Where the modules come from depends on the JDK version:
+
+- **JDK 24 and newer:** Temurin's JDK downloads no longer contain a `jmods` folder
+  ([JEP 493](https://openjdk.org/jeps/493)). Adoptium publishes each platform's `.jmod` files as a
+  separate `jmods` download instead, which packagr fetches for the exact release of the `jlink`, once
+  per platform, and caches next to the JDKs (for example `temurin-jmods-25.0.5.1_2-windows-x86_64`).
+  (The `bin/jmod` file in a JDK is a command-line tool, not the modules.)
+- **Older JDKs, such as 21:** the modules are in the `jmods` folder of the JDK download itself.
+
+If Temurin has no build for a target at the chosen version, packaging that target fails with a message
+that says so. For example, Temurin 25 has no Windows ARM64 build, so `windowsArm64()` needs
+`jdkVersion = 21` until Adoptium publishes one.

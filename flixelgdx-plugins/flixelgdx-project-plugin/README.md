@@ -51,7 +51,7 @@ know (such as an `[installed]` table that tools write) are ignored.
 ## The values
 
 | Key                      | Required | Default                | Notes                                                                 |
-|--------------------------|----------|------------------------|-----------------------------------------------------------------------|
+|--------------------------|----------|------------------------|-------------------------------------------------------------------------------------------|
 | `app.title`              | yes      |                        | Printable ASCII, see the naming rules below.                          |
 | `app.company`            | yes      |                        | Same rules as the title.                                              |
 | `app.version`            | yes      |                        | Letters, digits, `.`, `+` and `-`, and it starts with a digit.        |
@@ -148,7 +148,7 @@ FlixelConfig config = Project.config().framerate(144).build();
 ```
 
 The task is called `generateProjectClass`. It is cacheable and reruns only when `project.toml` changes. Its output
-folder, `build/generated/sources/flixelProject/java/main`, is a Java source folder of the `main` source set, so
+folder, `build/generated/flixelgdx/project`, is a Java source folder of the `main` source set, so
 compiling (Java or Kotlin) always runs it first. The class is also written whenever an IDE reloads the Gradle
 project, so `Project` resolves right after a sync without a build.
 

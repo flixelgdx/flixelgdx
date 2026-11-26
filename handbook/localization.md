@@ -54,8 +54,14 @@ and `assets/lang/es.json`:
 
 ```json
 {
-  "menu": { "play": "Jugar", "quit": "Salir" },
-  "hud": { "score": "Puntos: {0}", "defeated": "¡{0} derrotó a {1}!" }
+  "menu": {
+    "play": "Jugar",
+    "quit": "Salir"
+  },
+  "hud": {
+    "score": "Puntos: {0}",
+    "defeated": "¡{0} derrotó a {1}!"
+  }
 }
 ```
 
@@ -147,20 +153,32 @@ Japanese has one, Polish has three or more, and Arabic has six. So the choice of
 lives in the string file and in a **plural rule** for each language.
 
 Write the forms as an object whose keys are the standard plural category names: `zero`, `one`, `two`, `few`, `many`,
-and `other`. Every plural entry needs `other`, which is used whenever a form is missing:
+and `other`. Every plural entry needs `other`, which is used whenever a form is missing.
+
+For example, in English:
 
 ```json
 {
   "hud": {
-    "coins": { "one": "{0} coin", "other": "{0} coins" }
+    "coins": {
+      "one": "{0} coin",
+      "other": "{0} coins"
+    }
   }
 }
 ```
 
+And Polish:
+
 ```json
 {
   "hud": {
-    "coins": { "one": "{0} moneta", "few": "{0} monety", "many": "{0} monet", "other": "{0} monety" }
+    "coins": {
+      "one": "{0} moneta",
+      "few": "{0} monety",
+      "many": "{0} monet",
+      "other": "{0} monety"
+    }
   }
 }
 ```

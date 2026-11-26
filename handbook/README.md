@@ -51,7 +51,7 @@ differences: FlixelGDX is designed to create no garbage per frame and uses no re
 The core ideas everything else builds on. Read these first, in order.
 
 | # | Guide | What you will learn |
-|---|-------|---------------------|
+|---|----------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | 1 | [What FlixelGDX Is: The Mental Model](introduction.md) | The theater analogy, the five big ideas, the rules of the house, and the modules. |
 | 2 | [Getting Started: Your First Project and Your First Game](getting-started.md) | Tools, creating a project, the project layout, launchers, and a first game in two classes. |
 | 3 | [The Game Loop: Create, Update, Draw, and Destroy](game-loop.md) | What `elapsed` is, the exact order of a frame, time scale, pausing, and platform events. |
@@ -64,7 +64,7 @@ The core ideas everything else builds on. Read these first, in order.
 Everything that turns a scene into a game.
 
 | # | Guide | What you will learn |
-|---|-------|---------------------|
+|----|--------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | 7 | [Groups and Recycling: Managing Many Objects at Once](groups-and-recycling.md) | Group types, garbage-free iteration, recycling, sprite groups, and sorting. |
 | 8 | [Movement, Physics, and Collisions](physics-and-collisions.md) | Velocity, acceleration, drag, platformer and top-down movement, overlap and collide. |
 | 9 | [Input: Keyboard, Mouse, Touch, and Gamepads](input.md) | Polling, the three questions, screen versus world space, gamepads, and typed text. |
@@ -82,7 +82,7 @@ Everything that turns a scene into a game.
 Loading files, saving progress, and working with data.
 
 | # | Guide | What you will learn |
-|---|-------|---------------------|
+|----|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
 | 18 | [Files and Assets: Loading, Caching, and Loading Screens](files-and-assets.md) | File roots, reading and writing, the asset manager, loading screens, and reference counting. |
 | 19 | [Saving Progress: Persistent Game Data](saving.md) | Bind, write, flush, slots, defaults, saving safely on phones and browsers, and custom storage. |
 | 20 | [JSON and XML: Load, Parse, and Handle Data Formats](data-serialization.md) | Reading and writing JSON, `@JsonSerializable` code generation, XML, and data recipes. |
@@ -95,7 +95,7 @@ Loading files, saving progress, and working with data.
 How things are drawn, and how the game talks to the world around it.
 
 | # | Guide | What you will learn |
-|---|-------|---------------------|
+|----|-----------------------------------------|----------------------------------------------------------------------------------------------------------|
 | 24 | [Graphics, Rendering, and Shaders](graphics-and-shaders.md) | Batching, design size versus render resolution and scale, blend modes, render targets, and WGSL shaders. |
 | 25 | [Window and Platform Services](window-and-platform-services.md) | The window, fullscreen, clipboard, notifications, file dialogs, vibration, and device facts. |
 
@@ -104,7 +104,7 @@ How things are drawn, and how the game talks to the world around it.
 Finding out what your game is doing, and making it fast.
 
 | # | Guide | What you will learn |
-|---|-------|---------------------|
+|----|----------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
 | 26 | [Logging: Messages, Levels, Tags, and Sinks](logging.md) | Log levels, placeholders, tagged loggers, log files, and custom sinks. |
 | 27 | [Debugging and the Debugger App](debugging.md) | Debug mode, hotkeys, the debugger app and its panels, phones, browsers, and AI agents. |
 | 28 | [Extending the Debugger: Watches, Commands, Inspectors, and Trackers](debugger-extending.md) | Live values, console commands, inspector sections, trackers, and feeds. |
@@ -116,7 +116,7 @@ Finding out what your game is doing, and making it fast.
 Getting the game to players, and how the framework works inside.
 
 | # | Guide | What you will learn |
-|---|-------|---------------------|
+|----|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
 | 31 | [Platform Guide: Desktop, Web, and Android](platforms.md) | Requirements, feature differences, and the gotchas of each platform. |
 | 32 | [Building and Shipping: Packaging for Desktop, Web, and Android](building-and-shipping.md) | The packagr, HTML5, shader, and Basis Universal plugins, and a release checklist. |
 | 33 | [Architecture: Core, Backends, and the Seams Between Them](architecture.md) | Modules, seams, no-op defaults, the shared WebGPU renderer, threads, and the package map. |
@@ -126,7 +126,7 @@ Getting the game to players, and how the framework works inside.
 ## Appendices
 
 | Guide | What it is |
-|-------|------------|
+|--------------------------------|-----------------------------------------------------------|
 | ["How Do I...?" Cookbook](cookbook.md) | Quick answers to common questions, grouped by topic. |
 | [Glossary](glossary.md) | Plain-language definitions of every term in the handbook. |
 
