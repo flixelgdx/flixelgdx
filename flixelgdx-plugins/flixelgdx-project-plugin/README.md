@@ -106,7 +106,7 @@ A value that breaks a rule fails the build with a message that names the field a
    ```
 
    | Property           | Value                                                                  |
-   |--------------------|------------------------------------------------------------------------|
+   |-----------------------------------------------|--------------------------------------------------------------------------|
    | `game.title`       | `app.title`                                                            |
    | `game.packageName` | `app.package`                                                          |
    | `game.company`     | `app.company`                                                          |
