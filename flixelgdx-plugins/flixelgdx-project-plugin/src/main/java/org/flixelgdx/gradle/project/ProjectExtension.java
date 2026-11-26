@@ -42,17 +42,13 @@ import java.util.Map;
  * }
  * }</pre>
  *
- * <p>The same object is also registered as {@code flixelProject}, the name earlier versions used, so existing build
- * scripts keep working. Gradle's own {@code project.version} is set to the same version, so
- * {@code version.toString()} works everywhere without this extension.
+ * <p>Gradle's own {@code project.version} is set to the same version, so {@code version.toString()} works everywhere
+ * without this extension.
  */
 public final class ProjectExtension {
 
-  /** The name the extension is registered under, which build scripts should use. */
-  public static final String GAME_NAME = "game";
-
-  /** The name earlier versions registered the extension under, kept so existing build scripts keep working. */
-  public static final String NAME = "flixelProject";
+  /** The name the extension is registered under. */
+  public static final String NAME = "game";
 
   private final ProjectModel model;
 

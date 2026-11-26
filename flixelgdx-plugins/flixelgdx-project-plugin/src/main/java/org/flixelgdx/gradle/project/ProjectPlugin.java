@@ -82,7 +82,7 @@ import java.util.Properties;
  *   <li>Includes {@code core} and every listed platform module. {@code android} is only included when an Android SDK
  *       is found, otherwise a warning explains how to install or point to one.</li>
  *   <li>Sets {@code group} to the package and {@code version} to the version on every project, and adds the
- *       {@link ProjectExtension} as {@code game} (and as {@code flixelProject}, its earlier name).</li>
+ *       {@link ProjectExtension} as {@code game}.</li>
  *   <li>Applies a profile's overrides when one is selected with {@value #PROFILE_PROPERTY}, see
  *       {@link ProjectToml}.</li>
  *   <li>Adds a {@code bumpBuild} task to the root project, see {@link BumpBuildTask}.</li>
@@ -113,10 +113,10 @@ public class ProjectPlugin implements Plugin<Settings> {
   public static final String PROFILE_PROPERTY = "flixel.profile";
 
   /** The project property that holds the title, read by other FlixelGDX plugins for their defaults. */
-  public static final String TITLE_PROPERTY = "flixelProject.title";
+  public static final String TITLE_PROPERTY = "flixel.project.title";
 
   /** The project property that holds the version, read by other FlixelGDX plugins for their defaults. */
-  public static final String VERSION_PROPERTY = "flixelProject.version";
+  public static final String VERSION_PROPERTY = "flixel.project.version";
 
   private static final Logger LOGGER = Logging.getLogger(ProjectPlugin.class);
 
@@ -249,7 +249,6 @@ public class ProjectPlugin implements Plugin<Settings> {
     ProjectModel model = info.getModel();
     project.setGroup(model.packageName());
     project.setVersion(model.version());
-    project.getExtensions().add(ProjectExtension.class, ProjectExtension.GAME_NAME, info);
     project.getExtensions().add(ProjectExtension.class, ProjectExtension.NAME, info);
     project.getExtensions().getExtraProperties().set(TITLE_PROPERTY, model.title());
     project.getExtensions().getExtraProperties().set(VERSION_PROPERTY, model.version());

@@ -143,7 +143,7 @@ public class Html5Plugin implements Plugin<Project> {
     ext.getCanvasId().convention(Html5Extension.DEFAULT_CANVAS_ID);
     // The project plugin publishes the title from project.toml as a plain project property, so this plugin does not
     // depend on it. It is read right away (not lazily) so the convention never holds on to the project.
-    Object projectTitle = project.findProperty("flixelProject.title");
+    Object projectTitle = project.findProperty("flixel.project.title");
     ext.getTitle().convention(projectTitle instanceof String title ? title : Html5Extension.DEFAULT_TITLE);
     ext.getWebappDir().convention(project.getLayout().getProjectDirectory().dir("src/main/webapp"));
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
