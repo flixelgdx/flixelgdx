@@ -66,17 +66,24 @@ See [The Game Loop](game-loop.md) for both.
 ## The game, the config, and the current state
 
 | Member                         | What it holds                                                                      |
-|--------------------------------|------------------------------------------------------------------------------------|
+|--------------------------------|-----------------------------------------------------------------------------------------|
 | `Flixel.game`                  | Your `FlixelGame` instance. Cast it to reach your own fields: `((MyGame) Flixel.game)`. |
 | `Flixel.config`                | The `FlixelConfig` you built: title, company, version, size, frame rate, and more. |
 | `Flixel.state`                 | The active state.                                                                  |
 | `Flixel.switchState(recipe)`   | Move to another state. See [States and Substates](states-and-substates.md).        |
 | `Flixel.resetState()`          | Build a fresh copy of the current state.                                           |
-| `Flixel.quit()`                | Close the game.                                                          |
+| `Flixel.quit()`                | Closes the game. Works always on desktop and Android, browser can vary. |
 | `Flixel.isDebugMode()`         | `true` when the game runs in debug mode.                                           |
 
 ```java
 Flixel.info("Running {} version {}", Flixel.config.getTitle(), Flixel.config.getVersion());
+
+FlixelState state = Flixel.state;
+state.add(new FlixelSprite().loadGraphic(Flixel.files.internal("images/player.png")));
+
+if (Flixel.isDebugMode()) {
+  Flixel.switchState(DebugEditor::new);
+}
 ```
 
 ## Screen size helpers

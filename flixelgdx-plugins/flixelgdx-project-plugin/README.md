@@ -55,7 +55,7 @@ know (such as an `[installed]` table that tools write) are ignored.
 ## The values
 
 | Key                      | Required | Default                | Notes                                                                 |
-|--------------------------|----------|------------------------|-----------------------------------------------------------------------|
+|--------------------------|----------|------------------------|-------------------------------------------------------------------------------------------|
 | `app.title`              | yes      |                        | Printable ASCII, see the naming rules below.                          |
 | `app.company`            | yes      |                        | Same rules as the title.                                              |
 | `app.version`            | yes      |                        | Letters, digits, `.`, `+` and `-`, and it starts with a digit.        |
@@ -125,7 +125,8 @@ A value that breaks a rule fails the build with a message that names the field a
 3. **Sets defaults for the other plugins.** The `org.flixelgdx.html5` plugin uses the title as its page title, and the
    `org.flixelgdx.packagr` plugin uses the title as its application name and (through `version`) the version.
    Anything set in a build file still wins.
-4. **Adds a `bumpBuild` task** to the root project, see the build number below.
+4. **Adds a `bumpBuild` task** to the root project, which raises the build number and the version, see the build
+   number below.
 5. **Generates a `Project` class** for the `core` module when it has the `java` plugin, before the code compiles.
 
 ## The generated class
@@ -153,7 +154,7 @@ FlixelConfig config = Project.config().framerate(144).build();
 ```
 
 The task is called `generateProjectClass`. It is cacheable and reruns only when `project.toml` changes. Its output
-folder, `build/generated/sources/flixelProject/java/main`, is a Java source folder of the `main` source set, so
+folder, `build/generated/flixelgdx/project`, is a Java source folder of the `main` source set, so
 compiling (Java or Kotlin) always runs it first. The class is also written whenever an IDE reloads the Gradle
 project, so `Project` resolves right after a sync without a build.
 
@@ -249,13 +250,25 @@ android {
 }
 ```
 
-Before a release, raise it with:
+Before a release, raise it with `bumpBuild`. The version people see usually changes along with it, so the task
+also raises the last number of `app.version` by one:
 
 ```
 $ ./gradlew bumpBuild
 project.toml: app.build 14 -> 15
+project.toml: app.version 0.3.0 -> 0.3.1
 ```
 
-Only the number changes, so comments and spacing stay as they were. When the file has no `app.build` yet, the task
-adds `build = 2` to the `[app]` table. If a build script already has its own task named `bumpBuild`, that one is kept
+For a bigger step, such as a new minor or major version, give the new version with `--new-version` (Gradle already
+uses `--version` for its own version):
+
+```
+$ ./gradlew bumpBuild --new-version=1.0.0
+project.toml: app.build 15 -> 16
+project.toml: app.version 0.3.1 -> 1.0.0
+```
+
+Only those two values change, so comments and spacing stay as they were. When the file has no `app.build` yet, the
+task adds `build = 2` to the `[app]` table. A version that does not end in a number, such as `1.0-beta`, has no
+obvious next value, so it is left alone unless `--new-version` is given. If a build script already has its own task named `bumpBuild`, that one is kept
 and the plugin does not add its own.
