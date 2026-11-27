@@ -364,6 +364,28 @@ The machine must actually have the API you force, or the game cannot start the G
 automatic choice. On desktop, the `-Dflixel.render.backend=...` JVM flag (for example `vulkan`) wins over
 the API forced in code, so a player can still rescue a game whose forced API does not work on their machine.
 
+#### OpenGL, OpenGL ES and Direct3D 11 run in compatibility mode
+
+WebGPU comes in two sizes. **Core** is full WebGPU and runs on Vulkan, Metal and Direct3D 12. **Compatibility mode**
+is a slightly smaller version that also runs on OpenGL, OpenGL ES and Direct3D 11. Think of core as a full kitchen
+and compatibility mode as a good camping stove: it cooks every recipe FlixelGDX needs, just with fewer burners.
+
+Those three APIs only exist in compatibility mode, so forcing one makes FlixelGDX ask for a compatibility adapter
+automatically. You do not have to do anything else. If the adapter could run core anyway, the device is upgraded to
+core. Otherwise it stays in compatibility mode, and FlixelGDX raises its texture size and uniform buffer limits to what
+the hardware supports, because the compatibility defaults are lower (4096 pixel textures instead of 8192, and 16 KiB
+of uniforms per shader instead of 64 KiB).
+
+The built-in renderer stays within the compatibility rules, so sprites, blend modes, render targets and custom
+shaders all work the same. Your own WGSL shaders must follow the rules too. The ones you are most likely to hit:
+
+- No storage buffers or storage textures in vertex or fragment shaders (some hardware allows none at all).
+- No `sample_mask` or `sample_index` built-ins.
+- Very large textures may still be rejected on old hardware, so keep atlases at 4096 by 4096 or smaller if you target
+  it.
+
+Breaking a rule logs a WebGPU validation error rather than drawing something wrong silently.
+
 ## Render statistics
 
 `Flixel.graphics.getStats()` reports what the last frame cost: `draws` (draw calls), `triangles`, `vertices`,
