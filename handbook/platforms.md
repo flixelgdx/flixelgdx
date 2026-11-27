@@ -66,6 +66,8 @@ The second starts the game in debug mode (it passes `-Dflixel.mode=debug`).
   their own limit in the packaging plugin (`jvmArg('-Xmx1G')`).
 - **Graphics API.** WebGPU picks Vulkan, Metal, or Direct3D 12 by itself. For troubleshooting a driver problem, force
   one with `-Dflixel.render.backend=vulkan` (also `metal`, `direct3d11`, `direct3d12`, `opengl`, `opengles`, `noop`).
+  Games can also force one from code with `Flixel.graphics.setApi(...)` in a boot callback (see
+  [Graphics and Shaders](graphics-and-shaders.md#which-gpu-api-is-running)); the system property wins over it.
 
 ### Window icons
 

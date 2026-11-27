@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.gpu;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelShader;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -128,6 +130,14 @@ class FlixelGpuSmokeTest {
 
   private static FlixelMatrix ortho() {
     return new FlixelMatrix().setToOrtho2DYDown(0, 0, 320, 240, true);
+  }
+
+  @Test
+  void settingTheApiAfterTheGraphicsContextExistsIsIgnored() {
+    FlixelGraphicsApi running = graphics.getApi();
+    graphics.setApi(FlixelGraphicsApi.VULKAN);
+    assertSame(running, graphics.getApi());
+    assertEquals(GpuBackendType.UNDEFINED, graphics.getForcedBackendType());
   }
 
   @Test

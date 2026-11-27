@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.backend.FlixelBootManager;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.jetbrains.annotations.NotNull;
@@ -76,14 +77,64 @@ public interface FlixelGraphicsManager {
   float MAX_RENDER_SCALE = 2f;
 
   /**
-   * Returns which graphics backend is running this session, defaulting to {@link FlixelGraphicsApi#NOOP}.
+   * Returns which graphics API is running this session, defaulting to {@link FlixelGraphicsApi#NOOP}.
    *
-   * @return The active graphics API; never {@code null}.
+   * <p>Before the graphics context exists (during the boot callbacks), this returns the API requested
+   * with {@link #setApi(FlixelGraphicsApi)}, or {@link FlixelGraphicsApi#WEBGPU} when the backend will
+   * choose on its own. Once the context exists, it returns the API that is really running, which can
+   * differ from the requested one (for example on the web, where the browser always chooses).
+   *
+   * @return The active (or requested) graphics API; never {@code null}.
    */
   @NotNull
   default FlixelGraphicsApi getApi() {
     return FlixelGraphicsApi.NOOP;
   }
+
+  /**
+   * Forces the backend to start the GPU with a specific graphics API instead of picking one itself.
+   *
+   * <p>By default the backend picks the best API for the device (for example Vulkan on Linux, Metal on
+   * macOS, or Direct3D 12 on Windows). Some machines have a driver for that API that is installed but
+   * broken, so a game may want to fall back to another one, for example from an option in its
+   * launcher or a saved setting. Think of it like choosing which road to take before you start the
+   * car: once you are driving, changing the plan does nothing for this trip.
+   *
+   * <p><b>This must be called from a boot callback</b>
+   * ({@link FlixelBootManager#beforeStart(Runnable) Flixel.boot.beforeStart(...)} or
+   * {@link FlixelBootManager#afterStart(Runnable) Flixel.boot.afterStart(...)}), registered before
+   * the game is launched. Both callbacks run before the platform opens the window and creates the
+   * graphics context. By the time your game's {@code create()} or any state runs, the graphics context
+   * already exists with the API that was chosen, so calling this later does nothing (the backend logs
+   * a warning instead).
+   *
+   * <p>Which APIs can be forced depends on the platform. Desktop accepts
+   * {@link FlixelGraphicsApi#VULKAN}, {@link FlixelGraphicsApi#METAL},
+   * {@link FlixelGraphicsApi#DIRECT3D11}, {@link FlixelGraphicsApi#DIRECT3D12},
+   * {@link FlixelGraphicsApi#OPENGL}, {@link FlixelGraphicsApi#OPENGL_ES}, and
+   * {@link FlixelGraphicsApi#NOOP} (no drawing at all), as long as the machine actually has that API.
+   * Android accepts {@link FlixelGraphicsApi#VULKAN} and {@link FlixelGraphicsApi#OPENGL_ES}. The
+   * browser always decides on its own, so the web ignores this. An API the platform does not
+   * recognize is ignored with a warning, and the automatic choice is used. Passing
+   * {@link FlixelGraphicsApi#WEBGPU} goes back to the automatic choice.
+   *
+   * <p>On desktop, the {@code flixel.render.backend} system property wins over this when it is set,
+   * so a player can still rescue a game whose forced API does not work on their machine.
+   *
+   * <p>Read {@link #getApi()} after startup to see which API is really running.
+   *
+   * <p>Example (forcing Vulkan from the game's constructor):
+   *
+   * <pre>{@code
+   * public MyGame() {
+   *   super(config, TitleState::new);
+   *   Flixel.boot.beforeStart(() -> Flixel.graphics.setApi(FlixelGraphicsApi.VULKAN));
+   * }
+   * }</pre>
+   *
+   * @param api The API to start with, or {@link FlixelGraphicsApi#WEBGPU} to let the backend choose.
+   */
+  default void setApi(@NotNull FlixelGraphicsApi api) {}
 
   /**
    * Returns whether the active backend maps the NDC depth range to {@code [0, 1]} (Vulkan, Metal,

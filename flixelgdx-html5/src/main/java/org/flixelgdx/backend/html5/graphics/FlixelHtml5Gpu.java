@@ -23,9 +23,12 @@
  */
 package org.flixelgdx.backend.html5.graphics;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.gpu.FlixelGpuBootstrap;
 import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
 import org.flixelgdx.backend.html5.FlixelHtml5Runner;
+import org.flixelgdx.graphics.FlixelGraphicsApi;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
@@ -67,6 +70,8 @@ public final class FlixelHtml5Gpu {
 
   /** How long, in milliseconds, the browser may take to answer before startup is given up. */
   private static final double TIMEOUT_MILLIS = 20_000.0;
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
 
   private double deadline;
 
@@ -126,6 +131,11 @@ public final class FlixelHtml5Gpu {
     this.width = width;
     this.height = height;
     this.transparent = transparent;
+    FlixelGraphicsApi forced = graphics.getApi();
+    if (forced != FlixelGraphicsApi.WEBGPU) {
+      // The browser picks the native graphics API itself, so a forced one cannot be honored here.
+      LOG.warn("The browser chooses its own graphics API, so the forced API '{}' is ignored.", forced);
+    }
     try {
       JWebGpuTeaVm.install();
       instance = JWebGpu.createInstance();

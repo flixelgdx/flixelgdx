@@ -50,6 +50,7 @@ import org.jetbrains.annotations.Nullable;
 
 import io.github.stringdotjar.jwebgpu.GpuAdapter;
 import io.github.stringdotjar.jwebgpu.GpuAdapterInfo;
+import io.github.stringdotjar.jwebgpu.GpuBackendType;
 import io.github.stringdotjar.jwebgpu.GpuBindGroup;
 import io.github.stringdotjar.jwebgpu.GpuBuffer;
 import io.github.stringdotjar.jwebgpu.GpuBufferDescriptor;
@@ -91,6 +92,7 @@ import io.github.stringdotjar.jwebgpu.GpuTextureUsage;
 import io.github.stringdotjar.jwebgpu.GpuTextureView;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 /**
  * The one WebGPU renderer that every platform shares.
@@ -198,6 +200,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private final boolean[] cutEnabled = new boolean[MAX_LEVELS + 1];
 
   private FlixelGraphicsApi api = FlixelGraphicsApi.WEBGPU;
+  private FlixelGraphicsApi requestedApi = FlixelGraphicsApi.WEBGPU;
   private GpuTextureFormat surfaceFormat = GpuTextureFormat.RGBA8_UNORM;
 
   private GpuAdapter adapter;
@@ -369,6 +372,64 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     };
   }
 
+  /**
+   * Converts a graphics API into the native backend type WebGPU is asked for when the device is created.
+   *
+   * <p>{@code null} and {@link FlixelGraphicsApi#WEBGPU} mean the automatic choice and give {@code UNDEFINED}.
+   * {@link FlixelGraphicsApi#NOOP} gives the null backend, which draws nothing. An API WebGPU has no backend for
+   * (such as a custom one made with {@link FlixelGraphicsApi#of(String)}) also gives {@code UNDEFINED}.
+   *
+   * @param api The graphics API, or {@code null}.
+   * @return The matching backend type, or {@code UNDEFINED} for the automatic choice.
+   */
+  @NotNull
+  public static GpuBackendType backendTypeOf(@Nullable FlixelGraphicsApi api) {
+    if (api == null || api == FlixelGraphicsApi.WEBGPU) {
+      return GpuBackendType.UNDEFINED;
+    }
+    if (api == FlixelGraphicsApi.VULKAN) {
+      return GpuBackendType.VULKAN;
+    }
+    if (api == FlixelGraphicsApi.METAL) {
+      return GpuBackendType.METAL;
+    }
+    if (api == FlixelGraphicsApi.DIRECT3D11) {
+      return GpuBackendType.D3D11;
+    }
+    if (api == FlixelGraphicsApi.DIRECT3D12) {
+      return GpuBackendType.D3D12;
+    }
+    if (api == FlixelGraphicsApi.OPENGL) {
+      return GpuBackendType.OPENGL;
+    }
+    if (api == FlixelGraphicsApi.OPENGL_ES) {
+      return GpuBackendType.OPENGLES;
+    }
+    if (api == FlixelGraphicsApi.NOOP) {
+      return GpuBackendType.NULL;
+    }
+    return GpuBackendType.UNDEFINED;
+  }
+
+  /**
+   * Returns the native backend type for the API requested with {@link #setApi(FlixelGraphicsApi)}, which the
+   * platform runner passes to {@link FlixelGpuBootstrap#setBackendType(GpuBackendType)}.
+   *
+   * <p>A requested API WebGPU has no backend for is reported with a warning and gives {@code UNDEFINED}, so the
+   * automatic choice is used instead. The request is kept after the graphics context exists, so a device that is
+   * rebuilt (such as after an Android device loss) asks for the same API again.
+   *
+   * @return The backend type to request, or {@code UNDEFINED} for the automatic choice.
+   */
+  @NotNull
+  public GpuBackendType getForcedBackendType() {
+    GpuBackendType type = backendTypeOf(requestedApi);
+    if (type == GpuBackendType.UNDEFINED && requestedApi != FlixelGraphicsApi.WEBGPU) {
+      LOG.warn("The graphics API '{}' cannot be forced on this platform; letting WebGPU pick one.", requestedApi);
+    }
+    return type;
+  }
+
   private void configureSurface() {
     if (surface == null) {
       surfaceFormat = GpuTextureFormat.RGBA8_UNORM;
@@ -510,6 +571,27 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   @Override
   public FlixelGraphicsApi getApi() {
     return api;
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Until {@link #initialize} runs, {@link #getApi()} reports the requested API. The graphics context is created
+   * once, so this is ignored with a warning after {@link #initialize} has run.
+   *
+   * @throws NullPointerException If {@code api} is {@code null}.
+   */
+  @Override
+  public void setApi(@NotNull FlixelGraphicsApi api) {
+    Objects.requireNonNull(api, "The graphics API cannot be null; use FlixelGraphicsApi.WEBGPU for the automatic "
+        + "choice.");
+    if (device != null) {
+      LOG.warn("Flixel.graphics.setApi(...) was called after the graphics context was created, so it has no "
+          + "effect. Call it from a boot callback instead.");
+      return;
+    }
+    requestedApi = api;
+    this.api = api;
   }
 
   @Override
