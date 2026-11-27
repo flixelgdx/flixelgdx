@@ -343,14 +343,8 @@ launcher or settings. Force one with `Flixel.graphics.setApi(...)`, **inside a b
 ```java
 public MyGame() {
   super(config, TitleState::new);
-  Flixel.boot.beforeStart(() -> Flixel.graphics.setApi(FlixelGraphicsApi.VULKAN));
+  Flixel.boot.afterStart(() -> Flixel.graphics.setApi(FlixelGraphicsApi.VULKAN));
 }
-```
-
-In Kotlin, `getApi()` and `setApi(...)` form the `api` property:
-
-```kotlin
-Flixel.boot.beforeStart { Flixel.graphics.api = FlixelGraphicsApi.VULKAN }
 ```
 
 `getApi()` reports the requested API until the graphics context exists, and the API that is really running after that.
@@ -361,7 +355,7 @@ as from `create()` or a state, does nothing except log a warning. A saved settin
 launch, like in most commercial games.
 
 | Platform | APIs you can force                                                              |
-|----------|---------------------------------------------------------------------------------|
+|----------|----------------------------------------------------------------------------------|
 | Desktop  | `VULKAN`, `METAL`, `DIRECT3D11`, `DIRECT3D12`, `OPENGL`, `OPENGL_ES`, `NOOP`     |
 | Android  | `VULKAN`, `OPENGL_ES`                                                           |
 | Web      | None. The browser always chooses, so the forced API is ignored with a warning.  |
