@@ -115,23 +115,25 @@ it and applies `Flixel.timeScale`. Then every manager runs `beginFrame()`, even 
 **Update.**
 
 1. `Flixel.Signals.preUpdate` fires.
-2. Every manager in `Flixel.managers` runs `preUpdate(...)`.
-3. In debug mode, input injected by the debugger is applied.
-4. Input managers read the hardware: `Flixel.keys`, `Flixel.mouse`, `Flixel.touches`, and `Flixel.gamepads`.
-5. Input actions update (`FlixelActionSets.update(...)`), so they see this frame's hardware state.
-6. Every manager runs `update(...)`.
-7. If the game is not paused:
-   1. Global tweens and global timers advance.
-   2. The state chain updates: the active state, then each open substate. A state with an open substate only
+2. Every manager in `Flixel.managers` runs `preUpdate(...)`. In debug mode, the debugger applies the input it
+   injected here.
+3. Every manager runs `update(...)`, from the lowest order to the highest:
+   1. Input managers read the hardware: `Flixel.keys`, `Flixel.mouse`, `Flixel.touches`, and `Flixel.gamepads`.
+   2. Input actions update, so they see this frame's hardware state.
+   3. In debug mode, the debugger takes the input it owns (the free camera and picking).
+   4. Global tweens and global timers advance.
+   5. The sound manager updates (fades, finished sounds).
+   6. Your own managers update, with the default order.
+4. If the game is not paused:
+   1. The state chain updates: the active state, then each open substate. A state with an open substate only
       updates if its `persistentUpdate` flag is `true`.
-   3. The sound manager updates (fades, finished sounds).
-   4. Every camera updates (follow, shake, flash, fade).
-   5. The global overlay updates, if it is on.
-8. In debug mode, the debugger samples the frame.
-9. Every manager runs `postUpdate(...)`.
-10. `Flixel.Signals.postUpdate` fires.
+   2. Every camera updates (follow, shake, flash, fade).
+   3. The global overlay updates, if it is on.
+5. Every manager runs `postUpdate(...)`. In debug mode, the debugger samples the frame here.
+6. `Flixel.Signals.postUpdate` fires.
 
-While the game is paused, managers whose `isPausable()` returns `true` (the default) skip steps 2, 6, and 9.
+While the game is paused, managers whose `isPausable()` returns `true` (the default) skip steps 2, 3, and 5. Input
+and the debugger are not pausable, so they keep running; tweens, timers, and sound are, so they stop.
 
 **Draw.**
 
@@ -147,13 +149,13 @@ While the game is paused, managers whose `isPausable()` returns `true` (the defa
    5. If the camera has a shader, its picture is run through the shader.
 5. Global shaders, if any, run over the combined picture.
 6. The global overlay draws on top of everything, then every manager runs `drawOverlay(...)`.
-7. In debug mode, hitboxes are drawn if they are switched on.
-8. Every manager runs `postDraw(...)`.
-9. `Flixel.Signals.postDraw` fires.
+7. Every manager runs `postDraw(...)`. In debug mode, the debugger draws hitboxes here if they are switched on.
+8. `Flixel.Signals.postDraw` fires.
 
-**After the frame.** `endFrame()` finishes the input state: `justPressed` and `justReleased` are cleared so they are
-fresh next frame. Every manager then runs `endFrame()`. Because this happens *after* drawing, edge checks stay true for the whole frame, including any
-code you run in `draw(...)` or in signal listeners.
+**After the frame.** `endFrame()` runs every manager's `endFrame()`, which is where the input managers and action
+sets finish the input state: `justPressed` and `justReleased` are cleared so they are fresh next frame. Because this
+happens *after* drawing, edge checks stay true for the whole frame, including any code you run in `draw(...)` or in
+signal listeners.
 
 ## Always call `super`
 
@@ -271,7 +273,11 @@ public class AchievementManager implements FlixelManagers.Manager {
 Flixel.boot.afterStart(() -> Flixel.managers.add(new AchievementManager()));
 ```
 
-Managers run from the lowest `getOrder()` to the highest, and `destroy()` runs in the reverse order. A manager added
+Managers run from the lowest `getOrder()` to the highest, and `destroy()` runs in the reverse order. The framework's own
+systems are managers too, at the orders named by the `ORDER_*` constants of `FlixelManagers.Manager`: assets, fonts,
+keys, mouse, touches, gamepads, input actions, the debugger, tweens, timers, and sound, in that order. They are spaced
+apart so yours can slip in between, for example `ORDER_ACTIONS + 50` to read this frame's input before the debugger
+takes the input it owns. The default order (`ORDER_DEFAULT`) runs after all of them. A manager added
 to a running game is created right away, and one removed from a running game is destroyed right away. Return `false`
 from `isPausable()` for work that must keep running while the game is paused.
 

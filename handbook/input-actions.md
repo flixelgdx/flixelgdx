@@ -254,7 +254,7 @@ Gamepads work the same way with `Flixel.gamepads.firstJustPressed(slot)`.
 The game loop updates actions for you, in this order every frame:
 
 1. The keyboard, mouse, touch, and gamepad managers read the hardware.
-2. `FlixelActionSets.update(elapsed)` updates every registered action set.
+2. `FlixelActionSets.MANAGER`, which runs right after them in `Flixel.managers`, updates every registered action set.
 3. Your state's `update(...)` runs and sees consistent action values.
 4. After drawing, the managers and action sets finish the frame, clearing `justPressed` and `justReleased`.
 
