@@ -40,6 +40,11 @@ Timing matters, because some pieces must be in place before anything uses them:
 | `Flixel.boot.afterStart(...)`               | Configuring core managers (input, sound, logging, debugger) before the window opens. |
 | Your game's or first state's `create()`     | Anything that needs the GPU or the window: loaders that upload textures, shaders. |
 
+If your extension needs to follow the game's lifecycle (update every frame, draw on top of a camera, save when the
+app is suspended, clean up when the game closes), register a manager in `Flixel.managers` from an `afterStart(...)`
+callback instead of asking users to subclass `FlixelGame`. See
+[Global hooks with managers](game-loop.md#global-hooks-with-managers).
+
 Register boot callbacks before the game starts, for example in your game class's constructor. See
 [The Boot Sequence](boot-sequence.md#hooking-into-startup-boot-callbacks).
 
