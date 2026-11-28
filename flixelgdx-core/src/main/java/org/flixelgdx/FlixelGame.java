@@ -672,6 +672,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    *
    * <pre>{@code
    * float elapsed = game.advanceTime(rawDelta);
+   * game.beginFrame();
    * game.update(elapsed);
    * game.draw(game.getBatch());
    * game.endFrame();
@@ -686,6 +687,20 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     rawElapsed = rawClamped;
     elapsed = rawClamped * Flixel.timeScale;
     return elapsed;
+  }
+
+  /**
+   * Starts the frame by running every manager's beginning of frame.
+   *
+   * <p>Platform runners call this once per frame right after {@link #advanceTime(float)} and before
+   * {@link #update(float)}, so {@link Flixel#getElapsed()} already holds this frame's time. It runs
+   * even while the game is paused.
+   *
+   * @see FlixelManagers.Manager#beginFrame()
+   * @see #endFrame()
+   */
+  public void beginFrame() {
+    Flixel.managers.beginFrame();
   }
 
   /**

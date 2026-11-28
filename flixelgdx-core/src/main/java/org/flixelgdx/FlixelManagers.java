@@ -111,6 +111,7 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
   private static final int PRE_STATE_SWITCH = 15;
   private static final int STATE_SWITCH = 16;
   private static final int POST_STATE_SWITCH = 17;
+  private static final int BEGIN_FRAME = 18;
 
   /** Every registered slot, sorted by order. Removed slots stay here until the next flush. */
   private final FlixelArray<Slot> slots = new FlixelArray<>(32);
@@ -223,6 +224,14 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
     }
     created = true;
     dispatch(CREATE, 0f, false, null, null, 0, 0, null);
+  }
+
+  /**
+   * Runs {@link Manager#beginFrame()} on every manager, at the start of the frame before anything is
+   * updated or drawn.
+   */
+  public void beginFrame() {
+    dispatch(BEGIN_FRAME, 0f, false, null, null, 0, 0, null);
   }
 
   /**
@@ -511,6 +520,7 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
           case PRE_STATE_SWITCH -> manager.preStateSwitch(data);
           case STATE_SWITCH -> manager.onStateSwitch(data);
           case POST_STATE_SWITCH -> manager.postStateSwitch(data);
+          case BEGIN_FRAME -> manager.beginFrame();
           default -> throw new IllegalStateException("Unknown manager hook: " + hook);
         }
       }
@@ -598,7 +608,8 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
    *
    * <p>One frame calls the hooks in this order:
    * <ol>
-   *   <li>{@link #preUpdate(float)}, at the start of the frame.</li>
+   *   <li>{@link #beginFrame()}, at the start of the frame.</li>
+   *   <li>{@link #preUpdate(float)}, at the start of the update pass.</li>
    *   <li>{@link #update(float)}, right before the state updates.</li>
    *   <li>The state, the cameras, and the global overlay update.</li>
    *   <li>{@link #postUpdate(float)}, after everything above.</li>
@@ -651,6 +662,15 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
     /** Called once when the game starts, or right away when added to a running game. */
     @Override
     default void create() {}
+
+    /**
+     * Called at the start of every frame, before anything is updated or drawn.
+     *
+     * <p>It runs whether or not the game is paused, and {@link Flixel#getElapsed()} already holds
+     * this frame's time. It is the place for work that must be done before any other manager or the
+     * state looks at the frame, such as resetting per-frame counters.
+     */
+    default void beginFrame() {}
 
     /**
      * Called at the very start of the update pass, before any {@link #update(float)}.
