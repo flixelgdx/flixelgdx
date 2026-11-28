@@ -23,24 +23,47 @@
  */
 package org.flixelgdx.input;
 
-import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelManagers;
 
 /**
- * Shared per-frame contract for polled input managers (keyboard, mouse, gamepads).
+ * Shared per-frame contract for polled input managers (keyboard, mouse, touches, gamepads).
  *
- * <p>Call {@link #update()} once near the start of the frame, then {@link #endFrame()} after game
- * logic and rendering so edge-triggered helpers (for example {@code justPressed}) stay valid for
- * the full frame, matching {@link FlixelGame}.
+ * <p>Every input manager is a {@link FlixelManagers.Manager} that keeps updating while the game is
+ * paused. Its {@link #update(float)} hook reads the hardware through {@link #update()} near the
+ * start of the frame, and its {@link #endFrame()} hook runs after game logic and rendering, so
+ * edge-triggered helpers (for example {@code justPressed}) stay valid for the full frame.
  */
-public interface FlixelInputManager {
+public interface FlixelInputManager extends FlixelManagers.Manager {
 
   /** Reads hardware state and refreshes internal snapshots for this frame. */
   void update();
 
   /**
+   * Reads the hardware for this frame by calling {@link #update()}.
+   *
+   * @param elapsed The scaled seconds since the last frame. Input does not use it.
+   */
+  @Override
+  default void update(float elapsed) {
+    update();
+  }
+
+  /**
+   * Returns {@code false}, since input must keep updating while the game is paused (for example so
+   * a pause menu or the debugger can still read it).
+   *
+   * @return Always {@code false}.
+   */
+  @Override
+  default boolean isPausable() {
+    return false;
+  }
+
+  /**
    * Finalizes this frame after gameplay and draw hooks run. Typically, it copies the current snapshot
    * into the previous snapshot used on the next frame for edge detection.
    */
+  @Override
   void endFrame();
 
   /** Clears internal state. Default implementation does nothing. */

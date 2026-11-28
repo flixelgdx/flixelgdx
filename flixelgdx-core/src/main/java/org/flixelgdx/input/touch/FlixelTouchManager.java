@@ -290,6 +290,17 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
    * {@code FlixelGame.update()} before game logic runs.
    */
   @Override
+  public int getOrder() {
+    return ORDER_TOUCHES;
+  }
+
+  /** Starts listening to the touch screen of {@link Flixel#input}. */
+  @Override
+  public void create() {
+    Flixel.input.addTouchListener(this);
+  }
+
+  @Override
   public void update() {
     if (!enabled) {
       return;

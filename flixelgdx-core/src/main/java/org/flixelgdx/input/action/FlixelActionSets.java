@@ -23,28 +23,27 @@
  */
 package org.flixelgdx.input.action;
 
-import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.input.FlixelInputManager;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Global registry of {@link FlixelActionSet} instances. {@link FlixelGame} invokes
+ * Global registry of {@link FlixelActionSet} instances. Its {@link #MANAGER} invokes
  * {@link #update(float)} and {@link #endFrameAll()} so every registered set stays on the same contract as
- * {@link FlixelInputManager} (keys, mouse, gamepads).
+ * {@link FlixelInputManager} (keys, mouse, touches, gamepads).
  *
- * <h2>When {@code updateAll} runs</h2>
+ * <h2>When {@code update} runs</h2>
  *
- * <p>Order inside {@link FlixelGame#update(float)}: {@code Flixel.keys.update()},
- * {@code Flixel.mouse.update()}, {@code Flixel.gamepads.update()}, then {@link #update(float)}. Gameplay code in
- * {@link FlixelState} runs after that, so {@code jump.justPressed()} reflects this frame's input.
+ * <p>{@link #MANAGER} has the order {@link FlixelManagers.Manager#ORDER_ACTIONS}, so it updates right after
+ * {@code Flixel.keys}, {@code Flixel.mouse}, {@code Flixel.touches}, and {@code Flixel.gamepads} read the hardware.
+ * Gameplay code in {@link FlixelState} runs after that, so {@code jump.justPressed()} reflects this frame's input.
  *
  * <h2>When {@code endFrameAll} runs</h2>
  *
- * <p>After {@link FlixelDrawable#draw FlixelGame.draw} and the input managers' {@code endFrame()} calls,
- * {@link #endFrameAll()} copies digital and analog edge state for the next frame.
+ * <p>After the frame is drawn and the input managers' {@code endFrame()} calls, {@link #endFrameAll()} copies
+ * digital and analog edge state for the next frame.
  *
  * <h2>Registration</h2>
  *
@@ -53,6 +52,34 @@ import org.jetbrains.annotations.NotNull;
  * from inside another set's {@link FlixelActionSet#update(float)} unless you know the iteration order is safe.
  */
 public final class FlixelActionSets {
+
+  /**
+   * The manager that updates every registered action set right after the input devices are read,
+   * and finalizes them at the end of the frame. The framework registers it in {@code Flixel.managers}.
+   */
+  @SuppressWarnings("checkstyle:ConstantName")
+  public static final FlixelManagers.Manager MANAGER = new FlixelManagers.Manager() {
+
+    @Override
+    public int getOrder() {
+      return ORDER_ACTIONS;
+    }
+
+    @Override
+    public boolean isPausable() {
+      return false;
+    }
+
+    @Override
+    public void update(float elapsed) {
+      FlixelActionSets.update(elapsed);
+    }
+
+    @Override
+    public void endFrame() {
+      FlixelActionSets.endFrameAll();
+    }
+  };
 
   @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelArray<FlixelActionSet> registered = new FlixelArray<>(8);
@@ -73,7 +100,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link FlixelGame#update(float)} after gamepad polling.
+   * Invoked from {@link #MANAGER} after gamepad polling.
    *
    * @param elapsed Seconds since last frame (same as game update).
    */
@@ -84,7 +111,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link FlixelGame#endFrame()} after keys, mouse, and gamepads
+   * Invoked from {@link #MANAGER} after keys, mouse, and gamepads
    * have finalized their own per-frame state.
    */
   public static void endFrameAll() {

@@ -182,6 +182,17 @@ public class FlixelGamepadInputManager implements FlixelInputManager {
   }
 
   @Override
+  public int getOrder() {
+    return ORDER_GAMEPADS;
+  }
+
+  /** Forgets every connected gamepad when the game closes, so a later session starts clean. */
+  @Override
+  public void destroy() {
+    reset();
+  }
+
+  @Override
   public void update() {
     if (!enabled) {
       return;

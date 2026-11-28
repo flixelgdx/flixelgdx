@@ -105,6 +105,17 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
    * next frame.
    */
   @Override
+  public int getOrder() {
+    return ORDER_KEYS;
+  }
+
+  /** Starts listening to the keyboard of {@link Flixel#input}. */
+  @Override
+  public void create() {
+    Flixel.input.addKeyboardListener(this);
+  }
+
+  @Override
   public void update() {
     // Intentionally empty: state is maintained by keyDown/keyUp callbacks.
   }
