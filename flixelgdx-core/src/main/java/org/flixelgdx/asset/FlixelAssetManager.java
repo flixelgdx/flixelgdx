@@ -24,10 +24,10 @@
 package org.flixelgdx.asset;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
-import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelImage;
 import org.jetbrains.annotations.NotNull;
@@ -92,7 +92,7 @@ import org.jetbrains.annotations.Nullable;
  * });
  * }</pre>
  */
-public interface FlixelAssetManager extends FlixelDestroyable {
+public interface FlixelAssetManager extends FlixelManagers.Manager {
 
   /**
    * Queues an asset for loading using the file extension to select a loader from the registry.
@@ -373,5 +373,25 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    */
   default boolean isCompressedTexturesEnabled() {
     return false;
+  }
+
+  /**
+   * Turns on compressed texture support when the game starts.
+   *
+   * <p>This waits for the game's creation (rather than happening earlier) since compressed-texture
+   * support depends on the graphics backend, which is only guaranteed to be running by then.
+   */
+  @Override
+  default void create() {
+    setCompressedTexturesEnabled(true);
+  }
+
+  /** Destroys every loaded asset when the game closes. */
+  @Override
+  void destroy();
+
+  @Override
+  default int getOrder() {
+    return ORDER_ASSETS;
   }
 }

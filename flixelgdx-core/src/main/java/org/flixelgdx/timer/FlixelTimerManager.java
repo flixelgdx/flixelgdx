@@ -25,10 +25,12 @@ package org.flixelgdx.timer;
 
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelPool;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Timers are backed by a {@link FlixelPool} to avoid per-delay allocations. {@link #start(float, FlixelTimerListener, int)}
  * obtains from the pool; {@link FlixelTimer#cancel()} and completed runs return instances to the pool.
  */
-public class FlixelTimerManager extends FlixelBasic {
+public class FlixelTimerManager extends FlixelBasic implements FlixelManagers.Manager {
 
   /** Timers currently stepped by {@link #update(float)}. Named {@code activeTimers} to avoid clashing with {@link #active}. */
   protected final FlixelArray<FlixelTimer> activeTimers = new FlixelArray<>(false, 32);
@@ -112,10 +114,28 @@ public class FlixelTimerManager extends FlixelBasic {
   @Override
   public final void draw(@NotNull FlixelBatch batch) {}
 
+  /**
+   * Cancels every timer and marks this manager as destroyed.
+   *
+   * <p>The global manager from {@link FlixelTimer#getGlobalManager()} lives as long as the program,
+   * so for that one this only cancels its timers.
+   */
   @Override
   public void destroy() {
     cancelAll();
     super.destroy();
+  }
+
+  /**
+   * Cancels every timer when a state switch asks for it, after the old state was destroyed.
+   *
+   * @param data Says through {@link StateSwitchSignalData#clearTimers()} whether to cancel the timers.
+   */
+  @Override
+  public void onStateSwitch(@NotNull StateSwitchSignalData data) {
+    if (data.clearTimers()) {
+      cancelAll();
+    }
   }
 
   /**
@@ -177,5 +197,10 @@ public class FlixelTimerManager extends FlixelBasic {
   /** Completes all active timers in the manager. */
   public void completeAll() {
     cancelAll();
+  }
+
+  @Override
+  public int getOrder() {
+    return ORDER_TIMERS;
   }
 }

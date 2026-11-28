@@ -23,9 +23,11 @@
  */
 package org.flixelgdx.tween;
 
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelIdentityMap;
 import org.flixelgdx.collections.FlixelPool;
+import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
 import org.flixelgdx.tween.type.FlixelGoalTween;
@@ -49,7 +51,7 @@ import java.util.function.Supplier;
  * snapshot copy-on-write), so the per-frame update path stays allocation-free even when tweens
  * finish and unregister.
  */
-public class FlixelTweenManager {
+public class FlixelTweenManager implements FlixelManagers.Manager {
 
   /** Registry: tween class to its pool registration. */
   private final FlixelIdentityMap<Class<? extends FlixelTween>, TweenTypeRegistration> registry =
@@ -356,6 +358,41 @@ public class FlixelTweenManager {
     registry.clear();
   }
 
+  /** Cancels every active tween of this manager. */
+  public void cancelAll() {
+    for (int i = activeTweens.getSize() - 1; i >= 0; i--) {
+      FlixelTween t = activeTweens.get(i);
+      if (t != null) {
+        t.cancel();
+      }
+    }
+  }
+
+  /**
+   * Cancels every tween and clears the pools when a state switch asks for it, after the old state
+   * was destroyed.
+   *
+   * @param data Says through {@link StateSwitchSignalData#clearTweens()} whether to clear the tweens.
+   */
+  @Override
+  public void onStateSwitch(@NotNull StateSwitchSignalData data) {
+    if (data.clearTweens()) {
+      cancelAll();
+      clearPools();
+    }
+  }
+
+  /**
+   * Cancels every tween, clears the pools, and clears the registry of tween types when the game
+   * closes. See {@link #resetRegistry()}.
+   */
+  @Override
+  public void destroy() {
+    cancelAll();
+    clearPools();
+    resetRegistry();
+  }
+
   private static boolean matchesTweenOf(FlixelTween tween, Object object, String[] fieldPaths) {
     if (fieldPaths == null || fieldPaths.length == 0) {
       return tween.isTweenOf(object, null);
@@ -379,6 +416,11 @@ public class FlixelTweenManager {
           + "Register it with FlixelTween.registerTweenType(...) or FlixelTweenManager.registerTweenType(...).");
     }
     return reg;
+  }
+
+  @Override
+  public int getOrder() {
+    return ORDER_TWEENS;
   }
 
   /**

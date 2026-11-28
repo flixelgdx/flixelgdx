@@ -83,7 +83,7 @@ The framework marks its per-frame phases in the Android system trace, so they ap
 | Section                 | What it covers                                  |
 |-------------------------|-------------------------------------------------|
 | `flixel.update`         | One whole update step                           |
-| `flixel.update.tweens`  | Global tweens and timers                        |
+| `flixel.update.managers` | Every manager's `preUpdate` and `update` (input, debugger, tweens, timers, sound) |
 | `flixel.update.state`   | The active state and substate chain             |
 | `flixel.update.cameras` | Camera updates                                  |
 | `flixel.draw`           | One whole draw step                             |

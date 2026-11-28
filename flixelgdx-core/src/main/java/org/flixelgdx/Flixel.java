@@ -23,6 +23,7 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.FlixelManagers.Manager;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelNoopAssetManager;
 import org.flixelgdx.audio.FlixelSoundManager;
@@ -57,6 +58,7 @@ import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.FlixelNoopInputDevice;
 import org.flixelgdx.input.FlixelTouchListener;
+import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
@@ -77,6 +79,7 @@ import org.flixelgdx.signal.FlixelSignal;
 import org.flixelgdx.signal.FlixelSignalData.GamePausedSignalData;
 import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
+import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.timer.FlixelTimer;
 import org.flixelgdx.timer.FlixelTimerListener;
 import org.flixelgdx.tween.FlixelTween;
@@ -357,6 +360,13 @@ public final class Flixel {
    * your own managers here from a {@link FlixelBootManager boot callback}, instead of subclassing
    * {@link FlixelGame} or listening to several {@link Signals signals}.
    *
+   * <p>The framework's own systems are already registered here, each at its own order: {@link #assets},
+   * the font registry, {@link #keys}, {@link #mouse}, {@link #touches}, {@link #gamepads}, the input
+   * action sets, {@link #debug}, the global tweens and timers, and {@link #sound}. Their slots always
+   * reach whatever object the field holds, so replacing a field such as {@link #sound} is safe. See
+   * the {@code ORDER_*} constants of {@link FlixelManagers.Manager} for where your own manager can
+   * slip in.
+   *
    * <p>Example:
    * <pre>{@code
    * Flixel.boot.afterStart(() -> Flixel.managers.add(new MyManager()));
@@ -364,7 +374,7 @@ public final class Flixel {
    */
   @NotNull
   @SuppressWarnings("checkstyle:ConstantName")
-  public static final FlixelManagers managers = new FlixelManagers();
+  public static final FlixelManagers managers = createManagers();
 
   /**
    * The framework's default random number generator.
@@ -1121,7 +1131,7 @@ public final class Flixel {
     try {
       FlixelState newState = stateFactory.get();
 
-      StateSwitchSignalData preData = new StateSwitchSignalData(state);
+      StateSwitchSignalData preData = new StateSwitchSignalData(state, clearTweens, clearTimers);
       Signals.preStateSwitch.dispatch(preData);
       managers.preStateSwitch(preData);
 
@@ -1131,18 +1141,9 @@ public final class Flixel {
       if (state != null) {
         state.destroy();
       }
+      // The sound, tween, and timer managers clear what belonged to the old state here.
       managers.onStateSwitch(preData);
 
-      if (sound != null) {
-        sound.clearNonPersist();
-      }
-      if (clearTweens) {
-        FlixelTween.cancelActiveTweens();
-        FlixelTween.clearTweenPools();
-      }
-      if (clearTimers) {
-        FlixelTimer.cancelAll();
-      }
       game.resetCameras();
       state = Objects.requireNonNull(newState, "State factory must not return null.");
       state.ensureMembers();
@@ -1153,7 +1154,7 @@ public final class Flixel {
         System.gc();
       }
 
-      StateSwitchSignalData postData = new StateSwitchSignalData(state);
+      StateSwitchSignalData postData = new StateSwitchSignalData(state, clearTweens, clearTimers);
       managers.postStateSwitch(postData);
       Signals.postStateSwitch.dispatch(postData);
     } finally {
@@ -1771,6 +1772,31 @@ public final class Flixel {
   public static boolean collide(@Nullable FlixelBasic objectOrGroup1,
       @Nullable FlixelBasic objectOrGroup2) {
     return collide(objectOrGroup1, objectOrGroup2, null);
+  }
+
+  /**
+   * Creates the manager registry with a slot for every built-in manager.
+   *
+   * <p>Each slot reads its field (or global instance) every time a hook runs, rather than holding
+   * the object, so the fields can be replaced at any time. The lookups are lambdas instead of
+   * direct references so that creating the registry does not load those classes early.
+   *
+   * @return The new registry.
+   */
+  private static FlixelManagers createManagers() {
+    FlixelManagers list = new FlixelManagers();
+    list.add(() -> assets, Manager.ORDER_ASSETS);
+    list.add(() -> FlixelFontRegistry.MANAGER, Manager.ORDER_FONTS);
+    list.add(() -> keys, Manager.ORDER_KEYS);
+    list.add(() -> mouse, Manager.ORDER_MOUSE);
+    list.add(() -> touches, Manager.ORDER_TOUCHES);
+    list.add(() -> gamepads, Manager.ORDER_GAMEPADS);
+    list.add(() -> FlixelActionSets.MANAGER, Manager.ORDER_ACTIONS);
+    list.add(() -> debug, Manager.ORDER_DEBUG);
+    list.add(() -> FlixelTween.getGlobalManager(), Manager.ORDER_TWEENS);
+    list.add(() -> FlixelTimer.getGlobalManager(), Manager.ORDER_TIMERS);
+    list.add(() -> sound, Manager.ORDER_SOUND);
+    return list;
   }
 
   /**

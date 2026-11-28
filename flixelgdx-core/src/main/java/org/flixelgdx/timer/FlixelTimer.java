@@ -24,7 +24,6 @@
 package org.flixelgdx.timer;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
@@ -47,9 +46,17 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, FlixelPoolable {
 
-  /** Global timer manager, updated from {@link FlixelGame#update(float)}. */
+  /**
+   * Global timer manager, updated every frame through {@code Flixel.managers}. It lives as long as
+   * the program, so destroying it only cancels its timers and it keeps working for the next session.
+   */
   @NotNull
-  private static final FlixelTimerManager GLOBAL_MANAGER = new FlixelTimerManager();
+  private static final FlixelTimerManager GLOBAL_MANAGER = new FlixelTimerManager() {
+    @Override
+    public void destroy() {
+      cancelAll();
+    }
+  };
 
   /** The time to complete the timer. */
   public float time;

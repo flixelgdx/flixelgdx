@@ -64,8 +64,24 @@ public final class FlixelSignalData {
     }
   }
 
-  /** Carries the new state when a state switch signal fires. */
-  public record StateSwitchSignalData(FlixelState state) {
+  /**
+   * Carries the state involved in a state switch, and what else the switch clears, when a state
+   * switch signal fires or a manager's state switch hook runs.
+   *
+   * @param state The state being left when the switch begins, or the new state when it ends.
+   * @param clearTweens Whether the switch cancels every global tween and clears the tween pools.
+   * @param clearTimers Whether the switch cancels every global timer.
+   */
+  public record StateSwitchSignalData(FlixelState state, boolean clearTweens, boolean clearTimers) {
+
+    /**
+     * Creates the data for a switch that clears both the global tweens and the global timers.
+     *
+     * @param state The state involved in the switch.
+     */
+    public StateSwitchSignalData(FlixelState state) {
+      this(state, true, true);
+    }
   }
 
   /**

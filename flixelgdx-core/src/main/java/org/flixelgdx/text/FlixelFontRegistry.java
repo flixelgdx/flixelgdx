@@ -24,6 +24,7 @@
 package org.flixelgdx.text;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
@@ -59,6 +60,24 @@ import java.nio.charset.StandardCharsets;
  * (lsans-15, an AngelCode {@code .fnt}), scaled to the requested size, so text always renders.
  */
 public final class FlixelFontRegistry {
+
+  /**
+   * The manager that calls {@link #dispose()} when the game closes. The framework registers it in
+   * {@code Flixel.managers}.
+   */
+  @SuppressWarnings("checkstyle:ConstantName")
+  public static final FlixelManagers.Manager MANAGER = new FlixelManagers.Manager() {
+
+    @Override
+    public int getOrder() {
+      return ORDER_FONTS;
+    }
+
+    @Override
+    public void destroy() {
+      FlixelFontRegistry.dispose();
+    }
+  };
 
   private static final String PACKAGED_FONT_BASE = "org/flixelgdx/bitmap/lsans-15";
 

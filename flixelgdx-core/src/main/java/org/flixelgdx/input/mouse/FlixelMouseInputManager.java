@@ -139,6 +139,17 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
 
   /** Call once per frame at the start of the game update (with {@link Flixel#keys}). */
   @Override
+  public int getOrder() {
+    return ORDER_MOUSE;
+  }
+
+  /** Starts listening to the mouse of {@link Flixel#input}. */
+  @Override
+  public void create() {
+    Flixel.input.addMouseListener(this);
+  }
+
+  @Override
   public void update() {
     if (!enabled) {
       return;

@@ -993,13 +993,7 @@ public abstract class FlixelTween implements FlixelPoolable {
    * want a full reset (as {@link Flixel#switchState} does when {@code clearTweens} is true).
    */
   public static void cancelActiveTweens() {
-    FlixelArray<FlixelTween> list = globalManager.getActiveTweens();
-    for (int i = list.getSize() - 1; i >= 0; i--) {
-      FlixelTween t = list.get(i);
-      if (t != null) {
-        t.cancel();
-      }
-    }
+    globalManager.cancelAll();
   }
 
   public static FlixelTweenManager getGlobalManager() {
