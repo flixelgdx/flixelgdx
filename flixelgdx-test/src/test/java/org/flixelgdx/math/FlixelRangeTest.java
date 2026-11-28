@@ -56,10 +56,10 @@ class FlixelRangeTest {
     FlixelColorRange range = new FlixelColorRange().set(FlixelColor.BLACK, FlixelColor.WHITE);
     FlixelColor out = new FlixelColor();
     assertSame(out, range.lerp(0.5f, out));
-    assertEquals(0.5f, out.r, 1e-6f);
-    assertEquals(0.5f, out.g, 1e-6f);
-    assertEquals(0.5f, out.b, 1e-6f);
-    assertEquals(1f, out.a, 1e-6f);
+    assertEquals(0.5f, out.getRed(), 1e-6f);
+    assertEquals(0.5f, out.getGreen(), 1e-6f);
+    assertEquals(0.5f, out.getBlue(), 1e-6f);
+    assertEquals(1f, out.getAlpha(), 1e-6f);
   }
 
   @Test
@@ -67,7 +67,7 @@ class FlixelRangeTest {
     FlixelColor source = new FlixelColor(FlixelColor.RED);
     FlixelColorRange range = new FlixelColorRange().set(source, source);
     source.set(FlixelColor.BLUE);
-    assertEquals(1f, range.start.r, 1e-6f);
+    assertEquals(1f, range.start.getRed(), 1e-6f);
     assertFalse(range.active);
   }
 

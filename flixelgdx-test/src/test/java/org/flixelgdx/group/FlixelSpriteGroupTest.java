@@ -160,9 +160,9 @@ class FlixelSpriteGroupTest {
     assertEquals(0.5f, group.getAlpha(), EPS);
 
     group.setColor(FlixelColor.RED);
-    assertEquals(0f, s.getColor().g, EPS);
+    assertEquals(0f, s.getColor().getGreen(), EPS);
     group.setColor(0f, 1f, 0f, 1f);
-    assertEquals(1f, s.getColor().g, EPS);
+    assertEquals(1f, s.getColor().getGreen(), EPS);
 
     group.setScale(2f);
     assertEquals(2f, s.getScaleX(), EPS);

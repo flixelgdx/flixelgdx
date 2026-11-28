@@ -161,7 +161,7 @@ class FlixelTweenTypesTest {
         .setColorEndpoints(target, FlixelColor.BLACK, FlixelColor.WHITE, calls::incrementAndGet);
     manager.addTween(t);
     manager.update(0.5f);
-    assertEquals(0.5f, target.color.r, 1e-3f);
+    assertEquals(0.5f, target.color.getRed(), 1e-3f);
     assertEquals(1, calls.get());
     assertTrue(t.isTweenOf(target, "color"));
     assertTrue(t.isTweenOf(target, ""));
@@ -175,8 +175,8 @@ class FlixelTweenTypesTest {
     from.set(FlixelColor.WHITE);
     manager.addTween(t);
     manager.update(0.5f);
-    assertEquals(0.5f, target.color.r, 1e-3f, "changing the caller's color afterwards has no effect");
-    assertEquals(0f, target.color.g, 1e-3f);
+    assertEquals(0.5f, target.color.getRed(), 1e-3f, "changing the caller's color afterwards has no effect");
+    assertEquals(0f, target.color.getGreen(), 1e-3f);
   }
 
   @Test
@@ -184,7 +184,7 @@ class FlixelTweenTypesTest {
     FlixelColorTween t = new FlixelColorTween(oneSecond()).setColorEndpoints(target, null, FlixelColor.RED, null);
     manager.addTween(t);
     manager.update(0.5f);
-    assertEquals(1f, target.color.g, 1e-3f, "nothing changes without a start color");
+    assertEquals(1f, target.color.getGreen(), 1e-3f, "nothing changes without a start color");
 
     FlixelColorTween noTarget = new FlixelColorTween(oneSecond()).setColorEndpointsRaw(null, null, null, null);
     manager.addTween(noTarget);
