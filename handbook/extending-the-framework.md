@@ -8,20 +8,21 @@ plug each one in.
 
 1. [Extend, do not fork](#extend-do-not-fork)
 2. [When to plug things in](#when-to-plug-things-in)
-3. [Custom asset types](#custom-asset-types)
-4. [Mod support: redirecting asset paths](#mod-support-redirecting-asset-paths)
-5. [Custom save storage](#custom-save-storage)
-6. [Custom log destinations](#custom-log-destinations)
-7. [Replacing a platform service](#replacing-a-platform-service)
-8. [Gamepad mappings and custom bindings](#gamepad-mappings-and-custom-bindings)
-9. [Camera scaling for every camera](#camera-scaling-for-every-camera)
-10. [Custom eases and tween types](#custom-eases-and-tween-types)
-11. [Your own class hierarchy in states and groups](#your-own-class-hierarchy-in-states-and-groups)
-12. [Debugger extensions](#debugger-extensions)
-13. [Headless runs for tests and tools](#headless-runs-for-tests-and-tools)
-14. [Writing a new backend](#writing-a-new-backend)
-15. [Contributing to FlixelGDX itself](#contributing-to-flixelgdx-itself)
-16. [Check your understanding](#check-your-understanding)
+3. [Writing your own manager](#writing-your-own-manager)
+4. [Custom asset types](#custom-asset-types)
+5. [Mod support: redirecting asset paths](#mod-support-redirecting-asset-paths)
+6. [Custom save storage](#custom-save-storage)
+7. [Custom log destinations](#custom-log-destinations)
+8. [Replacing a platform service](#replacing-a-platform-service)
+9. [Gamepad mappings and custom bindings](#gamepad-mappings-and-custom-bindings)
+10. [Camera scaling for every camera](#camera-scaling-for-every-camera)
+11. [Custom eases and tween types](#custom-eases-and-tween-types)
+12. [Your own class hierarchy in states and groups](#your-own-class-hierarchy-in-states-and-groups)
+13. [Debugger extensions](#debugger-extensions)
+14. [Headless runs for tests and tools](#headless-runs-for-tests-and-tools)
+15. [Writing a new backend](#writing-a-new-backend)
+16. [Contributing to FlixelGDX itself](#contributing-to-flixelgdx-itself)
+17. [Check your understanding](#check-your-understanding)
 
 ## Extend, do not fork
 
@@ -42,11 +43,106 @@ Timing matters, because some pieces must be in place before anything uses them:
 
 If your extension needs to follow the game's lifecycle (update every frame, draw on top of a camera, save when the
 app is suspended, clean up when the game closes), register a manager in `Flixel.managers` from an `afterStart(...)`
-callback instead of asking users to subclass `FlixelGame`. See
-[Global hooks with managers](game-loop.md#global-hooks-with-managers).
+callback instead of asking users to subclass `FlixelGame`. See [Writing your own manager](#writing-your-own-manager).
 
 Register boot callbacks before the game starts, for example in your game class's constructor. See
 [The Boot Sequence](boot-sequence.md#hooking-into-startup-boot-callbacks).
+
+## Writing your own manager
+
+When your extension has to follow the whole game (update every frame, draw on top of a camera, save when the app is
+suspended, clean up when the game closes), make it a **manager** instead of asking users to subclass `FlixelGame` or to
+wire up several signals. It is exactly how the framework's own systems (input, sound, cameras, the renderer) plug in,
+so yours gets the same hooks, in the same predictable order. See
+[Architecture](architecture.md#the-game-loop-one-state-and-many-managers) for the full picture.
+
+Implement `FlixelManagers.Manager` and override only the hooks you need; every hook has an empty default:
+
+```java
+public final class NetworkManager implements FlixelManagers.Manager {
+
+  @Override
+  public void create() {
+    // The window, the GPU, the assets, and input are ready here.
+  }
+
+  @Override
+  public void update(float elapsed) {
+    // Runs every frame before the state updates, so the state sees this frame's messages.
+  }
+
+  @Override
+  public void onSuspended() {
+    // The platform may stop the game soon: flush anything important.
+  }
+
+  @Override
+  public void destroy() {
+    // Close connections. Runs before the built-in managers are destroyed.
+  }
+
+  @Override
+  public boolean isPausable() {
+    return false; // Keep talking to the server while the game is paused.
+  }
+
+  @NotNull
+  @Override
+  public String getName() {
+    return "mylibrary.network"; // Its section in platform profilers. Return a constant.
+  }
+}
+```
+
+Register it from an `afterStart(...)` boot callback, so it is in place before the game is created:
+
+```java
+Flixel.boot.afterStart(() -> Flixel.managers.add(new NetworkManager()));
+```
+
+A manager added to a running game is created right away, and one removed from a running game is destroyed right away,
+so adding one later (for example from a state) also works.
+
+### Choosing where it runs
+
+`getOrder()` decides where your manager runs: lower orders first, and `destroy()` in reverse. The default,
+`ORDER_DEFAULT`, runs after every built-in manager, so it already sees this frame's input, tweens, and timers. The
+built-in orders are spaced apart, so you can slip in between two of them:
+
+```java
+@Override
+public int getOrder() {
+  // After the input actions update, but before the debugger takes the input it owns.
+  return FlixelManagers.Manager.ORDER_ACTIONS + 50;
+}
+```
+
+The order is read once, when the manager is added. The full table of built-in orders is in
+[Architecture](architecture.md#the-built-in-managers).
+
+### Picking the right hook
+
+| You want to...                                           | Use                                    |
+|----------------------------------------------------------|----------------------------------------|
+| Run logic every frame before the state                   | `update(...)`                          |
+| React to where things ended up after the state           | `postUpdate(...)`                      |
+| Draw in the world, inside each camera                    | `drawCamera(camera, batch)` (batch already begun) |
+| Draw a HUD at fixed screen coordinates                   | `drawOverlay(batch)` (batch already begun) |
+| Draw on the finished window picture                      | `draw(batch)` or `postDraw(batch)`     |
+| Clear something that belonged to the old state           | `onStateSwitch(data)`                  |
+| Save before the platform may stop the game               | `onSuspended()`                        |
+
+### Replacing a built-in manager
+
+The built-in managers live in fields such as `Flixel.sound`, and the registry reads the field every time a hook runs.
+To swap one, assign the field (usually in an `afterStart(...)` callback); the new object gets every hook from then on:
+
+```java
+Flixel.boot.afterStart(() -> Flixel.sound = new MySoundManager(FlixelSoundManager.defaultFactory));
+```
+
+Do the same for your own replaceable singletons with `Flixel.managers.add(() -> MyLibrary.instance, order)`, which
+registers a slot that always reaches the current `MyLibrary.instance`.
 
 ## Custom asset types
 
@@ -233,9 +329,12 @@ process, and `COMPILING.md` explains how to build the framework and test it in a
 1. Where do you replace `FlixelSave.defaultHandler`, and why there?
 2. How can players override a sprite's image without you changing any loading code?
 3. Your custom asset loader uploads a texture inside `loadRaw(...)` and crashes on desktop. Why?
+4. Your library's manager needs to read this frame's input actions before the debugger hides the input it takes.
+   Which order should it return?
 
 (Answers: in a `beforeStart` boot callback, before any save object is created with the old default; with a custom
 file resolver on `Flixel.assets` that checks a mods folder first; `loadRaw(...)` may run on a worker thread, and GPU
-work must happen on the main thread, in `finishRaw(...)`.)
+work must happen on the main thread, in `finishRaw(...)`; an order between `ORDER_ACTIONS` and `ORDER_DEBUG`, such as
+`ORDER_ACTIONS + 50`.)
 
 **Next:** [Cookbook](cookbook.md)
