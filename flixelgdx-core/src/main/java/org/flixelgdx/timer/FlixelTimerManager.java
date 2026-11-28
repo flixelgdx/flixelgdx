@@ -203,4 +203,10 @@ public class FlixelTimerManager extends FlixelBasic implements FlixelManagers.Ma
   public int getOrder() {
     return ORDER_TIMERS;
   }
+
+  @NotNull
+  @Override
+  public String getName() {
+    return "flixel.timers";
+  }
 }

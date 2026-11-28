@@ -24,13 +24,18 @@
 package org.flixelgdx;
 
 import org.flixelgdx.FlixelManagers.Manager;
+import org.flixelgdx.asset.FlixelBaseAssetManager;
+import org.flixelgdx.asset.FlixelNoopAssetManager;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelBootManager;
+import org.flixelgdx.graphics.FlixelOverlayManager;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.input.touch.FlixelTouchManager;
+import org.flixelgdx.logging.FlixelDefaultLogger;
+import org.flixelgdx.signal.FlixelSignal;
 import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.timer.FlixelTimer;
@@ -41,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlixelBuiltInManagersTest {
@@ -154,6 +160,39 @@ class FlixelBuiltInManagersTest {
   }
 
   @Test
+  void closingTheGameRetiresTheAssetsAndStopsFileLoggingAfterEveryListener() {
+    StringBuilder order = new StringBuilder();
+    Flixel.log = new FlixelDefaultLogger() {
+      @Override
+      public void stopFileLogging() {
+        order.append("stop ");
+      }
+    };
+    Flixel.assets = new FlixelBaseAssetManager();
+    Flixel.registerShutdownListeners();
+    FlixelSignal.SignalHandler<Void> late = data -> order.append("listener ");
+    Flixel.Signals.postGameClose.add(late);
+    try {
+      Flixel.Signals.preGameClose.dispatch();
+      Flixel.Signals.postGameClose.dispatch();
+    } finally {
+      Flixel.Signals.postGameClose.remove(late);
+    }
+    assertTrue(order.toString().startsWith("listener "), order.toString());
+    assertTrue(order.toString().endsWith("stop "), order.toString());
+    assertSame(FlixelNoopAssetManager.INSTANCE, Flixel.assets);
+  }
+
+  @Test
+  void theSceneManagersHaveSlotsInTheRegistry() {
+    CountingOverlay overlay = new CountingOverlay();
+    Flixel.overlay = overlay;
+    overlay.setEnabled(true);
+    Flixel.managers.postUpdate(0f, false);
+    assertEquals(1, overlay.updates);
+  }
+
+  @Test
   void stateSwitchDataClearsEverythingByDefault() {
     StateSwitchSignalData data = new StateSwitchSignalData(null);
     assertTrue(data.clearTweens());
@@ -181,5 +220,15 @@ class FlixelBuiltInManagersTest {
   }
 
   private static final class TestState extends FlixelState {
+  }
+
+  private static final class CountingOverlay extends FlixelOverlayManager {
+
+    int updates;
+
+    @Override
+    public void postUpdate(float elapsed) {
+      updates++;
+    }
   }
 }

@@ -124,33 +124,39 @@ it and applies `Flixel.timeScale`. Then every manager runs `beginFrame()`, even 
    4. Global tweens and global timers advance.
    5. The sound manager updates (fades, finished sounds).
    6. Your own managers update, with the default order.
-4. If the game is not paused:
-   1. The state chain updates: the active state, then each open substate. A state with an open substate only
-      updates if its `persistentUpdate` flag is `true`.
-   2. Every camera updates (follow, shake, flash, fade).
-   3. The global overlay updates, if it is on.
-5. Every manager runs `postUpdate(...)`. In debug mode, the debugger samples the frame here.
+4. If the game is not paused, the state chain updates: the active state, then each open substate. A state with an
+   open substate only updates if its `persistentUpdate` flag is `true`.
+5. Every manager runs `postUpdate(...)`, from the lowest order to the highest:
+   1. Every camera updates (follow, shake, flash, fade), in `Flixel.cameraManager`.
+   2. The global overlay updates, if it is on, in `Flixel.overlay`.
+   3. In debug mode, the debugger samples the frame.
+   4. Your own managers run their `postUpdate(...)`.
 6. `Flixel.Signals.postUpdate` fires.
 
 While the game is paused, managers whose `isPausable()` returns `true` (the default) skip steps 2, 3, and 5. Input
-and the debugger are not pausable, so they keep running; tweens, timers, and sound are, so they stop.
+and the debugger are not pausable, so they keep running; tweens, timers, sound, the cameras, and the overlay are, so
+they stop with the state.
 
 **Draw.**
 
 1. `Flixel.Signals.preDraw` fires.
 2. Every manager runs `preDraw(...)`.
-3. The screen is cleared.
-4. For each camera in `Flixel.cameras`, in order:
-   1. The camera fills its background color.
-   2. The state chain draws: the active state, then each open substate. A state with an open substate only draws if
-      its `persistentDraw` flag is `true` (the default).
-   3. Every manager runs `drawCamera(...)` for this camera.
-   4. The camera draws its effects on top (flash and fade).
-   5. If the camera has a shader, its picture is run through the shader.
-5. Global shaders, if any, run over the combined picture.
-6. The global overlay draws on top of everything, then every manager runs `drawOverlay(...)`.
-7. Every manager runs `postDraw(...)`. In debug mode, the debugger draws hitboxes here if they are switched on.
-8. `Flixel.Signals.postDraw` fires.
+3. Every manager runs `draw(...)`. The renderer, `Flixel.render`, comes first and draws the whole picture:
+   1. The screen is cleared to `Flixel.render.bgColor`.
+   2. For each camera in `Flixel.cameras`, in order:
+      1. The camera fills its background color.
+      2. The state chain draws: the active state, then each open substate. A state with an open substate only draws
+         if its `persistentDraw` flag is `true` (the default).
+      3. Every manager runs `drawCamera(...)` for this camera.
+      4. The camera draws its effects on top (flash and fade).
+      5. If the camera has a shader, its picture is run through the shader.
+   3. Global shaders, if any, run over the combined picture.
+   4. Every manager runs `drawOverlay(...)` on top of everything. The global overlay draws here.
+   5. The picture is stretched to fill the window.
+
+   Managers with a later order than the renderer draw straight on top of the finished picture.
+4. Every manager runs `postDraw(...)`. In debug mode, the debugger draws hitboxes here if they are switched on.
+5. `Flixel.Signals.postDraw` fires.
 
 **After the frame.** `endFrame()` runs every manager's `endFrame()`, which is where the input managers and action
 sets finish the input state: `justPressed` and `justReleased` are cleared so they are fresh next frame. Because this
@@ -275,11 +281,13 @@ Flixel.boot.afterStart(() -> Flixel.managers.add(new AchievementManager()));
 
 Managers run from the lowest `getOrder()` to the highest, and `destroy()` runs in the reverse order. The framework's own
 systems are managers too, at the orders named by the `ORDER_*` constants of `FlixelManagers.Manager`: assets, fonts,
-keys, mouse, touches, gamepads, input actions, the debugger, tweens, timers, and sound, in that order. They are spaced
+the renderer, the cameras, the overlay, keys, mouse, touches, gamepads, input actions, the debugger, tweens, timers,
+and sound, in that order. They are spaced
 apart so yours can slip in between, for example `ORDER_ACTIONS + 50` to read this frame's input before the debugger
 takes the input it owns. The default order (`ORDER_DEFAULT`) runs after all of them. A manager added
 to a running game is created right away, and one removed from a running game is destroyed right away. Return `false`
-from `isPausable()` for work that must keep running while the game is paused.
+from `isPausable()` for work that must keep running while the game is paused. Return a constant from `getName()`
+(such as `"mylibrary.network"`) to name your manager's section in platform profilers.
 
 Prefer a manager over subclassing `FlixelGame` or listening to several signals at once: it gets every hook in one
 place, in a predictable order.
@@ -302,15 +310,16 @@ not keep the object. Listeners on global signals stay registered across state sw
 
 ## Things that live across states
 
-The state is replaced on every switch, but the game object is not. Override methods on your `FlixelGame` subclass
-only for behavior that applies for the whole run of the program. The game also has a **global overlay**: a private
-group drawn on top of every camera with its own camera that never scrolls. Anything you add to it stays on screen
-across state switches, which suits an FPS counter or a "now playing" banner:
+The state is replaced on every switch, but the game object and the managers are not. Put behavior that applies for
+the whole run of the program in a manager (see [Global hooks with managers](#global-hooks-with-managers)). The
+framework also has a **global overlay**, `Flixel.overlay`: a group drawn on top of every camera with its own camera
+that never scrolls. Anything you add to it stays on screen across state switches, which suits an FPS counter or a
+"now playing" banner:
 
 ```java
 FlixelText fps = new FlixelText(4f, 4f, 0f, "", 8);
-Flixel.game.add(fps);                 // Add to the overlay, not the state.
-Flixel.game.enableGlobalOverlay(true);
+Flixel.overlay.add(fps);       // Add to the overlay, not the state.
+Flixel.overlay.setEnabled(true);
 ```
 
 The overlay is separate from the debugger and is drawn after global shaders, so shaders never affect it.

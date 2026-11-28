@@ -186,6 +186,12 @@ public class FlixelGamepadInputManager implements FlixelInputManager {
     return ORDER_GAMEPADS;
   }
 
+  @NotNull
+  @Override
+  public String getName() {
+    return "flixel.gamepads";
+  }
+
   /** Forgets every connected gamepad when the game closes, so a later session starts clean. */
   @Override
   public void destroy() {

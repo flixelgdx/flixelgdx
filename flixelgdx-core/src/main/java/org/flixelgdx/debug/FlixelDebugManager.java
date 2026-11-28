@@ -540,6 +540,12 @@ public class FlixelDebugManager implements FlixelManagers.Manager {
     return ORDER_DEBUG;
   }
 
+  @NotNull
+  @Override
+  public String getName() {
+    return "flixel.debug";
+  }
+
   /**
    * Returns {@code false}, since the debugger keeps working while the game is paused.
    *

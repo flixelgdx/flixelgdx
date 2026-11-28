@@ -30,6 +30,7 @@ import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelKeyboardListener;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Keyboard input manager, reached through {@code Flixel.keys} after the framework is initialized.
@@ -107,6 +108,12 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
   @Override
   public int getOrder() {
     return ORDER_KEYS;
+  }
+
+  @NotNull
+  @Override
+  public String getName() {
+    return "flixel.keys";
   }
 
   /** Starts listening to the keyboard of {@link Flixel#input}. */

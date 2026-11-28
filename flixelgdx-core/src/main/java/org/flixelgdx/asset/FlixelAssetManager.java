@@ -394,4 +394,10 @@ public interface FlixelAssetManager extends FlixelManagers.Manager {
   default int getOrder() {
     return ORDER_ASSETS;
   }
+
+  @NotNull
+  @Override
+  default String getName() {
+    return "flixel.assets";
+  }
 }

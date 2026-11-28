@@ -38,6 +38,8 @@ import org.flixelgdx.debug.remote.FlixelDebugEndpoint;
 import org.flixelgdx.debug.remote.FlixelDebugTransport;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
+import org.flixelgdx.graphics.FlixelOverlayManager;
+import org.flixelgdx.graphics.FlixelRenderManager;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -113,6 +115,9 @@ public final class FlixelHeadlessExtension
     private FlixelGamepadInputManager gamepads;
     private FlixelWindow window;
     private FlixelGraphicsManager graphics;
+    private FlixelRenderManager render;
+    private FlixelCamera.Manager cameraManager;
+    private FlixelOverlayManager overlay;
     private FlixelHostIntegration host;
     private FlixelHaptics haptics;
     private FlixelProfiler profiler;
@@ -149,6 +154,9 @@ public final class FlixelHeadlessExtension
       g.gamepads = Flixel.gamepads;
       g.window = Flixel.window;
       g.graphics = Flixel.graphics;
+      g.render = Flixel.render;
+      g.cameraManager = Flixel.cameraManager;
+      g.overlay = Flixel.overlay;
       g.host = Flixel.host;
       g.haptics = Flixel.haptics;
       g.profiler = Flixel.profiler;
@@ -186,6 +194,9 @@ public final class FlixelHeadlessExtension
       Flixel.gamepads = gamepads;
       Flixel.window = window;
       Flixel.graphics = graphics;
+      Flixel.render = render;
+      Flixel.cameraManager = cameraManager;
+      Flixel.overlay = overlay;
       Flixel.host = host;
       Flixel.haptics = haptics;
       Flixel.profiler = profiler;

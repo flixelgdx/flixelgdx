@@ -50,7 +50,7 @@ A constructor argument for the next state, a field on your game class, or `Flixe
 ([States and Substates](states-and-substates.md#passing-data-between-states))
 
 **...show something on every screen, like an FPS counter?**
-`Flixel.game.add(fpsText); Flixel.game.enableGlobalOverlay(true);` ([The Game Loop](game-loop.md#things-that-live-across-states))
+`Flixel.overlay.add(fpsText); Flixel.overlay.setEnabled(true);` ([The Game Loop](game-loop.md#things-that-live-across-states))
 
 ## Sprites and drawing
 

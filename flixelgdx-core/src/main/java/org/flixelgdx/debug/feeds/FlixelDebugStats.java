@@ -31,6 +31,7 @@ import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelRenderManager;
 import org.flixelgdx.graphics.FlixelRenderStats;
 import org.flixelgdx.util.FlixelDebugUtil;
 import org.jetbrains.annotations.NotNull;
@@ -237,9 +238,9 @@ public class FlixelDebugStats extends FlixelDebugFeedBase {
    */
   private int countRenderCalls() {
     int total = 0;
-    FlixelGame game = Flixel.game;
-    if (game != null) {
-      total += game.getFrameRenderCalls();
+    FlixelRenderManager render = Flixel.render;
+    if (render != null) {
+      total += render.getFrameRenderCalls();
     }
     FlixelArray<FlixelBatch> extra = owner.getTrackedBatches();
     for (int i = 0, n = extra.getSize(); i < n; i++) {

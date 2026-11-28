@@ -24,6 +24,7 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.functional.FlixelShakeable;
@@ -131,7 +132,7 @@ public interface FlixelWindow extends FlixelShakeable {
 
   /**
    * Applies transparent fills to all cameras without touching the restore snapshot.
-   * Called after {@link FlixelGame#resetCameras()} when transparency stays enabled.
+   * Called after {@link FlixelCamera.Manager#reset()} when transparency stays enabled.
    */
   default void applyTransparencyBackdropOnly() {}
 

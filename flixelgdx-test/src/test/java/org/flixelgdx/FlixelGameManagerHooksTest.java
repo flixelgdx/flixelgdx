@@ -26,6 +26,7 @@ package org.flixelgdx;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelBootManager;
 import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
@@ -163,7 +164,7 @@ class FlixelGameManagerHooksTest {
   void drawingWithoutCamerasStillRunsTheFrameHooks() {
     RecordingBatch batch = new RecordingBatch();
     game.draw(batch);
-    assertEquals("m.preDraw input.preDraw m.postDraw input.postDraw ", log.toString());
+    assertEquals("m.preDraw input.preDraw m.draw input.draw m.postDraw input.postDraw ", log.toString());
     assertSame(batch, recorder.lastBatch);
   }
 
@@ -178,6 +179,21 @@ class FlixelGameManagerHooksTest {
         log.toString());
     assertSame(next, recorder.lastData.state());
     assertSame(next, Flixel.state);
+  }
+
+  @Test
+  void drawStateDrawsTheActiveStateAndPersistentParents() {
+    LoggingState parent = new LoggingState(log);
+    LoggingSubState child = new LoggingSubState(log);
+    Flixel.state = parent;
+    parent.persistentDraw = false;
+    parent.openSubState(child);
+    game.drawState(new RecordingBatch());
+    assertEquals("sub.draw ", log.toString());
+    log.setLength(0);
+    parent.persistentDraw = true;
+    game.drawState(new RecordingBatch());
+    assertEquals("state.draw sub.draw ", log.toString());
   }
 
   private static final class LoggingState extends FlixelState {
@@ -199,6 +215,11 @@ class FlixelGameManagerHooksTest {
     }
 
     @Override
+    public void draw(FlixelBatch batch) {
+      log.append("state.draw ");
+    }
+
+    @Override
     public void onFocusLost() {
       log.append("state.onFocusLost ");
     }
@@ -206,6 +227,21 @@ class FlixelGameManagerHooksTest {
     @Override
     public void onFocusGained() {
       log.append("state.onFocusGained ");
+    }
+  }
+
+  private static final class LoggingSubState extends FlixelSubState {
+
+    private final StringBuilder log;
+
+    LoggingSubState(StringBuilder log) {
+      super(null);
+      this.log = log;
+    }
+
+    @Override
+    public void draw(FlixelBatch batch) {
+      log.append("sub.draw ");
     }
   }
 }

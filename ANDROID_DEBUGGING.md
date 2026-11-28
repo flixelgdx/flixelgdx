@@ -82,12 +82,13 @@ The framework marks its per-frame phases in the Android system trace, so they ap
 
 | Section                 | What it covers                                  |
 |-------------------------|-------------------------------------------------|
-| `flixel.update`         | One whole update step                           |
-| `flixel.update.managers` | Every manager's `preUpdate` and `update` (input, debugger, tweens, timers, sound) |
 | `flixel.update.state`   | The active state and substate chain             |
-| `flixel.update.cameras` | Camera updates                                  |
-| `flixel.draw`           | One whole draw step                             |
+| `flixel.render`         | Drawing every camera, the global shaders, and the overlay |
+| `flixel.cameras`        | Camera updates (follow, shake, flash, fade)     |
+| `flixel.keys`, `flixel.sound`, `flixel.debug`, ... | One hook of that manager. Every manager in `Flixel.managers` gets its own section, named by its `getName()` |
 | `flixel.switchState`    | Creating and entering a new state               |
+
+Each manager's section appears once per hook it runs in a frame (for example `flixel.render` inside the draw pass).
 
 You can add your own sections with `Flixel.profiler`. Always pair `begin` with `end` in a
 `try`/`finally`, and use constant names of 127 characters or fewer:

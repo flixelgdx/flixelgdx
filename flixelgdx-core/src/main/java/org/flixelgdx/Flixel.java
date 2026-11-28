@@ -52,6 +52,8 @@ import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelNoopGraphicsManager;
+import org.flixelgdx.graphics.FlixelOverlayManager;
+import org.flixelgdx.graphics.FlixelRenderManager;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
@@ -297,8 +299,9 @@ public final class Flixel {
    * The active {@link FlixelGame} instance driving the game lifecycle.
    *
    * <p>This reference is set during {@link #start(FlixelGame, FlixelGameRunner)} before any other system is
-   * brought up. It exposes the main render loop, the camera list, window dimensions, and low-level
-   * controls such as fullscreen toggling and framerate caps.
+   * brought up. It runs the active state and drives every manager in {@link #managers} through the
+   * game's lifecycle, and it owns pausing ({@link FlixelGame#setGamePaused(boolean)},
+   * {@link FlixelGame#stepFrame()}) and the frame's elapsed time.
    *
    * <p>Most game code never needs to touch {@code Flixel.game} directly. Prefer the specialized
    * fields ({@link #sound}, {@link #assets}, {@link #keys}, {@link #cameras}, etc.) for day-to-day
@@ -306,8 +309,8 @@ public final class Flixel {
    *
    * <p>Example:
    * <pre>{@code
-   * // Change the game's background color.
-   * Flixel.game.bgColor.set(Color.BLUE);
+   * // Pause the game, the same way the debugger does.
+   * Flixel.game.setGamePaused(true);
    * }</pre>
    */
   @NotNull
@@ -361,7 +364,7 @@ public final class Flixel {
    * {@link FlixelGame} or listening to several {@link Signals signals}.
    *
    * <p>The framework's own systems are already registered here, each at its own order: {@link #assets},
-   * the font registry, {@link #keys}, {@link #mouse}, {@link #touches}, {@link #gamepads}, the input
+   * the font registry, {@link #render}, {@link #cameraManager}, {@link #overlay}, {@link #keys}, {@link #mouse}, {@link #touches}, {@link #gamepads}, the input
    * action sets, {@link #debug}, the global tweens and timers, and {@link #sound}. Their slots always
    * reach whatever object the field holds, so replacing a field such as {@link #sound} is safe. See
    * the {@code ORDER_*} constants of {@link FlixelManagers.Manager} for where your own manager can
@@ -765,6 +768,44 @@ public final class Flixel {
   public static FlixelGraphicsManager graphics = FlixelNoopGraphicsManager.INSTANCE;
 
   /**
+   * The manager that draws every frame: each camera with the state on it, the global shaders, and
+   * the overlay.
+   *
+   * <p>It also owns the window's background color and the render settings. See
+   * {@link FlixelRenderManager}.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * Flixel.render.bgColor.set(FlixelColor.BLUE); // The color behind every camera.
+   * }</pre>
+   */
+  public static FlixelRenderManager render = new FlixelRenderManager();
+
+  /**
+   * The manager that keeps {@link #cameras} and the overlay camera in step with the game: it moves
+   * them every frame, refits them on resize, and puts a fresh default camera in place on every state
+   * switch. See {@link FlixelCamera.Manager}.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * Flixel.cameraManager.reset(); // Back to one default camera.
+   * }</pre>
+   */
+  public static FlixelCamera.Manager cameraManager = new FlixelCamera.Manager();
+
+  /**
+   * The global overlay: a group drawn on top of every camera that stays on screen across state
+   * switches, such as an FPS counter. It is off until you turn it on. See {@link FlixelOverlayManager}.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * Flixel.overlay.add(fpsText);
+   * Flixel.overlay.setEnabled(true);
+   * }</pre>
+   */
+  public static FlixelOverlayManager overlay = new FlixelOverlayManager();
+
+  /**
    * Host integration for toast notifications, taskbar attention signals, clipboard access and more.
    *
    * <p>This manager is typically what you would use to interact with the operating system or
@@ -1059,6 +1100,8 @@ public final class Flixel {
         .registerTweenType(FlixelLinearPath.class, () -> new FlixelLinearPath(null))
         .registerTweenType(FlixelQuadPath.class, () -> new FlixelQuadPath(null));
 
+    registerShutdownListeners();
+
     boot.markInitialized();
 
     FlixelArray<Runnable> afterCallbacks = boot.getAfterStart();
@@ -1141,10 +1184,8 @@ public final class Flixel {
       if (state != null) {
         state.destroy();
       }
-      // The sound, tween, and timer managers clear what belonged to the old state here.
+      // The cameras reset, and the sound, tween, and timer managers clear what belonged to the old state.
       managers.onStateSwitch(preData);
-
-      game.resetCameras();
       state = Objects.requireNonNull(newState, "State factory must not return null.");
       state.ensureMembers();
       state.create();
@@ -1510,7 +1551,15 @@ public final class Flixel {
     return drawCamera;
   }
 
-  static void setDrawCamera(@Nullable FlixelCamera camera) {
+  /**
+   * Sets the camera currently being drawn, which {@link #getDrawCamera()} returns.
+   *
+   * <p>The render manager sets this around every camera pass and clears it with {@code null} once the
+   * pass ends. Only call it from a custom renderer that runs its own camera passes.
+   *
+   * @param camera The camera being drawn, or {@code null} once the pass ends.
+   */
+  public static void setDrawCamera(@Nullable FlixelCamera camera) {
     drawCamera = camera;
   }
 
@@ -1775,6 +1824,20 @@ public final class Flixel {
   }
 
   /**
+   * Registers the framework's own listeners on the close signals.
+   *
+   * <p>After every manager was destroyed, {@link #assets} is replaced with the no-op manager so late
+   * code never reaches a destroyed one. File logging stops last of all, after every
+   * {@link Signals#postGameClose} listener ran, so their messages still reach the log file. To make
+   * sure it runs after listeners added at any time, it is added to {@code postGameClose} only once the
+   * game starts closing.
+   */
+  static void registerShutdownListeners() {
+    Signals.postGameClose.add(data -> assets = FlixelNoopAssetManager.INSTANCE);
+    Signals.preGameClose.add(data -> Signals.postGameClose.addOnce(last -> log.stopFileLogging()));
+  }
+
+  /**
    * Creates the manager registry with a slot for every built-in manager.
    *
    * <p>Each slot reads its field (or global instance) every time a hook runs, rather than holding
@@ -1787,6 +1850,9 @@ public final class Flixel {
     FlixelManagers list = new FlixelManagers();
     list.add(() -> assets, Manager.ORDER_ASSETS);
     list.add(() -> FlixelFontRegistry.MANAGER, Manager.ORDER_FONTS);
+    list.add(() -> render, Manager.ORDER_RENDER);
+    list.add(() -> cameraManager, Manager.ORDER_CAMERAS);
+    list.add(() -> overlay, Manager.ORDER_OVERLAY);
     list.add(() -> keys, Manager.ORDER_KEYS);
     list.add(() -> mouse, Manager.ORDER_MOUSE);
     list.add(() -> touches, Manager.ORDER_TOUCHES);

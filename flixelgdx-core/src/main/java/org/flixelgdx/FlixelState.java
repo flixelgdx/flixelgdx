@@ -311,11 +311,8 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
     if (value == null) {
       return;
     }
-    if (Flixel.game == null) {
-      return;
-    }
-    for (FlixelCamera cam : Flixel.game.getCameras()) {
-      cam.bgColor.set(value);
+    for (int i = 0, n = Flixel.cameras.getSize(); i < n; i++) {
+      Flixel.cameras.get(i).bgColor.set(value);
     }
   }
 

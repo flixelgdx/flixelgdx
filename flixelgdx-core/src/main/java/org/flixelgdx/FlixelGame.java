@@ -23,117 +23,67 @@
  */
 package org.flixelgdx;
 
-import org.flixelgdx.asset.FlixelNoopAssetManager;
-import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelCreatable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
-import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
-import org.flixelgdx.graphics.FlixelFrame;
-import org.flixelgdx.graphics.FlixelRenderTarget;
-import org.flixelgdx.graphics.FlixelShader;
-import org.flixelgdx.group.FlixelBasicGroup;
-import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.signal.FlixelSignalData.GamePausedSignalData;
 import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
-import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.util.FlixelSpriteUtil;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * The main game class that drives the update-render loop and owns the core framework components.
+ * The main game class: it runs the active {@link FlixelState} and drives every manager through
+ * the game's lifecycle.
  *
  * <p>Extend this class and hand an instance to the platform launcher. The launcher installs the
  * appropriate backend, wires up the runner, and calls {@link #create()} once the rendering surface
- * is ready. After that, it calls every frame, which dispatches {@link #update(float)} and
- * {@link #draw(FlixelBatch)} in that order.
+ * is ready. After that, it calls {@link #beginFrame()}, {@link #update(float)},
+ * {@link #draw(FlixelBatch)}, and {@link #endFrame()} every frame, in that order.
+ *
+ * <h2>The game is the state plus the managers</h2>
+ *
+ * <p>Think of the game like a theater. The state is the play on stage, and it is the only thing
+ * this class runs itself: it updates the state chain, draws it when the render manager asks, and
+ * switches it out through {@link Flixel#switchState(Supplier)}. Everything else is crew working
+ * behind the scenes, and every crew member is a {@link FlixelManagers.Manager} in
+ * {@link Flixel#managers}: input, the debugger, tweens, timers, sound, the cameras
+ * ({@link Flixel#cameraManager}), the global overlay ({@link Flixel#overlay}), and the renderer
+ * ({@link Flixel#render}). This class calls the matching manager hook at every step of the
+ * lifecycle, next to the matching {@link Flixel.Signals signal}.
+ *
+ * <p>So anything that has to follow the whole game (a library that needs to update every frame, a
+ * persistent HUD, cleanup when the game closes) belongs in a manager, not in a subclass of this
+ * class. Put gameplay logic, UI, and entity management in your states.
  *
  * <h2>Lifecycle</h2>
  *
  * <ol>
- *   <li>{@link #create()} - called once when the rendering surface is ready. Initializes input,
- *       cameras, the batch, the debugger, and the initial state.</li>
- *   <li>{@link #update(float)} - called every frame to update and tick game logic.
- *   <li>{@link #draw(FlixelBatch)} - called every frame to render graphics.
- *   <li>{@link #destroy()} - called when the game closes. Releases all framework resources. Call
- *       {@link Flixel#quit()} to close the window; calling {@code destroy()} alone only releases
+ *   <li>{@link #create()} - called once when the rendering surface is ready. Creates every manager,
+ *       then switches to the initial state.</li>
+ *   <li>{@link #beginFrame()} - called every frame before updating. Runs the managers' beginning
+ *       of frame.</li>
+ *   <li>{@link #update(float)} - called every frame. Runs the managers' update hooks around the
+ *       state update.</li>
+ *   <li>{@link #draw(FlixelBatch)} - called every frame. Runs the managers' draw hooks; the render
+ *       manager draws the state on every camera through {@link #drawState(FlixelBatch)}.</li>
+ *   <li>{@link #endFrame()} - called every frame after drawing. Runs the managers' end of frame.</li>
+ *   <li>{@link #destroy()} - called when the game closes. Destroys the state, then every manager.
+ *       Call {@link Flixel#quit()} to close the window; calling {@code destroy()} alone only releases
  *       resources without terminating the process.</li>
  * </ol>
  *
- * <h2>States vs. the game class</h2>
+ * <h2>Pausing</h2>
  *
- * <p>The game class is the permanent container. The active {@link FlixelState} is the changeable
- * scene. Put all gameplay logic, UI, and entity management in your states, and use
- * {@link Flixel#switchState(Supplier)} to move between them. Override methods here only for
- * behavior that applies for the entire lifetime of the process: a persistent HUD, a global
- * post-processing shader, custom focus handling, and so on.
- *
- * <h2>Cameras</h2>
- *
- * <p>The active camera list lives in {@link Flixel#cameras}. On startup, {@link #create()} adds
- * one camera sized to match the initial window dimensions from {@link FlixelConfig}. Every
- * camera in the list is drawn in order each frame. Use {@link #resetCameras()} to restore the
- * single-camera default, or manipulate {@link Flixel#cameras} directly for split-screen or
- * minimap setups. When adding a HUD or UI camera on top of the world, set its
- * {@link FlixelCamera#defaultDrawTarget} to {@code false} so world objects (which do not list
- * any cameras of their own) do not also draw a second time on it.
- *
- * <h2>Global overlay</h2>
- *
- * <p>Any object added via {@link #add(IFlixelBasic)} is placed in a private group that renders on
- * top of all game cameras each frame. The overlay uses its own camera whose scroll is always zero,
- * so members placed at {@code (x, y)} always appear at those design-resolution coordinates
- * regardless of what the active game camera is doing. Enable and disable the overlay with
- * {@link #enableGlobalOverlay(boolean)}. The overlay is completely separate from the
- * remote debugger and does not appear in debug mode unless you explicitly enable it.
- *
- * <h2>Managers</h2>
- *
- * <p>Anything that has to follow the lifecycle of the whole game (for example a library that needs
- * to update every frame or clean up when the game closes) should be a {@link FlixelManagers.Manager}
- * registered in {@link Flixel#managers}, instead of a subclass of this class. The game calls every
- * manager hook at the matching point of each frame, in a fixed order. See {@link FlixelManagers}.
- *
- * <h2>Signals</h2>
- *
- * <p>The framework emits signals each frame through {@link Flixel.Signals}:
- * <ul>
- *   <li>{@link Flixel.Signals#preUpdate} / {@link Flixel.Signals#postUpdate} - fired before and
- *       after the entire update pass.</li>
- *   <li>{@link Flixel.Signals#preDraw} / {@link Flixel.Signals#postDraw} - fired before and
- *       after the entire draw pass.</li>
- *   <li>{@link Flixel.Signals#windowFocused} / {@link Flixel.Signals#windowUnfocused} - fired
- *       when the window gains or loses focus.</li>
- *   <li>{@link Flixel.Signals#preGameClose} / {@link Flixel.Signals#postGameClose} - fired at
- *       the start and end of {@link #destroy()}.</li>
- *   <li>{@link Flixel.Signals#gameSuspended} - fired from {@link #onSuspended()} when the
- *       platform may stop the game without a clean shutdown. Save important data here.</li>
- *   <li>{@link Flixel.Signals#gamePaused} - fired from {@link #setGamePaused(boolean)} when the
- *       game loop is paused or resumed, such as by the debugger.</li>
- * </ul>
- *
- * <h2>Global shaders</h2>
- *
- * <p>Use {@link Flixel#graphics Flixel.graphics.addGlobalShader(shader)} to apply a post-processing
- * shader to the combined output of every game camera in a single full-screen pass. Multiple shaders
- * chain automatically via ping-pong render targets so each pass feeds the next without re-rendering
- * the scene. The global overlay is always drawn after the shader chain and is never affected by it.
- *
- * <h2>Auto-pause</h2>
- *
- * <p>When {@link Flixel#autoPause} is {@code true} (the default), audio is paused, and the update
- * loop suspends whenever the game window loses focus. The render loop continues at a low background
- * frame rate so the window stays responsive, then both audio and updates resume automatically when
- * focus returns. Set {@link Flixel#autoPause} to {@code false} to keep the game running at full
- * speed in the background. Note that on mobile, if {@link Flixel#autoPause} is {@code false}, the
- * audio will keep playing in the background when the app is not focused.
+ * <p>The game decides when the state runs. It stops updating the state while it is paused with
+ * {@link #setGamePaused(boolean)} (the debugger does this) and, when {@link Flixel#autoPause} is
+ * {@code true} (the default), while the window is out of focus. {@link #stepFrame()} lets a paused
+ * game run exactly one more update. Managers whose {@link FlixelManagers.Manager#isPausable()}
+ * returns {@code true} skip their update hooks at the same times, so tweens, timers, sound, and the
+ * cameras stop with the state, while input and the debugger keep running.
  *
  * <h2>Example Usage</h2>
  *
@@ -175,21 +125,12 @@ import java.util.function.Supplier;
  *
  * @see FlixelConfig
  * @see FlixelState
+ * @see FlixelManagers
  * @see Flixel
  */
 public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
 
-  /** Frame-rate cap applied to the render loop while the window is unfocused and {@link Flixel#autoPause} is on. */
-  private static final int BACKGROUND_FPS = 10;
-
-  private static final String TRACE_UPDATE = "flixel.update";
-  private static final String TRACE_UPDATE_MANAGERS = "flixel.update.managers";
   private static final String TRACE_UPDATE_STATE = "flixel.update.state";
-  private static final String TRACE_UPDATE_CAMERAS = "flixel.update.cameras";
-  private static final String TRACE_DRAW = "flixel.draw";
-
-  /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
-  public FlixelColor bgColor = new FlixelColor(FlixelColor.BLACK);
 
   /**
    * Produces the root {@link FlixelState} each time {@link #create()} runs.
@@ -201,36 +142,11 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   @NotNull
   protected Supplier<FlixelState> initialStateFactory;
 
-  /** Shared 1x1 white pixel frame used to draw solid fills (camera bg, FX). */
-  protected FlixelFrame bgPixel;
-
-  /** The camera used to render the global overlay. Not registered in {@link Flixel#cameras}. */
-  @Nullable
-  private FlixelCamera overlayCamera;
-
-  /** The member group for the global overlay. Updated and drawn when the overlay is enabled. */
-  @Nullable
-  private FlixelBasicGroup<IFlixelBasic> overlayGroup;
-
-  /**
-   * Total render calls issued by the framework {@link FlixelBatch} during the most recently
-   * completed draw pass, summed across all camera loops. Derived from the delta of
-   * {@link FlixelBatch#getTotalRenderCalls()} so multiple begin/end cycles within a single frame
-   * do not erase earlier cameras' counts.
-   */
-  private int frameRenderCalls;
-
   /** Scaled elapsed time (seconds) for the current frame, written by {@link #advanceTime(float)}. */
   private float elapsed;
 
   /** Raw clamped delta before {@link Flixel#timeScale} is applied, written by {@link #advanceTime(float)}. */
   private float rawElapsed;
-
-  /** 2D array of saved camera scroll values when the game is paused for debugging. */
-  private float @Nullable [][] debugPauseCameraScroll;
-
-  /** FlixelArray of saved camera zoom values when the game is paused for debugging. */
-  private float @Nullable [] debugPauseCameraZoom;
 
   /** Reusable signal data for preUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData preUpdateData = new UpdateSignalData();
@@ -238,28 +154,11 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
 
-  /** Orthographic projection matrix reused each frame for the per-camera shader composite pass. */
-  private final FlixelMatrix fboOrtho = new FlixelMatrix();
-
-  /**
-   * Camera dimensions the current {@link #fboOrtho} matrix was last built for.
-   * -1 means uninitialized; any change triggers a rebuild and a re-upload to the batch.
-   */
-  private int fboOrthoW = -1;
-
-  private int fboOrthoH = -1;
-
-  /** FPS cap saved just before throttling on focus loss; restored when focus returns. */
-  private int savedTargetFps;
-
-  /** When true, skips gameplay/state/camera follow updates (debug pause). */
+  /** When true, skips the state and the pausable managers' updates (debug pause). */
   private boolean gamePaused = false;
 
   /** When true, the next update runs even though the game is paused. Set by {@link #stepFrame()}. */
   private boolean stepPending;
-
-  /** When true, the global overlay group is updated and drawn on top of all game cameras each frame. */
-  private boolean overlayEnabled;
 
   /**
    * When {@code true}, {@link Flixel#state} was sent {@link FlixelState#onFocusLost()} for a paired
@@ -291,22 +190,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   }
 
   /**
-   * Creates a new game instance with a 4-parameter shorthand: title, window size, and initial state.
-   * All other settings use their defaults (60 fps, VSync on, windowed).
-   *
-   * <p>For anything beyond these four parameters, prefer {@link #FlixelGame(FlixelConfig, Supplier)}
-   * with a {@link FlixelConfig} instead.
-   *
-   * @param title The title of the game's window.
-   * @param width The starting width of the game's window and how wide the camera should be.
-   * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialStateFactory A factory that produces the initial state to load when the game starts.
-   */
-  public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory) {
-    this(new FlixelConfig.Builder(title).size(width, height).build(), initialStateFactory);
-  }
-
-  /**
    * Creates a new game instance configured entirely by the supplied {@link FlixelConfig}, using a
    * factory that produces the initial state.
    *
@@ -324,43 +207,36 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   }
 
   /**
-   * Called when the game is created. Initialize your game's resources here.
+   * Creates a new game instance with a 4-parameter shorthand: title, window size, and initial state.
+   * All other settings use their defaults (60 fps, VSync on, windowed).
    *
-   * <p>This method configures specific settings based on the {@link FlixelConfig} object
-   * set at startup. This includes but is not limited to render resolution, the default
-   * camera, input managers, and more.
+   * <p>For anything beyond these four parameters, prefer {@link #FlixelGame(FlixelConfig, Supplier)}
+   * with a {@link FlixelConfig} instead.
+   *
+   * @param title The title of the game's window.
+   * @param width The starting width of the game's window and how wide the camera should be.
+   * @param height The starting height of the game's window and how tall the camera should be.
+   * @param initialStateFactory A factory that produces the initial state to load when the game starts.
+   */
+  public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory) {
+    this(new FlixelConfig.Builder(title).size(width, height).build(), initialStateFactory);
+  }
+
+  /**
+   * Called when the game is created: creates every manager, then switches to the initial state.
+   *
+   * <p>The managers are created in order (see {@link FlixelManagers.Manager#getOrder()}): the assets
+   * first, then the renderer, the cameras, input, the debugger, and the rest, so the initial state
+   * starts with everything in place.
    *
    * <p>This method is called automatically by the platform runner once the backend surface is
-   * ready, so it is not necessary to call it manually in most cases. However, it can be overridden
-   * to perform custom initialization when the game is created.
+   * ready, so it is not necessary to call it manually in most cases.
    */
   @Override
   public void create() {
     stateLifecyclePauseDispatched = false;
     suspended = false;
-
-    // Apply the configured render scale and resolution now that the graphics backend is running.
-    // The resolution is on by default at the design size, which is also the starting window size.
-    Flixel.graphics.setRenderSmooth(Flixel.config.isRenderSmooth());
-    Flixel.graphics.setRenderScale(Flixel.config.getRenderScale());
-    if (Flixel.config.isRenderResolutionEnabled()) {
-      Flixel.graphics.setRenderResolution(Flixel.config.getRenderWidth(), Flixel.config.getRenderHeight(),
-          Flixel.config.isRenderSmooth());
-    } else {
-      Flixel.graphics.clearRenderResolution();
-    }
-
-    Flixel.cameras.clear();
-    Flixel.cameras.add(new FlixelCamera(Flixel.config.getWidth(), Flixel.config.getHeight()));
-    overlayCamera = new FlixelCamera(Flixel.config.getWidth(), Flixel.config.getHeight());
-    overlayGroup = new FlixelBasicGroup<>(IFlixelBasic[]::new) {
-    };
-
-    // Creates every manager in order: the assets first, then input, the debugger, and the rest.
     Flixel.managers.create();
-
-    bgPixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
-
     Flixel.switchState(initialStateFactory, true, true, true);
   }
 
@@ -371,39 +247,21 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    * @param height The new surface height in pixels.
    */
   public void resize(int width, int height) {
-    for (FlixelCamera camera : Flixel.cameras) {
-      camera.update(width, height, camera.centerCameraOnResize);
-    }
-    if (overlayCamera != null) {
-      overlayCamera.update(width, height, overlayCamera.centerCameraOnResize);
-    }
-
+    // The cameras refit themselves first, as a manager, so the state sees the new sizes.
+    Flixel.managers.resize(width, height);
     FlixelState state = Flixel.state;
     if (state != null) {
       state.resize(width, height);
     }
-
-    Flixel.managers.resize(width, height);
-
-    Flixel.graphics.resizeGlobalShaders();
   }
 
   /**
-   * Updates the logic of the game loop.
+   * Updates one frame: the managers' update hooks, then the state, then the managers' post update.
    *
    * @param elapsed The amount of time that occurred in the last frame.
    */
   @Override
   public void update(float elapsed) {
-    Flixel.profiler.begin(TRACE_UPDATE);
-    try {
-      updateFrame(elapsed);
-    } finally {
-      Flixel.profiler.end();
-    }
-  }
-
-  private void updateFrame(float elapsed) {
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
 
@@ -411,54 +269,21 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     boolean paused = isUpdatePaused();
     stepPending = false;
 
-    // Managers update before the state: input reads the hardware first, then the debugger takes the
-    // input it owns, then the global tweens, timers, and sound advance. See FlixelManagers.Manager.
-    Flixel.profiler.begin(TRACE_UPDATE_MANAGERS);
-    try {
-      Flixel.managers.preUpdate(elapsed, paused);
-      Flixel.managers.update(elapsed, paused);
-    } finally {
-      Flixel.profiler.end();
-    }
+    // Input reads the hardware first, then the debugger takes the input it owns, then the global
+    // tweens, timers, and sound advance. See FlixelManagers.Manager for the full order.
+    Flixel.managers.preUpdate(elapsed, paused);
+    Flixel.managers.update(elapsed, paused);
 
     if (!paused) {
-      // Walk the state/substate chain. Each state in the chain is updated only
-      // if it is the active (innermost) state or if its persistentUpdate flag is true.
       Flixel.profiler.begin(TRACE_UPDATE_STATE);
       try {
-        FlixelState current = Flixel.state;
-        while (current != null) {
-          FlixelState sub = current.getSubState();
-          boolean hasSubState = (sub != null);
-
-          if (!hasSubState || current.persistentUpdate) {
-            current.update(elapsed);
-          }
-
-          current = sub;
-        }
+        updateState(elapsed);
       } finally {
         Flixel.profiler.end();
-      }
-
-      // Update all cameras.
-      Flixel.profiler.begin(TRACE_UPDATE_CAMERAS);
-      try {
-        for (FlixelCamera camera : Flixel.cameras) {
-          camera.update(elapsed);
-        }
-      } finally {
-        Flixel.profiler.end();
-      }
-
-      if (overlayGroup != null && overlayEnabled) {
-        overlayGroup.update(elapsed);
-        if (overlayCamera != null) {
-          overlayCamera.update(elapsed);
-        }
       }
     }
 
+    // The cameras and the global overlay update here, right after the state.
     Flixel.managers.postUpdate(elapsed, paused);
 
     postUpdateData.set(elapsed);
@@ -466,157 +291,41 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   }
 
   /**
-   * Updates the graphics and display of the game.
+   * Draws one frame by running the managers' draw hooks.
+   *
+   * <p>{@link Flixel#render} does the actual drawing in the main draw pass: it runs one pass per
+   * camera and draws the state on it through {@link #drawState(FlixelBatch)}.
    *
    * @param batch The batch to use for drawing the game.
    */
   @Override
   public void draw(@NotNull FlixelBatch batch) {
-    Flixel.profiler.begin(TRACE_DRAW);
-    try {
-      drawFrame(batch);
-    } finally {
-      Flixel.profiler.end();
-    }
-  }
-
-  private void drawFrame(@NotNull FlixelBatch batch) {
     Flixel.Signals.preDraw.dispatch();
     Flixel.managers.preDraw(batch);
-
-    Flixel.graphics.clear(bgColor.r, bgColor.g, bgColor.b, bgColor.a); // Clear the screen to refresh it.
-    FlixelState state = Flixel.state;
-
-    int totalRenderCallsBefore = batch.getTotalRenderCalls();
-
-    boolean useGlobalFbo = Flixel.graphics.hasGlobalShaders();
-    // The two nest: the scaled scene surface is the outer target, and the global shader capture runs
-    // inside it at the same size. The chain's final pass then lands on the scene surface, which
-    // endScene() stretches onto the window afterwards. The backend decides whether a scene surface
-    // is needed at all, and both calls do nothing when the scene draws straight to the window.
-    Flixel.graphics.beginScene();
-    if (useGlobalFbo) {
-      Flixel.graphics.beginGlobalShaderCapture();
-    }
-
-    // Loop through all cameras and draw the state/substate chain onto each camera.
-    FlixelCamera[] cameraItems = Flixel.cameras.getItems();
-    for (int ci = 0, cn = Flixel.cameras.getSize(); ci < cn; ci++) {
-      FlixelCamera camera = cameraItems[ci];
-      Flixel.graphics.beginCameraPass();
-      Flixel.setDrawCamera(camera);
-      try {
-        if (gamePaused) {
-          camera.applyCameraTransform();
-        }
-        camera.applyViewport();
-
-        FlixelShader cameraShader = camera.getShader();
-        if (cameraShader != null) {
-          camera.getFbo().begin();
-          Flixel.graphics.clear(0f, 0f, 0f, 0f);
-        }
-
-        batch.setProjection(camera.getCombinedMatrix());
-        batch.begin();
-
-        camera.fill(camera.bgColor, camera.useBgAlphaBlending, 1f, batch, bgPixel);
-
-        // Walk the state/substate chain. Each state is drawn only if it is the
-        // active (innermost) state or if its persistentDraw flag is true.
-        FlixelState current = state;
-        while (current != null) {
-          FlixelState sub = current.getSubState();
-          boolean hasSubState = (sub != null);
-
-          if (!hasSubState || current.persistentDraw) {
-            current.draw(batch);
-          }
-
-          current = sub;
-        }
-
-        Flixel.managers.drawCamera(camera, batch);
-
-        camera.drawFX(batch, bgPixel);
-
-        batch.end();
-
-        // Safety reset: per-sprite shader draws restore themselves inline, but reset here as a
-        // backstop so the next camera pass always starts with the default batch shader.
-        batch.setShader(null);
-
-        if (cameraShader != null) {
-          // Ending the camera's render target returns drawing to the global target (when active)
-          // or the screen, since render targets nest.
-          camera.getFbo().end();
-          camera.applyViewport();
-          if (camera.width != fboOrthoW || camera.height != fboOrthoH) {
-            fboOrthoW = camera.width;
-            fboOrthoH = camera.height;
-            // Y-down composite ortho so the blit matches the batch's Y-down vertex layout and the
-            // camera FBO draws upright. Match the active backend's depth range too; the [-1, 1]
-            // default depth clips the composite quad to black on Vulkan, Metal, and Direct3D.
-            fboOrtho.setToOrtho2DYDown(0, 0, fboOrthoW, fboOrthoH, Flixel.graphics.isDepthZeroToOne());
-          }
-          batch.setProjection(fboOrtho);
-          batch.setShader(cameraShader);
-          batch.begin();
-          cameraShader.applyUniforms();
-          FlixelRenderTarget fbo = camera.getFbo();
-          if (fbo.isFlipped()) {
-            batch.draw(fbo.getTexture(), 0, 0, camera.width, camera.height, 0f, 1f, 1f, 0f);
-          } else {
-            batch.draw(fbo.getTexture(), 0, 0, camera.width, camera.height);
-          }
-          batch.end();
-          batch.setShader(null);
-        }
-      } finally {
-        Flixel.setDrawCamera(null);
-      }
-    }
-
-    if (useGlobalFbo) {
-      Flixel.graphics.endGlobalShaderCapture();
-      Flixel.graphics.applyGlobalShaderChain(batch);
-    }
-
-    // The overlay pass always runs, even when the global overlay is off, so managers can draw on top too.
-    if (overlayCamera != null) {
-      Flixel.graphics.beginCameraPass();
-      Flixel.setDrawCamera(overlayCamera);
-      try {
-        if (gamePaused) {
-          overlayCamera.applyCameraTransform();
-        }
-        overlayCamera.applyViewport();
-        batch.setProjection(overlayCamera.getCombinedMatrix());
-        batch.begin();
-        if (overlayGroup != null && overlayEnabled) {
-          overlayGroup.draw(batch);
-        }
-        Flixel.managers.drawOverlay(batch);
-        batch.end();
-        batch.setShader(null);
-      } finally {
-        Flixel.setDrawCamera(null);
-      }
-    }
-
-    // Stretch the scene surface (cameras plus overlay) to fill the window in one pass.
-    Flixel.graphics.endScene();
-
-    frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
-
+    Flixel.managers.draw(batch);
     // The debugger draws its hitboxes here, straight onto the window.
     Flixel.managers.postDraw(batch);
-
-    if (!Flixel.window.isTransparencyActive() && Flixel.config.isTransparentFramebuffer()) {
-      Flixel.graphics.forceOpaqueAlpha();
-    }
-
     Flixel.Signals.postDraw.dispatch();
+  }
+
+  /**
+   * Draws the state chain onto the camera being drawn: the active state, then each open substate.
+   *
+   * <p>{@link Flixel#render} calls this once per camera pass, with the batch already begun on that
+   * camera. A state with an open substate only draws if its {@link FlixelState#persistentDraw} flag is
+   * {@code true} (the default).
+   *
+   * @param batch The framework batch, already begun with the camera's projection.
+   */
+  public void drawState(@NotNull FlixelBatch batch) {
+    FlixelState current = Flixel.state;
+    while (current != null) {
+      FlixelState sub = current.getSubState();
+      if (sub == null || current.persistentDraw) {
+        current.draw(batch);
+      }
+      current = sub;
+    }
   }
 
   /**
@@ -661,16 +370,15 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   }
 
   /**
-   * Finalizes the input state for the current frame.
+   * Finishes the frame by running every manager's end of frame.
    *
-   * <p>Platform runners call this once per frame after {@link #draw(FlixelBatch)} completes.
-   * Finalizing after user code runs keeps {@code justPressed()} and {@code justReleased()}
-   * valid for the entire frame, including any overrides of {@link #update(float)}.
+   * <p>Platform runners call this once per frame after {@link #draw(FlixelBatch)} completes. The
+   * input managers finalize their state here, after user code runs, which keeps {@code justPressed()}
+   * and {@code justReleased()} valid for the entire frame.
    *
    * @see #advanceTime(float)
    */
   public void endFrame() {
-    // The input managers and action sets finalize their state here, in that order.
     Flixel.managers.endFrame();
   }
 
@@ -678,20 +386,16 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    * Pauses the game's update loop. This is mostly used by the debugger, although
    * you might find it useful for other purposes.
    *
-   * <p>Each real change dispatches {@link Flixel.Signals#gamePaused} after the game is paused or
-   * resumed, so external systems can follow along. Setting the value the game already has does
-   * nothing and does not dispatch the signal.
+   * <p>Each real change tells every manager through {@link FlixelManagers.Manager#onPaused(boolean)}
+   * (the sound pauses, and the cameras remember where they were), then dispatches
+   * {@link Flixel.Signals#gamePaused}, so external systems can follow along. Setting the value the game
+   * already has does nothing.
    *
    * @param gamePaused Whether the game should be paused or not.
    */
   public void setGamePaused(boolean gamePaused) {
     if (this.gamePaused == gamePaused) {
       return;
-    }
-    if (gamePaused) {
-      snapshotCamerasForDebugPause();
-    } else {
-      restoreCamerasAfterDebugPause();
     }
     this.gamePaused = gamePaused;
     Flixel.managers.onPaused(gamePaused);
@@ -712,72 +416,16 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   }
 
   /**
-   * Returns whether {@link #stepFrame()} scheduled a step that has not run yet.
-   *
-   * @return {@code true} when the next update runs even though the game is paused.
-   */
-  public boolean isStepPending() {
-    return stepPending;
-  }
-
-  /**
-   * Returns whether the update hooks that stop for a pause should be skipped this frame: the game is
-   * paused (and no {@link #stepFrame()} is waiting), or it lost focus while {@link Flixel#autoPause} is on.
-   */
-  private boolean isUpdatePaused() {
-    return (gamePaused && !stepPending) || !shouldUpdate;
-  }
-
-  private void snapshotCamerasForDebugPause() {
-    if (Flixel.cameras.getSize() == 0 || isDebugFreeCamActive()) {
-      // The free camera owns the camera and puts it back itself when it is turned off.
-      debugPauseCameraScroll = null;
-      debugPauseCameraZoom = null;
-      return;
-    }
-    int n = Flixel.cameras.getSize();
-    debugPauseCameraScroll = new float[n][2];
-    debugPauseCameraZoom = new float[n];
-    for (int i = 0; i < n; i++) {
-      FlixelCamera c = Flixel.cameras.get(i);
-      debugPauseCameraScroll[i][0] = c.scrollX;
-      debugPauseCameraScroll[i][1] = c.scrollY;
-      debugPauseCameraZoom[i] = c.getZoom();
-    }
-  }
-
-  private static boolean isDebugFreeCamActive() {
-    return Flixel.debug != null && Flixel.debug.controls.isFreeCamActive();
-  }
-
-  private void restoreCamerasAfterDebugPause() {
-    if (debugPauseCameraScroll == null || debugPauseCameraZoom == null || isDebugFreeCamActive()) {
-      debugPauseCameraScroll = null;
-      debugPauseCameraZoom = null;
-      return;
-    }
-    int n = Math.min(debugPauseCameraScroll.length, Math.min(debugPauseCameraZoom.length, Flixel.cameras.getSize()));
-    for (int i = 0; i < n; i++) {
-      FlixelCamera c = Flixel.cameras.get(i);
-      float sx = debugPauseCameraScroll[i][0];
-      float sy = debugPauseCameraScroll[i][1];
-      c.restoreScrollAndZoom(sx, sy, debugPauseCameraZoom[i]);
-    }
-    debugPauseCameraScroll = null;
-    debugPauseCameraZoom = null;
-  }
-
-  /**
    * Called when the game window loses focus, or the application goes to the background.
    *
    * <p>On mobile and web, this fires when the OS sends the application to the background.
    * On desktop, it fires when the game window loses focus or is minimized (focus loss always
    * arrives before minimize, so this is called once for both events).
    *
-   * <p>The default implementation pauses audio and throttles the frame rate to
-   * {@value #BACKGROUND_FPS} fps when {@link Flixel#autoPause} is {@code true}, then notifies the
-   * active state. Duplicate calls without an intervening {@link #onFocusGained()} are silently
-   * ignored.
+   * <p>The default implementation notifies the active state and, when {@link Flixel#autoPause} is
+   * {@code true}, stops updating the state. Then every manager is told (the sound pauses and the
+   * frame rate drops while auto-pause is on). Duplicate calls without an intervening
+   * {@link #onFocusGained()} are silently ignored.
    *
    * @see #onFocusGained()
    * @see #onMinimized()
@@ -793,8 +441,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
       state.onFocusLost();
     }
     if (Flixel.autoPause) {
-      savedTargetFps = Flixel.graphics.getTargetFps();
-      Flixel.graphics.setTargetFps(BACKGROUND_FPS);
       shouldUpdate = false;
     }
     Flixel.managers.onFocusLost();
@@ -808,9 +454,9 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    * On desktop, it fires when the game window gains focus, including when the window is
    * restored from being minimized.
    *
-   * <p>The default implementation restores the full frame rate and resumes audio when
-   * {@link Flixel#autoPause} is {@code true}, then notifies the active state. Calls that arrive
-   * without a prior {@link #onFocusLost()} are silently ignored.
+   * <p>The default implementation notifies the active state, starts updating it again, and tells every
+   * manager (the sound resumes and the frame rate comes back). Calls that arrive without a prior
+   * {@link #onFocusLost()} are silently ignored.
    *
    * @see #onFocusLost()
    * @see Flixel.Signals#windowFocused
@@ -827,7 +473,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     }
     if (Flixel.autoPause) {
       shouldUpdate = true;
-      Flixel.graphics.setTargetFps(savedTargetFps);
     }
     Flixel.managers.onFocusGained();
     Flixel.Signals.windowFocused.dispatch();
@@ -838,9 +483,9 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    * saved now.
    *
    * <p>Backends call this when the Android activity pauses, when the browser tab is hidden or the
-   * page unloads, and from {@link #destroy()} on every platform. The default implementation
-   * dispatches {@link Flixel.Signals#gameSuspended}. Repeat calls are ignored until the game comes
-   * back to the foreground through {@link #onFocusGained()}.
+   * page unloads, and from {@link #destroy()} on every platform. The default implementation tells
+   * every manager, then dispatches {@link Flixel.Signals#gameSuspended}. Repeat calls are ignored until
+   * the game comes back to the foreground through {@link #onFocusGained()}.
    *
    * @see Flixel.Signals#gameSuspended
    */
@@ -860,7 +505,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    * On most operating systems, focus loss fires first so {@link #onFocusLost()} already
    * handles audio and rendering pausing before this is called.
    *
-   * <p>The default implementation notifies the active state and dispatches
+   * <p>The default implementation notifies the active state and every manager, then dispatches
    * {@link Flixel.Signals#windowMinimized}.
    *
    * @see #onFocusLost()
@@ -877,188 +522,68 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   }
 
   /**
-   * Destroys the game and all of its resources.
+   * Destroys the game: the state first, then every manager in reverse order.
    *
    * <p>Note that this doesn't close the game entirely; it just disposes
    * of the game's resources. To close the entire game, use {@link Flixel#quit()}.
    */
   @Override
   public void destroy() {
-    Flixel.setDrawCamera(null);
-
     onSuspended();
     Flixel.Signals.preGameClose.dispatch();
 
     if (Flixel.state != null) {
       Flixel.state.destroy();
     }
-    // Destroys every manager in reverse order: the sound, tweens, timers, debugger, and input first,
-    // then the fonts, and the assets last.
+    // Destroys every manager in reverse order: the sound, tweens, timers, debugger, and input
+    // first, then the overlay, cameras, renderer, fonts, and the assets last.
     Flixel.managers.destroy();
-    Flixel.graphics.disposeGlobalShaders();
-    Flixel.window.resetTransparency();
-    fboOrthoW = -1;
-    fboOrthoH = -1;
-    // bgPixel is a shared, persistent asset owned by the asset manager; do not destroy it here.
-    bgPixel = null;
 
-    Flixel.assets = FlixelNoopAssetManager.INSTANCE;
-
-    for (FlixelCamera camera : Flixel.cameras) {
-      camera.destroy();
-    }
-    Flixel.cameras.clear();
-    if (overlayGroup != null) {
-      overlayGroup.destroy();
-      overlayGroup = null;
-    }
-    if (overlayCamera != null) {
-      overlayCamera.destroy();
-      overlayCamera = null;
-    }
-    overlayEnabled = false;
-    debugPauseCameraScroll = null;
-    debugPauseCameraZoom = null;
     gamePaused = false;
     stepPending = false;
     stateLifecyclePauseDispatched = false;
     suspended = false;
 
+    // The framework stops file logging and retires the asset manager in its own listeners here.
     Flixel.Signals.postGameClose.dispatch();
-
-    // Stop file logging after the whole game closes so that way any logs made can be stored.
-    Flixel.log.stopFileLogging();
   }
 
   /**
-   * Resets the camera list to contain a single default camera with the current window size as its viewport.
+   * Returns whether the update hooks that stop for a pause should be skipped this frame: the game is
+   * paused (and no {@link #stepFrame()} is waiting), or it lost focus while {@link Flixel#autoPause} is on.
    */
-  public void resetCameras() {
-    FlixelCamera camera = new FlixelCamera(Flixel.config.getWidth(), Flixel.config.getHeight());
-    camera.update(Flixel.graphics.getBackBufferWidth(), Flixel.graphics.getBackBufferHeight(),
-        camera.centerCameraOnResize);
-    Flixel.cameras.clear();
-    Flixel.cameras.add(camera);
-    // The debug-pause snapshot refers to cameras that no longer exist after this reset,
-    // so discard it. restoreCamerasAfterDebugPause() already handles null gracefully.
-    debugPauseCameraScroll = null;
-    debugPauseCameraZoom = null;
-    if (Flixel.window.isTransparencyActive()) {
-      Flixel.window.applyTransparencyBackdropOnly();
-    }
+  private boolean isUpdatePaused() {
+    return (gamePaused && !stepPending) || !shouldUpdate;
   }
 
-  /**
-   * Adds a member to the global overlay group so it is updated and drawn on top of all game cameras while the overlay
-   * is enabled.
-   *
-   * <p>The overlay must be enabled via {@link #enableGlobalOverlay(boolean)} or {@link #toggleGlobalOverlay()} for
-   * added members to actually appear. This is safe to call even when the overlay is disabled.
-   *
-   * <p>Example usage:
-   * <pre>{@code
-   * fpsCounter = new FlixelText();
-   * add(fpsCounter);
-   * enableGlobalOverlay(true);
-   * }</pre>
-   *
-   * @param basic The object to add to the overlay group.
-   */
-  public void add(@NotNull IFlixelBasic basic) {
-    if (overlayGroup != null) {
-      overlayGroup.add(basic);
-      if (basic instanceof FlixelAntialiasable b && Flixel.applyAntialiasingOnStateAdd) {
-        b.setAntialiasing(Flixel.isAntialiasing());
+  private void updateState(float elapsed) {
+    // Each state in the chain is updated only if it is the active (innermost) state or if its
+    // persistentUpdate flag is true.
+    FlixelState current = Flixel.state;
+    while (current != null) {
+      FlixelState sub = current.getSubState();
+      if (sub == null || current.persistentUpdate) {
+        current.update(elapsed);
       }
+      current = sub;
     }
   }
 
   /**
-   * Removes a member from the global overlay group.
+   * Returns whether {@link #stepFrame()} scheduled a step that has not run yet.
    *
-   * @param basic The object to remove from the overlay group.
+   * @return {@code true} when the next update runs even though the game is paused.
    */
-  public void remove(@NotNull IFlixelBasic basic) {
-    if (overlayGroup != null) {
-      overlayGroup.remove(basic);
-    }
-  }
-
-  /**
-   * Enables or disables the global overlay. When disabled, the overlay group is neither updated nor drawn, making it
-   * zero-cost on the frame budget.
-   *
-   * @param enabled Whether the overlay should be active.
-   */
-  public void enableGlobalOverlay(boolean enabled) {
-    overlayEnabled = enabled;
-  }
-
-  /**
-   * Toggles the global overlay on if it is currently off, and off if it is currently on.
-   *
-   * @return The new enabled state after toggling.
-   */
-  public boolean toggleGlobalOverlay() {
-    overlayEnabled = !overlayEnabled;
-    return overlayEnabled;
-  }
-
-  public FlixelArray<FlixelCamera> getCameras() {
-    return Flixel.cameras;
-  }
-
-  /**
-   * Returns the total number of {@link FlixelBatch} render calls issued during the most recently
-   * completed frame, summed across all camera passes. This value is not reset by intermediate
-   * begin/end cycles, so it correctly reflects the full per-frame cost when multiple cameras
-   * are active.
-   *
-   * @return Per-frame render call count from the last completed draw pass.
-   */
-  public int getFrameRenderCalls() {
-    return frameRenderCalls;
-  }
-
-  public FlixelColor getBgColor() {
-    return bgColor;
+  public boolean isStepPending() {
+    return stepPending;
   }
 
   public boolean isGamePaused() {
     return gamePaused;
   }
 
-  public boolean isGlobalOverlayEnabled() {
-    return overlayEnabled;
-  }
-
   public boolean isShouldUpdate() {
     return shouldUpdate;
-  }
-
-  /**
-   * Returns the private {@link FlixelCamera} used to render the global overlay.
-   *
-   * <p>This camera is never registered in {@link Flixel#cameras}, so it is not affected by state
-   * code or camera resets. Its scroll is always zero, which means overlay members placed at
-   * position {@code (x, y)} always appear at those same design-resolution coordinates regardless
-   * of what the active game camera is doing.
-   *
-   * @return The overlay camera, or {@code null} if {@link #create()} has not yet run.
-   */
-  @Nullable
-  public FlixelCamera getOverlayCamera() {
-    return overlayCamera;
-  }
-
-  /**
-   * Returns the {@link FlixelBasicGroup} that holds all members added via {@link #add(IFlixelBasic)}.
-   *
-   * @return The overlay group, or {@code null} if {@link #create()} has not yet run.
-   */
-  @Nullable
-  public FlixelBasicGroup<IFlixelBasic> getOverlayGroup() {
-    return overlayGroup;
   }
 
   /**
