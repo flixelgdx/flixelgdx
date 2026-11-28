@@ -143,7 +143,7 @@ behaves the same in every blend mode. See [Graphics and Shaders](graphics-and-sh
 ## The game loop: one state and many managers
 
 Seams decide *what* a platform provides. Managers decide *when* each part of the framework runs. Every frame, the
-runner calls the same few methods on your game (`update(...)`, `draw(...)`, `endFrame()`), and the game turns each
+runner calls the same few methods on your game (`beginFrame()`, `update(...)`, `draw(...)`, `endFrame()`), and the game turns each
 call into a fixed series of steps.
 
 Think of a theater. The **state** is the play on stage, and it is the only thing `FlixelGame` runs itself: it updates
@@ -153,6 +153,9 @@ implements `FlixelManagers.Manager` and sits in the registry `Flixel.managers`. 
 calls the matching hook on every manager, next to the matching [signal](signals.md):
 
 ```
+FlixelGame.beginFrame()
+  managers.beginFrame()       every manager, even while paused, before anything updates
+
 FlixelGame.update(elapsed)
   managers.preUpdate(...)     every manager, lowest order first
   managers.update(...)        input, debugger, tweens, timers, sound, your managers
@@ -182,9 +185,9 @@ reverse, so a manager is always destroyed before the managers it depends on.
 |------------------|-------|-------------------------------------------|----------------------------------------------------------|
 | `ORDER_ASSETS`   | -2000 | `Flixel.assets`                           | Created first and destroyed last, since everything loads through it. |
 | `ORDER_FONTS`    | -1900 | `FlixelFontRegistry.MANAGER`              | Disposes baked fonts before the assets go away.          |
-| `ORDER_RENDER`   | -1800 | `Flixel.render`                           | Render settings, the background color, and drawing every frame. |
-| `ORDER_CAMERAS`  | -1700 | `Flixel.cameraManager`                    | Creates, moves, refits, and resets the cameras.          |
-| `ORDER_OVERLAY`  | -1600 | `Flixel.overlay`                          | The global overlay drawn on top of every camera.         |
+| `ORDER_RENDER`   | -1800 | `Flixel.render` (`FlixelRenderManager`)   | Render settings, the background color, and drawing every frame. |
+| `ORDER_CAMERAS`  | -1700 | `Flixel.cameraManager` (`FlixelCamera.Manager`) | Creates, moves, refits, and resets the cameras.    |
+| `ORDER_OVERLAY`  | -1600 | `Flixel.overlay` (`FlixelOverlayManager`) | The global overlay drawn on top of every camera.         |
 | `ORDER_KEYS` to `ORDER_GAMEPADS` | -1000 to -700 | `Flixel.keys`, `mouse`, `touches`, `gamepads` | Read the hardware first, finish the frame last. |
 | `ORDER_ACTIONS`  | -600  | `FlixelActionSets.MANAGER`                | Input actions, right after the devices.                  |
 | `ORDER_DEBUG`    | -500  | `Flixel.debug`                            | Takes the input it owns, then samples the frame.         |

@@ -124,6 +124,7 @@ The order is read once, when the manager is added. The full table of built-in or
 
 | You want to...                                           | Use                                    |
 |----------------------------------------------------------|----------------------------------------|
+| Reset per-frame data before anything else looks at it    | `beginFrame()` (runs even while paused) |
 | Run logic every frame before the state                   | `update(...)`                          |
 | React to where things ended up after the state           | `postUpdate(...)`                      |
 | Draw in the world, inside each camera                    | `drawCamera(camera, batch)` (batch already begun) |
