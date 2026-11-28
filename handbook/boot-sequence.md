@@ -110,15 +110,16 @@ The runner is the platform's main loop. On desktop, `FlixelDesktopRunner`:
 
 ## Step 5: FlixelGame.create prepares the game
 
-`FlixelGame.create()` runs once the window and GPU exist. It:
+`FlixelGame.create()` runs once the window and GPU exist. It creates every manager in `Flixel.managers`, from the
+lowest order to the highest, then switches to your first state. Creating the managers:
 
-1. Turns on compressed texture lookup (used on Android).
-2. Applies the configured render smoothing, render scale, and render resolution.
-3. Creates the default camera at the design size, plus the camera and group used by the global overlay.
-4. Prepares the one-pixel white texture used for backgrounds and effects.
-5. Registers the keyboard, mouse, and touch managers as listeners on `Flixel.input`, so raw events now reach them.
-6. Starts the debugger, in debug mode.
-7. Switches to your first state.
+1. Turns on compressed texture lookup (used on Android), in `Flixel.assets`.
+2. Applies the configured render smoothing, render scale, and render resolution, and prepares the one-pixel white
+   texture used for backgrounds and effects, in `Flixel.render`.
+3. Creates the default camera at the design size, plus the overlay camera, in `Flixel.cameraManager`.
+4. Registers the keyboard, mouse, and touch managers as listeners on `Flixel.input`, so raw events now reach them.
+5. Starts the debugger, in debug mode.
+6. Creates your own managers, if you registered any.
 
 You can override `create()` in your game class to do global setup, but call `super.create()` first; the services and
 cameras do not exist until it has run.

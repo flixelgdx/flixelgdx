@@ -70,7 +70,8 @@ try {
 }
 ```
 
-  The framework already marks its own phases (`flixel.update`, `flixel.update.state`, `flixel.draw`, and others).
+  The framework already marks the state update (`flixel.update.state`) and every manager by name (`flixel.render`,
+  `flixel.keys`, `flixel.sound`, and others).
 - **General Java tools** on desktop, such as Java Flight Recorder or VisualVM, show where time is spent and where
   objects are created. Browser developer tools have a performance tab for the web build.
 
