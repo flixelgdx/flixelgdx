@@ -36,13 +36,9 @@ import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.group.FlixelBasicGroup;
-import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.signal.FlixelSignalData.GamePausedSignalData;
 import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
-import org.flixelgdx.text.FlixelFontRegistry;
-import org.flixelgdx.timer.FlixelTimer;
-import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelSpriteUtil;
 import org.jetbrains.annotations.NotNull;
@@ -187,7 +183,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
   private static final int BACKGROUND_FPS = 10;
 
   private static final String TRACE_UPDATE = "flixel.update";
-  private static final String TRACE_UPDATE_TWEENS = "flixel.update.tweens";
+  private static final String TRACE_UPDATE_MANAGERS = "flixel.update.managers";
   private static final String TRACE_UPDATE_STATE = "flixel.update.state";
   private static final String TRACE_UPDATE_CAMERAS = "flixel.update.cameras";
   private static final String TRACE_DRAW = "flixel.draw";
@@ -340,10 +336,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    */
   @Override
   public void create() {
-    // Deferred to here (rather than earlier) since compressed-texture support depends on the
-    // graphics backend, which is only guaranteed to be running once create() is reached.
-    Flixel.assets.setCompressedTexturesEnabled(true);
-
     stateLifecyclePauseDispatched = false;
     suspended = false;
 
@@ -364,17 +356,10 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     overlayGroup = new FlixelBasicGroup<>(IFlixelBasic[]::new) {
     };
 
-    bgPixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
-
-    Flixel.input.addKeyboardListener(Flixel.keys);
-    Flixel.input.addMouseListener(Flixel.mouse);
-    Flixel.input.addTouchListener(Flixel.touches);
-
+    // Creates every manager in order: the assets first, then input, the debugger, and the rest.
     Flixel.managers.create();
 
-    if (Flixel.isDebugMode()) {
-      Flixel.debug.start();
-    }
+    bgPixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
 
     Flixel.switchState(initialStateFactory, true, true, true);
   }
@@ -422,40 +407,21 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
 
-    // Checked again below, since the debugger can step a paused game while it reads its input.
+    // A pending step lets the pausable managers and the state run this one frame.
     boolean paused = isUpdatePaused();
-    Flixel.managers.preUpdate(elapsed, paused);
-
-    if (Flixel.isDebugMode()) {
-      // Input a remote tool injected is applied first, so the managers below see it like real input.
-      Flixel.debug.applyInput();
-    }
-
-    // Always update input first!
-    Flixel.keys.update();
-    Flixel.mouse.update();
-    Flixel.touches.update();
-    Flixel.gamepads.update();
-    FlixelActionSets.update(elapsed);
-
-    if (Flixel.isDebugMode()) {
-      // Before the game logic runs, so a click or key the debugger takes is already hidden from the game.
-      Flixel.debug.updateInput(rawElapsed);
-    }
-
-    paused = isUpdatePaused();
     stepPending = false;
-    Flixel.managers.update(elapsed, paused);
+
+    // Managers update before the state: input reads the hardware first, then the debugger takes the
+    // input it owns, then the global tweens, timers, and sound advance. See FlixelManagers.Manager.
+    Flixel.profiler.begin(TRACE_UPDATE_MANAGERS);
+    try {
+      Flixel.managers.preUpdate(elapsed, paused);
+      Flixel.managers.update(elapsed, paused);
+    } finally {
+      Flixel.profiler.end();
+    }
 
     if (!paused) {
-      Flixel.profiler.begin(TRACE_UPDATE_TWEENS);
-      try {
-        FlixelTween.updateTweens(elapsed);
-        FlixelTimer.getGlobalManager().update(elapsed);
-      } finally {
-        Flixel.profiler.end();
-      }
-
       // Walk the state/substate chain. Each state in the chain is updated only
       // if it is the active (innermost) state or if its persistentUpdate flag is true.
       Flixel.profiler.begin(TRACE_UPDATE_STATE);
@@ -475,8 +441,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
         Flixel.profiler.end();
       }
 
-      Flixel.sound.update(elapsed);
-
       // Update all cameras.
       Flixel.profiler.begin(TRACE_UPDATE_CAMERAS);
       try {
@@ -493,10 +457,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
           overlayCamera.update(elapsed);
         }
       }
-    }
-
-    if (Flixel.isDebugMode()) {
-      Flixel.debug.update(rawElapsed);
     }
 
     Flixel.managers.postUpdate(elapsed, paused);
@@ -649,10 +609,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
 
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 
-    if (Flixel.isDebugMode()) {
-      Flixel.debug.controls.drawBoundingBoxes(Flixel.cameras.getItems());
-    }
-
+    // The debugger draws its hitboxes here, straight onto the window.
     Flixel.managers.postDraw(batch);
 
     if (!Flixel.window.isTransparencyActive() && Flixel.config.isTransparentFramebuffer()) {
@@ -713,11 +670,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    * @see #advanceTime(float)
    */
   public void endFrame() {
-    Flixel.keys.endFrame();
-    Flixel.mouse.endFrame();
-    Flixel.touches.endFrame();
-    Flixel.gamepads.endFrame();
-    FlixelActionSets.endFrameAll();
+    // The input managers and action sets finalize their state here, in that order.
     Flixel.managers.endFrame();
   }
 
@@ -737,10 +690,8 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     }
     if (gamePaused) {
       snapshotCamerasForDebugPause();
-      Flixel.sound.pause();
     } else {
       restoreCamerasAfterDebugPause();
-      Flixel.sound.resume();
     }
     this.gamePaused = gamePaused;
     Flixel.managers.onPaused(gamePaused);
@@ -842,7 +793,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
       state.onFocusLost();
     }
     if (Flixel.autoPause) {
-      Flixel.sound.pause();
       savedTargetFps = Flixel.graphics.getTargetFps();
       Flixel.graphics.setTargetFps(BACKGROUND_FPS);
       shouldUpdate = false;
@@ -878,9 +828,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     if (Flixel.autoPause) {
       shouldUpdate = true;
       Flixel.graphics.setTargetFps(savedTargetFps);
-      if (!gamePaused) {
-        Flixel.sound.resume();
-      }
     }
     Flixel.managers.onFocusGained();
     Flixel.Signals.windowFocused.dispatch();
@@ -942,18 +889,11 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     onSuspended();
     Flixel.Signals.preGameClose.dispatch();
 
-    Flixel.debug.dispose();
-
-    Flixel.gamepads.reset();
-
-    FlixelTween.cancelActiveTweens();
-    FlixelTween.clearTweenPools();
-    FlixelTween.resetRegistry();
-    FlixelTimer.cancelAll();
-
     if (Flixel.state != null) {
       Flixel.state.destroy();
     }
+    // Destroys every manager in reverse order: the sound, tweens, timers, debugger, and input first,
+    // then the fonts, and the assets last.
     Flixel.managers.destroy();
     Flixel.graphics.disposeGlobalShaders();
     Flixel.window.resetTransparency();
@@ -962,13 +902,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     // bgPixel is a shared, persistent asset owned by the asset manager; do not destroy it here.
     bgPixel = null;
 
-    Flixel.assets.destroy();
     Flixel.assets = FlixelNoopAssetManager.INSTANCE;
-    if (Flixel.boot.isInitialized()) {
-      Flixel.sound.destroy();
-    } else {
-      Flixel.sound.resetSession();
-    }
 
     for (FlixelCamera camera : Flixel.cameras) {
       camera.destroy();
@@ -989,8 +923,6 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     stepPending = false;
     stateLifecyclePauseDispatched = false;
     suspended = false;
-
-    FlixelFontRegistry.dispose();
 
     Flixel.Signals.postGameClose.dispatch();
 
