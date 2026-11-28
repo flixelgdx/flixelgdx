@@ -25,13 +25,13 @@ package org.flixelgdx.audio;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
-import org.flixelgdx.functional.FlixelDestroyable;
-import org.flixelgdx.functional.FlixelUpdatable;
+import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  * All file access goes through the {@link FlixelFiles Flixel.files} seam, so
  * audio works identically from a folder, a packaged JAR, or any custom file root.
  */
-public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
+public class FlixelSoundManager implements FlixelManagers.Manager {
 
   /**
    * The platform-specific sound factory used when constructing the global {@link FlixelSoundManager}.
@@ -128,7 +128,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * Destroys all non-persistent {@link FlixelSound} instances tracked by this manager, including
    * the current music track if it is not persistent.
    *
-   * <p>Called automatically by {@link Flixel#switchState} on every state switch. Sounds whose
+   * <p>Called automatically by {@link #onStateSwitch(StateSwitchSignalData)} on every state switch. Sounds whose
    * {@link FlixelSound#isPersist()} flag is set survive the switch unchanged.
    *
    * <p>Sounds that were already destroyed (for example, via {@link FlixelSound#setAutoDestroy}) are
@@ -155,6 +155,11 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    *
    * @return The sound factory powering this manager.
    */
+  @Override
+  public int getOrder() {
+    return ORDER_SOUND;
+  }
+
   @NotNull
   public FlixelSoundFactory getFactory() {
     return factory;
@@ -466,6 +471,52 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
     }
   }
 
+  /** Pauses every sound through {@link #pause()} when the window loses focus and {@link Flixel#autoPause} is on. */
+  @Override
+  public void onFocusLost() {
+    if (Flixel.autoPause) {
+      pause();
+    }
+  }
+
+  /**
+   * Resumes every sound through {@link #resume()} when the window regains focus and {@link Flixel#autoPause} is on,
+   * unless the game itself is still paused.
+   */
+  @Override
+  public void onFocusGained() {
+    FlixelGame game = Flixel.game;
+    if (Flixel.autoPause && (game == null || !game.isGamePaused())) {
+      resume();
+    }
+  }
+
+  /**
+   * Pauses or resumes every sound along with the game, for example when the debugger pauses it.
+   *
+   * @param paused {@code true} when the game was just paused, {@code false} when it was resumed.
+   */
+  @Override
+  public void onPaused(boolean paused) {
+    if (paused) {
+      pause();
+    } else {
+      resume();
+    }
+  }
+
+  /**
+   * Destroys the sounds of the old state through {@link #clearNonPersist()}, after the old state
+   * was destroyed and before the new one starts any.
+   *
+   * @param data Holds the state that was just destroyed.
+   */
+  @Override
+  public void onStateSwitch(@NotNull StateSwitchSignalData data) {
+    clearNonPersist();
+  }
+
+  /** Destroys every sound and shuts the audio engine down when the game closes. */
   @Override
   public void destroy() {
     if (music != null) {
