@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.debug.panels;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.feeds.FlixelDebugStats;
 import org.flixelgdx.debug.remote.FlixelDebugProtocol;
@@ -47,12 +48,13 @@ public class FlixelDebugStatsPanel extends FlixelDebugPanel {
 
   private long seenRevision = -1L;
 
-  private final FlixelString text = new FlixelString(16);
+  private final FlixelString text = new FlixelString(32);
   private final FlixelDebugStats stats;
   private final FlixelDebugLabel fps = value();
   private final FlixelDebugLabel frame = value();
   private final FlixelDebugLabel heap = value();
   private final FlixelDebugLabel nativeMemory = value();
+  private final FlixelDebugLabel graphicsApi = value();
   private final FlixelDebugLabel objects = value();
   private final FlixelDebugLabel draws = value();
   private final FlixelDebugLabel triangles = value();
@@ -74,8 +76,8 @@ public class FlixelDebugStatsPanel extends FlixelDebugPanel {
     setDock(FlixelDebugProtocol.DOCK_LEFT);
     FlixelDebugStack content = FlixelDebugUi.column(
         FlixelDebugUi.heading("Client"),
-        grid(new String[] { "FPS", "Frame ms", "Java heap MB", "Native MB", "Objects", "Draw calls", "Triangles",
-            "Ping" }, fps, frame, heap, nativeMemory, objects, draws, triangles, ping),
+        grid(new String[] { "FPS", "Frame ms", "Java heap MB", "Native MB", "Graphics API", "Objects", "Draw calls",
+          "Triangles", "Ping" }, fps, frame, heap, nativeMemory, graphicsApi, objects, draws, triangles, ping),
         FlixelDebugUi.heading("World"),
         grid(new String[] { "State", "Elapsed" }, state, elapsed),
         FlixelDebugUi.heading("Camera"),
@@ -95,6 +97,7 @@ public class FlixelDebugStatsPanel extends FlixelDebugPanel {
     frame.setText(text.setLength(0).concatFloatRounded(stats.getFrameMs(), 2));
     heap.setText(text.setLength(0).concatFloatRounded(stats.getHeapMb(), 1));
     nativeMemory.setText(text.setLength(0).concatFloatRounded(stats.getNativeMb(), 1));
+    graphicsApi.setText(text.setLength(0).concat(Flixel.graphics.getApi()));
     objects.setText(text.setLength(0).concat(stats.getObjectCount()));
     draws.setText(text.setLength(0).concat(stats.getDraws()));
     triangles.setText(text.setLength(0).concat(stats.getTriangles()));
