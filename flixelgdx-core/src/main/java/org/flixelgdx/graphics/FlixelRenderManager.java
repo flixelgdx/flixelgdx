@@ -21,12 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx;
+package org.flixelgdx.graphics;
 
-import org.flixelgdx.graphics.FlixelBatch;
-import org.flixelgdx.graphics.FlixelFrame;
-import org.flixelgdx.graphics.FlixelRenderTarget;
-import org.flixelgdx.graphics.FlixelShader;
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.FlixelConfig;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelSpriteUtil;
@@ -136,7 +137,7 @@ public class FlixelRenderManager implements FlixelManagers.Manager {
       Flixel.graphics.applyGlobalShaderChain(batch);
     }
 
-    FlixelCameraManager cameraManager = Flixel.cameraManager;
+    FlixelCamera.Manager cameraManager = Flixel.cameraManager;
     FlixelCamera overlayCamera = cameraManager != null ? cameraManager.getOverlayCamera() : null;
     if (overlayCamera != null) {
       drawOverlay(overlayCamera, paused, batch);

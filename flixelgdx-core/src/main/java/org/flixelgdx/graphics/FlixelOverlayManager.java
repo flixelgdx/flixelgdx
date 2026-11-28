@@ -21,11 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx;
+package org.flixelgdx.graphics;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.IFlixelBasic;
-import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.jetbrains.annotations.NotNull;
 
