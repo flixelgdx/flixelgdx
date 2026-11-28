@@ -36,9 +36,11 @@ import java.util.Arrays;
  * without per-frame allocations.
  *
  * <p>Each component lives in {@code [0, 1]}. Read a component with its getter, such as
- * {@link #getAlpha()}, and change it with its setter, such as {@link #setAlpha(float)}. Every
- * setter clamps its value into {@code [0, 1]}, so a color can never hold a component that would
- * wrap around or overflow when it is packed for the GPU.
+ * {@link #getAlpha()}, and change it with its setter, such as {@link #setAlpha(float)}. Red,
+ * green, and blue also have setters that take a whole number in {@code [0, 255]}, such as
+ * {@link #setRed(int)}. Every setter clamps its value into range, so a color can never hold a
+ * component that would wrap around or overflow when it is packed for the GPU. The setters return
+ * nothing so that Kotlin can treat each component as a property ({@code color.alpha = 0.5f}).
  *
  * <p>Think of the four components like the volume knobs on a mixing desk: each knob turns from
  * {@code 0} (off) to {@code 1} (full), and the knob simply stops at either end instead of spinning
@@ -48,6 +50,7 @@ import java.util.Arrays;
  * FlixelColor tint = new FlixelColor(FlixelColor.RED);
  * tint.setAlpha(0.5f);         // Half transparent red.
  * tint.setGreen(2f);           // Clamped to 1, so the color becomes half transparent yellow.
+ * tint.setBlue(128);           // Whole numbers work too: 128 out of 255 is about 0.5.
  * float red = tint.getRed();   // 1
  * }</pre>
  *
@@ -412,15 +415,21 @@ public class FlixelColor {
   }
 
   /**
+   * Sets the red component from a whole number in {@code [0, 255]}.
+   *
+   * @param r The red component in {@code [0, 255]}; values outside that range are clamped.
+   */
+  public void setRed(int r) {
+    this.r = FlixelMath.clamp(r, 0, 255) / 255f;
+  }
+
+  /**
    * Sets the red component.
    *
    * @param r The red component in {@code [0, 1]}; values outside that range are clamped.
-   * @return {@code this} for chaining.
    */
-  @NotNull
-  public FlixelColor setRed(float r) {
+  public void setRed(float r) {
     this.r = clamp(r);
-    return this;
   }
 
   public float getGreen() {
@@ -428,15 +437,21 @@ public class FlixelColor {
   }
 
   /**
+   * Sets the green component from a whole number in {@code [0, 255]}.
+   *
+   * @param g The green component in {@code [0, 255]}; values outside that range are clamped.
+   */
+  public void setGreen(int g) {
+    this.g = FlixelMath.clamp(g, 0, 255) / 255f;
+  }
+
+  /**
    * Sets the green component.
    *
    * @param g The green component in {@code [0, 1]}; values outside that range are clamped.
-   * @return {@code this} for chaining.
    */
-  @NotNull
-  public FlixelColor setGreen(float g) {
+  public void setGreen(float g) {
     this.g = clamp(g);
-    return this;
   }
 
   public float getBlue() {
@@ -444,15 +459,21 @@ public class FlixelColor {
   }
 
   /**
+   * Sets the blue component from a whole number in {@code [0, 255]}.
+   *
+   * @param b The blue component in {@code [0, 255]}; values outside that range are clamped.
+   */
+  public void setBlue(int b) {
+    this.b = FlixelMath.clamp(b, 0, 255) / 255f;
+  }
+
+  /**
    * Sets the blue component.
    *
    * @param b The blue component in {@code [0, 1]}; values outside that range are clamped.
-   * @return {@code this} for chaining.
    */
-  @NotNull
-  public FlixelColor setBlue(float b) {
+  public void setBlue(float b) {
     this.b = clamp(b);
-    return this;
   }
 
   /**
@@ -468,11 +489,8 @@ public class FlixelColor {
    * Sets the alpha component, where {@code 0} is fully transparent and {@code 1} is fully opaque.
    *
    * @param a The alpha component in {@code [0, 1]}; values outside that range are clamped.
-   * @return {@code this} for chaining.
    */
-  @NotNull
-  public FlixelColor setAlpha(float a) {
+  public void setAlpha(float a) {
     this.a = clamp(a);
-    return this;
   }
 }
