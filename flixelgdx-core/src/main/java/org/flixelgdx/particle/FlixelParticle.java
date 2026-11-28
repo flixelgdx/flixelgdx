@@ -210,12 +210,12 @@ public class FlixelParticle extends FlixelSprite {
     }
     if (colorRange.active) {
       // The color range carries no opacity of its own, so keep whatever alpha the particle has.
-      float a = color.a;
+      float a = color.getAlpha();
       colorRange.lerp(ease(e != null ? e.color.ease : null, t), color);
-      color.a = a;
+      color.setAlpha(a);
     }
     if (alphaRange.active) {
-      color.a = alphaRange.lerp(ease(e != null ? e.alpha.ease : null, t));
+      color.setAlpha(alphaRange.lerp(ease(e != null ? e.alpha.ease : null, t)));
     }
     if (e != null && e.animateFrames) {
       int count = e.getFrameCount();

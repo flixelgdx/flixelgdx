@@ -1091,12 +1091,12 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Returns the alpha component of this sprite's tint color, in the range {@code [0, 1]}.
-   * This is sugar for {@link #getColor()}{@code .a}; both refer to the same underlying value.
+   * This is sugar for {@code getColor().getAlpha()}; both refer to the same underlying value.
    *
    * @return Alpha transparency, where {@code 0} is fully transparent and {@code 1} is fully opaque.
    */
   public float getAlpha() {
-    return color.a;
+    return color.getAlpha();
   }
 
   /**
@@ -1194,12 +1194,12 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Sets the alpha component of this sprite's tint color. Values are expected in {@code [0, 1]}.
-   * Equivalent to {@code getColor().a = a}. RGB channels are unchanged.
+   * Equivalent to {@code getColor().setAlpha(a)}. RGB channels are unchanged.
    *
    * @param a New alpha value, where {@code 0} is fully transparent and {@code 1} is fully opaque.
    */
   public void setAlpha(float a) {
-    color.a = a;
+    color.setAlpha(a);
   }
 
   /**

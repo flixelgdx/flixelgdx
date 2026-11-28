@@ -122,7 +122,7 @@ public class FlixelSdlWindow implements FlixelWindow {
 
   @Override
   public void applyTransparencyBackdropOnly() {
-    Flixel.render.bgColor.a = 0f;
+    Flixel.render.bgColor.setAlpha(0f);
     FlixelCamera[] camItems = Flixel.cameras.getItems();
     for (int i = 0, n = Flixel.cameras.getSize(); i < n; i++) {
       FlixelCamera cam = camItems[i];
@@ -130,7 +130,7 @@ public class FlixelSdlWindow implements FlixelWindow {
         continue;
       }
       cam.useBgAlphaBlending = true;
-      cam.bgColor.a = 0f;
+      cam.bgColor.setAlpha(0f);
     }
   }
 
@@ -147,10 +147,10 @@ public class FlixelSdlWindow implements FlixelWindow {
     if (transparencySnapshotValid) {
       return;
     }
-    gameRgba[0] = Flixel.render.bgColor.r;
-    gameRgba[1] = Flixel.render.bgColor.g;
-    gameRgba[2] = Flixel.render.bgColor.b;
-    gameRgba[3] = Flixel.render.bgColor.a;
+    gameRgba[0] = Flixel.render.bgColor.getRed();
+    gameRgba[1] = Flixel.render.bgColor.getGreen();
+    gameRgba[2] = Flixel.render.bgColor.getBlue();
+    gameRgba[3] = Flixel.render.bgColor.getAlpha();
     int n = Flixel.cameras.getSize();
     ensureCapacity(n);
     FlixelCamera[] camItems = n == 0 ? null : Flixel.cameras.getItems();
@@ -165,10 +165,10 @@ public class FlixelSdlWindow implements FlixelWindow {
         camerasPacked[o + 4] = 0f;
         continue;
       }
-      camerasPacked[o] = cam.bgColor.r;
-      camerasPacked[o + 1] = cam.bgColor.g;
-      camerasPacked[o + 2] = cam.bgColor.b;
-      camerasPacked[o + 3] = cam.bgColor.a;
+      camerasPacked[o] = cam.bgColor.getRed();
+      camerasPacked[o + 1] = cam.bgColor.getGreen();
+      camerasPacked[o + 2] = cam.bgColor.getBlue();
+      camerasPacked[o + 3] = cam.bgColor.getAlpha();
       camerasPacked[o + 4] = cam.useBgAlphaBlending ? 1f : 0f;
     }
     savedCameraCount = n;
@@ -177,10 +177,10 @@ public class FlixelSdlWindow implements FlixelWindow {
 
   private void restoreBackdrop() {
     if (transparencySnapshotValid) {
-      Flixel.render.bgColor.r = gameRgba[0];
-      Flixel.render.bgColor.g = gameRgba[1];
-      Flixel.render.bgColor.b = gameRgba[2];
-      Flixel.render.bgColor.a = gameRgba[3];
+      Flixel.render.bgColor.setRed(gameRgba[0]);
+      Flixel.render.bgColor.setGreen(gameRgba[1]);
+      Flixel.render.bgColor.setBlue(gameRgba[2]);
+      Flixel.render.bgColor.setAlpha(gameRgba[3]);
     } else {
       Flixel.render.bgColor.set(FlixelColor.BLACK);
     }
@@ -193,10 +193,10 @@ public class FlixelSdlWindow implements FlixelWindow {
       }
       if (transparencySnapshotValid && i < savedCameraCount) {
         int o = i * FLOATS_PER_CAMERA;
-        cam.bgColor.r = camerasPacked[o];
-        cam.bgColor.g = camerasPacked[o + 1];
-        cam.bgColor.b = camerasPacked[o + 2];
-        cam.bgColor.a = camerasPacked[o + 3];
+        cam.bgColor.setRed(camerasPacked[o]);
+        cam.bgColor.setGreen(camerasPacked[o + 1]);
+        cam.bgColor.setBlue(camerasPacked[o + 2]);
+        cam.bgColor.setAlpha(camerasPacked[o + 3]);
         cam.useBgAlphaBlending = camerasPacked[o + 4] != 0f;
       } else {
         cam.useBgAlphaBlending = false;

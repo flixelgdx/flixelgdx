@@ -1156,7 +1156,7 @@ public class FlixelText extends FlixelSprite {
    * @param y The y coordinate of the text's <em>top</em> edge.
    */
   private void drawTextContent(FlixelBatch batch, float x, float y) {
-    if (borderStyle != BorderStyle.NONE && borderColor.a > 0 && getAlpha() > 0 && borderSize > 0) {
+    if (borderStyle != BorderStyle.NONE && borderColor.getAlpha() > 0 && getAlpha() > 0 && borderSize > 0) {
       drawBorder(batch, x, y);
     }
     batch.setColor(getColor());
@@ -1170,7 +1170,8 @@ public class FlixelText extends FlixelSprite {
    * <p>The result is a reused scratch color; {@link #getBorderColor()} is never modified.
    */
   FlixelColor resolveBorderColor() {
-    return borderDrawColor.set(borderColor.r, borderColor.g, borderColor.b, borderColor.a * getAlpha());
+    return borderDrawColor.set(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(),
+        borderColor.getAlpha() * getAlpha());
   }
 
   /** Draws the text border/outline by rendering the layout at offset positions. */

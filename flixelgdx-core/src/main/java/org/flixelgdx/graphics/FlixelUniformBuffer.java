@@ -126,7 +126,7 @@ public final class FlixelUniformBuffer {
    * @param value The color to store.
    */
   public void setColor(@NotNull String name, @NotNull FlixelColor value) {
-    set(name, value.r, value.g, value.b, value.a);
+    set(name, value.getRed(), value.getGreen(), value.getBlue(), value.getAlpha());
   }
 
   /**

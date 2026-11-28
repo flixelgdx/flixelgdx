@@ -230,10 +230,10 @@ public final class FlixelSpriteUtil {
 
   /** Packs the interpolation of two colors at {@code t} into RGBA8888. */
   private static int packLerp(@NotNull FlixelColor start, @NotNull FlixelColor end, float t) {
-    int r = (int) (FlixelMath.lerp(start.r, end.r, t) * 255f);
-    int g = (int) (FlixelMath.lerp(start.g, end.g, t) * 255f);
-    int b = (int) (FlixelMath.lerp(start.b, end.b, t) * 255f);
-    int a = (int) (FlixelMath.lerp(start.a, end.a, t) * 255f);
+    int r = (int) (FlixelMath.lerp(start.getRed(), end.getRed(), t) * 255f);
+    int g = (int) (FlixelMath.lerp(start.getGreen(), end.getGreen(), t) * 255f);
+    int b = (int) (FlixelMath.lerp(start.getBlue(), end.getBlue(), t) * 255f);
+    int a = (int) (FlixelMath.lerp(start.getAlpha(), end.getAlpha(), t) * 255f);
     return (r << 24) | (g << 16) | (b << 8) | a;
   }
 
@@ -434,10 +434,10 @@ public final class FlixelSpriteUtil {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     brightness = FlixelMath.clamp(brightness, -1f, 1f);
     FlixelColor c = sprite.getColor();
-    float r = c.r;
-    float g = c.g;
-    float b = c.b;
-    float a = c.a;
+    float r = c.getRed();
+    float g = c.getGreen();
+    float b = c.getBlue();
+    float a = c.getAlpha();
     if (brightness >= 0f) {
       r = FlixelMath.lerp(r, 1f, brightness);
       g = FlixelMath.lerp(g, 1f, brightness);
