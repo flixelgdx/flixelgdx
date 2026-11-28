@@ -606,6 +606,17 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
    * <p>Every hook has an empty default, so a manager only overrides the hooks it needs. Register
    * a manager with {@link FlixelManagers#add(Manager)}, usually through {@link Flixel#managers}.
    *
+   * <p>The framework's own systems are managers too, and each one has a fixed order (the
+   * {@code ORDER_*} constants below). They are spaced apart so your manager can slip in between
+   * two of them. For example, a manager with an order between {@link #ORDER_ACTIONS} and
+   * {@link #ORDER_DEBUG} sees this frame's input before the debugger takes the input it owns:
+   * <pre>{@code
+   * @Override
+   * public int getOrder() {
+   *   return FlixelManagers.Manager.ORDER_ACTIONS + 50;
+   * }
+   * }</pre>
+   *
    * <p>One frame calls the hooks in this order:
    * <ol>
    *   <li>{@link #beginFrame()}, at the start of the frame.</li>
@@ -632,7 +643,49 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
    */
   public interface Manager extends FlixelCreatable, FlixelUpdatable, FlixelDestroyable {
 
-    /** The order a manager gets unless it overrides {@link #getOrder()}. */
+    /**
+     * The order of {@link Flixel#assets}. It is created before and destroyed after every other built-in
+     * manager, since the others load and release assets through it.
+     */
+    int ORDER_ASSETS = -2000;
+
+    /** The order of the font registry, which destroys its baked fonts before the assets go away. */
+    int ORDER_FONTS = -1900;
+
+    /** The order of {@link Flixel#keys}. Input reads the hardware before anything else updates. */
+    int ORDER_KEYS = -1000;
+
+    /** The order of {@link Flixel#mouse}. */
+    int ORDER_MOUSE = -900;
+
+    /** The order of {@link Flixel#touches}. */
+    int ORDER_TOUCHES = -800;
+
+    /** The order of {@link Flixel#gamepads}. */
+    int ORDER_GAMEPADS = -700;
+
+    /** The order of the input action sets, which read this frame's state from every input device. */
+    int ORDER_ACTIONS = -600;
+
+    /**
+     * The order of {@link Flixel#debug}. The debugger takes the input it owns right after the input
+     * devices are read and before the game logic sees it.
+     */
+    int ORDER_DEBUG = -500;
+
+    /** The order of the global tween manager. */
+    int ORDER_TWEENS = -400;
+
+    /** The order of the global timer manager. */
+    int ORDER_TIMERS = -300;
+
+    /** The order of {@link Flixel#sound}. */
+    int ORDER_SOUND = -200;
+
+    /**
+     * The order a manager gets unless it overrides {@link #getOrder()}. Every built-in manager runs
+     * before it, so a manager with this order already sees this frame's input, tweens, and timers.
+     */
     int ORDER_DEFAULT = 0;
 
     /**
