@@ -35,9 +35,21 @@ import java.util.Arrays;
  * Mutable RGBA color with float components, used for tinting, backgrounds, and tween endpoints
  * without per-frame allocations.
  *
- * <p>Each component lives in {@code [0, 1]}. The components are public fields so hot paths can
- * read and write them directly ({@code color.a = 0.5f}); the setter methods exist for chained or
- * validated updates.
+ * <p>Each component lives in {@code [0, 1]}. Read a component with its getter, such as
+ * {@link #getAlpha()}, and change it with its setter, such as {@link #setAlpha(float)}. Every
+ * setter clamps its value into {@code [0, 1]}, so a color can never hold a component that would
+ * wrap around or overflow when it is packed for the GPU.
+ *
+ * <p>Think of the four components like the volume knobs on a mixing desk: each knob turns from
+ * {@code 0} (off) to {@code 1} (full), and the knob simply stops at either end instead of spinning
+ * past it.
+ *
+ * <pre>{@code
+ * FlixelColor tint = new FlixelColor(FlixelColor.RED);
+ * tint.setAlpha(0.5f);         // Half transparent red.
+ * tint.setGreen(2f);           // Clamped to 1, so the color becomes half transparent yellow.
+ * float red = tint.getRed();   // 1
+ * }</pre>
  *
  * <p>Shared presets such as {@link #WHITE} and {@link #RED} are single shared instances. Mutating
  * a preset affects every place that uses that reference. For a private copy, use
@@ -66,17 +78,10 @@ public class FlixelColor {
   public static final FlixelColor NAVY = new FlixelColor(0f, 0f, 0.5f, 1f);
   public static final FlixelColor TEAL = new FlixelColor(0f, 0.5f, 0.5f, 1f);
 
-  /** The red component in {@code [0, 1]}. */
-  public float r;
-
-  /** The green component in {@code [0, 1]}. */
-  public float g;
-
-  /** The blue component in {@code [0, 1]}. */
-  public float b;
-
-  /** The alpha component in {@code [0, 1]}; {@code 0} is fully transparent. */
-  public float a;
+  private float r;
+  private float g;
+  private float b;
+  private float a;
 
   private float @Nullable [] hsv;
 
@@ -125,7 +130,9 @@ public class FlixelColor {
   }
 
   /**
-   * Creates a new color with the given RGBA values. Values must be in the range 0-1.
+   * Creates a new color with the given RGBA values in the range {@code [0, 1]}.
+   *
+   * <p>Values outside that range are clamped.
    *
    * @param r The red component.
    * @param g The green component.
@@ -133,10 +140,7 @@ public class FlixelColor {
    * @param a The alpha component.
    */
   public FlixelColor(float r, float g, float b, float a) {
-    this.r = r;
-    this.g = g;
-    this.b = b;
-    this.a = a;
+    set(r, g, b, a);
   }
 
   /**
@@ -176,6 +180,8 @@ public class FlixelColor {
   /**
    * Sets all four components at once with {@code [0, 1]} ranges.
    *
+   * <p>Values outside that range are clamped.
+   *
    * @param r The red component in {@code [0, 1]}.
    * @param g The green component in {@code [0, 1]}.
    * @param b The blue component in {@code [0, 1]}.
@@ -184,10 +190,10 @@ public class FlixelColor {
    */
   @NotNull
   public FlixelColor set(float r, float g, float b, float a) {
-    this.r = r;
-    this.g = g;
-    this.b = b;
-    this.a = a;
+    this.r = clamp(r);
+    this.g = clamp(g);
+    this.b = clamp(b);
+    this.a = clamp(a);
     return this;
   }
 
@@ -206,17 +212,16 @@ public class FlixelColor {
   /**
    * Linearly interpolates this color toward {@code target}, writing the result in place.
    *
+   * <p>A factor outside {@code [0, 1]} (such as from an elastic ease) can overshoot, so the
+   * result is clamped into {@code [0, 1]}.
+   *
    * @param target The color to move toward.
    * @param t Interpolation factor in {@code [0, 1]}; {@code 0} keeps this color, {@code 1} becomes the target.
    * @return {@code this} for chaining.
    */
   @NotNull
   public FlixelColor lerp(@NotNull FlixelColor target, float t) {
-    r += (target.r - r) * t;
-    g += (target.g - g) * t;
-    b += (target.b - b) * t;
-    a += (target.a - a) * t;
-    return this;
+    return set(r + (target.r - r) * t, g + (target.g - g) * t, b + (target.b - b) * t, a + (target.a - a) * t);
   }
 
   /**
@@ -261,6 +266,10 @@ public class FlixelColor {
     int b8 = clampByte(b);
     int a8 = clampByte(a);
     return Float.intBitsToFloat((a8 << 24) | (b8 << 16) | (g8 << 8) | r8);
+  }
+
+  private static float clamp(float value) {
+    return FlixelMath.clamp(value, 0f, 1f);
   }
 
   private static int clampByte(float value) {
@@ -396,5 +405,74 @@ public class FlixelColor {
     r = tr + m;
     g = tg + m;
     b = tb + m;
+  }
+
+  public float getRed() {
+    return r;
+  }
+
+  /**
+   * Sets the red component.
+   *
+   * @param r The red component in {@code [0, 1]}; values outside that range are clamped.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelColor setRed(float r) {
+    this.r = clamp(r);
+    return this;
+  }
+
+  public float getGreen() {
+    return g;
+  }
+
+  /**
+   * Sets the green component.
+   *
+   * @param g The green component in {@code [0, 1]}; values outside that range are clamped.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelColor setGreen(float g) {
+    this.g = clamp(g);
+    return this;
+  }
+
+  public float getBlue() {
+    return b;
+  }
+
+  /**
+   * Sets the blue component.
+   *
+   * @param b The blue component in {@code [0, 1]}; values outside that range are clamped.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelColor setBlue(float b) {
+    this.b = clamp(b);
+    return this;
+  }
+
+  /**
+   * Returns the alpha component, where {@code 0} is fully transparent and {@code 1} is fully opaque.
+   *
+   * @return The alpha component in {@code [0, 1]}.
+   */
+  public float getAlpha() {
+    return a;
+  }
+
+  /**
+   * Sets the alpha component, where {@code 0} is fully transparent and {@code 1} is fully opaque.
+   *
+   * @param a The alpha component in {@code [0, 1]}; values outside that range are clamped.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelColor setAlpha(float a) {
+    this.a = clamp(a);
+    return this;
   }
 }
