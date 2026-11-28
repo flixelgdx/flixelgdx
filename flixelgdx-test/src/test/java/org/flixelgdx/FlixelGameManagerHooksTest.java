@@ -146,6 +146,14 @@ class FlixelGameManagerHooksTest {
   }
 
   @Test
+  void beginFrameReachesTheManagersEvenWhilePaused() {
+    game.setGamePaused(true);
+    log.setLength(0);
+    game.beginFrame();
+    assertEquals("m.beginFrame input.beginFrame ", log.toString());
+  }
+
+  @Test
   void endFrameReachesTheManagers() {
     game.endFrame();
     assertEquals("m.endFrame input.endFrame ", log.toString());

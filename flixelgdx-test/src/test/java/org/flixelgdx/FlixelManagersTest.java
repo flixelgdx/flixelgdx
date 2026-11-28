@@ -203,6 +203,7 @@ class FlixelManagersTest {
     StateSwitchSignalData data = new StateSwitchSignalData(null);
 
     managers.create();
+    managers.beginFrame();
     managers.preUpdate(0.5f, false);
     managers.update(0.5f, false);
     managers.postUpdate(0.5f, false);
@@ -222,9 +223,11 @@ class FlixelManagersTest {
     managers.postStateSwitch(data);
     managers.destroy();
 
-    assertEquals("m.create m.preUpdate m.update m.postUpdate m.preDraw m.drawCamera m.drawOverlay m.postDraw "
-        + "m.endFrame m.resize(640x360) m.onFocusLost m.onFocusGained m.onMinimized m.onSuspended "
-        + "m.onPaused(false) m.preStateSwitch m.onStateSwitch m.postStateSwitch m.destroy ", log.toString());
+    assertEquals(
+        "m.create m.beginFrame m.preUpdate m.update m.postUpdate m.preDraw m.drawCamera m.drawOverlay m.postDraw "
+            + "m.endFrame m.resize(640x360) m.onFocusLost m.onFocusGained m.onMinimized m.onSuspended "
+            + "m.onPaused(false) m.preStateSwitch m.onStateSwitch m.postStateSwitch m.destroy ",
+        log.toString());
     assertEquals(0.5f, recorder.lastElapsed);
     assertSame(batch, recorder.lastBatch);
     assertSame(camera, recorder.lastCamera);
@@ -413,6 +416,11 @@ class FlixelManagersTest {
     public void postDraw(@NotNull FlixelBatch batch) {
       lastBatch = batch;
       record("postDraw");
+    }
+
+    @Override
+    public void beginFrame() {
+      record("beginFrame");
     }
 
     @Override
