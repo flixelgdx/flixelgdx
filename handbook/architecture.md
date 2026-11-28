@@ -14,11 +14,12 @@ shaped the way they are, or before extending the framework.
 5. [Safe defaults: the no-op implementations](#safe-defaults-the-no-op-implementations)
 6. [What each backend installs](#what-each-backend-installs)
 7. [The renderer: one WebGPU implementation](#the-renderer-one-webgpu-implementation)
-8. [Threads](#threads)
-9. [Inside core: the package map](#inside-core-the-package-map)
-10. [The object model: small capability interfaces](#the-object-model-small-capability-interfaces)
-11. [Rules that keep core portable](#rules-that-keep-core-portable)
-12. [Check your understanding](#check-your-understanding)
+8. [The game loop: one state and many managers](#the-game-loop-one-state-and-many-managers)
+9. [Threads](#threads)
+10. [Inside core: the package map](#inside-core-the-package-map)
+11. [The object model: small capability interfaces](#the-object-model-small-capability-interfaces)
+12. [Rules that keep core portable](#rules-that-keep-core-portable)
+13. [Check your understanding](#check-your-understanding)
 
 ## The big picture
 
@@ -139,6 +140,87 @@ the texture and sampler, and the vertex structs, so a shader file only contains 
 (not premultiplied) color, and the framework premultiplies a shader's output itself before blending, so transparency
 behaves the same in every blend mode. See [Graphics and Shaders](graphics-and-shaders.md).
 
+## The game loop: one state and many managers
+
+Seams decide *what* a platform provides. Managers decide *when* each part of the framework runs. Every frame, the
+runner calls the same few methods on your game (`beginFrame()`, `update(...)`, `draw(...)`, `endFrame()`), and the game turns each
+call into a fixed series of steps.
+
+Think of a theater. The **state** is the play on stage, and it is the only thing `FlixelGame` runs itself: it updates
+the state chain, draws it when asked, switches it with `Flixel.switchState(...)`, and pauses it. Everything else is
+the **crew**: input, sound, the cameras, the renderer, the debugger. Each crew member is a **manager**, an object that
+implements `FlixelManagers.Manager` and sits in the registry `Flixel.managers`. At every step of the lifecycle, the game
+calls the matching hook on every manager, next to the matching [signal](signals.md):
+
+```
+FlixelGame.beginFrame()
+  managers.beginFrame()       every manager, even while paused, before anything updates
+
+FlixelGame.update(elapsed)
+  managers.preUpdate(...)     every manager, lowest order first
+  managers.update(...)        input, debugger, tweens, timers, sound, your managers
+  state chain update          skipped while paused
+  managers.postUpdate(...)    cameras, overlay, debugger sampling, your managers
+
+FlixelGame.draw(batch)
+  managers.preDraw(...)
+  managers.draw(...)          the renderer draws every camera; inside it:
+                                drawCamera(...) once per camera, after the state drew on it
+                                drawOverlay(...) on top of everything
+  managers.postDraw(...)      debugger hitboxes, straight onto the window
+
+FlixelGame.endFrame()
+  managers.endFrame(...)      input finishes the frame; the renderer makes the window opaque if needed
+```
+
+The other hooks fire on events: `create()`, `resize(...)`, the focus, minimize, and suspend hooks, `onPaused(...)`, the
+three state switch hooks, and `destroy()`.
+
+### The built-in managers
+
+Each built-in manager has a fixed **order**. Hooks run from the lowest order to the highest, and `destroy()` runs in
+reverse, so a manager is always destroyed before the managers it depends on.
+
+| Order constant   | Value | Manager                                   | Its job in the loop                                      |
+|------------------|-------|-------------------------------------------|----------------------------------------------------------|
+| `ORDER_ASSETS`   | -2000 | `Flixel.assets`                           | Created first and destroyed last, since everything loads through it. |
+| `ORDER_FONTS`    | -1900 | `FlixelFontRegistry.MANAGER`              | Disposes baked fonts before the assets go away.          |
+| `ORDER_RENDER`   | -1800 | `Flixel.render` (`FlixelRenderManager`)   | Render settings, the background color, and drawing every frame. |
+| `ORDER_CAMERAS`  | -1700 | `Flixel.cameraManager` (`FlixelCamera.Manager`) | Creates, moves, refits, and resets the cameras.    |
+| `ORDER_OVERLAY`  | -1600 | `Flixel.overlay` (`FlixelOverlayManager`) | The global overlay drawn on top of every camera.         |
+| `ORDER_KEYS` to `ORDER_GAMEPADS` | -1000 to -700 | `Flixel.keys`, `mouse`, `touches`, `gamepads` | Read the hardware first, finish the frame last. |
+| `ORDER_ACTIONS`  | -600  | `FlixelActionSets.MANAGER`                | Input actions, right after the devices.                  |
+| `ORDER_DEBUG`    | -500  | `Flixel.debug`                            | Takes the input it owns, then samples the frame.         |
+| `ORDER_TWEENS`   | -400  | The global tween manager                  | Advances tweens; clears them on state switches.          |
+| `ORDER_TIMERS`   | -300  | The global timer manager                  | Advances timers; cancels them on state switches.         |
+| `ORDER_SOUND`    | -200  | `Flixel.sound`                            | Advances sounds; pauses them with the game and the window. |
+| `ORDER_DEFAULT`  | 0     | Your managers, unless they choose an order | Run after every built-in manager.                       |
+
+The orders are spaced apart so a manager can slip in between two built-in ones (see
+[Extending the Framework](extending-the-framework.md#writing-your-own-manager)).
+
+### Pausing
+
+While the game is paused (the debugger's pause, or auto-pause when the window loses focus), the game skips the state
+update, and every manager whose `isPausable()` returns `true` skips its three update hooks. Input and the debugger are
+not pausable, so a pause menu and the debugger keep working; tweens, timers, sound, cameras, and the overlay are, so
+they freeze with the state. Draw and event hooks always run.
+
+### Why the registry looks fields up every time
+
+The built-in managers are registered as **slots** that read their `Flixel` field each time a hook runs (for example,
+the sound slot reads `Flixel.sound` at that moment), rather than holding the object. Like a contact in your phone
+instead of a printed phone number, the slot always reaches whatever object the field holds now. That is why replacing
+a service such as `Flixel.sound` is safe at any time, and why a field that is `null` (in a headless test) is simply
+skipped.
+
+### Profiling for free
+
+Every manager call is wrapped in a `Flixel.profiler` section named by the manager's `getName()` (`flixel.render`,
+`flixel.keys`, `flixel.sound`, and so on), and the state update has its own section, `flixel.update.state`. A platform
+profiler such as the Android system trace therefore shows every system by name with no extra code. See
+[Optimization](optimization.md).
+
 ## Threads
 
 FlixelGDX is single-threaded from your point of view: **all game code runs on one thread**, the game's main thread.
@@ -230,8 +312,10 @@ These rules apply to the framework's own code, and they are good rules for your 
 1. Why does `Flixel.graphics` never return `null`, even in a unit test with no GPU?
 2. Your game uses `java.net.Socket` in its core module. On which platform will that fail, and why?
 3. Can a class that does not extend `FlixelBasic` be added to a state?
+4. The debugger pauses the game. Why do your tweens stop while the keyboard still works?
 
 (Answers: a no-op graphics manager is installed before any backend runs; the web, because the browser build has no
-`java.net`; yes, if it implements `IFlixelBasic`.)
+`java.net`; yes, if it implements `IFlixelBasic`; the tween manager is pausable, so it skips its update hooks during a
+pause, but the input managers are not.)
 
 **Next:** [The Boot Sequence](boot-sequence.md)

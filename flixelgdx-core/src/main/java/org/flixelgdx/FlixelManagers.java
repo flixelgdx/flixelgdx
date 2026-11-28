@@ -58,7 +58,7 @@ import java.util.function.Supplier;
  *
  * <p>If you're planning to make a library or extension (or want to make something that hooks
  * into the lifecycle of the engine), this is the place to do it. It's advised that you configure
- * and register your managers at boot time before the game starts; a {@link FlixelBootManager boot callback}
+ * and register your managers at boot time before the game starts; a {@linkplain FlixelBootManager boot callback}
  * is a good place to do so. A manager added while the game is already running is created right
  * away, and a manager removed while the game is running is destroyed right away.
  *
@@ -83,13 +83,15 @@ import java.util.function.Supplier;
  * }
  *
  * // Then during the boot sequence, add your manager. It will now be driven by the same exact
- * // lifecycle the framework and its engine use.
+ * // lifecycle the framework and its engine uses.
  * Flixel.boot.afterStart(() -> Flixel.managers.add(new MyManager()));
  * }</pre>
  *
  * <p>The framework calls the hook methods of this class (such as {@link #update(float, boolean)} or
  * {@link #drawCamera(FlixelCamera, FlixelBatch)}) at the matching point of every frame. Game code
  * normally never calls them itself.
+ *
+ * @author stringdotjar
  */
 public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelDestroyable {
 
