@@ -52,6 +52,8 @@ import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelNoopGraphicsManager;
+import org.flixelgdx.graphics.FlixelOverlayManager;
+import org.flixelgdx.graphics.FlixelRenderManager;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
@@ -782,14 +784,14 @@ public final class Flixel {
   /**
    * The manager that keeps {@link #cameras} and the overlay camera in step with the game: it moves
    * them every frame, refits them on resize, and puts a fresh default camera in place on every state
-   * switch. See {@link FlixelCameraManager}.
+   * switch. See {@link FlixelCamera.Manager}.
    *
    * <p>Example:
    * <pre>{@code
    * Flixel.cameraManager.reset(); // Back to one default camera.
    * }</pre>
    */
-  public static FlixelCameraManager cameraManager = new FlixelCameraManager();
+  public static FlixelCamera.Manager cameraManager = new FlixelCamera.Manager();
 
   /**
    * The global overlay: a group drawn on top of every camera that stays on screen across state
@@ -1549,7 +1551,15 @@ public final class Flixel {
     return drawCamera;
   }
 
-  static void setDrawCamera(@Nullable FlixelCamera camera) {
+  /**
+   * Sets the camera currently being drawn, which {@link #getDrawCamera()} returns.
+   *
+   * <p>The render manager sets this around every camera pass and clears it with {@code null} once the
+   * pass ends. Only call it from a custom renderer that runs its own camera passes.
+   *
+   * @param camera The camera being drawn, or {@code null} once the pass ends.
+   */
+  public static void setDrawCamera(@Nullable FlixelCamera camera) {
     drawCamera = camera;
   }
 

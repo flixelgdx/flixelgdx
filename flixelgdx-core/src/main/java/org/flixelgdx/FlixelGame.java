@@ -41,8 +41,8 @@ import java.util.function.Supplier;
  *
  * <p>Extend this class and hand an instance to the platform launcher. The launcher installs the
  * appropriate backend, wires up the runner, and calls {@link #create()} once the rendering surface
- * is ready. After that, it calls {@link #update(float)}, {@link #draw(FlixelBatch)}, and
- * {@link #endFrame()} every frame, in that order.
+ * is ready. After that, it calls {@link #beginFrame()}, {@link #update(float)},
+ * {@link #draw(FlixelBatch)}, and {@link #endFrame()} every frame, in that order.
  *
  * <h2>The game is the state plus the managers</h2>
  *
@@ -64,6 +64,8 @@ import java.util.function.Supplier;
  * <ol>
  *   <li>{@link #create()} - called once when the rendering surface is ready. Creates every manager,
  *       then switches to the initial state.</li>
+ *   <li>{@link #beginFrame()} - called every frame before updating. Runs the managers' beginning
+ *       of frame.</li>
  *   <li>{@link #update(float)} - called every frame. Runs the managers' update hooks around the
  *       state update.</li>
  *   <li>{@link #draw(FlixelBatch)} - called every frame. Runs the managers' draw hooks; the render
