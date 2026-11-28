@@ -26,6 +26,7 @@ package org.flixelgdx.debug.feeds;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelRenderManager;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.remote.FlixelDebugMessageWriter;
@@ -237,9 +238,9 @@ public class FlixelDebugStats extends FlixelDebugFeedBase {
    */
   private int countRenderCalls() {
     int total = 0;
-    FlixelGame game = Flixel.game;
-    if (game != null) {
-      total += game.getFrameRenderCalls();
+    FlixelRenderManager render = Flixel.render;
+    if (render != null) {
+      total += render.getFrameRenderCalls();
     }
     FlixelArray<FlixelBatch> extra = owner.getTrackedBatches();
     for (int i = 0, n = extra.getSize(); i < n; i++) {

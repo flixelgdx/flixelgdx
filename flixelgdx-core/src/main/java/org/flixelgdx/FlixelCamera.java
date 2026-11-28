@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * A powerful camera class that controls world-to-screen projection, parallax scrolling, zoom,
  * and screen effects such as flash, fade, and shake.
  *
- * <p>In a full FlixelGDX game, cameras are usually managed by {@link FlixelGame}.
+ * <p>In a full FlixelGDX game, cameras are usually managed by {@link FlixelCameraManager}.
  * You can also use {@code FlixelCamera} without a full game setup. When
  * {@link Flixel#game} is {@code null}, window size and follow frame rate fall back to
  * {@link Flixel#graphics} (call {@link #update(int, int, boolean)} from your resize hook as usual).
@@ -1337,8 +1337,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     if (useSubScreenViewport || hasCustomPixelRegion || regionMode != RegionMode.PIXEL_TOP_LEFT) {
       return true;
     }
-    FlixelGame game = Flixel.game;
-    if (game == null || game.getCameras() == null || game.getCameras().getSize() <= 1) {
+    if (Flixel.cameras.getSize() <= 1) {
       return false;
     }
     // Only treat a camera as a sub-screen viewport when it is explicitly positioned off the
