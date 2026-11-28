@@ -43,6 +43,7 @@ import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.graphics.FlixelUnsupportedShader;
 import org.flixelgdx.logging.FlixelLogger;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.jetbrains.annotations.NotNull;
@@ -1282,7 +1283,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
   @Override
   public void setRenderScale(float scale) {
-    renderScale = Math.clamp(scale, MIN_RENDER_SCALE, MAX_RENDER_SCALE);
+    renderScale = FlixelMath.clamp(scale, MIN_RENDER_SCALE, MAX_RENDER_SCALE);
   }
 
   @Override
