@@ -26,7 +26,6 @@ package org.flixelgdx.util;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 class FlixelColorTest {
 
@@ -60,7 +59,10 @@ class FlixelColorTest {
   @Test
   void channelSettersStoreValuesInRange() {
     FlixelColor c = new FlixelColor(0f, 0f, 0f, 0f);
-    assertSame(c, c.setRed(0.1f).setGreen(0.2f).setBlue(0.3f).setAlpha(0.4f));
+    c.setRed(0.1f);
+    c.setGreen(0.2f);
+    c.setBlue(0.3f);
+    c.setAlpha(0.4f);
     assertEquals(0.1f, c.getRed(), 1e-6f);
     assertEquals(0.2f, c.getGreen(), 1e-6f);
     assertEquals(0.3f, c.getBlue(), 1e-6f);
@@ -70,11 +72,37 @@ class FlixelColorTest {
   @Test
   void channelSettersClampOutOfRangeValues() {
     FlixelColor c = new FlixelColor();
-    c.setRed(2f).setGreen(-1f).setBlue(1.5f).setAlpha(-0.5f);
+    c.setRed(2f);
+    c.setGreen(-1f);
+    c.setBlue(1.5f);
+    c.setAlpha(-0.5f);
     assertEquals(1f, c.getRed());
     assertEquals(0f, c.getGreen());
     assertEquals(1f, c.getBlue());
     assertEquals(0f, c.getAlpha());
+  }
+
+  @Test
+  void wholeNumberSettersMapZeroToTwoFiftyFiveOntoZeroToOne() {
+    FlixelColor c = new FlixelColor();
+    c.setRed(0);
+    c.setGreen(255);
+    c.setBlue(51);
+    assertEquals(0f, c.getRed());
+    assertEquals(1f, c.getGreen());
+    assertEquals(0.2f, c.getBlue(), 1e-6f);
+    assertEquals(1f, c.getAlpha(), "alpha is left alone");
+  }
+
+  @Test
+  void wholeNumberSettersClampOutOfRangeValues() {
+    FlixelColor c = new FlixelColor();
+    c.setRed(300);
+    c.setGreen(-20);
+    c.setBlue(256);
+    assertEquals(1f, c.getRed());
+    assertEquals(0f, c.getGreen());
+    assertEquals(1f, c.getBlue());
   }
 
   @Test
