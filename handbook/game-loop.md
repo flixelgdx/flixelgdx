@@ -110,7 +110,7 @@ Here is everything that happens in one frame, in order. You do not need to memor
 like "why is `justPressed` still true here?" and "does my camera move before or after my sprite?"
 
 **Before the frame.** The platform measures how long the last frame took and calls `advanceTime(...)`, which clamps
-it and applies `Flixel.timeScale`.
+it and applies `Flixel.timeScale`. Then every manager runs `beginFrame()`, even while the game is paused.
 
 **Update.**
 

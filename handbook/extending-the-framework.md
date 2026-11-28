@@ -213,7 +213,7 @@ A backend is a launcher plus implementations of the seams. The shape is always t
 3. Register an `afterStart` callback for pieces that attach to core managers (gamepad provider, cursor manager).
 4. Set the runtime mode, and install a `FlixelDebugTransport` if the platform can reach the debugger app.
 5. Write a `FlixelGameRunner` that creates the window, calls `game.create()` once the surface is ready, then each frame
-   `Flixel.runtime.runMainThreadTasks()`, `advanceTime(...)`, `update(...)`, `draw(...)`, and `endFrame()`, plus `resize(...)` and the focus and suspend
+   `Flixel.runtime.runMainThreadTasks()`, `advanceTime(...)`, `beginFrame()`, `update(...)`, `draw(...)`, and `endFrame()`, plus `resize(...)` and the focus and suspend
    hooks. Call `game.destroy()` on exit.
 6. Call `Flixel.start(game, runner)`.
 

@@ -44,7 +44,7 @@ main(...)
          '- runner.run(game)               4. Open the window, create the GPU device.
              |- game.create()              5. Cameras, render settings, input listeners, debugger.
              |   '- switchState(first)     6. Your first state's constructor, then create().
-             '- loop until closed:         7. advanceTime, update, draw, endFrame.
+             '- loop until closed:         7. advanceTime, beginFrame, update, draw, endFrame.
              '- game.destroy()                Shutdown.
 ```
 
@@ -141,10 +141,11 @@ Every frame, the runner:
    game through `onFocusLost()`, `onFocusGained()`, and `onMinimized()`.
 2. Measures the time since the last frame and calls `game.advanceTime(...)` (clamped, then scaled by
    `Flixel.timeScale`).
-3. Calls `game.update(elapsed)`.
-4. Calls `game.draw(batch)`.
-5. Calls `game.endFrame()` to finish the input state.
-6. Waits as needed to keep the target frame rate.
+3. Calls `game.beginFrame()`, which runs every manager's `beginFrame()`.
+4. Calls `game.update(elapsed)`.
+5. Calls `game.draw(batch)`.
+6. Calls `game.endFrame()` to finish the input state.
+7. Waits as needed to keep the target frame rate.
 
 The exact contents of update and draw are listed in [The Game Loop](game-loop.md).
 
