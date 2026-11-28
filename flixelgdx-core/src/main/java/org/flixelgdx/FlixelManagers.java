@@ -109,7 +109,8 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
   private static final int SUSPENDED = 13;
   private static final int PAUSED = 14;
   private static final int PRE_STATE_SWITCH = 15;
-  private static final int POST_STATE_SWITCH = 16;
+  private static final int STATE_SWITCH = 16;
+  private static final int POST_STATE_SWITCH = 17;
 
   /** Every registered slot, sorted by order. Removed slots stay here until the next flush. */
   private final FlixelArray<Slot> slots = new FlixelArray<>(32);
@@ -358,6 +359,16 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
   }
 
   /**
+   * Runs {@link Manager#onStateSwitch(StateSwitchSignalData)} on every manager, between destroying
+   * the old state and creating the new one.
+   *
+   * @param data Holds the state that was just destroyed.
+   */
+  public void onStateSwitch(@NotNull StateSwitchSignalData data) {
+    dispatch(STATE_SWITCH, 0f, false, null, null, 0, 0, data);
+  }
+
+  /**
    * Runs {@link Manager#postStateSwitch(StateSwitchSignalData)} on every manager.
    *
    * @param data Holds the state that was just created.
@@ -498,6 +509,7 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
           case SUSPENDED -> manager.onSuspended();
           case PAUSED -> manager.onPaused(flag);
           case PRE_STATE_SWITCH -> manager.preStateSwitch(data);
+          case STATE_SWITCH -> manager.onStateSwitch(data);
           case POST_STATE_SWITCH -> manager.postStateSwitch(data);
           default -> throw new IllegalStateException("Unknown manager hook: " + hook);
         }
@@ -740,6 +752,17 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
      *     first state.
      */
     default void preStateSwitch(@NotNull StateSwitchSignalData data) {}
+
+    /**
+     * Called in the middle of a state switch, after the old state was destroyed and before the new
+     * state is created.
+     *
+     * <p>This is the place to clear anything that belonged to the old state, since the old state
+     * already released what it owned and the new state has not started anything yet.
+     *
+     * @param data Holds the state that was just destroyed, which is {@code null} for the first state.
+     */
+    default void onStateSwitch(@NotNull StateSwitchSignalData data) {}
 
     /**
      * Called when a state switch ends, after the new state was created.

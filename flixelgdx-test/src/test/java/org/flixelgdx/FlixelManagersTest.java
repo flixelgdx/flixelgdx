@@ -218,12 +218,13 @@ class FlixelManagersTest {
     managers.onSuspended();
     managers.onPaused(false);
     managers.preStateSwitch(data);
+    managers.onStateSwitch(data);
     managers.postStateSwitch(data);
     managers.destroy();
 
     assertEquals("m.create m.preUpdate m.update m.postUpdate m.preDraw m.drawCamera m.drawOverlay m.postDraw "
         + "m.endFrame m.resize(640x360) m.onFocusLost m.onFocusGained m.onMinimized m.onSuspended "
-        + "m.onPaused(false) m.preStateSwitch m.postStateSwitch m.destroy ", log.toString());
+        + "m.onPaused(false) m.preStateSwitch m.onStateSwitch m.postStateSwitch m.destroy ", log.toString());
     assertEquals(0.5f, recorder.lastElapsed);
     assertSame(batch, recorder.lastBatch);
     assertSame(camera, recorder.lastCamera);
@@ -453,6 +454,12 @@ class FlixelManagersTest {
     public void preStateSwitch(@NotNull StateSwitchSignalData data) {
       lastData = data;
       record("preStateSwitch");
+    }
+
+    @Override
+    public void onStateSwitch(@NotNull StateSwitchSignalData data) {
+      lastData = data;
+      record("onStateSwitch");
     }
 
     @Override

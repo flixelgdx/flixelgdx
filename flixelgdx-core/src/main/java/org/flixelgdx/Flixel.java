@@ -1131,6 +1131,7 @@ public final class Flixel {
       if (state != null) {
         state.destroy();
       }
+      managers.onStateSwitch(preData);
 
       if (sound != null) {
         sound.clearNonPersist();

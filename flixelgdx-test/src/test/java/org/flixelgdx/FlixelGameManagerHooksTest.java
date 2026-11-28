@@ -165,7 +165,8 @@ class FlixelGameManagerHooksTest {
     Flixel.boot.markInitialized();
     LoggingState next = new LoggingState(log);
     Flixel.switchState(() -> next, false, false, false);
-    assertEquals("m.preStateSwitch input.preStateSwitch state.create m.postStateSwitch input.postStateSwitch ",
+    assertEquals("m.preStateSwitch input.preStateSwitch m.onStateSwitch input.onStateSwitch state.create "
+        + "m.postStateSwitch input.postStateSwitch ",
         log.toString());
     assertSame(next, recorder.lastData.state());
     assertSame(next, Flixel.state);
