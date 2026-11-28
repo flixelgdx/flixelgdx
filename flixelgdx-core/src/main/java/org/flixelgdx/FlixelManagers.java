@@ -112,6 +112,7 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
   private static final int STATE_SWITCH = 16;
   private static final int POST_STATE_SWITCH = 17;
   private static final int BEGIN_FRAME = 18;
+  private static final int DRAW = 19;
 
   /** Every registered slot, sorted by order. Removed slots stay here until the next flush. */
   private final FlixelArray<Slot> slots = new FlixelArray<>(32);
@@ -267,7 +268,7 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
   }
 
   /**
-   * Runs {@link Manager#postUpdate(float)} on every manager, after the state and cameras updated.
+   * Runs {@link Manager#postUpdate(float)} on every manager, after the state updated.
    *
    * @param elapsed The scaled seconds since the last frame.
    * @param paused Whether the game is paused. Managers whose {@link Manager#isPausable()} returns
@@ -284,6 +285,16 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
    */
   public void preDraw(@NotNull FlixelBatch batch) {
     dispatch(PRE_DRAW, 0f, false, batch, null, 0, 0, null);
+  }
+
+  /**
+   * Runs {@link Manager#draw(FlixelBatch)} on every manager. This is the main draw pass, where
+   * {@link Flixel#render} draws every camera and the overlay.
+   *
+   * @param batch The framework batch. It has not been begun.
+   */
+  public void draw(@NotNull FlixelBatch batch) {
+    dispatch(DRAW, 0f, false, batch, null, 0, 0, null);
   }
 
   /**
@@ -405,7 +416,12 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
         Slot slot = slots.get(i);
         Manager manager = slot.resolve();
         if (!slot.removed && manager != null) {
-          manager.destroy();
+          Flixel.profiler.begin(manager.getName());
+          try {
+            manager.destroy();
+          } finally {
+            Flixel.profiler.end();
+          }
         }
       }
     } finally {
@@ -501,31 +517,43 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
         if (manager == null || (updatePass && flag && manager.isPausable())) {
           continue;
         }
-        switch (hook) {
-          case CREATE -> manager.create();
-          case PRE_UPDATE -> manager.preUpdate(elapsed);
-          case UPDATE -> manager.update(elapsed);
-          case POST_UPDATE -> manager.postUpdate(elapsed);
-          case PRE_DRAW -> manager.preDraw(batch);
-          case DRAW_CAMERA -> manager.drawCamera(camera, batch);
-          case DRAW_OVERLAY -> manager.drawOverlay(batch);
-          case POST_DRAW -> manager.postDraw(batch);
-          case END_FRAME -> manager.endFrame();
-          case RESIZE -> manager.resize(width, height);
-          case FOCUS_LOST -> manager.onFocusLost();
-          case FOCUS_GAINED -> manager.onFocusGained();
-          case MINIMIZED -> manager.onMinimized();
-          case SUSPENDED -> manager.onSuspended();
-          case PAUSED -> manager.onPaused(flag);
-          case PRE_STATE_SWITCH -> manager.preStateSwitch(data);
-          case STATE_SWITCH -> manager.onStateSwitch(data);
-          case POST_STATE_SWITCH -> manager.postStateSwitch(data);
-          case BEGIN_FRAME -> manager.beginFrame();
-          default -> throw new IllegalStateException("Unknown manager hook: " + hook);
+        // Each call gets its own profiler section, so a platform profiler shows every manager by name.
+        Flixel.profiler.begin(manager.getName());
+        try {
+          call(manager, hook, elapsed, flag, batch, camera, width, height, data);
+        } finally {
+          Flixel.profiler.end();
         }
       }
     } finally {
       finishDispatch();
+    }
+  }
+
+  private static void call(Manager manager, int hook, float elapsed, boolean flag, @Nullable FlixelBatch batch,
+      @Nullable FlixelCamera camera, int width, int height, @Nullable StateSwitchSignalData data) {
+    switch (hook) {
+      case CREATE -> manager.create();
+      case PRE_UPDATE -> manager.preUpdate(elapsed);
+      case UPDATE -> manager.update(elapsed);
+      case POST_UPDATE -> manager.postUpdate(elapsed);
+      case PRE_DRAW -> manager.preDraw(batch);
+      case DRAW -> manager.draw(batch);
+      case DRAW_CAMERA -> manager.drawCamera(camera, batch);
+      case DRAW_OVERLAY -> manager.drawOverlay(batch);
+      case POST_DRAW -> manager.postDraw(batch);
+      case END_FRAME -> manager.endFrame();
+      case RESIZE -> manager.resize(width, height);
+      case FOCUS_LOST -> manager.onFocusLost();
+      case FOCUS_GAINED -> manager.onFocusGained();
+      case MINIMIZED -> manager.onMinimized();
+      case SUSPENDED -> manager.onSuspended();
+      case PAUSED -> manager.onPaused(flag);
+      case PRE_STATE_SWITCH -> manager.preStateSwitch(data);
+      case STATE_SWITCH -> manager.onStateSwitch(data);
+      case POST_STATE_SWITCH -> manager.postStateSwitch(data);
+      case BEGIN_FRAME -> manager.beginFrame();
+      default -> throw new IllegalStateException("Unknown manager hook: " + hook);
     }
   }
 
@@ -622,13 +650,13 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
    *   <li>{@link #beginFrame()}, at the start of the frame.</li>
    *   <li>{@link #preUpdate(float)}, at the start of the update pass.</li>
    *   <li>{@link #update(float)}, right before the state updates.</li>
-   *   <li>The state, the cameras, and the global overlay update.</li>
-   *   <li>{@link #postUpdate(float)}, after everything above.</li>
+   *   <li>The state updates.</li>
+   *   <li>{@link #postUpdate(float)}, after the state. The cameras and the global overlay update here.</li>
    *   <li>{@link #preDraw(FlixelBatch)}, before anything is drawn.</li>
-   *   <li>{@link #drawCamera(FlixelCamera, FlixelBatch)}, once for each camera, after the state drew
-   *       on it.</li>
-   *   <li>{@link #drawOverlay(FlixelBatch)}, on top of every camera, the global shaders, and the
-   *       global overlay.</li>
+   *   <li>{@link #draw(FlixelBatch)}, the main draw pass. {@link Flixel#render} draws the cameras
+   *       here, and during that it calls {@link #drawCamera(FlixelCamera, FlixelBatch)} once for each
+   *       camera (after the state drew on it) and {@link #drawOverlay(FlixelBatch)} on top of every
+   *       camera, the global shaders, and the global overlay.</li>
    *   <li>{@link #postDraw(FlixelBatch)}, after the frame is drawn.</li>
    *   <li>{@link #endFrame()}, after the frame is updated and drawn.</li>
    * </ol>
@@ -651,6 +679,21 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
 
     /** The order of the font registry, which destroys its baked fonts before the assets go away. */
     int ORDER_FONTS = -1900;
+
+    /**
+     * The order of {@link Flixel#render}. It draws every camera first in the draw pass, so a manager
+     * with a later order that uses {@link #draw(FlixelBatch)} draws on top of the finished picture.
+     */
+    int ORDER_RENDER = -1800;
+
+    /**
+     * The order of {@link Flixel#cameraManager}. The cameras update first in {@link #postUpdate(float)},
+     * right after the state, so every manager after them sees where the cameras ended up.
+     */
+    int ORDER_CAMERAS = -1700;
+
+    /** The order of {@link Flixel#overlay}, which updates right after the cameras. */
+    int ORDER_OVERLAY = -1600;
 
     /** The order of {@link Flixel#keys}. Input reads the hardware before anything else updates. */
     int ORDER_KEYS = -1000;
@@ -712,6 +755,18 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
       return true;
     }
 
+    /**
+     * Returns the name of this manager, used as its section in {@link Flixel#profiler}.
+     *
+     * <p>Return a constant, such as {@code "mylibrary.network"}, so tracing never builds a string.
+     *
+     * @return The name of this manager. The default is {@code "flixel.manager"}.
+     */
+    @NotNull
+    default String getName() {
+      return "flixel.manager";
+    }
+
     /** Called once when the game starts, or right away when added to a running game. */
     @Override
     default void create() {}
@@ -741,7 +796,8 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
     default void update(float elapsed) {}
 
     /**
-     * Called every frame after the state, the cameras, and the global overlay updated.
+     * Called every frame after the state updated. The cameras and the global overlay update in this
+     * pass too, at {@link #ORDER_CAMERAS} and {@link #ORDER_OVERLAY}.
      *
      * @param elapsed The scaled seconds since the last frame.
      */
@@ -753,6 +809,19 @@ public class FlixelManagers implements FlixelCreatable, FlixelUpdatable, FlixelD
      * @param batch The framework batch. It has not been begun.
      */
     default void preDraw(@NotNull FlixelBatch batch) {}
+
+    /**
+     * Called every frame in the main draw pass.
+     *
+     * <p>{@link Flixel#render} draws every camera, the global shaders, and the overlay here at
+     * {@link #ORDER_RENDER}, which comes before every other built-in order. A manager that draws here
+     * with a later order draws straight on top of the finished picture. To draw inside a camera or on
+     * the overlay instead, use {@link #drawCamera(FlixelCamera, FlixelBatch)} or
+     * {@link #drawOverlay(FlixelBatch)}.
+     *
+     * @param batch The framework batch. It has not been begun.
+     */
+    default void draw(@NotNull FlixelBatch batch) {}
 
     /**
      * Called once for every camera, after the state drew on it and before the camera's effects
