@@ -182,9 +182,9 @@ class FlixelEmitterTest {
     FlixelParticle p = emitter.emitParticle();
     assertNotNull(p);
     emitter.update(0.5f);
-    assertEquals(0.5f, p.getColor().r, 1e-4f);
-    assertEquals(0.5f, p.getColor().b, 1e-4f);
-    assertEquals(0.5f, p.getColor().a, 1e-4f);
+    assertEquals(0.5f, p.getColor().getRed(), 1e-4f);
+    assertEquals(0.5f, p.getColor().getBlue(), 1e-4f);
+    assertEquals(0.5f, p.getColor().getAlpha(), 1e-4f);
   }
 
   @Test
@@ -408,12 +408,12 @@ class FlixelEmitterTest {
     emitter.color.active = false;
     FlixelParticle p = emitter.emitParticle();
     assertNotNull(p);
-    assertEquals(1f, p.getColor().r, 1e-5f);
-    assertEquals(1f, p.getColor().g, 1e-5f);
-    assertEquals(1f, p.getColor().b, 1e-5f);
+    assertEquals(1f, p.getColor().getRed(), 1e-5f);
+    assertEquals(1f, p.getColor().getGreen(), 1e-5f);
+    assertEquals(1f, p.getColor().getBlue(), 1e-5f);
     emitter.update(0.5f);
-    assertEquals(1f, p.getColor().g, 1e-5f);
-    assertEquals(1f, FlixelColor.WHITE.g, 1e-5f, "the shared WHITE preset must never be modified");
+    assertEquals(1f, p.getColor().getGreen(), 1e-5f);
+    assertEquals(1f, FlixelColor.WHITE.getGreen(), 1e-5f, "the shared WHITE preset must never be modified");
   }
 
   private static float distanceFromCenter(FlixelParticle p, float cx, float cy) {

@@ -109,7 +109,7 @@ public abstract class FlixelSubState extends FlixelState {
    */
   @Override
   public void draw(@NotNull FlixelBatch batch) {
-    if (bgColor.a > 0f) {
+    if (bgColor.getAlpha() > 0f) {
       FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.cameras.first();
       if (whitePixel == null) {
         whitePixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);

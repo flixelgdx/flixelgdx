@@ -254,10 +254,10 @@ public class FlixelGpuBatch implements FlixelBatch {
    * is the order a {@code unorm8x4} vertex attribute reads them in on every platform.
    */
   private int packRgba() {
-    int r = clamp255(color.r);
-    int g = clamp255(color.g);
-    int b = clamp255(color.b);
-    int a = clamp255(color.a);
+    int r = clamp255(color.getRed());
+    int g = clamp255(color.getGreen());
+    int b = clamp255(color.getBlue());
+    int a = clamp255(color.getAlpha());
     return (a << 24) | (b << 16) | (g << 8) | r;
   }
 

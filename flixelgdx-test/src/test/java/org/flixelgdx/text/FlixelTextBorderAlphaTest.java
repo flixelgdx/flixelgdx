@@ -41,10 +41,10 @@ class FlixelTextBorderAlphaTest {
 
     FlixelColor resolved = text.resolveBorderColor();
 
-    assertEquals(1f, resolved.r, EPSILON);
-    assertEquals(0.5f, resolved.g, EPSILON);
-    assertEquals(0.25f, resolved.b, EPSILON);
-    assertEquals(0.4f, resolved.a, EPSILON);
+    assertEquals(1f, resolved.getRed(), EPSILON);
+    assertEquals(0.5f, resolved.getGreen(), EPSILON);
+    assertEquals(0.25f, resolved.getBlue(), EPSILON);
+    assertEquals(0.4f, resolved.getAlpha(), EPSILON);
   }
 
   @Test
@@ -56,8 +56,8 @@ class FlixelTextBorderAlphaTest {
     FlixelColor first = text.resolveBorderColor();
     FlixelColor second = text.resolveBorderColor();
 
-    assertEquals(1f, text.getBorderColor().a, EPSILON);
-    assertEquals(0.25f, second.a, EPSILON);
+    assertEquals(1f, text.getBorderColor().getAlpha(), EPSILON);
+    assertEquals(0.25f, second.getAlpha(), EPSILON);
     assertSame(first, second);
   }
 }

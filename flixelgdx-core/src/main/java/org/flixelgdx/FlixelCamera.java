@@ -286,7 +286,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    *
    * <pre>{@code
    * FlixelCamera hud = new FlixelCamera(width, height);
-   * hud.bgColor.a = 0f;
+   * hud.bgColor.setAlpha(0f);
    * hud.defaultDrawTarget = false;
    * Flixel.cameras.add(hud);
    *
@@ -809,10 +809,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    */
   public void fill(FlixelColor fillColor, boolean blendAlpha, float fxAlpha, FlixelBatch batch,
       FlixelFrame whitePixel) {
-    float r = fillColor.r;
-    float g = fillColor.g;
-    float b = fillColor.b;
-    float a = fillColor.a * fxAlpha;
+    float r = fillColor.getRed();
+    float g = fillColor.getGreen();
+    float b = fillColor.getBlue();
+    float a = fillColor.getAlpha() * fxAlpha;
     // Use the viewport's actual world dimensions rather than the design dimensions so that
     // viewports like ExtendViewport which extend the visible area beyond the design size
     // are fully covered. camera.position is in view space (getVisibleWidth/2 + shake offset),
@@ -855,11 +855,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     float fx = viewport.getCameraX() - fw / 2f;
     float fy = viewport.getCameraY() - fh / 2f;
     if (flashActive && flashAlpha > 0f) {
-      batch.setColor(flashColor.r, flashColor.g, flashColor.b, flashAlpha * alpha);
+      batch.setColor(flashColor.getRed(), flashColor.getGreen(), flashColor.getBlue(), flashAlpha * alpha);
       batch.draw(whitePixel, fx, fy, fw, fh);
     }
     if (fadeActive || fadeAlpha > 0f) {
-      batch.setColor(fadeColor.r, fadeColor.g, fadeColor.b, fadeAlpha * alpha);
+      batch.setColor(fadeColor.getRed(), fadeColor.getGreen(), fadeColor.getBlue(), fadeAlpha * alpha);
       batch.draw(whitePixel, fx, fy, fw, fh);
     }
     batch.setColor(FlixelColor.WHITE);

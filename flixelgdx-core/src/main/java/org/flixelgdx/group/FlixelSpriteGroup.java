@@ -213,7 +213,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   public float getAlpha() {
-    return getColor().a;
+    return getColor().getAlpha();
   }
 
   /** Sets a color tint on the group and propagates it to all current members. */
@@ -871,7 +871,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private void preAdd(FlixelSprite sprite) {
     sprite.setX(sprite.getX() + getX());
     sprite.setY(sprite.getY() + getY());
-    sprite.setAlpha(sprite.getColor().a * getColor().a);
+    sprite.setAlpha(sprite.getColor().getAlpha() * getColor().getAlpha());
     sprite.setAntialiasing(antialiasing);
     sprite.setFacing(facing);
   }

@@ -63,7 +63,8 @@ public class FlixelColorRange {
   public FlixelColorRange set(@NotNull FlixelColor start, @NotNull FlixelColor end) {
     this.start.set(start);
     this.end.set(end);
-    active = start.r != end.r || start.g != end.g || start.b != end.b || start.a != end.a;
+    active = start.getRed() != end.getRed() || start.getGreen() != end.getGreen() || start.getBlue() != end.getBlue()
+        || start.getAlpha() != end.getAlpha();
     return this;
   }
 
@@ -75,10 +76,10 @@ public class FlixelColorRange {
    * @return {@code out}, for chaining.
    */
   public FlixelColor lerp(float t, @NotNull FlixelColor out) {
-    out.r = start.r + (end.r - start.r) * t;
-    out.g = start.g + (end.g - start.g) * t;
-    out.b = start.b + (end.b - start.b) * t;
-    out.a = start.a + (end.a - start.a) * t;
-    return out;
+    return out.set(
+        start.getRed() + (end.getRed() - start.getRed()) * t,
+        start.getGreen() + (end.getGreen() - start.getGreen()) * t,
+        start.getBlue() + (end.getBlue() - start.getBlue()) * t,
+        start.getAlpha() + (end.getAlpha() - start.getAlpha()) * t);
   }
 }

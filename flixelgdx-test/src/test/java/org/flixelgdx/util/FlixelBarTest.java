@@ -91,9 +91,9 @@ class FlixelBarTest {
     Call empty = batch.calls.get(0);
     assertEquals(10f, empty.x(), EPS);
     assertEquals(100f, empty.w(), EPS);
-    assertEquals(0.5f, empty.color().a, EPS);
+    assertEquals(0.5f, empty.color().getAlpha(), EPS);
     assertEquals(25f, fill().w(), EPS);
-    assertEquals(1f, fill().color().g, EPS);
+    assertEquals(1f, fill().color().getGreen(), EPS);
   }
 
   @Test
@@ -143,7 +143,7 @@ class FlixelBarTest {
     batch.calls.clear();
     bar.draw(batch);
     assertNull(batch.calls.get(0).texture());
-    assertEquals(1f, fill().color().b, EPS);
+    assertEquals(1f, fill().color().getBlue(), EPS);
   }
 
   @Test
@@ -153,7 +153,7 @@ class FlixelBarTest {
     Call c = fill();
     assertNotNull(c.texture());
     assertEquals(100, c.texture().getWidth());
-    assertEquals(1f, c.color().g, EPS, "a gradient is drawn untinted");
+    assertEquals(1f, c.color().getGreen(), EPS, "a gradient is drawn untinted");
 
     bar.setFillDirection(BarFillDirection.TOP_TO_BOTTOM);
     batch.calls.clear();
@@ -172,11 +172,11 @@ class FlixelBarTest {
   void thresholdColorsBlendBetweenStops() {
     bar.setThresholdColors(FlixelColor.GREEN, FlixelColor.RED, 0.25f);
     bar.setValue(10f).draw(batch);
-    assertEquals(1f, fill().color().r, EPS, "below the low stop the low color is used");
+    assertEquals(1f, fill().color().getRed(), EPS, "below the low stop the low color is used");
 
     batch.calls.clear();
     bar.setValue(62.5f).draw(batch);
-    assertEquals(0.5f, fill().color().g, EPS, "half way between the stops is half way between the colors");
+    assertEquals(0.5f, fill().color().getGreen(), EPS, "half way between the stops is half way between the colors");
 
     FlixelArray<ThresholdStop> stops = new FlixelArray<>(ThresholdStop[]::new);
     stops.add(new ThresholdStop(0.5f, FlixelColor.BLUE));
@@ -185,13 +185,13 @@ class FlixelBarTest {
     bar.setThresholdStops(stops);
     batch.calls.clear();
     bar.setValue(100f).draw(batch);
-    assertEquals(1f, fill().color().r, EPS);
+    assertEquals(1f, fill().color().getRed(), EPS);
 
     bar.clearThresholds();
     batch.calls.clear();
     bar.draw(batch);
-    assertEquals(1f, fill().color().g, EPS);
-    assertEquals(0f, fill().color().r, EPS);
+    assertEquals(1f, fill().color().getGreen(), EPS);
+    assertEquals(0f, fill().color().getRed(), EPS);
 
     bar.setThresholdStops(new FlixelArray<>(ThresholdStop[]::new));
     assertThrows(NullPointerException.class, () -> bar.setThresholdStops(null));
@@ -207,13 +207,13 @@ class FlixelBarTest {
     bar.setValue(0f);
     bar.update(1f / 60f);
     bar.setValue(1f).draw(batch);
-    float r = fill().color().r;
+    float r = fill().color().getRed();
     assertEquals(0.5f, r, 0.05f, "half of the change is applied in one frame");
 
     bar.setThresholdSmoothing(0.5f, false);
     batch.calls.clear();
     bar.setValue(100f).draw(batch);
-    assertEquals(0.5f, fill().color().g, 0.3f, "smoothing also applies when the value rises");
+    assertEquals(0.5f, fill().color().getGreen(), 0.3f, "smoothing also applies when the value rises");
   }
 
   @Test

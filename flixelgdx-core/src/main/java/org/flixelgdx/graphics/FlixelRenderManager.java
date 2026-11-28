@@ -113,7 +113,7 @@ public class FlixelRenderManager implements FlixelManagers.Manager {
    */
   @Override
   public void draw(@NotNull FlixelBatch batch) {
-    Flixel.graphics.clear(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+    Flixel.graphics.clear(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), bgColor.getAlpha());
     int renderCallsBefore = batch.getTotalRenderCalls();
     FlixelGame game = Flixel.game;
     boolean paused = game != null && game.isGamePaused();

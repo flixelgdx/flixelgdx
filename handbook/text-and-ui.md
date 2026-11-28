@@ -246,7 +246,7 @@ public void create() {
   // ... world objects ...
 
   FlixelCamera hudCam = new FlixelCamera(Flixel.getDesignWidth(), Flixel.getDesignHeight());
-  hudCam.bgColor.a = 0f;
+  hudCam.bgColor.setAlpha(0f);
   hudCam.useBgAlphaBlending = true;
   hudCam.defaultDrawTarget = false;
   Flixel.cameras.add(hudCam);

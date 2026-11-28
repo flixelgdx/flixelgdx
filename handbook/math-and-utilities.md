@@ -162,7 +162,8 @@ drawing directly with the batch, or passing a projection to a shader.
 
 ## Colors
 
-`FlixelColor` is a mutable color with float components from 0 to 1 (`r`, `g`, `b`, `a`):
+`FlixelColor` is a mutable color with float components from 0 to 1, read with `getRed()`, `getGreen()`, `getBlue()`, and
+`getAlpha()` and changed with the matching setters, which clamp into that range:
 
 ```java
 FlixelColor sky = new FlixelColor(0.4f, 0.7f, 1f, 1f);     // Floats from 0 to 1.
@@ -170,7 +171,8 @@ FlixelColor grass = new FlixelColor(34, 139, 34, 1f);      // 0 to 255 for RGB, 
 FlixelColor fromHex = new FlixelColor().set("#FF8800");    // Hex, with an optional alpha: "#FF880080".
 FlixelColor packed = new FlixelColor(0xFF8800FF);          // A packed RGBA8888 int.
 
-sky.a = 0.5f;                                 // Fields are public.
+sky.setAlpha(0.5f);                           // Setters clamp, so setAlpha(2f) stores 1.
+sky.setRed(255);                              // Red, green, and blue also take 0 to 255.
 sky.lerp(FlixelColor.ORANGE, 0.25f);          // Move a quarter of the way toward orange.
 sky.setHue(200f);                             // Hue, saturation, and value are adjustable too.
 sky.setSaturation(0.5f);
@@ -224,7 +226,7 @@ hpText.setText(buffer);
 ## Check your understanding
 
 1. You need a die roll from 1 to 6. Is `nextInt(1, 6)` correct, or `nextInt(1, 7)`?
-2. You set `FlixelColor.WHITE.a = 0.5f` to fade one sprite, and suddenly lots of things are see-through. Why?
+2. You set `FlixelColor.WHITE.setAlpha(0.5f)` to fade one sprite, and suddenly lots of things are see-through. Why?
 3. Two players should get the exact same randomly generated dungeon. What do they need to share?
 
 (Answers: `nextInt(1, 6)`, since both ends are included; you changed the shared preset instead of a copy; the seed.)

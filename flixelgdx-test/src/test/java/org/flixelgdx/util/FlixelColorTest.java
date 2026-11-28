@@ -34,9 +34,9 @@ class FlixelColorTest {
     FlixelColor a = new FlixelColor(1f, 0f, 0f, 1f);
     FlixelColor b = new FlixelColor(0f, 0f, 1f, 1f);
     a.lerp(b, 0.5f);
-    assertEquals(0.5f, a.r, 2e-2f);
-    assertEquals(0f, a.g, 2e-2f);
-    assertEquals(0.5f, a.b, 2e-2f);
+    assertEquals(0.5f, a.getRed(), 2e-2f);
+    assertEquals(0f, a.getGreen(), 2e-2f);
+    assertEquals(0.5f, a.getBlue(), 2e-2f);
   }
 
   @Test
@@ -44,15 +44,88 @@ class FlixelColorTest {
     FlixelColor c = new FlixelColor(1f, 0.5f, 0.25f, 1f);
     int packed = c.getRgba8888();
     FlixelColor fromPacked = new FlixelColor(packed);
-    assertEquals(c.r, fromPacked.r, 2e-2f);
-    assertEquals(c.g, fromPacked.g, 2e-2f);
-    assertEquals(c.b, fromPacked.b, 2e-2f);
-    assertEquals(c.a, fromPacked.a, 2e-2f);
+    assertEquals(c.getRed(), fromPacked.getRed(), 2e-2f);
+    assertEquals(c.getGreen(), fromPacked.getGreen(), 2e-2f);
+    assertEquals(c.getBlue(), fromPacked.getBlue(), 2e-2f);
+    assertEquals(c.getAlpha(), fromPacked.getAlpha(), 2e-2f);
   }
 
   @Test
   void staticFloatBitsMatchInstanceFloatBits() {
     FlixelColor c = new FlixelColor(1f, 0.5f, 0.25f, 0.75f);
     assertEquals(c.toFloatBits(), FlixelColor.toFloatBits(1f, 0.5f, 0.25f, 0.75f));
+  }
+
+  @Test
+  void channelSettersStoreValuesInRange() {
+    FlixelColor c = new FlixelColor(0f, 0f, 0f, 0f);
+    c.setRed(0.1f);
+    c.setGreen(0.2f);
+    c.setBlue(0.3f);
+    c.setAlpha(0.4f);
+    assertEquals(0.1f, c.getRed(), 1e-6f);
+    assertEquals(0.2f, c.getGreen(), 1e-6f);
+    assertEquals(0.3f, c.getBlue(), 1e-6f);
+    assertEquals(0.4f, c.getAlpha(), 1e-6f);
+  }
+
+  @Test
+  void channelSettersClampOutOfRangeValues() {
+    FlixelColor c = new FlixelColor();
+    c.setRed(2f);
+    c.setGreen(-1f);
+    c.setBlue(1.5f);
+    c.setAlpha(-0.5f);
+    assertEquals(1f, c.getRed());
+    assertEquals(0f, c.getGreen());
+    assertEquals(1f, c.getBlue());
+    assertEquals(0f, c.getAlpha());
+  }
+
+  @Test
+  void wholeNumberSettersMapZeroToTwoFiftyFiveOntoZeroToOne() {
+    FlixelColor c = new FlixelColor();
+    c.setRed(0);
+    c.setGreen(255);
+    c.setBlue(51);
+    assertEquals(0f, c.getRed());
+    assertEquals(1f, c.getGreen());
+    assertEquals(0.2f, c.getBlue(), 1e-6f);
+    assertEquals(1f, c.getAlpha(), "alpha is left alone");
+  }
+
+  @Test
+  void wholeNumberSettersClampOutOfRangeValues() {
+    FlixelColor c = new FlixelColor();
+    c.setRed(300);
+    c.setGreen(-20);
+    c.setBlue(256);
+    assertEquals(1f, c.getRed());
+    assertEquals(0f, c.getGreen());
+    assertEquals(1f, c.getBlue());
+  }
+
+  @Test
+  void floatConstructorAndSetClampOutOfRangeValues() {
+    FlixelColor c = new FlixelColor(-1f, 2f, 0.5f, 3f);
+    assertEquals(0f, c.getRed());
+    assertEquals(1f, c.getGreen());
+    assertEquals(0.5f, c.getBlue());
+    assertEquals(1f, c.getAlpha());
+    c.set(5f, -5f, 0.25f, -1f);
+    assertEquals(1f, c.getRed());
+    assertEquals(0f, c.getGreen());
+    assertEquals(0.25f, c.getBlue());
+    assertEquals(0f, c.getAlpha());
+  }
+
+  @Test
+  void lerpPastTheTargetIsClamped() {
+    FlixelColor c = new FlixelColor(0f, 0.5f, 1f, 1f);
+    c.lerp(new FlixelColor(1f, 0.5f, 0f, 1f), 2f);
+    assertEquals(1f, c.getRed());
+    assertEquals(0.5f, c.getGreen(), 1e-6f);
+    assertEquals(0f, c.getBlue());
+    assertEquals(1f, c.getAlpha());
   }
 }

@@ -96,6 +96,7 @@ public record FlixelColorBounds(FlixelColor min, FlixelColor max) {
   }
 
   private static boolean same(FlixelColor a, FlixelColor b) {
-    return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+    return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue()
+        && a.getAlpha() == b.getAlpha();
   }
 }

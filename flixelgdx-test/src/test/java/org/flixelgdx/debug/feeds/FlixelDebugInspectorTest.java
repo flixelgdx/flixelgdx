@@ -715,8 +715,8 @@ class FlixelDebugInspectorTest {
 
     assertEquals(99f, sprite.getX());
     assertEquals(0.5f, sprite.getAlpha(), 0.001f);
-    assertEquals(1f, sprite.getColor().r, 0.01f);
-    assertEquals(0f, sprite.getColor().g, 0.01f);
+    assertEquals(1f, sprite.getColor().getRed(), 0.01f);
+    assertEquals(0f, sprite.getColor().getGreen(), 0.01f);
   }
 
   @Test

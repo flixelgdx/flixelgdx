@@ -56,9 +56,9 @@ public class FlixelSpriteUtilTest {
 
   private static void assertColorClose(FlixelColor actual, FlixelColor expected) {
     float eps = 1f / 255f + 0.0001f;
-    assertTrue(Math.abs(actual.r - expected.r) <= eps, "r differs");
-    assertTrue(Math.abs(actual.g - expected.g) <= eps, "g differs");
-    assertTrue(Math.abs(actual.b - expected.b) <= eps, "b differs");
-    assertTrue(Math.abs(actual.a - expected.a) <= eps, "a differs");
+    assertTrue(Math.abs(actual.getRed() - expected.getRed()) <= eps, "r differs");
+    assertTrue(Math.abs(actual.getGreen() - expected.getGreen()) <= eps, "g differs");
+    assertTrue(Math.abs(actual.getBlue() - expected.getBlue()) <= eps, "b differs");
+    assertTrue(Math.abs(actual.getAlpha() - expected.getAlpha()) <= eps, "a differs");
   }
 }

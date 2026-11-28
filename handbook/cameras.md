@@ -180,7 +180,7 @@ on top of the world:
 
 ```java
 FlixelCamera hud = new FlixelCamera(Flixel.getDesignWidth(), Flixel.getDesignHeight());
-hud.bgColor.a = 0f;            // Transparent, so the world shows through.
+hud.bgColor.setAlpha(0f);      // Transparent, so the world shows through.
 hud.useBgAlphaBlending = true; // Needed for the transparent background to render properly.
 hud.defaultDrawTarget = false; // World objects stay off this camera.
 Flixel.cameras.add(hud);       // Added last, so it draws on top.

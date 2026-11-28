@@ -456,9 +456,9 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic
       p.colorRange.set(start, end);
       p.colorRange.active &= timed;
       FlixelColor tint = p.getColor();
-      tint.r = start.r;
-      tint.g = start.g;
-      tint.b = start.b;
+      tint.setRed(start.getRed());
+      tint.setGreen(start.getGreen());
+      tint.setBlue(start.getBlue());
     }
 
     p.onEmit();

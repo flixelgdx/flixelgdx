@@ -261,7 +261,7 @@ class FlixelTweenTest {
 
     FlixelTween.color(target, FlixelColor.BLACK, FlixelColor.WHITE, new FlixelTweenSettings().setDuration(1f));
     FlixelTween.completeTweensOfType(FlixelColorTween.class);
-    assertEquals(1f, target.color.r, 1e-4f);
+    assertEquals(1f, target.color.getRed(), 1e-4f);
 
     FlixelTween.flicker(target, new FlixelTweenSettings().setDuration(1f));
     FlixelTween.cancelActiveTweens();
