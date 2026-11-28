@@ -161,6 +161,12 @@ public class FlixelSoundManager implements FlixelManagers.Manager {
   }
 
   @NotNull
+  @Override
+  public String getName() {
+    return "flixel.sound";
+  }
+
+  @NotNull
   public FlixelSoundFactory getFactory() {
     return factory;
   }

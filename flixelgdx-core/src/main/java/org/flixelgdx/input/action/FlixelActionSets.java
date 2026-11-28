@@ -65,6 +65,12 @@ public final class FlixelActionSets {
       return ORDER_ACTIONS;
     }
 
+    @NotNull
+    @Override
+    public String getName() {
+      return "flixel.actions";
+    }
+
     @Override
     public boolean isPausable() {
       return false;

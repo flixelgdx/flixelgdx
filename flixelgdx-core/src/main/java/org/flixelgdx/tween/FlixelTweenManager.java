@@ -423,6 +423,12 @@ public class FlixelTweenManager implements FlixelManagers.Manager {
     return ORDER_TWEENS;
   }
 
+  @NotNull
+  @Override
+  public String getName() {
+    return "flixel.tweens";
+  }
+
   /**
    * Registry entry for a tween type: the object pool used for tween reuse.
    *

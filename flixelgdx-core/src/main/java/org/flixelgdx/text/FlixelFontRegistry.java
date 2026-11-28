@@ -73,6 +73,12 @@ public final class FlixelFontRegistry {
       return ORDER_FONTS;
     }
 
+    @NotNull
+    @Override
+    public String getName() {
+      return "flixel.fonts";
+    }
+
     @Override
     public void destroy() {
       FlixelFontRegistry.dispose();

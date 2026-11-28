@@ -30,6 +30,7 @@ import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelTouchListener;
 import org.flixelgdx.math.FlixelVector;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -292,6 +293,12 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   @Override
   public int getOrder() {
     return ORDER_TOUCHES;
+  }
+
+  @NotNull
+  @Override
+  public String getName() {
+    return "flixel.touches";
   }
 
   /** Starts listening to the touch screen of {@link Flixel#input}. */

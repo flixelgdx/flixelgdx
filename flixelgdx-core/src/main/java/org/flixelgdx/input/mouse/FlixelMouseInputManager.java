@@ -143,6 +143,12 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
     return ORDER_MOUSE;
   }
 
+  @NotNull
+  @Override
+  public String getName() {
+    return "flixel.mouse";
+  }
+
   /** Starts listening to the mouse of {@link Flixel#input}. */
   @Override
   public void create() {
