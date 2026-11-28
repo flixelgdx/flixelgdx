@@ -348,6 +348,20 @@ public final class Flixel {
   @SuppressWarnings("checkstyle:ConstantName")
   public static final FlixelArray<FlixelCamera> cameras = new FlixelArray<>(FlixelCamera[]::new);
 
+  /**
+   * The registry of every {@link FlixelManagers.Manager} that follows the game's global lifecycle.
+   *
+   * <p>A manager is like a passenger on a train: once it boards, it rides through every stop of the
+   * game loop (creation, every part of the update and draw passes, resizing, focus changes,
+   * pausing, state switches, and destruction) without the game having to know about it. Register
+   * your own managers here from a {@link FlixelBootManager boot callback}, instead of subclassing
+   * {@link FlixelGame} or listening to several {@link Signals signals}.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * Flixel.boot.afterStart(() -> Flixel.managers.add(new MyManager()));
+   * }</pre>
+   */
   @NotNull
   @SuppressWarnings("checkstyle:ConstantName")
   public static final FlixelManagers managers = new FlixelManagers();
@@ -1107,7 +1121,9 @@ public final class Flixel {
     try {
       FlixelState newState = stateFactory.get();
 
-      Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
+      StateSwitchSignalData preData = new StateSwitchSignalData(state);
+      Signals.preStateSwitch.dispatch(preData);
+      managers.preStateSwitch(preData);
 
       if (!boot.isInitialized()) {
         throw new IllegalStateException("Flixel has not been initialized yet.");
@@ -1136,7 +1152,9 @@ public final class Flixel {
         System.gc();
       }
 
-      Signals.postStateSwitch.dispatch(new StateSwitchSignalData(state));
+      StateSwitchSignalData postData = new StateSwitchSignalData(state);
+      managers.postStateSwitch(postData);
+      Signals.postStateSwitch.dispatch(postData);
     } finally {
       profiler.end();
     }

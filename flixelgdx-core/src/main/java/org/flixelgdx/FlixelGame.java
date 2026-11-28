@@ -98,6 +98,13 @@ import java.util.function.Supplier;
  * {@link #enableGlobalOverlay(boolean)}. The overlay is completely separate from the
  * remote debugger and does not appear in debug mode unless you explicitly enable it.
  *
+ * <h2>Managers</h2>
+ *
+ * <p>Anything that has to follow the lifecycle of the whole game (for example a library that needs
+ * to update every frame or clean up when the game closes) should be a {@link FlixelManagers.Manager}
+ * registered in {@link Flixel#managers}, instead of a subclass of this class. The game calls every
+ * manager hook at the matching point of each frame, in a fixed order. See {@link FlixelManagers}.
+ *
  * <h2>Signals</h2>
  *
  * <p>The framework emits signals each frame through {@link Flixel.Signals}:
@@ -363,6 +370,8 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     Flixel.input.addMouseListener(Flixel.mouse);
     Flixel.input.addTouchListener(Flixel.touches);
 
+    Flixel.managers.create();
+
     if (Flixel.isDebugMode()) {
       Flixel.debug.start();
     }
@@ -380,7 +389,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     for (FlixelCamera camera : Flixel.cameras) {
       camera.update(width, height, camera.centerCameraOnResize);
     }
-    if (overlayCamera != null && overlayEnabled) {
+    if (overlayCamera != null) {
       overlayCamera.update(width, height, overlayCamera.centerCameraOnResize);
     }
 
@@ -388,6 +397,8 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     if (state != null) {
       state.resize(width, height);
     }
+
+    Flixel.managers.resize(width, height);
 
     Flixel.graphics.resizeGlobalShaders();
   }
@@ -411,6 +422,10 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
 
+    // Checked again below, since the debugger can step a paused game while it reads its input.
+    boolean paused = isUpdatePaused();
+    Flixel.managers.preUpdate(elapsed, paused);
+
     if (Flixel.isDebugMode()) {
       // Input a remote tool injected is applied first, so the managers below see it like real input.
       Flixel.debug.applyInput();
@@ -428,10 +443,11 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
       Flixel.debug.updateInput(rawElapsed);
     }
 
-    boolean stepping = gamePaused && stepPending;
+    paused = isUpdatePaused();
     stepPending = false;
+    Flixel.managers.update(elapsed, paused);
 
-    if ((!gamePaused || stepping) && shouldUpdate) {
+    if (!paused) {
       Flixel.profiler.begin(TRACE_UPDATE_TWEENS);
       try {
         FlixelTween.updateTweens(elapsed);
@@ -483,6 +499,8 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
       Flixel.debug.update(rawElapsed);
     }
 
+    Flixel.managers.postUpdate(elapsed, paused);
+
     postUpdateData.set(elapsed);
     Flixel.Signals.postUpdate.dispatch(postUpdateData);
   }
@@ -504,6 +522,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
 
   private void drawFrame(@NotNull FlixelBatch batch) {
     Flixel.Signals.preDraw.dispatch();
+    Flixel.managers.preDraw(batch);
 
     Flixel.graphics.clear(bgColor.r, bgColor.g, bgColor.b, bgColor.a); // Clear the screen to refresh it.
     FlixelState state = Flixel.state;
@@ -557,6 +576,8 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
           current = sub;
         }
 
+        Flixel.managers.drawCamera(camera, batch);
+
         camera.drawFX(batch, bgPixel);
 
         batch.end();
@@ -601,7 +622,8 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
       Flixel.graphics.applyGlobalShaderChain(batch);
     }
 
-    if (overlayCamera != null && overlayGroup != null && overlayEnabled) {
+    // The overlay pass always runs, even when the global overlay is off, so managers can draw on top too.
+    if (overlayCamera != null) {
       Flixel.graphics.beginCameraPass();
       Flixel.setDrawCamera(overlayCamera);
       try {
@@ -611,8 +633,12 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
         overlayCamera.applyViewport();
         batch.setProjection(overlayCamera.getCombinedMatrix());
         batch.begin();
-        overlayGroup.draw(batch);
+        if (overlayGroup != null && overlayEnabled) {
+          overlayGroup.draw(batch);
+        }
+        Flixel.managers.drawOverlay(batch);
         batch.end();
+        batch.setShader(null);
       } finally {
         Flixel.setDrawCamera(null);
       }
@@ -626,6 +652,8 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     if (Flixel.isDebugMode()) {
       Flixel.debug.controls.drawBoundingBoxes(Flixel.cameras.getItems());
     }
+
+    Flixel.managers.postDraw(batch);
 
     if (!Flixel.window.isTransparencyActive() && Flixel.config.isTransparentFramebuffer()) {
       Flixel.graphics.forceOpaqueAlpha();
@@ -675,6 +703,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     Flixel.touches.endFrame();
     Flixel.gamepads.endFrame();
     FlixelActionSets.endFrameAll();
+    Flixel.managers.endFrame();
   }
 
   /**
@@ -699,6 +728,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
       Flixel.sound.resume();
     }
     this.gamePaused = gamePaused;
+    Flixel.managers.onPaused(gamePaused);
     Flixel.Signals.gamePaused.dispatch(gamePaused ? GamePausedSignalData.PAUSED : GamePausedSignalData.RESUMED);
   }
 
@@ -722,6 +752,14 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    */
   public boolean isStepPending() {
     return stepPending;
+  }
+
+  /**
+   * Returns whether the update hooks that stop for a pause should be skipped this frame: the game is
+   * paused (and no {@link #stepFrame()} is waiting), or it lost focus while {@link Flixel#autoPause} is on.
+   */
+  private boolean isUpdatePaused() {
+    return (gamePaused && !stepPending) || !shouldUpdate;
   }
 
   private void snapshotCamerasForDebugPause() {
@@ -794,6 +832,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
       Flixel.graphics.setTargetFps(BACKGROUND_FPS);
       shouldUpdate = false;
     }
+    Flixel.managers.onFocusLost();
     Flixel.Signals.windowUnfocused.dispatch();
   }
 
@@ -828,6 +867,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
         Flixel.sound.resume();
       }
     }
+    Flixel.managers.onFocusGained();
     Flixel.Signals.windowFocused.dispatch();
   }
 
@@ -847,6 +887,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
       return;
     }
     suspended = true;
+    Flixel.managers.onSuspended();
     Flixel.Signals.gameSuspended.dispatch();
   }
 
@@ -869,6 +910,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     if (state != null) {
       state.onMinimized();
     }
+    Flixel.managers.onMinimized();
     Flixel.Signals.windowMinimized.dispatch();
   }
 
@@ -897,6 +939,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
     if (Flixel.state != null) {
       Flixel.state.destroy();
     }
+    Flixel.managers.destroy();
     Flixel.graphics.disposeGlobalShaders();
     Flixel.window.resetTransparency();
     fboOrthoW = -1;
