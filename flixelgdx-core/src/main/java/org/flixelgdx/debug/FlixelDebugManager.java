@@ -25,6 +25,7 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelManagers;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.feeds.FlixelDebugCapture;
@@ -135,7 +136,7 @@ import org.jetbrains.annotations.Nullable;
  * another thread, you can use {@link FlixelRuntimeDevice#queueMainThread Flixel.runtime.queueMainThread(...)}
  * and run the debug method there instead.
  */
-public class FlixelDebugManager {
+public class FlixelDebugManager implements FlixelManagers.Manager {
 
   /**
    * The transport new managers use to reach the debugger app. A platform launcher sets it before
@@ -315,11 +316,19 @@ public class FlixelDebugManager {
     FlixelDebugDefaultPanels.addTo(this);
   }
 
+  /** Starts the debugger through {@link #start()} when the game is created in debug mode. */
+  @Override
+  public void create() {
+    if (Flixel.isDebugMode()) {
+      start();
+    }
+  }
+
   /**
    * Starts the debugger for a running game: the log feed begins to collect messages.
    *
-   * <p>{@link FlixelGame} calls this when it starts in debug mode. When a transport is installed, this also opens
-   * the connection to the debugger app (in the background).
+   * <p>{@link #create()} calls this when the game starts in debug mode. When a transport is installed, this also
+   * opens the connection to the debugger app (in the background).
    */
   public void start() {
     logs.attach();
@@ -328,20 +337,48 @@ public class FlixelDebugManager {
   }
 
   /**
+   * Applies the input the debugger app queued through {@link #applyInput()}, at the start of every frame in debug
+   * mode.
+   *
+   * @param elapsed The scaled seconds since the last frame.
+   */
+  @Override
+  public void preUpdate(float elapsed) {
+    if (Flixel.isDebugMode()) {
+      applyInput();
+    }
+  }
+
+  /**
    * Applies the input that the debugger app queued (keys, pointer, scroll, and text) to the input managers.
    *
-   * <p>{@link FlixelGame} calls this every frame while the game runs in debug mode, before the input devices are
-   * read, so the game sees injected input like real input. It does not allocate. See {@link #input}.
+   * <p>{@link #preUpdate(float)} calls this every frame while the game runs in debug mode, before the input devices
+   * are read, so the game sees injected input like real input. It does not allocate. See {@link #input}.
    */
   public void applyInput() {
     input.applyQueued();
   }
 
   /**
+   * Takes the input the debugger owns through {@link #updateInput(float)}, every frame in debug mode.
+   *
+   * <p>This runs right after the input devices are read (see {@link FlixelManagers.Manager#ORDER_DEBUG}) and before
+   * the game logic, even while the game is paused.
+   *
+   * @param elapsed The scaled seconds since the last frame. The debugger uses the real time instead.
+   */
+  @Override
+  public void update(float elapsed) {
+    if (Flixel.isDebugMode()) {
+      updateInput(realElapsed(elapsed));
+    }
+  }
+
+  /**
    * Lets the debugger take the input it owns (the free camera and Alt click picking) before the game reads it.
    *
-   * <p>{@link FlixelGame} calls this every frame while the game runs in debug mode, right after the input devices
-   * are updated and before the game logic runs. It does not allocate.
+   * <p>{@link #update(float)} calls this every frame while the game runs in debug mode, right after the input
+   * devices are updated and before the game logic runs. It does not allocate.
    *
    * @param elapsed Real seconds since the last frame, not scaled by {@code Flixel.timeScale}.
    */
@@ -350,14 +387,26 @@ public class FlixelDebugManager {
   }
 
   /**
+   * Samples the frame through {@link #updateFeeds(float)} after the game logic ran, every frame in debug mode.
+   *
+   * @param elapsed The scaled seconds since the last frame. The debugger uses the real time instead.
+   */
+  @Override
+  public void postUpdate(float elapsed) {
+    if (Flixel.isDebugMode()) {
+      updateFeeds(realElapsed(elapsed));
+    }
+  }
+
+  /**
    * Updates every enabled feed, then every open panel, then talks to the debugger app.
    *
-   * <p>{@link FlixelGame} calls this every frame while the game runs in debug mode, even while the game is
+   * <p>{@link #postUpdate(float)} calls this every frame while the game runs in debug mode, even while the game is
    * paused. It does not allocate.
    *
    * @param elapsed Real seconds since the last frame, not scaled by {@code Flixel.timeScale}.
    */
-  public void update(float elapsed) {
+  public void updateFeeds(float elapsed) {
     for (int i = 0, n = feeds.getSize(); i < n; i++) {
       FlixelDebugFeed feed = feeds.get(i);
       if (feed.isEnabled()) {
@@ -371,10 +420,28 @@ public class FlixelDebugManager {
   }
 
   /**
+   * Draws the hitboxes the debugger switched on, on top of the finished frame, in debug mode.
+   *
+   * @param batch The framework batch.
+   */
+  @Override
+  public void postDraw(@NotNull FlixelBatch batch) {
+    if (Flixel.isDebugMode()) {
+      controls.drawBoundingBoxes(Flixel.cameras.getItems());
+    }
+  }
+
+  /** Shuts the debugger down through {@link #dispose()} when the game closes. */
+  @Override
+  public void destroy() {
+    dispose();
+  }
+
+  /**
    * Shuts the debugger down with the game: the log feed stops collecting messages, every feed is reset, and every
    * panel is closed.
    *
-   * <p>{@link FlixelGame} calls this when it is destroyed.
+   * <p>{@link #destroy()} calls this when the game closes.
    */
   public void dispose() {
     started = false;
@@ -461,6 +528,26 @@ public class FlixelDebugManager {
       agent.stop();
       agent = null;
     }
+  }
+
+  private static float realElapsed(float elapsed) {
+    FlixelGame game = Flixel.game;
+    return game != null ? game.getRawElapsed() : elapsed;
+  }
+
+  @Override
+  public int getOrder() {
+    return ORDER_DEBUG;
+  }
+
+  /**
+   * Returns {@code false}, since the debugger keeps working while the game is paused.
+   *
+   * @return Always {@code false}.
+   */
+  @Override
+  public boolean isPausable() {
+    return false;
   }
 
   public FlixelArray<FlixelBatch> getTrackedBatches() {

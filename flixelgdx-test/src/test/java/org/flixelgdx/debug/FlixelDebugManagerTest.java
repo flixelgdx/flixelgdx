@@ -148,14 +148,14 @@ class FlixelDebugManagerTest {
   }
 
   @Test
-  void updateReachesOnlyEnabledFeedsAndOpenPanels() {
+  void updateFeedsReachesOnlyEnabledFeedsAndOpenPanels() {
     CountingPanel open = manager.panels.register(new CountingPanel("open"));
     CountingPanel closed = manager.panels.register(new CountingPanel("closed"));
     CountingPanel always = manager.panels.register(new CountingPanel("always"));
     always.setUpdatedWhileClosed(true);
     open.setOpen(true);
     manager.watches.setEnabled(false);
-    manager.update(0.016f);
+    manager.updateFeeds(0.016f);
     assertEquals(1, open.updates);
     assertEquals(0, closed.updates);
     assertEquals(1, always.updates);
@@ -172,7 +172,7 @@ class FlixelDebugManagerTest {
     CountingPanel after = manager.panels.register(new CountingPanel("after"));
     broken.setOpen(true);
     after.setOpen(true);
-    manager.update(0.016f);
+    manager.updateFeeds(0.016f);
     assertEquals(1, after.updates);
   }
 

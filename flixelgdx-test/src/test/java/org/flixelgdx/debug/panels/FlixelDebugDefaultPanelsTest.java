@@ -75,11 +75,11 @@ class FlixelDebugDefaultPanelsTest {
       FlixelDebugPanel panel = manager.panels.get(i);
       panel.setOpen(true);
       for (int frame = 0; frame < 10; frame++) {
-        manager.update(0.05f);
+        manager.updateFeeds(0.05f);
       }
       Node root = tree(panel);
       assertTrue(root.type() > 0, panel.getId());
-      manager.update(0.05f);
+      manager.updateFeeds(0.05f);
       patch(panel);
     }
   }
@@ -98,7 +98,7 @@ class FlixelDebugDefaultPanelsTest {
     assertEquals(FlixelDebugProtocol.LEVEL_WARN, manager.controls.getLogLevel());
 
     manager.controls.setHitboxes(false);
-    manager.update(0.016f);
+    manager.updateFeeds(0.016f);
     boolean sawHitboxes = false;
     for (Op op : patch(controls)) {
       if (op.widget() == hitboxes.getId() && op.key() == FlixelDebugProtocol.PROP_VALUE) {
@@ -111,11 +111,11 @@ class FlixelDebugDefaultPanelsTest {
   @Test
   void theLogsPanelAppendsNewLinesAndFiltersByLevel() {
     FlixelDebugPanel logs = opened(panel(FlixelDebugDefaultPanels.LOGS));
-    manager.update(0.016f);
+    manager.updateFeeds(0.016f);
     patch(logs);
     root.tagged("Game").info("hello");
     root.tagged("Game").warn("careful");
-    manager.update(0.016f);
+    manager.updateFeeds(0.016f);
     List<Op> ops = patch(logs);
     Op append = ops.stream().filter(op -> op.code() == FlixelDebugProtocol.PATCH_APPEND).findFirst().orElseThrow();
     assertEquals(2, ((List<?>) append.value()).size());
@@ -123,7 +123,7 @@ class FlixelDebugDefaultPanelsTest {
     FlixelDebugWidget<?> info = logs.find("show.info");
     assertNotNull(info);
     event(logs, info, FlixelDebugProtocol.EVENT_CHANGE, false);
-    manager.update(0.016f);
+    manager.updateFeeds(0.016f);
     FlixelDebugWidget<?> lines = logs.find("lines");
     assertNotNull(lines);
     List<?> rows = null;
@@ -139,7 +139,7 @@ class FlixelDebugDefaultPanelsTest {
   @Test
   void theConsolePanelRunsWhatThePersonSubmits() {
     FlixelDebugPanel console = opened(panel(FlixelDebugDefaultPanels.CONSOLE));
-    manager.update(0.016f);
+    manager.updateFeeds(0.016f);
     FlixelDebugWidget<?> command = console.find("command");
     assertNotNull(command);
     Node node = tree(console);
@@ -170,7 +170,7 @@ class FlixelDebugDefaultPanelsTest {
     manager.watches.addInt("Broken", () -> {
       throw new IllegalStateException("no level");
     });
-    manager.update(1f);
+    manager.updateFeeds(1f);
     FlixelDebugWidget<?> values = watches.find("values");
     assertNotNull(values);
     assertInstanceOf(FlixelDebugTable.class, values, "the watches show as a flat table, not a folding section");
@@ -194,7 +194,7 @@ class FlixelDebugDefaultPanelsTest {
   void theInspectorPanelFollowsTheSelection() {
     FlixelDebugPanel inspector = opened(panel(FlixelDebugDefaultPanels.INSPECTOR));
     manager.inspector.select(new Object());
-    manager.update(1f);
+    manager.updateFeeds(1f);
     FlixelDebugWidget<?> path = inspector.find("path");
     assertNotNull(path);
     assertTrue(path.getParent().isVisible(), "the selection bar shows while something is selected");

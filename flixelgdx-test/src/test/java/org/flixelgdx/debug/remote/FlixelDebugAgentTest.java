@@ -782,7 +782,7 @@ class FlixelDebugAgentTest {
     FlixelDebugManager plain = new FlixelDebugManager();
     plain.start();
     assertNull(plain.getAgent());
-    plain.update(FRAME);
+    plain.updateFeeds(FRAME);
     plain.dispose();
 
     FlixelDebugManager.defaultTransport = transport;
@@ -795,7 +795,7 @@ class FlixelDebugAgentTest {
     assertEquals(7000, transport.port);
 
     transport.connect();
-    wired.update(FRAME);
+    wired.updateFeeds(FRAME);
     assertEquals(FlixelDebugProtocol.MSG_HELLO, type(transport.drain().get(0)));
     wired.dispose();
     assertTrue(transport.closed);
