@@ -41,7 +41,6 @@ import org.flixelgdx.group.FlixelBasicGroup;
  * @see FlixelExistable
  */
 public interface IFlixelBasic extends
-    FlixelCreatable,
     FlixelUpdatable,
     FlixelDrawable,
     FlixelDestroyable,

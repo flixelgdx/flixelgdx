@@ -348,6 +348,10 @@ public final class Flixel {
   @SuppressWarnings("checkstyle:ConstantName")
   public static final FlixelArray<FlixelCamera> cameras = new FlixelArray<>(FlixelCamera[]::new);
 
+  @NotNull
+  @SuppressWarnings("checkstyle:ConstantName")
+  public static final FlixelManagers managers = new FlixelManagers();
+
   /**
    * The framework's default random number generator.
    *

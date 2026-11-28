@@ -26,6 +26,7 @@ package org.flixelgdx;
 import org.flixelgdx.asset.FlixelNoopAssetManager;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.FlixelAntialiasable;
+import org.flixelgdx.functional.FlixelCreatable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
@@ -173,7 +174,7 @@ import java.util.function.Supplier;
  * @see FlixelState
  * @see Flixel
  */
-public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
+public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
 
   /** Frame-rate cap applied to the render loop while the window is unfocused and {@link Flixel#autoPause} is on. */
   private static final int BACKGROUND_FPS = 10;
@@ -330,6 +331,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * ready, so it is not necessary to call it manually in most cases. However, it can be overridden
    * to perform custom initialization when the game is created.
    */
+  @Override
   public void create() {
     // Deferred to here (rather than earlier) since compressed-texture support depends on the
     // graphics backend, which is only guaranteed to be running once create() is reached.
