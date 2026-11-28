@@ -28,6 +28,7 @@ import org.flixelgdx.asset.FlixelBaseAssetManager;
 import org.flixelgdx.asset.FlixelNoopAssetManager;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelBootManager;
+import org.flixelgdx.graphics.FlixelOverlayManager;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;

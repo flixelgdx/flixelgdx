@@ -24,6 +24,7 @@
 package org.flixelgdx;
 
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelRenderManager;
 import org.flixelgdx.testing.RecordingBatch;
 import org.flixelgdx.testing.RecordingGraphics;
 import org.flixelgdx.util.FlixelColor;
@@ -51,7 +52,7 @@ class FlixelRenderManagerTest {
     render = new FlixelRenderManager();
     log = new StringBuilder();
     Flixel.cameras.clear();
-    Flixel.cameraManager = new FlixelCameraManager();
+    Flixel.cameraManager = new FlixelCamera.Manager();
     recorder = new FlixelManagersTest.Recorder("m", 0, log);
     Flixel.managers.add(recorder);
   }

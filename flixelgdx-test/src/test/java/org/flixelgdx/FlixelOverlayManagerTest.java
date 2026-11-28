@@ -24,6 +24,7 @@
 package org.flixelgdx;
 
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelOverlayManager;
 import org.flixelgdx.testing.RecordingBatch;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

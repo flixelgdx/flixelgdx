@@ -38,6 +38,8 @@ import org.flixelgdx.debug.remote.FlixelDebugEndpoint;
 import org.flixelgdx.debug.remote.FlixelDebugTransport;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
+import org.flixelgdx.graphics.FlixelOverlayManager;
+import org.flixelgdx.graphics.FlixelRenderManager;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -114,7 +116,7 @@ public final class FlixelHeadlessExtension
     private FlixelWindow window;
     private FlixelGraphicsManager graphics;
     private FlixelRenderManager render;
-    private FlixelCameraManager cameraManager;
+    private FlixelCamera.Manager cameraManager;
     private FlixelOverlayManager overlay;
     private FlixelHostIntegration host;
     private FlixelHaptics haptics;

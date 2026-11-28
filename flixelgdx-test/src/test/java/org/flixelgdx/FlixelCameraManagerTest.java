@@ -36,14 +36,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class FlixelCameraManagerTest {
 
-  private FlixelCameraManager manager;
+  private FlixelCamera.Manager manager;
 
   @BeforeEach
   void setUp() {
     Flixel.config = new FlixelConfig.Builder("Cameras").size(320, 180).build();
     Flixel.graphics = new RecordingGraphics();
     Flixel.cameras.clear();
-    manager = new FlixelCameraManager();
+    manager = new FlixelCamera.Manager();
   }
 
   @AfterEach
