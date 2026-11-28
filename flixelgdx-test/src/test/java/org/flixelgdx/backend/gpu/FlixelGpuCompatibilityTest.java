@@ -33,7 +33,10 @@ import org.flixelgdx.util.FlixelBlendMode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
+import io.github.stringdotjar.jwebgpu.GpuAdapterInfo;
 import io.github.stringdotjar.jwebgpu.GpuBackendType;
 import io.github.stringdotjar.jwebgpu.GpuCallbackMode;
 import io.github.stringdotjar.jwebgpu.GpuErrorFilter;
@@ -113,15 +116,23 @@ class FlixelGpuCompatibilityTest {
   }
 
   private static FlixelTexture solid(int size) {
+    return solid(graphics, size);
+  }
+
+  private static FlixelTexture solid(FlixelGpuGraphics on, int size) {
     FlixelImage image = new FlixelImage(size, size);
     image.fill(0xFFFFFFFF);
-    return graphics.createTexture(image);
+    return on.createTexture(image);
   }
 
   private static String popValidationError() {
+    return popValidationError(graphics);
+  }
+
+  private static String popValidationError(FlixelGpuGraphics on) {
     String[] error = new String[1];
     boolean[] done = new boolean[1];
-    graphics.getDevice().popErrorScope(GpuCallbackMode.ALLOW_PROCESS_EVENTS, (status, type, message) -> {
+    on.getDevice().popErrorScope(GpuCallbackMode.ALLOW_PROCESS_EVENTS, (status, type, message) -> {
       if (type != null && type != GpuErrorType.NO_ERROR) {
         error[0] = type + ": " + message;
       }
@@ -170,19 +181,58 @@ class FlixelGpuCompatibilityTest {
 
   @Test
   void aFrameWithEveryBlendModeATargetAndACustomShaderPassesValidation() {
-    FlixelTexture a = solid(4);
-    FlixelTexture b = solid(8);
-    FlixelRenderTarget target = graphics.createRenderTarget(64, 64);
-    graphics.getDevice().pushErrorScope(GpuErrorFilter.VALIDATION);
+    drawFrame(graphics);
+  }
 
-    FlixelShaderProgram program = graphics.compileShaderSource(TINT);
+  /**
+   * Forces a real OpenGL or OpenGL ES adapter the way a game does, and draws a frame on it.
+   *
+   * <p>Skipped when the machine has no such adapter or the natives were built without the OpenGL backends.
+   */
+  @ParameterizedTest
+  @EnumSource(value = GpuBackendType.class, names = { "OPENGL", "OPENGLES" })
+  void aForcedOpenGlApiGetsACompatibilityDeviceThatDraws(GpuBackendType backend) {
+    FlixelGpuBootstrap glBoot = new FlixelGpuBootstrap(instance, null);
+    glBoot.setBackendType(backend);
+    glBoot.start();
+    long deadline = System.nanoTime() + 15_000_000_000L;
+    while (!glBoot.isDone() && System.nanoTime() < deadline) {
+      instance.processEvents();
+    }
+    assumeTrue(glBoot.getDevice() != null, "No " + backend + " adapter on this machine: " + glBoot.getError());
+
+    GpuAdapterInfo info = new GpuAdapterInfo();
+    glBoot.getAdapter().getInfo(info);
+    assertEquals(backend, info.backendType);
+    // OpenGL adapters can never do core, so the device always stays in compatibility mode.
+    assertTrue(glBoot.isCompatibilityMode());
+
+    FlixelGpuGraphics glGraphics = new FlixelGpuGraphics();
+    glGraphics.setEventPump(instance::processEvents);
+    glGraphics.initialize(glBoot.getAdapter(), glBoot.getDevice(), null, 320, 240, false, null);
+    try {
+      Flixel.graphics = glGraphics;
+      drawFrame(glGraphics);
+    } finally {
+      Flixel.graphics = graphics;
+      glGraphics.dispose();
+    }
+  }
+
+  private static void drawFrame(FlixelGpuGraphics on) {
+    FlixelTexture a = solid(on, 4);
+    FlixelTexture b = solid(on, 8);
+    FlixelRenderTarget target = on.createRenderTarget(64, 64);
+    on.getDevice().pushErrorScope(GpuErrorFilter.VALIDATION);
+
+    FlixelShaderProgram program = on.compileShaderSource(TINT);
     assertTrue(program.isValid());
     program.setUniform("amount", 0.5f);
     program.setUniform("tint", 1f, 0.5f, 0.25f, 1f);
 
-    graphics.beginFrame();
-    graphics.clear(0.1f, 0.2f, 0.3f, 1f);
-    FlixelGpuBatch batch = (FlixelGpuBatch) graphics.getBatch();
+    on.beginFrame();
+    on.clear(0.1f, 0.2f, 0.3f, 1f);
+    FlixelGpuBatch batch = (FlixelGpuBatch) on.getBatch();
     batch.setProjection(ortho(320, 240));
     batch.begin();
     for (FlixelBlendMode mode : FlixelBlendMode.values()) {
@@ -201,9 +251,9 @@ class FlixelGpuCompatibilityTest {
     batch.begin();
     batch.draw(target.getTexture(), 100, 100, 64, 64);
     batch.end();
-    graphics.endFrame();
+    on.endFrame();
 
-    assertNull(popValidationError(), "the renderer broke a compatibility mode rule");
+    assertNull(popValidationError(on), "the renderer broke a compatibility mode rule");
     program.destroy();
     target.destroy();
     a.destroy();
