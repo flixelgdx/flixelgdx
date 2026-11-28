@@ -23,6 +23,7 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.backend.FlixelProfiler;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.testing.RecordingBatch;
@@ -208,6 +209,7 @@ class FlixelManagersTest {
     managers.update(0.5f, false);
     managers.postUpdate(0.5f, false);
     managers.preDraw(batch);
+    managers.draw(batch);
     managers.drawCamera(camera, batch);
     managers.drawOverlay(batch);
     managers.postDraw(batch);
@@ -224,8 +226,8 @@ class FlixelManagersTest {
     managers.destroy();
 
     assertEquals(
-        "m.create m.beginFrame m.preUpdate m.update m.postUpdate m.preDraw m.drawCamera m.drawOverlay m.postDraw "
-            + "m.endFrame m.resize(640x360) m.onFocusLost m.onFocusGained m.onMinimized m.onSuspended "
+        "m.create m.beginFrame m.preUpdate m.update m.postUpdate m.preDraw m.draw m.drawCamera m.drawOverlay "
+            + "m.postDraw m.endFrame m.resize(640x360) m.onFocusLost m.onFocusGained m.onMinimized m.onSuspended "
             + "m.onPaused(false) m.preStateSwitch m.onStateSwitch m.postStateSwitch m.destroy ",
         log.toString());
     assertEquals(0.5f, recorder.lastElapsed);
@@ -326,11 +328,63 @@ class FlixelManagersTest {
   }
 
   @Test
+  void everyManagerCallGetsAProfilerSectionNamedAfterTheManager() {
+    StringBuilder sections = new StringBuilder();
+    Flixel.profiler = new FlixelProfiler() {
+      @Override
+      public void begin(@NotNull String name) {
+        sections.append("begin:").append(name).append(' ');
+      }
+
+      @Override
+      public void end() {
+        sections.append("end ");
+      }
+    };
+    managers.add(new Recorder("a", 0, log) {
+      @NotNull
+      @Override
+      public String getName() {
+        return "test.a";
+      }
+    });
+    managers.create();
+    managers.update(0f);
+    managers.destroy();
+    assertEquals("begin:test.a end begin:test.a end begin:test.a end ", sections.toString());
+  }
+
+  @Test
+  void aProfilerSectionEndsEvenWhenTheManagerThrows() {
+    int[] open = new int[1];
+    Flixel.profiler = new FlixelProfiler() {
+      @Override
+      public void begin(@NotNull String name) {
+        open[0]++;
+      }
+
+      @Override
+      public void end() {
+        open[0]--;
+      }
+    };
+    managers.add(new Recorder("a", 0, log) {
+      @Override
+      public void update(float elapsed) {
+        throw new IllegalStateException("boom");
+      }
+    });
+    assertThrows(IllegalStateException.class, () -> managers.update(0f));
+    assertEquals(0, open[0]);
+  }
+
+  @Test
   void theDefaultsOfTheManagerInterfaceDoNothing() {
     FlixelManagers.Manager manager = new FlixelManagers.Manager() {
     };
     assertEquals(FlixelManagers.Manager.ORDER_DEFAULT, manager.getOrder());
     assertTrue(manager.isPausable());
+    assertEquals("flixel.manager", manager.getName());
     managers.add(manager);
     managers.create();
     managers.update(0f);
@@ -397,6 +451,12 @@ class FlixelManagersTest {
     public void preDraw(@NotNull FlixelBatch batch) {
       lastBatch = batch;
       record("preDraw");
+    }
+
+    @Override
+    public void draw(@NotNull FlixelBatch batch) {
+      lastBatch = batch;
+      record("draw");
     }
 
     @Override
