@@ -35,10 +35,13 @@ import io.github.stringdotjar.jwebgpu.GpuDevice;
 import io.github.stringdotjar.jwebgpu.GpuDeviceDescriptor;
 import io.github.stringdotjar.jwebgpu.GpuDeviceLostCallback;
 import io.github.stringdotjar.jwebgpu.GpuDeviceLostReason;
+import io.github.stringdotjar.jwebgpu.GpuFeatureLevel;
 import io.github.stringdotjar.jwebgpu.GpuFeatureName;
 import io.github.stringdotjar.jwebgpu.GpuInstance;
+import io.github.stringdotjar.jwebgpu.GpuLimits;
 import io.github.stringdotjar.jwebgpu.GpuPowerPreference;
 import io.github.stringdotjar.jwebgpu.GpuRequestAdapterOptions;
+import io.github.stringdotjar.jwebgpu.GpuStatus;
 import io.github.stringdotjar.jwebgpu.GpuSurface;
 
 /**
@@ -60,6 +63,19 @@ import io.github.stringdotjar.jwebgpu.GpuSurface;
  *
  * <p>The device is created with every texture compression feature (BC, ETC2 and ASTC) the adapter offers, so
  * compressed KTX2 textures can use them. Turning a feature on costs nothing when it goes unused.
+ *
+ * <p><b>Compatibility mode.</b> WebGPU has two feature levels: core (full WebGPU, on Vulkan, Metal and Direct3D 12)
+ * and compatibility (a slightly smaller subset that also runs on OpenGL, OpenGL ES and Direct3D 11). OpenGL, OpenGL
+ * ES and Direct3D 11 adapters exist only in compatibility mode, so when one of them is forced with
+ * {@link #setBackendType(GpuBackendType)}, the adapter is requested at the compatibility level automatically (see
+ * {@link #featureLevelOf(GpuBackendType)}). Think of it as asking for a camping stove instead of a full kitchen: it
+ * cooks every recipe FlixelGDX needs, just with fewer burners.
+ *
+ * <p>When the adapter of a compatibility request can do core anyway (for example a Vulkan adapter), the device is
+ * upgraded to core, unless {@link #setCoreUpgrade(boolean)} turned that off. Otherwise the device stays in
+ * compatibility mode, and its texture size and uniform buffer limits are raised to what the adapter supports, because
+ * the compatibility defaults (4096 pixel textures and 16 KiB uniform buffers) are lower than the core ones.
+ * {@link #isCompatibilityMode()} tells which kind of device was created.
  */
 public final class FlixelGpuBootstrap {
 
@@ -72,6 +88,8 @@ public final class FlixelGpuBootstrap {
 
   private final GpuInstance instance;
   private final GpuSurface surface;
+  private final GpuLimits supportedLimits = new GpuLimits();
+  private final GpuLimits requiredLimits = new GpuLimits();
 
   private volatile GpuAdapter adapter;
   private volatile GpuDevice device;
@@ -80,10 +98,14 @@ public final class FlixelGpuBootstrap {
   private GpuDeviceLostCallback lostCallback;
   private GpuPowerPreference powerPreference = GpuPowerPreference.HIGH_PERFORMANCE;
   private GpuBackendType backendType = GpuBackendType.UNDEFINED;
+  private GpuFeatureLevel featureLevel = GpuFeatureLevel.UNDEFINED;
+  private GpuFeatureLevel requestedLevel = GpuFeatureLevel.CORE;
 
   private volatile boolean done;
+  private volatile boolean compatibilityMode;
 
   private boolean compressionRequested = true;
+  private boolean coreUpgrade = true;
 
   /**
    * Creates a bootstrap for an instance.
@@ -96,12 +118,32 @@ public final class FlixelGpuBootstrap {
     this.surface = surface;
   }
 
+  /**
+   * Returns the feature level an adapter request needs for a backend type.
+   *
+   * <p>OpenGL, OpenGL ES and Direct3D 11 adapters exist only in compatibility mode, so they give
+   * {@link GpuFeatureLevel#COMPATIBILITY}. Every other backend type, including the automatic choice, gives
+   * {@link GpuFeatureLevel#CORE}.
+   *
+   * @param backendType The forced backend type, or {@code UNDEFINED} for the automatic choice.
+   * @return The feature level to request.
+   */
+  @NotNull
+  public static GpuFeatureLevel featureLevelOf(@NotNull GpuBackendType backendType) {
+    return switch (backendType) {
+      case OPENGL, OPENGLES, D3D11 -> GpuFeatureLevel.COMPATIBILITY;
+      default -> GpuFeatureLevel.CORE;
+    };
+  }
+
   /** Starts the adapter request. Call once. */
   public void start() {
+    requestedLevel = featureLevel == GpuFeatureLevel.UNDEFINED ? featureLevelOf(backendType) : featureLevel;
     GpuRequestAdapterOptions options = new GpuRequestAdapterOptions();
     options.compatibleSurface = surface;
     options.powerPreference = powerPreference;
     options.backendType = backendType;
+    options.featureLevel = requestedLevel;
     instance.requestAdapter(options, GpuCallbackMode.ALLOW_PROCESS_EVENTS, (status, result, message) -> {
       if (result == null) {
         fail("No compatible GPU adapter was found (" + status + "): " + message);
@@ -113,8 +155,17 @@ public final class FlixelGpuBootstrap {
   }
 
   private void requestDevice(GpuAdapter chosen) {
-    GpuDeviceDescriptor descriptor = new GpuDeviceDescriptor(COMPRESSION_FEATURES.length);
+    // One extra slot for the core upgrade of a compatibility adapter.
+    GpuDeviceDescriptor descriptor = new GpuDeviceDescriptor(COMPRESSION_FEATURES.length + 1);
     descriptor.label = "FlixelGDX device";
+    if (requestedLevel == GpuFeatureLevel.COMPATIBILITY) {
+      if (coreUpgrade && chosen.hasFeature(GpuFeatureName.CORE_FEATURES_AND_LIMITS)) {
+        descriptor.requiredFeatures[descriptor.requiredFeatureCount++] = GpuFeatureName.CORE_FEATURES_AND_LIMITS;
+      } else {
+        compatibilityMode = true;
+        descriptor.requiredLimits = raiseCompatibilityLimits(chosen);
+      }
+    }
     if (compressionRequested) {
       for (int i = 0; i < COMPRESSION_FEATURES.length; i++) {
         if (chosen.hasFeature(COMPRESSION_FEATURES[i])) {
@@ -133,6 +184,30 @@ public final class FlixelGpuBootstrap {
       device = result;
       done = true;
     });
+  }
+
+  /**
+   * Fills the required limits of a compatibility device with the adapter's texture size and uniform buffer limits.
+   *
+   * <p>A compatibility device starts with lower defaults than a core one (4096 pixel textures instead of 8192, and
+   * 16 KiB uniform buffer bindings instead of 64 KiB), which would reject large texture atlases and custom shaders
+   * with many uniforms. Most compatibility hardware supports more, so the device asks for what the adapter offers.
+   *
+   * @param chosen The adapter.
+   * @return The limits to require, or {@code null} to keep the defaults when the adapter's limits cannot be read.
+   */
+  @Nullable
+  private GpuLimits raiseCompatibilityLimits(GpuAdapter chosen) {
+    supportedLimits.reset();
+    if (chosen.getLimits(supportedLimits) != GpuStatus.SUCCESS) {
+      return null;
+    }
+    requiredLimits.reset();
+    requiredLimits.maxTextureDimension2D = supportedLimits.maxTextureDimension2D;
+    requiredLimits.maxUniformBufferBindingSize = supportedLimits.maxUniformBufferBindingSize;
+    LOG.debug("Using WebGPU compatibility mode (textures up to {} pixels, uniform buffers up to {} bytes).",
+        supportedLimits.maxTextureDimension2D, supportedLimits.maxUniformBufferBindingSize);
+    return requiredLimits;
   }
 
   private void onLost(GpuDevice lostDevice, GpuDeviceLostReason reason, String message) {
@@ -160,6 +235,19 @@ public final class FlixelGpuBootstrap {
    */
   public boolean isDone() {
     return done;
+  }
+
+  /**
+   * Returns whether the device runs in compatibility mode instead of full WebGPU.
+   *
+   * <p>A compatibility device has a few extra validation rules and lower limits (see the class documentation). It is
+   * only created when the adapter was requested at the compatibility level and the core upgrade did not happen.
+   *
+   * @return {@code true} when the device is limited to compatibility mode. Meaningful once {@link #getDevice()}
+   *     returns a device.
+   */
+  public boolean isCompatibilityMode() {
+    return compatibilityMode;
   }
 
   /**
@@ -229,6 +317,51 @@ public final class FlixelGpuBootstrap {
    */
   public void setBackendType(@NotNull GpuBackendType backendType) {
     this.backendType = backendType;
+  }
+
+  /**
+   * Returns the feature level forced for the adapter request.
+   *
+   * @return The feature level, {@code UNDEFINED} for automatic.
+   */
+  @NotNull
+  public GpuFeatureLevel getFeatureLevel() {
+    return featureLevel;
+  }
+
+  /**
+   * Forces the feature level of the adapter request. Takes effect only if called before {@link #start()}.
+   *
+   * <p>Left at {@code UNDEFINED}, the level follows the backend type (see {@link #featureLevelOf(GpuBackendType)}).
+   * Forcing {@link GpuFeatureLevel#COMPATIBILITY} together with {@code setCoreUpgrade(false)} gives a compatibility
+   * device on any hardware, which is the easiest way to check that a game runs within compatibility mode.
+   *
+   * @param featureLevel The feature level, or {@code UNDEFINED} to choose it from the backend type.
+   */
+  public void setFeatureLevel(@NotNull GpuFeatureLevel featureLevel) {
+    this.featureLevel = featureLevel;
+  }
+
+  /**
+   * Returns whether a compatibility adapter that can do core gets a core device.
+   *
+   * @return {@code true} by default.
+   */
+  public boolean isCoreUpgrade() {
+    return coreUpgrade;
+  }
+
+  /**
+   * Sets whether a compatibility adapter that can do core gets a core device. Takes effect only if called before
+   * {@link #start()}.
+   *
+   * <p>The upgrade is on by default, because a core device has every feature and higher limits. Turn it off to keep
+   * the device in compatibility mode, for example to test a game against the compatibility rules on a modern GPU.
+   *
+   * @param coreUpgrade Whether to upgrade to core when the adapter allows it.
+   */
+  public void setCoreUpgrade(boolean coreUpgrade) {
+    this.coreUpgrade = coreUpgrade;
   }
 
   /**
