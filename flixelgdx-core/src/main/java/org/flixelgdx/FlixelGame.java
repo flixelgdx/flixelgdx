@@ -28,6 +28,7 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.signal.FlixelSignalData.GamePausedSignalData;
 import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import org.jetbrains.annotations.NotNull;
@@ -349,7 +350,7 @@ public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, Fl
    * @see #endFrame()
    */
   public float advanceTime(float rawDelta) {
-    float rawClamped = Math.clamp(rawDelta, Flixel.MIN_ELAPSED, Flixel.MAX_ELAPSED);
+    float rawClamped = FlixelMath.clamp(rawDelta, Flixel.MIN_ELAPSED, Flixel.MAX_ELAPSED);
     rawElapsed = rawClamped;
     elapsed = rawClamped * Flixel.timeScale;
     return elapsed;
