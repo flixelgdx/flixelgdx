@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.tween;
 
+import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
 import org.flixelgdx.tween.type.FlixelAngleTween;
@@ -167,6 +168,31 @@ class FlixelTweenManagerTest {
   void resetRegistryForgetsEverything() {
     angle(FlixelTweenType.ONESHOT);
     manager.resetRegistry();
+    assertEquals(0, manager.getActiveTweens().getSize());
+    assertThrows(IllegalArgumentException.class, () -> manager.getPool(FlixelAngleTween.class));
+  }
+
+  @Test
+  void cancelAllCancelsEveryActiveTween() {
+    angle(FlixelTweenType.ONESHOT);
+    angle(FlixelTweenType.LOOPING);
+    manager.cancelAll();
+    assertEquals(0, manager.getActiveTweens().getSize());
+  }
+
+  @Test
+  void aStateSwitchClearsTheTweensOnlyWhenAsked() {
+    angle(FlixelTweenType.ONESHOT);
+    manager.onStateSwitch(new StateSwitchSignalData(null, false, true));
+    assertEquals(1, manager.getActiveTweens().getSize());
+    manager.onStateSwitch(new StateSwitchSignalData(null, true, false));
+    assertEquals(0, manager.getActiveTweens().getSize());
+  }
+
+  @Test
+  void destroyCancelsEveryTweenAndClearsTheRegistry() {
+    angle(FlixelTweenType.ONESHOT);
+    manager.destroy();
     assertEquals(0, manager.getActiveTweens().getSize());
     assertThrows(IllegalArgumentException.class, () -> manager.getPool(FlixelAngleTween.class));
   }
