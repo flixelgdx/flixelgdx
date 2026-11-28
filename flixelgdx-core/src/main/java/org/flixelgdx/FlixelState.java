@@ -25,6 +25,7 @@ package org.flixelgdx;
 
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.FlixelAntialiasable;
+import org.flixelgdx.functional.FlixelCreatable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
@@ -52,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FlixelBasic
  * @see FlixelBasicGroup
  */
-public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
+public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> implements FlixelCreatable {
 
   /** The currently active substate opened on top of {@code this} state. */
   private FlixelSubState subState;
@@ -103,6 +104,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
    *
    * <p>Make sure to override this, NOT the constructor!
    */
+  @Override
   public void create() {}
 
   /**

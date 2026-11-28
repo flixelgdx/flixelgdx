@@ -40,6 +40,11 @@ Timing matters, because some pieces must be in place before anything uses them:
 | `Flixel.boot.afterStart(...)`               | Configuring core managers (input, sound, logging, debugger) before the window opens. |
 | Your game's or first state's `create()`     | Anything that needs the GPU or the window: loaders that upload textures, shaders. |
 
+If your extension needs to follow the game's lifecycle (update every frame, draw on top of a camera, save when the
+app is suspended, clean up when the game closes), register a manager in `Flixel.managers` from an `afterStart(...)`
+callback instead of asking users to subclass `FlixelGame`. See
+[Global hooks with managers](game-loop.md#global-hooks-with-managers).
+
 Register boot callbacks before the game starts, for example in your game class's constructor. See
 [The Boot Sequence](boot-sequence.md#hooking-into-startup-boot-callbacks).
 
@@ -208,7 +213,7 @@ A backend is a launcher plus implementations of the seams. The shape is always t
 3. Register an `afterStart` callback for pieces that attach to core managers (gamepad provider, cursor manager).
 4. Set the runtime mode, and install a `FlixelDebugTransport` if the platform can reach the debugger app.
 5. Write a `FlixelGameRunner` that creates the window, calls `game.create()` once the surface is ready, then each frame
-   `Flixel.runtime.runMainThreadTasks()`, `advanceTime(...)`, `update(...)`, `draw(...)`, and `endFrame()`, plus `resize(...)` and the focus and suspend
+   `Flixel.runtime.runMainThreadTasks()`, `advanceTime(...)`, `beginFrame()`, `update(...)`, `draw(...)`, and `endFrame()`, plus `resize(...)` and the focus and suspend
    hooks. Call `game.destroy()` on exit.
 6. Call `Flixel.start(game, runner)`.
 

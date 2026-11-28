@@ -26,6 +26,7 @@ package org.flixelgdx;
 import org.flixelgdx.asset.FlixelNoopAssetManager;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.FlixelAntialiasable;
+import org.flixelgdx.functional.FlixelCreatable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
@@ -96,6 +97,13 @@ import java.util.function.Supplier;
  * regardless of what the active game camera is doing. Enable and disable the overlay with
  * {@link #enableGlobalOverlay(boolean)}. The overlay is completely separate from the
  * remote debugger and does not appear in debug mode unless you explicitly enable it.
+ *
+ * <h2>Managers</h2>
+ *
+ * <p>Anything that has to follow the lifecycle of the whole game (for example a library that needs
+ * to update every frame or clean up when the game closes) should be a {@link FlixelManagers.Manager}
+ * registered in {@link Flixel#managers}, instead of a subclass of this class. The game calls every
+ * manager hook at the matching point of each frame, in a fixed order. See {@link FlixelManagers}.
  *
  * <h2>Signals</h2>
  *
@@ -173,7 +181,7 @@ import java.util.function.Supplier;
  * @see FlixelState
  * @see Flixel
  */
-public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
+public abstract class FlixelGame implements FlixelCreatable, FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
 
   /** Frame-rate cap applied to the render loop while the window is unfocused and {@link Flixel#autoPause} is on. */
   private static final int BACKGROUND_FPS = 10;
@@ -330,6 +338,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * ready, so it is not necessary to call it manually in most cases. However, it can be overridden
    * to perform custom initialization when the game is created.
    */
+  @Override
   public void create() {
     // Deferred to here (rather than earlier) since compressed-texture support depends on the
     // graphics backend, which is only guaranteed to be running once create() is reached.
@@ -361,6 +370,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.input.addMouseListener(Flixel.mouse);
     Flixel.input.addTouchListener(Flixel.touches);
 
+    Flixel.managers.create();
+
     if (Flixel.isDebugMode()) {
       Flixel.debug.start();
     }
@@ -378,7 +389,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     for (FlixelCamera camera : Flixel.cameras) {
       camera.update(width, height, camera.centerCameraOnResize);
     }
-    if (overlayCamera != null && overlayEnabled) {
+    if (overlayCamera != null) {
       overlayCamera.update(width, height, overlayCamera.centerCameraOnResize);
     }
 
@@ -386,6 +397,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (state != null) {
       state.resize(width, height);
     }
+
+    Flixel.managers.resize(width, height);
 
     Flixel.graphics.resizeGlobalShaders();
   }
@@ -409,6 +422,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
 
+    // Checked again below, since the debugger can step a paused game while it reads its input.
+    boolean paused = isUpdatePaused();
+    Flixel.managers.preUpdate(elapsed, paused);
+
     if (Flixel.isDebugMode()) {
       // Input a remote tool injected is applied first, so the managers below see it like real input.
       Flixel.debug.applyInput();
@@ -426,10 +443,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.debug.updateInput(rawElapsed);
     }
 
-    boolean stepping = gamePaused && stepPending;
+    paused = isUpdatePaused();
     stepPending = false;
+    Flixel.managers.update(elapsed, paused);
 
-    if ((!gamePaused || stepping) && shouldUpdate) {
+    if (!paused) {
       Flixel.profiler.begin(TRACE_UPDATE_TWEENS);
       try {
         FlixelTween.updateTweens(elapsed);
@@ -481,6 +499,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.debug.update(rawElapsed);
     }
 
+    Flixel.managers.postUpdate(elapsed, paused);
+
     postUpdateData.set(elapsed);
     Flixel.Signals.postUpdate.dispatch(postUpdateData);
   }
@@ -502,6 +522,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   private void drawFrame(@NotNull FlixelBatch batch) {
     Flixel.Signals.preDraw.dispatch();
+    Flixel.managers.preDraw(batch);
 
     Flixel.graphics.clear(bgColor.r, bgColor.g, bgColor.b, bgColor.a); // Clear the screen to refresh it.
     FlixelState state = Flixel.state;
@@ -555,6 +576,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
           current = sub;
         }
 
+        Flixel.managers.drawCamera(camera, batch);
+
         camera.drawFX(batch, bgPixel);
 
         batch.end();
@@ -599,7 +622,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.graphics.applyGlobalShaderChain(batch);
     }
 
-    if (overlayCamera != null && overlayGroup != null && overlayEnabled) {
+    // The overlay pass always runs, even when the global overlay is off, so managers can draw on top too.
+    if (overlayCamera != null) {
       Flixel.graphics.beginCameraPass();
       Flixel.setDrawCamera(overlayCamera);
       try {
@@ -609,8 +633,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
         overlayCamera.applyViewport();
         batch.setProjection(overlayCamera.getCombinedMatrix());
         batch.begin();
-        overlayGroup.draw(batch);
+        if (overlayGroup != null && overlayEnabled) {
+          overlayGroup.draw(batch);
+        }
+        Flixel.managers.drawOverlay(batch);
         batch.end();
+        batch.setShader(null);
       } finally {
         Flixel.setDrawCamera(null);
       }
@@ -624,6 +652,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (Flixel.isDebugMode()) {
       Flixel.debug.controls.drawBoundingBoxes(Flixel.cameras.getItems());
     }
+
+    Flixel.managers.postDraw(batch);
 
     if (!Flixel.window.isTransparencyActive() && Flixel.config.isTransparentFramebuffer()) {
       Flixel.graphics.forceOpaqueAlpha();
@@ -642,6 +672,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    *
    * <pre>{@code
    * float elapsed = game.advanceTime(rawDelta);
+   * game.beginFrame();
    * game.update(elapsed);
    * game.draw(game.getBatch());
    * game.endFrame();
@@ -659,6 +690,20 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
+   * Starts the frame by running every manager's beginning of frame.
+   *
+   * <p>Platform runners call this once per frame right after {@link #advanceTime(float)} and before
+   * {@link #update(float)}, so {@link Flixel#getElapsed()} already holds this frame's time. It runs
+   * even while the game is paused.
+   *
+   * @see FlixelManagers.Manager#beginFrame()
+   * @see #endFrame()
+   */
+  public void beginFrame() {
+    Flixel.managers.beginFrame();
+  }
+
+  /**
    * Finalizes the input state for the current frame.
    *
    * <p>Platform runners call this once per frame after {@link #draw(FlixelBatch)} completes.
@@ -673,6 +718,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.touches.endFrame();
     Flixel.gamepads.endFrame();
     FlixelActionSets.endFrameAll();
+    Flixel.managers.endFrame();
   }
 
   /**
@@ -697,6 +743,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.sound.resume();
     }
     this.gamePaused = gamePaused;
+    Flixel.managers.onPaused(gamePaused);
     Flixel.Signals.gamePaused.dispatch(gamePaused ? GamePausedSignalData.PAUSED : GamePausedSignalData.RESUMED);
   }
 
@@ -720,6 +767,14 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   public boolean isStepPending() {
     return stepPending;
+  }
+
+  /**
+   * Returns whether the update hooks that stop for a pause should be skipped this frame: the game is
+   * paused (and no {@link #stepFrame()} is waiting), or it lost focus while {@link Flixel#autoPause} is on.
+   */
+  private boolean isUpdatePaused() {
+    return (gamePaused && !stepPending) || !shouldUpdate;
   }
 
   private void snapshotCamerasForDebugPause() {
@@ -792,6 +847,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.graphics.setTargetFps(BACKGROUND_FPS);
       shouldUpdate = false;
     }
+    Flixel.managers.onFocusLost();
     Flixel.Signals.windowUnfocused.dispatch();
   }
 
@@ -826,6 +882,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
         Flixel.sound.resume();
       }
     }
+    Flixel.managers.onFocusGained();
     Flixel.Signals.windowFocused.dispatch();
   }
 
@@ -845,6 +902,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       return;
     }
     suspended = true;
+    Flixel.managers.onSuspended();
     Flixel.Signals.gameSuspended.dispatch();
   }
 
@@ -867,6 +925,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (state != null) {
       state.onMinimized();
     }
+    Flixel.managers.onMinimized();
     Flixel.Signals.windowMinimized.dispatch();
   }
 
@@ -895,6 +954,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (Flixel.state != null) {
       Flixel.state.destroy();
     }
+    Flixel.managers.destroy();
     Flixel.graphics.disposeGlobalShaders();
     Flixel.window.resetTransparency();
     fboOrthoW = -1;

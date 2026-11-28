@@ -14,10 +14,11 @@ react to the window and the platform.
 6. [Slow motion with `timeScale`](#slow-motion-with-timescale)
 7. [Pausing: auto-pause, substates, and the debugger](#pausing-auto-pause-substates-and-the-debugger)
 8. [Focus, minimize, suspend, and close](#focus-minimize-suspend-and-close)
-9. [Global hooks with signals](#global-hooks-with-signals)
-10. [Things that live across states](#things-that-live-across-states)
-11. [Quitting the game](#quitting-the-game)
-12. [Check your understanding](#check-your-understanding)
+9. [Global hooks with managers](#global-hooks-with-managers)
+10. [Global hooks with signals](#global-hooks-with-signals)
+11. [Things that live across states](#things-that-live-across-states)
+12. [Quitting the game](#quitting-the-game)
+13. [Check your understanding](#check-your-understanding)
 
 ## Why games are loops
 
@@ -109,41 +110,49 @@ Here is everything that happens in one frame, in order. You do not need to memor
 like "why is `justPressed` still true here?" and "does my camera move before or after my sprite?"
 
 **Before the frame.** The platform measures how long the last frame took and calls `advanceTime(...)`, which clamps
-it and applies `Flixel.timeScale`.
+it and applies `Flixel.timeScale`. Then every manager runs `beginFrame()`, even while the game is paused.
 
 **Update.**
 
 1. `Flixel.Signals.preUpdate` fires.
-2. In debug mode, input injected by the debugger is applied.
-3. Input managers read the hardware: `Flixel.keys`, `Flixel.mouse`, `Flixel.touches`, and `Flixel.gamepads`.
-4. Input actions update (`FlixelActionSets.update(...)`), so they see this frame's hardware state.
-5. If the game is not paused:
+2. Every manager in `Flixel.managers` runs `preUpdate(...)`.
+3. In debug mode, input injected by the debugger is applied.
+4. Input managers read the hardware: `Flixel.keys`, `Flixel.mouse`, `Flixel.touches`, and `Flixel.gamepads`.
+5. Input actions update (`FlixelActionSets.update(...)`), so they see this frame's hardware state.
+6. Every manager runs `update(...)`.
+7. If the game is not paused:
    1. Global tweens and global timers advance.
    2. The state chain updates: the active state, then each open substate. A state with an open substate only
       updates if its `persistentUpdate` flag is `true`.
    3. The sound manager updates (fades, finished sounds).
    4. Every camera updates (follow, shake, flash, fade).
    5. The global overlay updates, if it is on.
-6. In debug mode, the debugger samples the frame.
-7. `Flixel.Signals.postUpdate` fires.
+8. In debug mode, the debugger samples the frame.
+9. Every manager runs `postUpdate(...)`.
+10. `Flixel.Signals.postUpdate` fires.
+
+While the game is paused, managers whose `isPausable()` returns `true` (the default) skip steps 2, 6, and 9.
 
 **Draw.**
 
 1. `Flixel.Signals.preDraw` fires.
-2. The screen is cleared.
-3. For each camera in `Flixel.cameras`, in order:
+2. Every manager runs `preDraw(...)`.
+3. The screen is cleared.
+4. For each camera in `Flixel.cameras`, in order:
    1. The camera fills its background color.
    2. The state chain draws: the active state, then each open substate. A state with an open substate only draws if
       its `persistentDraw` flag is `true` (the default).
-   3. The camera draws its effects on top (flash and fade).
-   4. If the camera has a shader, its picture is run through the shader.
-4. Global shaders, if any, run over the combined picture.
-5. The global overlay draws on top of everything.
-6. In debug mode, hitboxes are drawn if they are switched on.
-7. `Flixel.Signals.postDraw` fires.
+   3. Every manager runs `drawCamera(...)` for this camera.
+   4. The camera draws its effects on top (flash and fade).
+   5. If the camera has a shader, its picture is run through the shader.
+5. Global shaders, if any, run over the combined picture.
+6. The global overlay draws on top of everything, then every manager runs `drawOverlay(...)`.
+7. In debug mode, hitboxes are drawn if they are switched on.
+8. Every manager runs `postDraw(...)`.
+9. `Flixel.Signals.postDraw` fires.
 
 **After the frame.** `endFrame()` finishes the input state: `justPressed` and `justReleased` are cleared so they are
-fresh next frame. Because this happens *after* drawing, edge checks stay true for the whole frame, including any
+fresh next frame. Every manager then runs `endFrame()`. Because this happens *after* drawing, edge checks stay true for the whole frame, including any
 code you run in `draw(...)` or in signal listeners.
 
 ## Always call `super`
@@ -237,6 +246,37 @@ public void onFocusLost() {
   }
 }
 ```
+
+## Global hooks with managers
+
+When a whole system has to follow the game from start to finish (a library, an achievement tracker, a networking
+layer), make it a **manager**. A manager is like a passenger on a train: once it boards, it rides through every stop
+of the loop without the game having to know about it. Implement `FlixelManagers.Manager`, override only the hooks you
+need (every hook has an empty default), and register it in `Flixel.managers`:
+
+```java
+public class AchievementManager implements FlixelManagers.Manager {
+
+  @Override
+  public void update(float elapsed) {
+    // Runs every frame, right before the state updates.
+  }
+
+  @Override
+  public void onSuspended() {
+    // The platform may stop the game soon, so save progress now.
+  }
+}
+
+Flixel.boot.afterStart(() -> Flixel.managers.add(new AchievementManager()));
+```
+
+Managers run from the lowest `getOrder()` to the highest, and `destroy()` runs in the reverse order. A manager added
+to a running game is created right away, and one removed from a running game is destroyed right away. Return `false`
+from `isPausable()` for work that must keep running while the game is paused.
+
+Prefer a manager over subclassing `FlixelGame` or listening to several signals at once: it gets every hook in one
+place, in a predictable order.
 
 ## Global hooks with signals
 

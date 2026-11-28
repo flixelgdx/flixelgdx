@@ -626,6 +626,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, SurfaceHolder.Call
       Flixel.runtime.runMainThreadTasks();
       graphics.beginFrame();
       float elapsed = g.advanceTime(rawDelta);
+      g.beginFrame();
       g.update(elapsed);
       g.draw(graphics.getBatch());
       g.endFrame();
