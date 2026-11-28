@@ -172,6 +172,7 @@ FlixelColor fromHex = new FlixelColor().set("#FF8800");    // Hex, with an optio
 FlixelColor packed = new FlixelColor(0xFF8800FF);          // A packed RGBA8888 int.
 
 sky.setAlpha(0.5f);                           // Setters clamp, so setAlpha(2f) stores 1.
+sky.setRed(255);                              // Red, green, and blue also take 0 to 255.
 sky.lerp(FlixelColor.ORANGE, 0.25f);          // Move a quarter of the way toward orange.
 sky.setHue(200f);                             // Hue, saturation, and value are adjustable too.
 sky.setSaturation(0.5f);
